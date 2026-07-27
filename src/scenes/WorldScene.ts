@@ -18,6 +18,10 @@ export class WorldScene extends Phaser.Scene {
   private door!: Door;
   private fragment!: Fragment;
   private instructionText!: Phaser.GameObjects.Text;
+  private houseWindow!: Phaser.GameObjects.Rectangle;
+  private treeCrown!: Phaser.GameObjects.Arc;
+  private plazaGround!: Phaser.GameObjects.Rectangle;
+  private lamp!: Lamp;
 
   constructor() {
     super('WorldScene');
@@ -53,6 +57,8 @@ export class WorldScene extends Phaser.Scene {
 
     if (this.progress.hasFragment(FRAGMENT_ID)) {
       this.door.activate();
+      this.lamp.activate();
+      this.transformWorld(false);
       this.instructionText.setText('Ya restauraste esta plaza');
     }
   }
@@ -61,29 +67,99 @@ export class WorldScene extends Phaser.Scene {
     this.connectionSystem = new ConnectionSystem(this);
 
     const source = new EnergySource(this, width / 2, height / 2 - 40);
-    const lamp = new Lamp(this, width - 200, height / 2 - 20);
+    this.lamp = new Lamp(this, width - 200, height / 2 - 20);
     this.door = new Door(this, width - 60, height / 2 + 60);
     this.fragment = new Fragment(this, width - 60, height / 2 - 10);
 
     source.setDepth(11);
-    lamp.setDepth(11);
+    this.lamp.setDepth(11);
     this.door.setDepth(11);
     this.fragment.setDepth(12);
 
     this.connectionSystem.register(source);
-    this.connectionSystem.register(lamp);
+    this.connectionSystem.register(this.lamp);
     this.connectionSystem.register(this.door);
-    this.connectionSystem.addRule({ sourceId: source.id, targetId: lamp.id });
-    this.connectionSystem.addRule({ sourceId: lamp.id, targetId: this.door.id });
+    this.connectionSystem.addRule({ sourceId: source.id, targetId: this.lamp.id });
+    this.connectionSystem.addRule({ sourceId: this.lamp.id, targetId: this.door.id });
 
     this.events.on('connection-made', (targetId: string) => {
+      if (targetId === this.lamp.id) {
+        this.lightHouseWindow(true);
+      }
+
       if (targetId === this.door.id) {
         this.fragment.reveal();
+        this.transformWorld(true);
         this.instructionText.setText('¡La puerta se abrió! Acércate al fragmento');
       }
     });
 
     this.physics.add.overlap(this.nexus, this.fragment, () => this.collectFragment());
+  }
+
+  /** Enciende la ventana de la casa cuando la lámpara se conecta. */
+  private lightHouseWindow(animate: boolean): void {
+    const litColor = 0xffe066;
+
+    if (!animate) {
+      this.houseWindow.setFillStyle(litColor);
+      return;
+    }
+
+    this.tweens.add({
+      targets: this.houseWindow,
+      duration: 300,
+      onUpdate: () => this.houseWindow.setFillStyle(litColor),
+    });
+  }
+
+  /** Transformación visual del escenario al abrirse la puerta: árbol con hojas y plaza más cálida. */
+  private transformWorld(animate: boolean): void {
+    const leafColor = 0x6bbf59;
+    const plazaColor = 0xf4e9c9;
+
+    if (!animate) {
+      this.treeCrown.setFillStyle(leafColor);
+      this.plazaGround.setFillStyle(plazaColor);
+      return;
+    }
+
+    this.tweens.add({
+      targets: this.treeCrown,
+      scale: { from: 0.9, to: 1.1 },
+      duration: 400,
+      yoyo: true,
+      onStart: () => this.treeCrown.setFillStyle(leafColor),
+    });
+
+    this.tweens.add({
+      targets: this.plazaGround,
+      duration: 500,
+      onUpdate: () => this.plazaGround.setFillStyle(plazaColor),
+    });
+
+    this.spawnLeafSparkles();
+  }
+
+  /** Pequeñas partículas simples que simulan hojas/color naciendo en el árbol. */
+  private spawnLeafSparkles(): void {
+    const cx = this.treeCrown.x;
+    const cy = this.treeCrown.y;
+
+    for (let i = 0; i < 6; i += 1) {
+      const angle = (i / 6) * Math.PI * 2;
+      const dot = this.add.circle(cx, cy, 4, 0x9be37a).setDepth(3);
+
+      this.tweens.add({
+        targets: dot,
+        x: cx + Math.cos(angle) * 50,
+        y: cy + Math.sin(angle) * 50,
+        alpha: 0,
+        duration: 700,
+        ease: 'Sine.easeOut',
+        onComplete: () => dot.destroy(),
+      });
+    }
   }
 
   private collectFragment(): void {
@@ -121,7 +197,7 @@ export class WorldScene extends Phaser.Scene {
     this.add.rectangle(width / 2, height / 2, width, height, 0xcfe8d8).setDepth(0);
 
     // Plaza (zona más clara)
-    this.add.rectangle(width / 2, height / 2 + 60, 500, 260, 0xe4dcc3).setDepth(1);
+    this.plazaGround = this.add.rectangle(width / 2, height / 2 + 60, 500, 260, 0xe4dcc3).setDepth(1);
 
     // Camino
     this.add.rectangle(width / 2, height - 40, width, 80, 0xb9ac8a).setDepth(1);
@@ -141,11 +217,11 @@ export class WorldScene extends Phaser.Scene {
     ).setDepth(2);
 
     // Ventana apagada
-    this.add.rectangle(160, height / 2 - 60, 30, 30, 0x2a2d36).setDepth(3);
+    this.houseWindow = this.add.rectangle(160, height / 2 - 60, 30, 30, 0x2a2d36).setDepth(3);
 
     // Árbol sin hojas (mundo apagado)
     this.add.rectangle(width - 160, height / 2 - 10, 12, 60, 0x6b4a30).setDepth(2);
-    this.add.circle(width - 160, height / 2 - 60, 40, 0x8b8f8a).setDepth(2);
+    this.treeCrown = this.add.circle(width - 160, height / 2 - 60, 40, 0x8b8f8a).setDepth(2);
 
     // Bordes visuales del límite de pantalla
     const border = this.add.graphics().setDepth(30);
