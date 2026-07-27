@@ -48,7 +48,7 @@ export class ConnectionSystem {
 
   private handleClick(object: ConnectableObject): void {
     if (!this.selected) {
-      if (object.role !== 'source') return;
+      if (!object.canInitiate()) return;
       this.selected = object;
       this.showFeedback('Ahora conecta con algo...', '#1b1f3b');
       return;
@@ -74,6 +74,7 @@ export class ConnectionSystem {
       source.activate();
       target.activate();
       this.showFeedback('¡Conexión correcta!', '#1b6b3a');
+      this.scene.events.emit('connection-made', target.id);
     } else {
       this.showFeedback('Esa conexión no encaja, prueba otra', '#8a4b1f');
     }

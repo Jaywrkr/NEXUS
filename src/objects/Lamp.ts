@@ -22,6 +22,10 @@ export class Lamp extends ConnectableObject {
     this.setInteractive(new Phaser.Geom.Rectangle(-22, -45, 44, 90), Phaser.Geom.Rectangle.Contains);
   }
 
+  canInitiate(): boolean {
+    return this.active_;
+  }
+
   activate(): void {
     if (this.active_) return;
     this.active_ = true;

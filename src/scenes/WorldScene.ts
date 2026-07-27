@@ -2,13 +2,22 @@ import Phaser from 'phaser';
 import { Nexus } from '../entities/Nexus';
 import { EnergySource } from '../objects/EnergySource';
 import { Lamp } from '../objects/Lamp';
+import { Door } from '../objects/Door';
+import { Fragment } from '../objects/Fragment';
 import { ConnectionSystem } from '../systems/ConnectionSystem';
+import { ProgressSystem } from '../systems/ProgressSystem';
+
+const FRAGMENT_ID = 'plaza-fragment';
 
 export class WorldScene extends Phaser.Scene {
   private nexus!: Nexus;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
   private connectionSystem!: ConnectionSystem;
+  private progress!: ProgressSystem;
+  private door!: Door;
+  private fragment!: Fragment;
+  private instructionText!: Phaser.GameObjects.Text;
 
   constructor() {
     super('WorldScene');
@@ -16,6 +25,8 @@ export class WorldScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
+
+    this.progress = new ProgressSystem();
 
     this.physics.world.setBounds(0, 0, width, height);
 
@@ -31,7 +42,7 @@ export class WorldScene extends Phaser.Scene {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as typeof this.wasd;
 
-    this.add
+    this.instructionText = this.add
       .text(width / 2, 24, 'Los Nexus — conecta la fuente con la lámpara', {
         fontFamily: 'sans-serif',
         fontSize: '18px',
@@ -39,6 +50,11 @@ export class WorldScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(20);
+
+    if (this.progress.hasFragment(FRAGMENT_ID)) {
+      this.door.activate();
+      this.instructionText.setText('Ya restauraste esta plaza');
+    }
   }
 
   private setupConnections(width: number, height: number): void {
@@ -46,13 +62,40 @@ export class WorldScene extends Phaser.Scene {
 
     const source = new EnergySource(this, width / 2, height / 2 - 40);
     const lamp = new Lamp(this, width - 200, height / 2 - 20);
+    this.door = new Door(this, width - 60, height / 2 + 60);
+    this.fragment = new Fragment(this, width - 60, height / 2 - 10);
 
     source.setDepth(11);
     lamp.setDepth(11);
+    this.door.setDepth(11);
+    this.fragment.setDepth(12);
 
     this.connectionSystem.register(source);
     this.connectionSystem.register(lamp);
+    this.connectionSystem.register(this.door);
     this.connectionSystem.addRule({ sourceId: source.id, targetId: lamp.id });
+    this.connectionSystem.addRule({ sourceId: lamp.id, targetId: this.door.id });
+
+    this.events.on('connection-made', (targetId: string) => {
+      if (targetId === this.door.id) {
+        this.fragment.reveal();
+        this.instructionText.setText('¡La puerta se abrió! Acércate al fragmento');
+      }
+    });
+
+    this.physics.add.overlap(this.nexus, this.fragment, () => this.collectFragment());
+  }
+
+  private collectFragment(): void {
+    if (!this.fragment.visible || this.fragment.isCollected) return;
+
+    this.fragment.collect();
+    this.progress.collectFragment(FRAGMENT_ID);
+    this.instructionText.setText('¡Fragmento recuperado!');
+
+    this.time.delayedCall(600, () => {
+      this.scene.start('MuseumScene');
+    });
   }
 
   update(_time: number, delta: number): void {

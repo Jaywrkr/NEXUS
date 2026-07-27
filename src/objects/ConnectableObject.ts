@@ -23,6 +23,11 @@ export abstract class ConnectableObject extends Phaser.GameObjects.Container {
     return this.active_;
   }
 
+  /** Indica si este objeto puede iniciar una conexión (primer clic). */
+  canInitiate(): boolean {
+    return this.role === 'source';
+  }
+
   /** Se llama cuando este objeto queda conectado correctamente. */
   abstract activate(): void;
 }
