@@ -1,10 +1,14 @@
 import Phaser from 'phaser';
 import { Nexus } from '../entities/Nexus';
+import { EnergySource } from '../objects/EnergySource';
+import { Lamp } from '../objects/Lamp';
+import { ConnectionSystem } from '../systems/ConnectionSystem';
 
 export class WorldScene extends Phaser.Scene {
   private nexus!: Nexus;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
+  private connectionSystem!: ConnectionSystem;
 
   constructor() {
     super('WorldScene');
@@ -17,8 +21,10 @@ export class WorldScene extends Phaser.Scene {
 
     this.buildStaticZone(width, height);
 
-    this.nexus = new Nexus(this, width / 2, height / 2 + 40);
+    this.nexus = new Nexus(this, width / 2, height / 2 + 100);
     this.nexus.setDepth(10);
+
+    this.setupConnections(width, height);
 
     this.cameras.main.setBackgroundColor('#cfe8d8');
 
@@ -26,13 +32,27 @@ export class WorldScene extends Phaser.Scene {
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as typeof this.wasd;
 
     this.add
-      .text(width / 2, 24, 'Los Nexus — Fase 2: movimiento', {
+      .text(width / 2, 24, 'Los Nexus — conecta la fuente con la lámpara', {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#1b1f3b',
       })
       .setOrigin(0.5)
       .setDepth(20);
+  }
+
+  private setupConnections(width: number, height: number): void {
+    this.connectionSystem = new ConnectionSystem(this);
+
+    const source = new EnergySource(this, width / 2, height / 2 - 40);
+    const lamp = new Lamp(this, width - 200, height / 2 - 20);
+
+    source.setDepth(11);
+    lamp.setDepth(11);
+
+    this.connectionSystem.register(source);
+    this.connectionSystem.register(lamp);
+    this.connectionSystem.addRule({ sourceId: source.id, targetId: lamp.id });
   }
 
   update(_time: number, delta: number): void {
