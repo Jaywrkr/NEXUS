@@ -59,7 +59,11 @@ export class CustomizeScene extends Phaser.Scene {
       this.buildRow(row, panelX);
     });
 
-    this.buildPlayButton(width / 2, height - 50);
+    // El botón va justo debajo de los swatches, no pegado al borde inferior:
+    // en pantallas altas (celular vertical) el borde puede quedar fuera del
+    // área realmente visible por la barra de direcciones del navegador.
+    const buttonY = Math.min(height - 50, panelStartY + ROWS.length * ROW_GAP + 50);
+    this.buildPlayButton(width / 2, buttonY);
   }
 
   private buildRow(row: SwatchRow, startX: number): void {
