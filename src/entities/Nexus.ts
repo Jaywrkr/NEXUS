@@ -1,10 +1,13 @@
 import Phaser from 'phaser';
 
+export type CapStyle = 'none' | 'gorra' | 'gorro';
+
 export interface NexusAppearance {
   bodyColor: number;
   jacketColor: number;
   shoesColor: number;
   capColor: number;
+  capStyle: CapStyle;
 }
 
 export const DEFAULT_APPEARANCE: NexusAppearance = {
@@ -12,6 +15,7 @@ export const DEFAULT_APPEARANCE: NexusAppearance = {
   jacketColor: 0x2ea3a3,
   shoesColor: 0xf4f1e8,
   capColor: 0x5ee7ff,
+  capStyle: 'none',
 };
 
 const FACE_COLOR = 0x14161f;
@@ -106,6 +110,8 @@ export class Nexus extends Phaser.GameObjects.Container {
     const rightEarTip = this.scene.add.circle(19, -76, 5, EAR_TIP_ACCENT);
     this.earTips = [leftEarTip, rightEarTip];
 
+    const capParts = this.buildCap(appearance);
+
     container.add([
       shadow,
       backpack,
@@ -130,9 +136,27 @@ export class Nexus extends Phaser.GameObjects.Container {
       this.rightEye,
       leftEarTip,
       rightEarTip,
+      ...capParts,
     ]);
 
     return container;
+  }
+
+  /** Gorra opcional, un accesorio real (no solo color) sobre la cabeza. */
+  private buildCap(appearance: NexusAppearance): Phaser.GameObjects.GameObject[] {
+    if (appearance.capStyle === 'gorra') {
+      const band = this.scene.add.ellipse(0, -48, 34, 12, appearance.capColor);
+      const brim = this.scene.add.ellipse(10, -43, 16, 6, appearance.capColor);
+      return [band, brim];
+    }
+
+    if (appearance.capStyle === 'gorro') {
+      const dome = this.scene.add.ellipse(0, -52, 32, 20, appearance.capColor);
+      const pompom = this.scene.add.circle(0, -62, 5, EAR_TIP_ACCENT);
+      return [dome, pompom];
+    }
+
+    return [];
   }
 
   move(dx: number, dy: number, delta: number): void {

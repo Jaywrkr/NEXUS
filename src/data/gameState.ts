@@ -23,7 +23,7 @@ export function loadGameState(): GameState {
     const parsed = JSON.parse(raw) as Partial<GameState>;
     return {
       fragmentsCollected: parsed.fragmentsCollected ?? [],
-      appearance: parsed.appearance ?? DEFAULT_APPEARANCE,
+      appearance: { ...DEFAULT_APPEARANCE, ...parsed.appearance },
       seenCompletion: parsed.seenCompletion ?? false,
     };
   } catch {
