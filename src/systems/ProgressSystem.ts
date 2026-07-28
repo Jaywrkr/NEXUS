@@ -1,9 +1,10 @@
 import type { GameState } from '../data/gameState';
 import { loadGameState, saveGameState } from '../data/gameState';
+import type { NexusAppearance } from '../entities/Nexus';
 
 /**
- * Punto único de acceso al progreso guardado (localStorage).
- * Por ahora solo registra fragmentos recolectados.
+ * Punto único de acceso al progreso guardado (localStorage):
+ * fragmentos recolectados y apariencia elegida del Nexus.
  */
 export class ProgressSystem {
   private state: GameState;
@@ -24,5 +25,14 @@ export class ProgressSystem {
 
   getCollectedFragments(): string[] {
     return [...this.state.fragmentsCollected];
+  }
+
+  getAppearance(): NexusAppearance {
+    return { ...this.state.appearance };
+  }
+
+  saveAppearance(appearance: NexusAppearance): void {
+    this.state.appearance = appearance;
+    saveGameState(this.state);
   }
 }

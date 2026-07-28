@@ -18,6 +18,6 @@ export class BootScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.time.delayedCall(700, () => this.scene.start('WorldScene'));
+    this.time.delayedCall(700, () => this.scene.start('CustomizeScene'));
   }
 }

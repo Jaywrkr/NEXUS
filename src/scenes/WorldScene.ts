@@ -36,7 +36,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.buildStaticZone(width, height);
 
-    this.nexus = new Nexus(this, width / 2, height / 2 + 100);
+    this.nexus = new Nexus(this, width / 2, height / 2 + 100, this.progress.getAppearance());
     this.nexus.setDepth(10);
 
     this.setupConnections(width, height);
