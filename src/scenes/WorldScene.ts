@@ -7,6 +7,7 @@ import { Fountain } from '../objects/Fountain';
 import { Fragment } from '../objects/Fragment';
 import { ConnectionSystem } from '../systems/ConnectionSystem';
 import { ProgressSystem } from '../systems/ProgressSystem';
+import { AudioSystem } from '../systems/AudioSystem';
 import { VirtualJoystick } from '../ui/VirtualJoystick';
 
 const PLAZA_FRAGMENT_ID = 'plaza-fragment';
@@ -29,6 +30,7 @@ export class WorldScene extends Phaser.Scene {
   private plazaGround!: Phaser.GameObjects.Rectangle;
   private lamp!: Lamp;
   private joystick!: VirtualJoystick;
+  private audio!: AudioSystem;
 
   constructor() {
     super('WorldScene');
@@ -39,6 +41,7 @@ export class WorldScene extends Phaser.Scene {
     const width = WORLD_WIDTH;
 
     this.progress = new ProgressSystem();
+    this.audio = new AudioSystem();
 
     this.physics.world.setBounds(0, 0, width, height);
     this.cameras.main.setBounds(0, 0, width, height);
@@ -83,7 +86,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private setupConnections(width: number, height: number): void {
-    this.connectionSystem = new ConnectionSystem(this);
+    this.connectionSystem = new ConnectionSystem(this, this.audio);
 
     // Zona 1: la plaza (fuente → lámpara → puerta)
     const source = new EnergySource(this, 480, height / 2 - 40);
@@ -205,6 +208,7 @@ export class WorldScene extends Phaser.Scene {
 
     fragment.collect();
     this.progress.collectFragment(id);
+    this.audio.playCollect();
     this.instructionText.setText('¡Fragmento recuperado!');
 
     this.time.delayedCall(600, () => {

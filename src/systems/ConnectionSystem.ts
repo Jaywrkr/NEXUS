@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ConnectableObject } from '../objects/ConnectableObject';
+import { AudioSystem } from './AudioSystem';
 
 const CABLE_COLOR = 0x5ee7ff;
 const CABLE_COLOR_INVALID = 0xff6b6b;
@@ -21,9 +22,11 @@ export class ConnectionSystem {
   private selected: ConnectableObject | null = null;
   private cableGraphics: Phaser.GameObjects.Graphics;
   private feedbackText: Phaser.GameObjects.Text;
+  private audio: AudioSystem;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, audio: AudioSystem) {
     this.scene = scene;
+    this.audio = audio;
     this.cableGraphics = scene.add.graphics().setDepth(15);
 
     this.feedbackText = scene.add
@@ -74,9 +77,11 @@ export class ConnectionSystem {
       source.activate();
       target.activate();
       this.showFeedback('¡Conexión correcta!', '#1b6b3a');
+      this.audio.playSuccess();
       this.scene.events.emit('connection-made', target.id);
     } else {
       this.showFeedback('Esa conexión no encaja, prueba otra', '#8a4b1f');
+      this.audio.playError();
     }
   }
 
