@@ -43,11 +43,20 @@ export class ConnectionSystem {
 
   register(object: ConnectableObject): void {
     this.objects.push(object);
-    object.on('pointerdown', () => this.handleClick(object));
+    object.on('pointerdown', () => this.interact(object));
   }
 
   addRule(rule: ConnectionRule): void {
     this.rules.push(rule);
+  }
+
+  /** Punto de entrada público: tocar el objeto directamente o presionar el botón de interacción hacen lo mismo. */
+  interact(object: ConnectableObject): void {
+    this.handleClick(object);
+  }
+
+  hasSelection(): boolean {
+    return this.selected !== null;
   }
 
   private handleClick(object: ConnectableObject): void {

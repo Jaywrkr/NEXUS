@@ -10,6 +10,10 @@ import { ConnectionSystem } from '../systems/ConnectionSystem';
 import { ProgressSystem } from '../systems/ProgressSystem';
 import { AudioSystem } from '../systems/AudioSystem';
 import { VirtualJoystick } from '../ui/VirtualJoystick';
+import { InteractButton } from '../ui/InteractButton';
+import type { ConnectableObject } from '../objects/ConnectableObject';
+
+const INTERACT_RADIUS = 90;
 
 const PLAZA_FRAGMENT_ID = 'plaza-fragment';
 const FOUNTAIN_FRAGMENT_ID = 'fountain-fragment';
@@ -35,6 +39,8 @@ export class WorldScene extends Phaser.Scene {
   private lamp!: Lamp;
   private joystick!: VirtualJoystick;
   private audio!: AudioSystem;
+  private interactButton!: InteractButton;
+  private connectables: ConnectableObject[] = [];
 
   constructor() {
     super('WorldScene');
@@ -67,6 +73,12 @@ export class WorldScene extends Phaser.Scene {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as typeof this.wasd;
     this.joystick = new VirtualJoystick(this, 90, height - 90);
+
+    this.interactButton = new InteractButton(this, this.scale.width / 2, this.scale.height - 40);
+    this.interactButton.onPress(() => {
+      const target = this.findNearestConnectable();
+      if (target) this.connectionSystem.interact(target);
+    });
 
     this.instructionText = this.add
       .text(this.scale.width / 2, 24, '', {
@@ -128,16 +140,14 @@ export class WorldScene extends Phaser.Scene {
     this.beacon = new Beacon(this, 2220, midY);
     this.beaconFragment = new Fragment(this, 2220, midY - 90 * vScale);
 
-    [source, this.lamp, this.door, fountainSource, this.fountain, beaconSourceA, beaconSourceB, this.beacon].forEach(
-      (obj) => obj.setDepth(11),
-    );
+    this.connectables = [source, this.lamp, this.door, fountainSource, this.fountain, beaconSourceA, beaconSourceB, this.beacon];
+
+    this.connectables.forEach((obj) => obj.setDepth(11));
     this.plazaFragment.setDepth(12);
     this.fountainFragment.setDepth(12);
     this.beaconFragment.setDepth(12);
 
-    [source, this.lamp, this.door, fountainSource, this.fountain, beaconSourceA, beaconSourceB, this.beacon].forEach(
-      (obj) => this.connectionSystem.register(obj),
-    );
+    this.connectables.forEach((obj) => this.connectionSystem.register(obj));
 
     this.connectionSystem.addRule({ sourceId: source.id, targetId: this.lamp.id });
     this.connectionSystem.addRule({ sourceId: this.lamp.id, targetId: this.door.id });
@@ -335,6 +345,35 @@ export class WorldScene extends Phaser.Scene {
     }
 
     this.nexus.move(dx, dy, delta);
+    this.updateInteractButton();
+  }
+
+  /** Busca el objeto conectable más cercano al Nexus, si está a distancia de interacción. */
+  private findNearestConnectable(): ConnectableObject | null {
+    let nearest: ConnectableObject | null = null;
+    let nearestDistance = INTERACT_RADIUS;
+
+    for (const obj of this.connectables) {
+      const distance = Phaser.Math.Distance.Between(this.nexus.x, this.nexus.y, obj.x, obj.y);
+      if (distance < nearestDistance) {
+        nearest = obj;
+        nearestDistance = distance;
+      }
+    }
+
+    return nearest;
+  }
+
+  private updateInteractButton(): void {
+    const target = this.findNearestConnectable();
+
+    if (!target) {
+      this.interactButton.hide();
+      return;
+    }
+
+    const label = this.connectionSystem.hasSelection() ? 'Conectar' : 'Tocar';
+    this.interactButton.show(label);
   }
 
   private buildStaticZone(width: number, height: number, vScale: number): void {
