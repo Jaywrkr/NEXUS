@@ -68,7 +68,9 @@ export class Fragment extends Phaser.GameObjects.Container {
       yoyo: true,
       repeat: -1,
       ease: 'Sine.easeInOut',
-      onUpdate: () => body.updateFromGameObject(),
+      onUpdate: () => {
+        body.y = this.y - body.halfHeight;
+      },
     });
   }
 
