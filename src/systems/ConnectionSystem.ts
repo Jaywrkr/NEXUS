@@ -37,6 +37,7 @@ export class ConnectionSystem {
       })
       .setOrigin(0.5)
       .setDepth(20)
+      .setScrollFactor(0)
       .setAlpha(0);
   }
 
