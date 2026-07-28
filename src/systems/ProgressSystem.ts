@@ -35,4 +35,13 @@ export class ProgressSystem {
     this.state.appearance = appearance;
     saveGameState(this.state);
   }
+
+  hasSeenCompletion(): boolean {
+    return this.state.seenCompletion;
+  }
+
+  markCompletionSeen(): void {
+    this.state.seenCompletion = true;
+    saveGameState(this.state);
+  }
 }

@@ -6,11 +6,13 @@ const STORAGE_KEY = 'los-nexus-progress';
 export interface GameState {
   fragmentsCollected: string[];
   appearance: NexusAppearance;
+  seenCompletion: boolean;
 }
 
 const DEFAULT_STATE: GameState = {
   fragmentsCollected: [],
   appearance: DEFAULT_APPEARANCE,
+  seenCompletion: false,
 };
 
 export function loadGameState(): GameState {
@@ -22,6 +24,7 @@ export function loadGameState(): GameState {
     return {
       fragmentsCollected: parsed.fragmentsCollected ?? [],
       appearance: parsed.appearance ?? DEFAULT_APPEARANCE,
+      seenCompletion: parsed.seenCompletion ?? false,
     };
   } catch {
     return { ...DEFAULT_STATE };

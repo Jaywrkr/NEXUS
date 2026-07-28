@@ -35,6 +35,17 @@ export class MuseumScene extends Phaser.Scene {
       this.buildVitrina(startX + index * spacing, height / 2, fragment.id, fragment.label);
     });
 
+    const allCollected = FRAGMENTS.every((f) => this.progress.hasFragment(f.id));
+    if (allCollected) {
+      this.add
+        .text(width / 2, height / 2 + 160, '¡Colección completa!', {
+          fontFamily: 'sans-serif',
+          fontSize: '20px',
+          color: '#ffe066',
+        })
+        .setOrigin(0.5);
+    }
+
     this.add
       .text(width / 2, height - 40, 'Presiona ESPACIO para volver', {
         fontFamily: 'sans-serif',

@@ -249,11 +249,60 @@ export class WorldScene extends Phaser.Scene {
     this.progress.collectFragment(id);
     this.audio.playCollect();
     this.nexus.celebrate();
-    this.instructionText.setText('¡Fragmento recuperado!');
 
+    const allDone = [PLAZA_FRAGMENT_ID, FOUNTAIN_FRAGMENT_ID, BEACON_FRAGMENT_ID].every((fid) =>
+      this.progress.hasFragment(fid),
+    );
+    const isFirstCompletion = allDone && !this.progress.hasSeenCompletion();
+
+    if (isFirstCompletion) {
+      this.progress.markCompletionSeen();
+      this.instructionText.setText('¡Restauraste todo el lugar!');
+      this.audio.playSuccess();
+      this.spawnWorldCelebration();
+      this.time.delayedCall(1800, () => this.scene.start('MuseumScene'));
+      return;
+    }
+
+    this.instructionText.setText('¡Fragmento recuperado!');
     this.time.delayedCall(600, () => {
       this.scene.start('MuseumScene');
     });
+  }
+
+  /** Celebración especial al restaurar las tres zonas por primera vez. */
+  private spawnWorldCelebration(): void {
+    this.cameras.main.flash(500, 255, 230, 150);
+
+    const spots = [
+      { x: 280, y: this.scale.height / 2 - 60 },
+      { x: 1460, y: this.scale.height / 2 + 40 },
+      { x: 2220, y: this.scale.height / 2 },
+    ];
+
+    spots.forEach((spot, index) => {
+      this.time.delayedCall(index * 200, () => this.sparkleBurst(spot.x, spot.y));
+    });
+  }
+
+  private sparkleBurst(cx: number, cy: number): void {
+    const colors = [0xffe066, 0x5ee7ff, 0xff9ff3, 0x9be37a];
+
+    for (let i = 0; i < 10; i += 1) {
+      const angle = (i / 10) * Math.PI * 2;
+      const color = colors[i % colors.length];
+      const dot = this.add.circle(cx, cy, 5, color).setDepth(25);
+
+      this.tweens.add({
+        targets: dot,
+        x: cx + Math.cos(angle) * 70,
+        y: cy + Math.sin(angle) * 70,
+        alpha: 0,
+        duration: 800,
+        ease: 'Sine.easeOut',
+        onComplete: () => dot.destroy(),
+      });
+    }
   }
 
   update(_time: number, delta: number): void {
