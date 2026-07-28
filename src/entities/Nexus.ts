@@ -126,4 +126,56 @@ export class Nexus extends Phaser.GameObjects.Container {
     this.walkTime = 0;
     this.visual.setY(0);
   }
+
+  /** Animación corta de celebración: salto, antena brillante y chispas. */
+  celebrate(): void {
+    this.walkTime = 0;
+    this.body.setVelocity(0, 0);
+
+    this.scene.tweens.add({
+      targets: this.visual,
+      scaleY: 0.8,
+      duration: 90,
+      yoyo: true,
+      onComplete: () => {
+        this.scene.tweens.add({
+          targets: this.visual,
+          y: -26,
+          duration: 220,
+          yoyo: true,
+          ease: 'Sine.easeOut',
+        });
+      },
+    });
+
+    this.scene.tweens.add({
+      targets: [this.leftEye, this.rightEye, this.antenna],
+      scale: { from: 1, to: 1.6 },
+      duration: 160,
+      yoyo: true,
+      repeat: 2,
+    });
+
+    this.spawnCelebrationSparkles();
+  }
+
+  private spawnCelebrationSparkles(): void {
+    const colors = [0xffe066, 0x5ee7ff, 0xff9ff3];
+
+    for (let i = 0; i < 8; i += 1) {
+      const angle = (i / 8) * Math.PI * 2;
+      const color = colors[i % colors.length];
+      const dot = this.scene.add.circle(this.x, this.y - 20, 4, color).setDepth(this.depth + 1);
+
+      this.scene.tweens.add({
+        targets: dot,
+        x: this.x + Math.cos(angle) * 46,
+        y: this.y - 20 + Math.sin(angle) * 46,
+        alpha: 0,
+        duration: 550,
+        ease: 'Sine.easeOut',
+        onComplete: () => dot.destroy(),
+      });
+    }
+  }
 }

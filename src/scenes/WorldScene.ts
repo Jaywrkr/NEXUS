@@ -248,6 +248,7 @@ export class WorldScene extends Phaser.Scene {
     fragment.collect();
     this.progress.collectFragment(id);
     this.audio.playCollect();
+    this.nexus.celebrate();
     this.instructionText.setText('¡Fragmento recuperado!');
 
     this.time.delayedCall(600, () => {
