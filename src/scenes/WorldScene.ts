@@ -43,6 +43,10 @@ export class WorldScene extends Phaser.Scene {
   create(): void {
     const { height } = this.scale;
     const width = WORLD_WIDTH;
+    // En pantallas verticales (más altas), separamos más los objetos en
+    // el eje Y para aprovechar el espacio en vez de dejarlos apretados
+    // en una franja angosta en el medio.
+    const vScale = height / 540;
 
     this.progress = new ProgressSystem();
     this.audio = new AudioSystem();
@@ -50,13 +54,13 @@ export class WorldScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, width, height);
     this.cameras.main.setBounds(0, 0, width, height);
 
-    this.buildStaticZone(width, height);
+    this.buildStaticZone(width, height, vScale);
 
-    this.nexus = new Nexus(this, 480, height / 2 + 100, this.progress.getAppearance());
+    this.nexus = new Nexus(this, 480, height / 2 + 100 * vScale, this.progress.getAppearance());
     this.nexus.setDepth(10);
     this.cameras.main.startFollow(this.nexus, true, 0.12, 0.12);
 
-    this.setupConnections(height);
+    this.setupConnections(height, vScale);
 
     this.cameras.main.setBackgroundColor('#cfe8d8');
 
@@ -103,25 +107,26 @@ export class WorldScene extends Phaser.Scene {
     return `Restauraste ${doneCount} de 3 lugares — sigue explorando`;
   }
 
-  private setupConnections(height: number): void {
+  private setupConnections(height: number, vScale: number): void {
     this.connectionSystem = new ConnectionSystem(this, this.audio);
+    const midY = height / 2;
 
     // Zona 1: la plaza (fuente → lámpara → puerta)
-    const source = new EnergySource(this, 480, height / 2 - 40);
-    this.lamp = new Lamp(this, 680, height / 2 - 20);
-    this.door = new Door(this, 820, height / 2 + 60);
-    this.plazaFragment = new Fragment(this, 820, height / 2 - 10);
+    const source = new EnergySource(this, 480, midY - 40 * vScale);
+    this.lamp = new Lamp(this, 680, midY - 20 * vScale);
+    this.door = new Door(this, 820, midY + 60 * vScale);
+    this.plazaFragment = new Fragment(this, 820, midY - 10 * vScale);
 
     // Zona 2: la fuente restaurada (segunda fuente → fuente de agua)
-    const fountainSource = new EnergySource(this, 1300, height / 2 - 40, 'fountain-source');
-    this.fountain = new Fountain(this, 1460, height / 2 + 40);
-    this.fountainFragment = new Fragment(this, 1460, height / 2 - 60);
+    const fountainSource = new EnergySource(this, 1300, midY - 40 * vScale, 'fountain-source');
+    this.fountain = new Fountain(this, 1460, midY + 40 * vScale);
+    this.fountainFragment = new Fragment(this, 1460, midY - 60 * vScale);
 
     // Zona 3: la antena (dos fuentes → una sola antena)
-    const beaconSourceA = new EnergySource(this, 1980, height / 2 - 80, 'beacon-source-a');
-    const beaconSourceB = new EnergySource(this, 1980, height / 2 + 80, 'beacon-source-b');
-    this.beacon = new Beacon(this, 2220, height / 2);
-    this.beaconFragment = new Fragment(this, 2220, height / 2 - 90);
+    const beaconSourceA = new EnergySource(this, 1980, midY - 80 * vScale, 'beacon-source-a');
+    const beaconSourceB = new EnergySource(this, 1980, midY + 80 * vScale, 'beacon-source-b');
+    this.beacon = new Beacon(this, 2220, midY);
+    this.beaconFragment = new Fragment(this, 2220, midY - 90 * vScale);
 
     [source, this.lamp, this.door, fountainSource, this.fountain, beaconSourceA, beaconSourceB, this.beacon].forEach(
       (obj) => obj.setDepth(11),
@@ -274,10 +279,13 @@ export class WorldScene extends Phaser.Scene {
   private spawnWorldCelebration(): void {
     this.cameras.main.flash(500, 255, 230, 150);
 
+    const midY = this.scale.height / 2;
+    const vScale = this.scale.height / 540;
+
     const spots = [
-      { x: 280, y: this.scale.height / 2 - 60 },
-      { x: 1460, y: this.scale.height / 2 + 40 },
-      { x: 2220, y: this.scale.height / 2 },
+      { x: 280, y: midY - 60 * vScale },
+      { x: 1460, y: midY + 40 * vScale },
+      { x: 2220, y: midY },
     ];
 
     spots.forEach((spot, index) => {
@@ -329,36 +337,40 @@ export class WorldScene extends Phaser.Scene {
     this.nexus.move(dx, dy, delta);
   }
 
-  private buildStaticZone(width: number, height: number): void {
+  private buildStaticZone(width: number, height: number, vScale: number): void {
+    const midY = height / 2;
+
     // Suelo
-    this.add.rectangle(width / 2, height / 2, width, height, 0xcfe8d8).setDepth(0);
+    this.add.rectangle(width / 2, midY, width, height, 0xcfe8d8).setDepth(0);
 
     // Plaza (zona más clara)
-    this.plazaGround = this.add.rectangle(650, height / 2 + 60, 500, 260, 0xe4dcc3).setDepth(1);
+    this.plazaGround = this.add
+      .rectangle(650, midY + 60 * vScale, 500, 260 * vScale, 0xe4dcc3)
+      .setDepth(1);
 
     // Segunda zona: explanada de la fuente
-    this.add.rectangle(1480, height / 2 + 40, 460, 260, 0xdce7ea).setDepth(1);
+    this.add.rectangle(1480, midY + 40 * vScale, 460, 260 * vScale, 0xdce7ea).setDepth(1);
 
     // Tercera zona: explanada de la antena
-    this.add.rectangle(2200, height / 2, 460, 320, 0xe2ddf0).setDepth(1);
+    this.add.rectangle(2200, midY, 460, 320 * vScale, 0xe2ddf0).setDepth(1);
 
     // Camino que conecta las tres zonas
-    this.add.rectangle(width / 2, height - 40, width, 80, 0xb9ac8a).setDepth(1);
+    this.add.rectangle(width / 2, height - 40 * vScale, width, 80 * vScale, 0xb9ac8a).setDepth(1);
 
     // Casa apagada (silueta simple, sin luz encendida todavía)
-    this.add.rectangle(280, height / 2 - 40, 160, 140, 0x4a4e5c).setDepth(2);
-    this.add.triangle(280, height / 2 - 130, -90, 20, 90, 20, 0, -60, 0x3a3d48).setDepth(2);
+    this.add.rectangle(280, midY - 40 * vScale, 160, 140, 0x4a4e5c).setDepth(2);
+    this.add.triangle(280, midY - 130 * vScale, -90, 20, 90, 20, 0, -60, 0x3a3d48).setDepth(2);
 
     // Ventana apagada
-    this.houseWindow = this.add.rectangle(280, height / 2 - 60, 30, 30, 0x2a2d36).setDepth(3);
+    this.houseWindow = this.add.rectangle(280, midY - 60 * vScale, 30, 30, 0x2a2d36).setDepth(3);
 
     // Árbol sin hojas (mundo apagado)
-    this.add.rectangle(940, height / 2 - 10, 12, 60, 0x6b4a30).setDepth(2);
-    this.treeCrown = this.add.circle(940, height / 2 - 60, 40, 0x8b8f8a).setDepth(2);
+    this.add.rectangle(940, midY - 10 * vScale, 12, 60, 0x6b4a30).setDepth(2);
+    this.treeCrown = this.add.circle(940, midY - 60 * vScale, 40, 0x8b8f8a).setDepth(2);
 
     // Torre de la estación de la antena (decoración, no interactiva)
-    this.add.rectangle(2200, height / 2 + 130, 14, 220, 0x5a5f6b).setDepth(2);
-    this.add.circle(2200, height / 2 + 20, 10, 0x3a3d48).setDepth(2);
+    this.add.rectangle(2200, midY + 130 * vScale, 14, 220, 0x5a5f6b).setDepth(2);
+    this.add.circle(2200, midY + 20 * vScale, 10, 0x3a3d48).setDepth(2);
 
     // Bordes visuales del límite del mundo
     const border = this.add.graphics().setDepth(30);
