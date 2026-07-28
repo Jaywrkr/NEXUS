@@ -6,6 +6,7 @@ import { Door } from '../objects/Door';
 import { Fragment } from '../objects/Fragment';
 import { ConnectionSystem } from '../systems/ConnectionSystem';
 import { ProgressSystem } from '../systems/ProgressSystem';
+import { VirtualJoystick } from '../ui/VirtualJoystick';
 
 const FRAGMENT_ID = 'plaza-fragment';
 
@@ -22,6 +23,7 @@ export class WorldScene extends Phaser.Scene {
   private treeCrown!: Phaser.GameObjects.Arc;
   private plazaGround!: Phaser.GameObjects.Rectangle;
   private lamp!: Lamp;
+  private joystick!: VirtualJoystick;
 
   constructor() {
     super('WorldScene');
@@ -45,6 +47,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as typeof this.wasd;
+    this.joystick = new VirtualJoystick(this, 90, height - 90);
 
     this.instructionText = this.add
       .text(width / 2, 24, 'Los Nexus — conecta la fuente con la lámpara', {
@@ -187,6 +190,12 @@ export class WorldScene extends Phaser.Scene {
       const norm = Math.SQRT1_2;
       dx *= norm;
       dy *= norm;
+    }
+
+    const joyVector = this.joystick.getVector();
+    if (joyVector.x !== 0 || joyVector.y !== 0) {
+      dx = joyVector.x;
+      dy = joyVector.y;
     }
 
     this.nexus.move(dx, dy, delta);
