@@ -28,7 +28,7 @@ export class MuseumScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    const spacing = 220;
+    const spacing = Math.min(220, (width - 140) / (FRAGMENTS.length - 1));
     const startX = width / 2 - (spacing * (FRAGMENTS.length - 1)) / 2;
 
     FRAGMENTS.forEach((fragment, index) => {
