@@ -5,6 +5,7 @@ const FRAGMENTS = [
   { id: 'plaza-fragment', label: 'Fragmento de la plaza' },
   { id: 'fountain-fragment', label: 'Fragmento de la fuente' },
   { id: 'beacon-fragment', label: 'Fragmento de la antena' },
+  { id: 'bridge-fragment', label: 'Fragmento del puente' },
 ];
 
 export class MuseumScene extends Phaser.Scene {

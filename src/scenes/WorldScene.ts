@@ -5,6 +5,7 @@ import { Lamp } from '../objects/Lamp';
 import { Door } from '../objects/Door';
 import { Fountain } from '../objects/Fountain';
 import { Beacon } from '../objects/Beacon';
+import { Bridge } from '../objects/Bridge';
 import { Fragment } from '../objects/Fragment';
 import { ConnectionSystem } from '../systems/ConnectionSystem';
 import { ProgressSystem } from '../systems/ProgressSystem';
@@ -18,7 +19,11 @@ const INTERACT_RADIUS = 90;
 const PLAZA_FRAGMENT_ID = 'plaza-fragment';
 const FOUNTAIN_FRAGMENT_ID = 'fountain-fragment';
 const BEACON_FRAGMENT_ID = 'beacon-fragment';
-const WORLD_WIDTH = 2450;
+const BRIDGE_FRAGMENT_ID = 'bridge-fragment';
+const ALL_FRAGMENT_IDS = [PLAZA_FRAGMENT_ID, FOUNTAIN_FRAGMENT_ID, BEACON_FRAGMENT_ID, BRIDGE_FRAGMENT_ID];
+const WORLD_WIDTH = 2950;
+const GAP_X = 2610;
+const GAP_WIDTH = 100;
 
 export class WorldScene extends Phaser.Scene {
   private nexus!: Nexus;
@@ -32,6 +37,11 @@ export class WorldScene extends Phaser.Scene {
   private fountainFragment!: Fragment;
   private beacon!: Beacon;
   private beaconFragment!: Fragment;
+  private bridge!: Bridge;
+  private bridgeFragment!: Fragment;
+  private bridgeDeck!: Phaser.GameObjects.Rectangle;
+  private bridgeBlocker!: Phaser.GameObjects.Zone;
+  private bridgeCollider!: Phaser.Physics.Arcade.Collider;
   private instructionText!: Phaser.GameObjects.Text;
   private houseWindow!: Phaser.GameObjects.Rectangle;
   private treeCrown!: Phaser.GameObjects.Arc;
@@ -93,6 +103,7 @@ export class WorldScene extends Phaser.Scene {
     const plazaDone = this.progress.hasFragment(PLAZA_FRAGMENT_ID);
     const fountainDone = this.progress.hasFragment(FOUNTAIN_FRAGMENT_ID);
     const beaconDone = this.progress.hasFragment(BEACON_FRAGMENT_ID);
+    const bridgeDone = this.progress.hasFragment(BRIDGE_FRAGMENT_ID);
 
     if (plazaDone) {
       this.door.activate();
@@ -108,15 +119,21 @@ export class WorldScene extends Phaser.Scene {
       this.beacon.forceFullyActive();
     }
 
-    this.instructionText.setText(this.getStatusMessage(plazaDone, fountainDone, beaconDone));
+    if (bridgeDone) {
+      this.bridge.forceActive();
+      this.revealBridgeDeck(false);
+      this.removeBridgeBlocker();
+    }
+
+    this.instructionText.setText(this.getStatusMessage(plazaDone, fountainDone, beaconDone, bridgeDone));
   }
 
-  private getStatusMessage(plazaDone: boolean, fountainDone: boolean, beaconDone: boolean): string {
-    const doneCount = [plazaDone, fountainDone, beaconDone].filter(Boolean).length;
+  private getStatusMessage(plazaDone: boolean, fountainDone: boolean, beaconDone: boolean, bridgeDone: boolean): string {
+    const doneCount = [plazaDone, fountainDone, beaconDone, bridgeDone].filter(Boolean).length;
 
-    if (doneCount === 3) return 'Ya restauraste toda la zona';
+    if (doneCount === 4) return 'Ya restauraste toda la zona';
     if (doneCount === 0) return 'Los Nexus — conecta la fuente con la lámpara';
-    return `Restauraste ${doneCount} de 3 lugares — sigue explorando`;
+    return `Restauraste ${doneCount} de 4 lugares — sigue explorando`;
   }
 
   private setupConnections(height: number, vScale: number): void {
@@ -140,12 +157,29 @@ export class WorldScene extends Phaser.Scene {
     this.beacon = new Beacon(this, 2220, midY);
     this.beaconFragment = new Fragment(this, 2220, midY - 90 * vScale);
 
-    this.connectables = [source, this.lamp, this.door, fountainSource, this.fountain, beaconSourceA, beaconSourceB, this.beacon];
+    // Zona 4: el puente (interruptor → se despeja la grieta)
+    const bridgeSource = new EnergySource(this, 2500, midY - 40 * vScale, 'bridge-source');
+    this.bridge = new Bridge(this, 2560, midY);
+    this.bridgeFragment = new Fragment(this, 2820, midY - 40 * vScale);
+
+    this.connectables = [
+      source,
+      this.lamp,
+      this.door,
+      fountainSource,
+      this.fountain,
+      beaconSourceA,
+      beaconSourceB,
+      this.beacon,
+      bridgeSource,
+      this.bridge,
+    ];
 
     this.connectables.forEach((obj) => obj.setDepth(11));
     this.plazaFragment.setDepth(12);
     this.fountainFragment.setDepth(12);
     this.beaconFragment.setDepth(12);
+    this.bridgeFragment.setDepth(12);
 
     this.connectables.forEach((obj) => this.connectionSystem.register(obj));
 
@@ -154,6 +188,11 @@ export class WorldScene extends Phaser.Scene {
     this.connectionSystem.addRule({ sourceId: fountainSource.id, targetId: this.fountain.id });
     this.connectionSystem.addRule({ sourceId: beaconSourceA.id, targetId: this.beacon.id });
     this.connectionSystem.addRule({ sourceId: beaconSourceB.id, targetId: this.beacon.id });
+    this.connectionSystem.addRule({ sourceId: bridgeSource.id, targetId: this.bridge.id });
+
+    this.bridgeBlocker = this.add.zone(GAP_X, midY, GAP_WIDTH - 20, height);
+    this.physics.add.existing(this.bridgeBlocker, true);
+    this.bridgeCollider = this.physics.add.collider(this.nexus, this.bridgeBlocker);
 
     this.events.on('connection-made', (targetId: string) => {
       if (targetId === this.lamp.id) {
@@ -179,6 +218,13 @@ export class WorldScene extends Phaser.Scene {
           this.instructionText.setText('La antena necesita otra conexión más');
         }
       }
+
+      if (targetId === this.bridge.id) {
+        this.revealBridgeDeck(true);
+        this.removeBridgeBlocker();
+        this.bridgeFragment.reveal();
+        this.instructionText.setText('¡El puente se abrió! Cruza y busca el fragmento');
+      }
     });
 
     this.physics.add.overlap(this.nexus, this.plazaFragment, () =>
@@ -190,6 +236,30 @@ export class WorldScene extends Phaser.Scene {
     this.physics.add.overlap(this.nexus, this.beaconFragment, () =>
       this.collectFragment(this.beaconFragment, BEACON_FRAGMENT_ID),
     );
+    this.physics.add.overlap(this.nexus, this.bridgeFragment, () =>
+      this.collectFragment(this.bridgeFragment, BRIDGE_FRAGMENT_ID),
+    );
+  }
+
+  /** Revela el puente sobre la grieta, con o sin animación. */
+  private revealBridgeDeck(animate: boolean): void {
+    if (!animate) {
+      this.bridgeDeck.setScale(1, 1);
+      return;
+    }
+
+    this.tweens.add({
+      targets: this.bridgeDeck,
+      scaleX: 1,
+      duration: 500,
+      ease: 'Sine.easeOut',
+    });
+  }
+
+  /** Quita la barrera física que impedía cruzar la grieta. */
+  private removeBridgeBlocker(): void {
+    this.bridgeCollider.destroy();
+    this.bridgeBlocker.destroy();
   }
 
   /** Enciende la ventana de la casa cuando la lámpara se conecta. */
@@ -265,9 +335,7 @@ export class WorldScene extends Phaser.Scene {
     this.audio.playCollect();
     this.nexus.celebrate();
 
-    const allDone = [PLAZA_FRAGMENT_ID, FOUNTAIN_FRAGMENT_ID, BEACON_FRAGMENT_ID].every((fid) =>
-      this.progress.hasFragment(fid),
-    );
+    const allDone = ALL_FRAGMENT_IDS.every((fid) => this.progress.hasFragment(fid));
     const isFirstCompletion = allDone && !this.progress.hasSeenCompletion();
 
     if (isFirstCompletion) {
@@ -285,7 +353,7 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  /** Celebración especial al restaurar las tres zonas por primera vez. */
+  /** Celebración especial al restaurar las cuatro zonas por primera vez. */
   private spawnWorldCelebration(): void {
     this.cameras.main.flash(500, 255, 230, 150);
 
@@ -296,6 +364,7 @@ export class WorldScene extends Phaser.Scene {
       { x: 280, y: midY - 60 * vScale },
       { x: 1460, y: midY + 40 * vScale },
       { x: 2220, y: midY },
+      { x: 2820, y: midY - 40 * vScale },
     ];
 
     spots.forEach((spot, index) => {
@@ -393,8 +462,22 @@ export class WorldScene extends Phaser.Scene {
     // Tercera zona: explanada de la antena
     this.add.rectangle(2200, midY, 460, 320 * vScale, 0xe2ddf0).setDepth(1);
 
-    // Camino que conecta las tres zonas
+    // Cuarta zona: la isla al otro lado del puente
+    this.add.rectangle(2820, midY, 340, 300 * vScale, 0xdcefd8).setDepth(1);
+
+    // Camino que conecta las zonas
     this.add.rectangle(width / 2, height - 40 * vScale, width, 80 * vScale, 0xb9ac8a).setDepth(1);
+
+    // Grieta que corta el camino, y el puente (oculto hasta conectar el interruptor)
+    this.add.rectangle(GAP_X, midY, GAP_WIDTH, height, 0x1b2a3a).setDepth(2);
+    this.bridgeDeck = this.add
+      .rectangle(GAP_X, midY, GAP_WIDTH - 10, 26 * vScale, 0x8a5a3a)
+      .setDepth(3)
+      .setScale(0, 1);
+
+    // Flor decorativa en la isla nueva
+    this.add.rectangle(2870, midY + 30 * vScale, 4, 20 * vScale, 0x4a7c3a).setDepth(2);
+    this.add.circle(2870, midY + 20 * vScale, 10, 0xff9ff3).setDepth(2);
 
     // Casa apagada (silueta simple, sin luz encendida todavía)
     this.add.rectangle(280, midY - 40 * vScale, 160, 140, 0x4a4e5c).setDepth(2);
