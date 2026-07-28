@@ -3,12 +3,15 @@ import { Nexus } from '../entities/Nexus';
 import { EnergySource } from '../objects/EnergySource';
 import { Lamp } from '../objects/Lamp';
 import { Door } from '../objects/Door';
+import { Fountain } from '../objects/Fountain';
 import { Fragment } from '../objects/Fragment';
 import { ConnectionSystem } from '../systems/ConnectionSystem';
 import { ProgressSystem } from '../systems/ProgressSystem';
 import { VirtualJoystick } from '../ui/VirtualJoystick';
 
-const FRAGMENT_ID = 'plaza-fragment';
+const PLAZA_FRAGMENT_ID = 'plaza-fragment';
+const FOUNTAIN_FRAGMENT_ID = 'fountain-fragment';
+const WORLD_WIDTH = 1600;
 
 export class WorldScene extends Phaser.Scene {
   private nexus!: Nexus;
@@ -17,7 +20,9 @@ export class WorldScene extends Phaser.Scene {
   private connectionSystem!: ConnectionSystem;
   private progress!: ProgressSystem;
   private door!: Door;
-  private fragment!: Fragment;
+  private plazaFragment!: Fragment;
+  private fountain!: Fountain;
+  private fountainFragment!: Fragment;
   private instructionText!: Phaser.GameObjects.Text;
   private houseWindow!: Phaser.GameObjects.Rectangle;
   private treeCrown!: Phaser.GameObjects.Arc;
@@ -30,16 +35,19 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create(): void {
-    const { width, height } = this.scale;
+    const { height } = this.scale;
+    const width = WORLD_WIDTH;
 
     this.progress = new ProgressSystem();
 
     this.physics.world.setBounds(0, 0, width, height);
+    this.cameras.main.setBounds(0, 0, width, height);
 
     this.buildStaticZone(width, height);
 
-    this.nexus = new Nexus(this, width / 2, height / 2 + 100, this.progress.getAppearance());
+    this.nexus = new Nexus(this, 480, height / 2 + 100, this.progress.getAppearance());
     this.nexus.setDepth(10);
+    this.cameras.main.startFollow(this.nexus, true, 0.12, 0.12);
 
     this.setupConnections(width, height);
 
@@ -50,40 +58,57 @@ export class WorldScene extends Phaser.Scene {
     this.joystick = new VirtualJoystick(this, 90, height - 90);
 
     this.instructionText = this.add
-      .text(width / 2, 24, 'Los Nexus — conecta la fuente con la lámpara', {
+      .text(this.scale.width / 2, 24, 'Los Nexus — conecta la fuente con la lámpara', {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#1b1f3b',
       })
       .setOrigin(0.5)
-      .setDepth(20);
+      .setDepth(20)
+      .setScrollFactor(0);
 
-    if (this.progress.hasFragment(FRAGMENT_ID)) {
+    if (this.progress.hasFragment(PLAZA_FRAGMENT_ID)) {
       this.door.activate();
       this.lamp.activate();
       this.transformWorld(false);
-      this.instructionText.setText('Ya restauraste esta plaza');
+    }
+
+    if (this.progress.hasFragment(FOUNTAIN_FRAGMENT_ID)) {
+      this.fountain.activate();
+    }
+
+    if (this.progress.hasFragment(PLAZA_FRAGMENT_ID) && this.progress.hasFragment(FOUNTAIN_FRAGMENT_ID)) {
+      this.instructionText.setText('Ya restauraste esta zona');
     }
   }
 
   private setupConnections(width: number, height: number): void {
     this.connectionSystem = new ConnectionSystem(this);
 
-    const source = new EnergySource(this, width / 2, height / 2 - 40);
-    this.lamp = new Lamp(this, width - 200, height / 2 - 20);
-    this.door = new Door(this, width - 60, height / 2 + 60);
-    this.fragment = new Fragment(this, width - 60, height / 2 - 10);
+    // Zona 1: la plaza (fuente → lámpara → puerta)
+    const source = new EnergySource(this, 480, height / 2 - 40);
+    this.lamp = new Lamp(this, 680, height / 2 - 20);
+    this.door = new Door(this, 820, height / 2 + 60);
+    this.plazaFragment = new Fragment(this, 820, height / 2 - 10);
 
-    source.setDepth(11);
-    this.lamp.setDepth(11);
-    this.door.setDepth(11);
-    this.fragment.setDepth(12);
+    // Zona 2: la fuente restaurada (segunda fuente → fuente de agua)
+    const fountainSource = new EnergySource(this, width - 420, height / 2 - 40, 'fountain-source');
+    this.fountain = new Fountain(this, width - 260, height / 2 + 40);
+    this.fountainFragment = new Fragment(this, width - 260, height / 2 - 60);
+
+    [source, this.lamp, this.door, fountainSource, this.fountain].forEach((obj) => obj.setDepth(11));
+    this.plazaFragment.setDepth(12);
+    this.fountainFragment.setDepth(12);
 
     this.connectionSystem.register(source);
     this.connectionSystem.register(this.lamp);
     this.connectionSystem.register(this.door);
+    this.connectionSystem.register(fountainSource);
+    this.connectionSystem.register(this.fountain);
+
     this.connectionSystem.addRule({ sourceId: source.id, targetId: this.lamp.id });
     this.connectionSystem.addRule({ sourceId: this.lamp.id, targetId: this.door.id });
+    this.connectionSystem.addRule({ sourceId: fountainSource.id, targetId: this.fountain.id });
 
     this.events.on('connection-made', (targetId: string) => {
       if (targetId === this.lamp.id) {
@@ -91,13 +116,23 @@ export class WorldScene extends Phaser.Scene {
       }
 
       if (targetId === this.door.id) {
-        this.fragment.reveal();
+        this.plazaFragment.reveal();
         this.transformWorld(true);
         this.instructionText.setText('¡La puerta se abrió! Acércate al fragmento');
       }
+
+      if (targetId === this.fountain.id) {
+        this.fountainFragment.reveal();
+        this.instructionText.setText('¡La fuente volvió a fluir! Acércate al fragmento');
+      }
     });
 
-    this.physics.add.overlap(this.nexus, this.fragment, () => this.collectFragment());
+    this.physics.add.overlap(this.nexus, this.plazaFragment, () =>
+      this.collectFragment(this.plazaFragment, PLAZA_FRAGMENT_ID),
+    );
+    this.physics.add.overlap(this.nexus, this.fountainFragment, () =>
+      this.collectFragment(this.fountainFragment, FOUNTAIN_FRAGMENT_ID),
+    );
   }
 
   /** Enciende la ventana de la casa cuando la lámpara se conecta. */
@@ -165,11 +200,11 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  private collectFragment(): void {
-    if (!this.fragment.visible || this.fragment.isCollected) return;
+  private collectFragment(fragment: Fragment, id: string): void {
+    if (!fragment.visible || fragment.isCollected) return;
 
-    this.fragment.collect();
-    this.progress.collectFragment(FRAGMENT_ID);
+    fragment.collect();
+    this.progress.collectFragment(id);
     this.instructionText.setText('¡Fragmento recuperado!');
 
     this.time.delayedCall(600, () => {
@@ -206,33 +241,26 @@ export class WorldScene extends Phaser.Scene {
     this.add.rectangle(width / 2, height / 2, width, height, 0xcfe8d8).setDepth(0);
 
     // Plaza (zona más clara)
-    this.plazaGround = this.add.rectangle(width / 2, height / 2 + 60, 500, 260, 0xe4dcc3).setDepth(1);
+    this.plazaGround = this.add.rectangle(650, height / 2 + 60, 500, 260, 0xe4dcc3).setDepth(1);
 
-    // Camino
+    // Segunda zona: explanada de la fuente
+    this.add.rectangle(width - 340, height / 2 + 40, 460, 260, 0xdce7ea).setDepth(1);
+
+    // Camino que conecta ambas zonas
     this.add.rectangle(width / 2, height - 40, width, 80, 0xb9ac8a).setDepth(1);
 
     // Casa apagada (silueta simple, sin luz encendida todavía)
-    this.add.rectangle(160, height / 2 - 40, 160, 140, 0x4a4e5c).setDepth(2);
-    this.add.triangle(
-      160,
-      height / 2 - 130,
-      -90,
-      20,
-      90,
-      20,
-      0,
-      -60,
-      0x3a3d48,
-    ).setDepth(2);
+    this.add.rectangle(280, height / 2 - 40, 160, 140, 0x4a4e5c).setDepth(2);
+    this.add.triangle(280, height / 2 - 130, -90, 20, 90, 20, 0, -60, 0x3a3d48).setDepth(2);
 
     // Ventana apagada
-    this.houseWindow = this.add.rectangle(160, height / 2 - 60, 30, 30, 0x2a2d36).setDepth(3);
+    this.houseWindow = this.add.rectangle(280, height / 2 - 60, 30, 30, 0x2a2d36).setDepth(3);
 
     // Árbol sin hojas (mundo apagado)
-    this.add.rectangle(width - 160, height / 2 - 10, 12, 60, 0x6b4a30).setDepth(2);
-    this.treeCrown = this.add.circle(width - 160, height / 2 - 60, 40, 0x8b8f8a).setDepth(2);
+    this.add.rectangle(940, height / 2 - 10, 12, 60, 0x6b4a30).setDepth(2);
+    this.treeCrown = this.add.circle(940, height / 2 - 60, 40, 0x8b8f8a).setDepth(2);
 
-    // Bordes visuales del límite de pantalla
+    // Bordes visuales del límite del mundo
     const border = this.add.graphics().setDepth(30);
     border.lineStyle(4, 0x1b1f3b, 0.3);
     border.strokeRect(2, 2, width - 4, height - 4);

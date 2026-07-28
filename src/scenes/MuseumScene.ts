@@ -1,7 +1,10 @@
 import Phaser from 'phaser';
 import { ProgressSystem } from '../systems/ProgressSystem';
 
-const FRAGMENT_ID = 'plaza-fragment';
+const FRAGMENTS = [
+  { id: 'plaza-fragment', label: 'Fragmento de la plaza' },
+  { id: 'fountain-fragment', label: 'Fragmento de la fuente' },
+];
 
 export class MuseumScene extends Phaser.Scene {
   private progress!: ProgressSystem;
@@ -24,7 +27,12 @@ export class MuseumScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.buildVitrina(width / 2, height / 2);
+    const spacing = 220;
+    const startX = width / 2 - (spacing * (FRAGMENTS.length - 1)) / 2;
+
+    FRAGMENTS.forEach((fragment, index) => {
+      this.buildVitrina(startX + index * spacing, height / 2, fragment.id, fragment.label);
+    });
 
     this.add
       .text(width / 2, height - 40, 'Presiona ESPACIO para volver', {
@@ -39,12 +47,12 @@ export class MuseumScene extends Phaser.Scene {
     });
   }
 
-  private buildVitrina(x: number, y: number): void {
+  private buildVitrina(x: number, y: number, fragmentId: string, label: string): void {
     this.add.rectangle(x, y + 80, 100, 20, 0x3a3d55);
     const glass = this.add.rectangle(x, y, 120, 160, 0x4a4e75, 0.3);
     glass.setStrokeStyle(2, 0x8a8dc0, 0.6);
 
-    if (this.progress.hasFragment(FRAGMENT_ID)) {
+    if (this.progress.hasFragment(fragmentId)) {
       const shard = this.add.star(x, y, 5, 10, 20, 0xffd93d);
       this.tweens.add({
         targets: shard,
@@ -54,7 +62,7 @@ export class MuseumScene extends Phaser.Scene {
       });
 
       this.add
-        .text(x, y + 100, 'Fragmento de la plaza', {
+        .text(x, y + 100, label, {
           fontFamily: 'sans-serif',
           fontSize: '14px',
           color: '#f4f1e8',
