@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 
-const FRAGMENT_COLOR = 0xffd93d;
+const FRAGMENT_COLOR = 0xff9ff3;
 
 /**
  * Objeto coleccionable simple. No forma parte de ConnectionSystem:
@@ -9,15 +9,20 @@ const FRAGMENT_COLOR = 0xffd93d;
 export class Fragment extends Phaser.GameObjects.Container {
   private collected = false;
   private shard: Phaser.GameObjects.Star;
+  private glow: Phaser.GameObjects.Arc;
+  private baseY: number;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y);
+    this.baseY = y;
 
-    this.shard = scene.add.star(0, 0, 5, 8, 16, FRAGMENT_COLOR);
-    const glow = scene.add.circle(0, 0, 18, FRAGMENT_COLOR, 0.2);
+    this.glow = scene.add.circle(0, 0, 24, FRAGMENT_COLOR, 0.25);
+    this.shard = scene.add
+      .star(0, 0, 5, 8, 18, FRAGMENT_COLOR)
+      .setStrokeStyle(2, 0xffffff, 0.8);
 
-    this.add([glow, this.shard]);
-    this.setSize(36, 36);
+    this.add([this.glow, this.shard]);
+    this.setSize(40, 40);
     this.setVisible(false);
 
     scene.add.existing(this);
@@ -29,6 +34,16 @@ export class Fragment extends Phaser.GameObjects.Container {
       duration: 4000,
       repeat: -1,
     });
+
+    scene.tweens.add({
+      targets: this.glow,
+      alpha: { from: 0.15, to: 0.4 },
+      scale: { from: 0.9, to: 1.15 },
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   reveal(): void {
@@ -39,6 +54,21 @@ export class Fragment extends Phaser.GameObjects.Container {
       scale: 1,
       duration: 300,
       ease: 'Back.easeOut',
+      onComplete: () => this.startFloating(),
+    });
+  }
+
+  private startFloating(): void {
+    const body = this.body as Phaser.Physics.Arcade.StaticBody;
+
+    this.scene.tweens.add({
+      targets: this,
+      y: this.baseY - 10,
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => body.updateFromGameObject(),
     });
   }
 
@@ -46,6 +76,7 @@ export class Fragment extends Phaser.GameObjects.Container {
     if (this.collected) return;
     this.collected = true;
 
+    this.scene.tweens.killTweensOf(this);
     this.scene.tweens.add({
       targets: this,
       scale: 0,
