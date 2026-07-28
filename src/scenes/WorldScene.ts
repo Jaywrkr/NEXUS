@@ -61,7 +61,7 @@ export class WorldScene extends Phaser.Scene {
     this.joystick = new VirtualJoystick(this, 90, height - 90);
 
     this.instructionText = this.add
-      .text(this.scale.width / 2, 24, 'Los Nexus — conecta la fuente con la lámpara', {
+      .text(this.scale.width / 2, 24, '', {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#1b1f3b',
@@ -70,19 +70,27 @@ export class WorldScene extends Phaser.Scene {
       .setDepth(20)
       .setScrollFactor(0);
 
-    if (this.progress.hasFragment(PLAZA_FRAGMENT_ID)) {
+    const plazaDone = this.progress.hasFragment(PLAZA_FRAGMENT_ID);
+    const fountainDone = this.progress.hasFragment(FOUNTAIN_FRAGMENT_ID);
+
+    if (plazaDone) {
       this.door.activate();
       this.lamp.activate();
       this.transformWorld(false);
     }
 
-    if (this.progress.hasFragment(FOUNTAIN_FRAGMENT_ID)) {
+    if (fountainDone) {
       this.fountain.activate();
     }
 
-    if (this.progress.hasFragment(PLAZA_FRAGMENT_ID) && this.progress.hasFragment(FOUNTAIN_FRAGMENT_ID)) {
-      this.instructionText.setText('Ya restauraste esta zona');
-    }
+    this.instructionText.setText(this.getStatusMessage(plazaDone, fountainDone));
+  }
+
+  private getStatusMessage(plazaDone: boolean, fountainDone: boolean): string {
+    if (plazaDone && fountainDone) return 'Ya restauraste esta zona';
+    if (plazaDone) return 'Sigue el camino a la derecha, hay algo más por restaurar';
+    if (fountainDone) return 'Vuelve a la plaza y termina de restaurarla';
+    return 'Los Nexus — conecta la fuente con la lámpara';
   }
 
   private setupConnections(width: number, height: number): void {
