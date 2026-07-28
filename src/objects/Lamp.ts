@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { ConnectableObject } from './ConnectableObject';
 
-const OFF_COLOR = 0x555b6e;
+const OFF_COLOR = 0x6b7280;
 const ON_COLOR = 0xffe066;
 
 export class Lamp extends ConnectableObject {
@@ -12,14 +12,28 @@ export class Lamp extends ConnectableObject {
   constructor(scene: Phaser.Scene, x: number, y: number, id = 'lamp') {
     super(scene, x, y, id, 'target');
 
-    this.pole = scene.add.rectangle(0, 20, 8, 60, 0x3a3d48);
-    this.glow = scene.add.circle(0, -10, 22, ON_COLOR, 0);
-    this.bulb = scene.add.circle(0, -10, 14, OFF_COLOR);
+    const base = scene.add.rectangle(0, 46, 26, 10, 0x2a2d36);
+    this.pole = scene.add.rectangle(0, 6, 10, 80, 0x3a3d48);
+    this.glow = scene.add.circle(0, -40, 32, ON_COLOR, 0);
+    this.bulb = scene.add
+      .circle(0, -40, 20, OFF_COLOR)
+      .setStrokeStyle(3, 0x1b1f3b, 0.4);
 
-    this.add([this.pole, this.glow, this.bulb]);
+    this.add([base, this.pole, this.glow, this.bulb]);
 
-    this.setSize(44, 90);
-    this.setInteractive(new Phaser.Geom.Rectangle(-22, -45, 44, 90), Phaser.Geom.Rectangle.Contains);
+    // Pulso tenue mientras está apagada, para que se note que es interactiva.
+    scene.tweens.add({
+      targets: this.glow,
+      alpha: { from: 0.05, to: 0.18 },
+      scale: { from: 0.9, to: 1.1 },
+      duration: 1100,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    this.setSize(64, 130);
+    this.setInteractive(new Phaser.Geom.Rectangle(-32, -65, 64, 130), Phaser.Geom.Rectangle.Contains);
   }
 
   canInitiate(): boolean {
@@ -34,7 +48,7 @@ export class Lamp extends ConnectableObject {
 
     this.scene.tweens.add({
       targets: this.glow,
-      alpha: 0.5,
+      alpha: 0.55,
       duration: 250,
       yoyo: false,
     });
