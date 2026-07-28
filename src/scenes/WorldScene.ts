@@ -4,6 +4,7 @@ import { EnergySource } from '../objects/EnergySource';
 import { Lamp } from '../objects/Lamp';
 import { Door } from '../objects/Door';
 import { Fountain } from '../objects/Fountain';
+import { Beacon } from '../objects/Beacon';
 import { Fragment } from '../objects/Fragment';
 import { ConnectionSystem } from '../systems/ConnectionSystem';
 import { ProgressSystem } from '../systems/ProgressSystem';
@@ -12,7 +13,8 @@ import { VirtualJoystick } from '../ui/VirtualJoystick';
 
 const PLAZA_FRAGMENT_ID = 'plaza-fragment';
 const FOUNTAIN_FRAGMENT_ID = 'fountain-fragment';
-const WORLD_WIDTH = 1600;
+const BEACON_FRAGMENT_ID = 'beacon-fragment';
+const WORLD_WIDTH = 2450;
 
 export class WorldScene extends Phaser.Scene {
   private nexus!: Nexus;
@@ -24,6 +26,8 @@ export class WorldScene extends Phaser.Scene {
   private plazaFragment!: Fragment;
   private fountain!: Fountain;
   private fountainFragment!: Fragment;
+  private beacon!: Beacon;
+  private beaconFragment!: Fragment;
   private instructionText!: Phaser.GameObjects.Text;
   private houseWindow!: Phaser.GameObjects.Rectangle;
   private treeCrown!: Phaser.GameObjects.Arc;
@@ -52,7 +56,7 @@ export class WorldScene extends Phaser.Scene {
     this.nexus.setDepth(10);
     this.cameras.main.startFollow(this.nexus, true, 0.12, 0.12);
 
-    this.setupConnections(width, height);
+    this.setupConnections(height);
 
     this.cameras.main.setBackgroundColor('#cfe8d8');
 
@@ -72,6 +76,7 @@ export class WorldScene extends Phaser.Scene {
 
     const plazaDone = this.progress.hasFragment(PLAZA_FRAGMENT_ID);
     const fountainDone = this.progress.hasFragment(FOUNTAIN_FRAGMENT_ID);
+    const beaconDone = this.progress.hasFragment(BEACON_FRAGMENT_ID);
 
     if (plazaDone) {
       this.door.activate();
@@ -83,17 +88,22 @@ export class WorldScene extends Phaser.Scene {
       this.fountain.activate();
     }
 
-    this.instructionText.setText(this.getStatusMessage(plazaDone, fountainDone));
+    if (beaconDone) {
+      this.beacon.forceFullyActive();
+    }
+
+    this.instructionText.setText(this.getStatusMessage(plazaDone, fountainDone, beaconDone));
   }
 
-  private getStatusMessage(plazaDone: boolean, fountainDone: boolean): string {
-    if (plazaDone && fountainDone) return 'Ya restauraste esta zona';
-    if (plazaDone) return 'Sigue el camino a la derecha, hay algo más por restaurar';
-    if (fountainDone) return 'Vuelve a la plaza y termina de restaurarla';
-    return 'Los Nexus — conecta la fuente con la lámpara';
+  private getStatusMessage(plazaDone: boolean, fountainDone: boolean, beaconDone: boolean): string {
+    const doneCount = [plazaDone, fountainDone, beaconDone].filter(Boolean).length;
+
+    if (doneCount === 3) return 'Ya restauraste toda la zona';
+    if (doneCount === 0) return 'Los Nexus — conecta la fuente con la lámpara';
+    return `Restauraste ${doneCount} de 3 lugares — sigue explorando`;
   }
 
-  private setupConnections(width: number, height: number): void {
+  private setupConnections(height: number): void {
     this.connectionSystem = new ConnectionSystem(this, this.audio);
 
     // Zona 1: la plaza (fuente → lámpara → puerta)
@@ -103,23 +113,32 @@ export class WorldScene extends Phaser.Scene {
     this.plazaFragment = new Fragment(this, 820, height / 2 - 10);
 
     // Zona 2: la fuente restaurada (segunda fuente → fuente de agua)
-    const fountainSource = new EnergySource(this, width - 420, height / 2 - 40, 'fountain-source');
-    this.fountain = new Fountain(this, width - 260, height / 2 + 40);
-    this.fountainFragment = new Fragment(this, width - 260, height / 2 - 60);
+    const fountainSource = new EnergySource(this, 1300, height / 2 - 40, 'fountain-source');
+    this.fountain = new Fountain(this, 1460, height / 2 + 40);
+    this.fountainFragment = new Fragment(this, 1460, height / 2 - 60);
 
-    [source, this.lamp, this.door, fountainSource, this.fountain].forEach((obj) => obj.setDepth(11));
+    // Zona 3: la antena (dos fuentes → una sola antena)
+    const beaconSourceA = new EnergySource(this, 1980, height / 2 - 80, 'beacon-source-a');
+    const beaconSourceB = new EnergySource(this, 1980, height / 2 + 80, 'beacon-source-b');
+    this.beacon = new Beacon(this, 2220, height / 2);
+    this.beaconFragment = new Fragment(this, 2220, height / 2 - 90);
+
+    [source, this.lamp, this.door, fountainSource, this.fountain, beaconSourceA, beaconSourceB, this.beacon].forEach(
+      (obj) => obj.setDepth(11),
+    );
     this.plazaFragment.setDepth(12);
     this.fountainFragment.setDepth(12);
+    this.beaconFragment.setDepth(12);
 
-    this.connectionSystem.register(source);
-    this.connectionSystem.register(this.lamp);
-    this.connectionSystem.register(this.door);
-    this.connectionSystem.register(fountainSource);
-    this.connectionSystem.register(this.fountain);
+    [source, this.lamp, this.door, fountainSource, this.fountain, beaconSourceA, beaconSourceB, this.beacon].forEach(
+      (obj) => this.connectionSystem.register(obj),
+    );
 
     this.connectionSystem.addRule({ sourceId: source.id, targetId: this.lamp.id });
     this.connectionSystem.addRule({ sourceId: this.lamp.id, targetId: this.door.id });
     this.connectionSystem.addRule({ sourceId: fountainSource.id, targetId: this.fountain.id });
+    this.connectionSystem.addRule({ sourceId: beaconSourceA.id, targetId: this.beacon.id });
+    this.connectionSystem.addRule({ sourceId: beaconSourceB.id, targetId: this.beacon.id });
 
     this.events.on('connection-made', (targetId: string) => {
       if (targetId === this.lamp.id) {
@@ -136,6 +155,15 @@ export class WorldScene extends Phaser.Scene {
         this.fountainFragment.reveal();
         this.instructionText.setText('¡La fuente volvió a fluir! Acércate al fragmento');
       }
+
+      if (targetId === this.beacon.id) {
+        if (this.beacon.isFullyActive) {
+          this.beaconFragment.reveal();
+          this.instructionText.setText('¡La antena transmite! Acércate al fragmento');
+        } else {
+          this.instructionText.setText('La antena necesita otra conexión más');
+        }
+      }
     });
 
     this.physics.add.overlap(this.nexus, this.plazaFragment, () =>
@@ -143,6 +171,9 @@ export class WorldScene extends Phaser.Scene {
     );
     this.physics.add.overlap(this.nexus, this.fountainFragment, () =>
       this.collectFragment(this.fountainFragment, FOUNTAIN_FRAGMENT_ID),
+    );
+    this.physics.add.overlap(this.nexus, this.beaconFragment, () =>
+      this.collectFragment(this.beaconFragment, BEACON_FRAGMENT_ID),
     );
   }
 
@@ -256,9 +287,12 @@ export class WorldScene extends Phaser.Scene {
     this.plazaGround = this.add.rectangle(650, height / 2 + 60, 500, 260, 0xe4dcc3).setDepth(1);
 
     // Segunda zona: explanada de la fuente
-    this.add.rectangle(width - 340, height / 2 + 40, 460, 260, 0xdce7ea).setDepth(1);
+    this.add.rectangle(1480, height / 2 + 40, 460, 260, 0xdce7ea).setDepth(1);
 
-    // Camino que conecta ambas zonas
+    // Tercera zona: explanada de la antena
+    this.add.rectangle(2200, height / 2, 460, 320, 0xe2ddf0).setDepth(1);
+
+    // Camino que conecta las tres zonas
     this.add.rectangle(width / 2, height - 40, width, 80, 0xb9ac8a).setDepth(1);
 
     // Casa apagada (silueta simple, sin luz encendida todavía)
@@ -271,6 +305,10 @@ export class WorldScene extends Phaser.Scene {
     // Árbol sin hojas (mundo apagado)
     this.add.rectangle(940, height / 2 - 10, 12, 60, 0x6b4a30).setDepth(2);
     this.treeCrown = this.add.circle(940, height / 2 - 60, 40, 0x8b8f8a).setDepth(2);
+
+    // Torre de la estación de la antena (decoración, no interactiva)
+    this.add.rectangle(2200, height / 2 + 130, 14, 220, 0x5a5f6b).setDepth(2);
+    this.add.circle(2200, height / 2 + 20, 10, 0x3a3d48).setDepth(2);
 
     // Bordes visuales del límite del mundo
     const border = this.add.graphics().setDepth(30);

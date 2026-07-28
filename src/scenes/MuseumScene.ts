@@ -4,6 +4,7 @@ import { ProgressSystem } from '../systems/ProgressSystem';
 const FRAGMENTS = [
   { id: 'plaza-fragment', label: 'Fragmento de la plaza' },
   { id: 'fountain-fragment', label: 'Fragmento de la fuente' },
+  { id: 'beacon-fragment', label: 'Fragmento de la antena' },
 ];
 
 export class MuseumScene extends Phaser.Scene {
@@ -53,7 +54,7 @@ export class MuseumScene extends Phaser.Scene {
     glass.setStrokeStyle(2, 0x8a8dc0, 0.6);
 
     if (this.progress.hasFragment(fragmentId)) {
-      const shard = this.add.star(x, y, 5, 10, 20, 0xffd93d);
+      const shard = this.add.star(x, y, 5, 10, 20, 0xff9ff3);
       this.tweens.add({
         targets: shard,
         angle: 360,
