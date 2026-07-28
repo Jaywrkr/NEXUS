@@ -14,7 +14,7 @@ interface SwatchRow {
 
 const ROWS: SwatchRow[] = [
   { key: 'bodyColor', label: 'Cuerpo', colors: [0x3a3f5c, 0x5c3a4f, 0x3a5c48, 0x5c4a3a], y: 0 },
-  { key: 'jacketColor', label: 'Chaqueta', colors: [0xff8c42, 0x42a5ff, 0xff4266, 0x8c42ff], y: 0 },
+  { key: 'jacketColor', label: 'Chaqueta', colors: [0x2ea3a3, 0xff8c42, 0xff4266, 0x8c42ff], y: 0 },
   { key: 'capColor', label: 'Gorra', colors: [0x5ee7ff, 0xffe066, 0x9be37a, 0xff6b6b], y: 0 },
   { key: 'shoesColor', label: 'Zapatos', colors: [0x2b2e43, 0xf4f1e8, 0x8a4b1f, 0x1b6b3a], y: 0 },
 ];
