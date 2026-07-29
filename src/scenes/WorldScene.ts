@@ -13,6 +13,7 @@ import { AudioSystem } from '../systems/AudioSystem';
 import { VirtualJoystick } from '../ui/VirtualJoystick';
 import { InteractButton } from '../ui/InteractButton';
 import type { ConnectableObject } from '../objects/ConnectableObject';
+import { fadeToScene } from '../utils/sceneTransition';
 
 const INTERACT_RADIUS = 90;
 
@@ -79,6 +80,7 @@ export class WorldScene extends Phaser.Scene {
     this.setupConnections(height, vScale);
 
     this.cameras.main.setBackgroundColor('#cfe8d8');
+    this.cameras.main.fadeIn(300, 207, 232, 216);
 
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as typeof this.wasd;
@@ -343,13 +345,13 @@ export class WorldScene extends Phaser.Scene {
       this.instructionText.setText('¡Restauraste todo el lugar!');
       this.audio.playSuccess();
       this.spawnWorldCelebration();
-      this.time.delayedCall(1800, () => this.scene.start('MuseumScene'));
+      this.time.delayedCall(1800, () => fadeToScene(this, 'MuseumScene', [32, 35, 58]));
       return;
     }
 
     this.instructionText.setText('¡Fragmento recuperado!');
     this.time.delayedCall(600, () => {
-      this.scene.start('MuseumScene');
+      fadeToScene(this, 'MuseumScene', [32, 35, 58]);
     });
   }
 

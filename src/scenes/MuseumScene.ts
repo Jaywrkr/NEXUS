@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ProgressSystem } from '../systems/ProgressSystem';
+import { fadeToScene } from '../utils/sceneTransition';
 
 const FRAGMENTS = [
   { id: 'plaza-fragment', label: 'Fragmento de la plaza' },
@@ -20,6 +21,7 @@ export class MuseumScene extends Phaser.Scene {
     this.progress = new ProgressSystem();
 
     this.cameras.main.setBackgroundColor('#20233a');
+    this.cameras.main.fadeIn(300, 32, 35, 58);
 
     this.add
       .text(width / 2, 40, 'Museo Nexus', {
@@ -56,7 +58,7 @@ export class MuseumScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.input.keyboard!.once('keydown-SPACE', () => {
-      this.scene.start('WorldScene');
+      fadeToScene(this, 'WorldScene', [207, 232, 216]);
     });
   }
 
