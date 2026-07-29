@@ -193,18 +193,35 @@ export class Nexus extends Phaser.GameObjects.Container {
 
     const isMoving = dx !== 0 || dy !== 0;
 
-    if (dx > 0) this.facing = 1;
-    if (dx < 0) this.facing = -1;
-    this.visual.setScale(this.facing, 1);
+    const newFacing = dx > 0 ? 1 : dx < 0 ? -1 : this.facing;
+    if (newFacing !== this.facing) {
+      this.facing = newFacing;
+      this.playTurnSquash();
+    }
 
     if (isMoving) {
       this.walkTime += delta;
       const bob = Math.sin(this.walkTime / 80) * 3;
+      // Estira un poco arriba de cada salto del paso y se achata al tocar
+      // el piso, para que el caminar se sienta con más peso e impulso.
+      const stretch = Math.cos(this.walkTime / 80) * 0.05;
       this.visual.setY(bob);
+      this.visual.scaleY = 1 + stretch;
     } else {
       this.walkTime = 0;
       this.visual.setY(0);
+      this.visual.scaleY = 1;
     }
+  }
+
+  /** Achica el ancho a 0 y lo vuelve a abrir del lado nuevo, en vez de girar instantáneo. */
+  private playTurnSquash(): void {
+    this.scene.tweens.add({
+      targets: this.visual,
+      scaleX: { from: 0, to: this.facing },
+      duration: 90,
+      ease: 'Back.easeOut',
+    });
   }
 
   playIdle(): void {
