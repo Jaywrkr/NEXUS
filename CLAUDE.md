@@ -106,8 +106,9 @@ El Nexus arranca en `(480, midY+100·v)`. La cámara sigue al Nexus con `startFo
 
 ## Cómo seguir trabajando
 
-1. Leé este archivo, `GAME_VISION.md`, `MVP_SCOPE.md` y `DECISIONS.md`.
-2. Antes de proponer algo nuevo, preguntate si reutiliza la acción de conectar (Decisión 008) y si el usuario lo pidió o aprobó.
-3. Después de cualquier cambio: `npm run build` sin errores, y probar de verdad jugando (Playwright headless + screenshots como mínimo; el usuario prueba en dispositivo real por su cuenta).
-4. Documentar en `DECISIONS.md` si es una decisión de diseño nueva, y actualizar este archivo si cambia la arquitectura o aparece un gotcha nuevo.
-5. El usuario maneja los PR y merges a mano — vos trabajás en una rama y hacés commit, no hace falta abrir PR salvo que te lo pidan explícitamente.
+1. Leé este archivo, `GAME_VISION.md`, `MVP_SCOPE.md`, `DECISIONS.md` e `IDEAS.md`.
+2. Este es un proyecto que sigue creciendo, no una lista para "terminar". `IDEAS.md` es el backlog vivo: agregá ahí las ideas que surjan aunque no se implementen todavía, y borrá la línea cuando se implemente una.
+3. Antes de proponer algo nuevo, preguntate si reutiliza la acción de conectar (Decisión 008) y si el usuario lo pidió o aprobó.
+4. Después de cualquier cambio: `npm run build` sin errores, y probar de verdad jugando (Playwright headless + screenshots como mínimo; el usuario prueba en dispositivo real por su cuenta).
+5. Documentar en `DECISIONS.md` si es una decisión de diseño nueva, y actualizar este archivo si cambia la arquitectura o aparece un gotcha nuevo.
+6. El usuario maneja los PR y merges a mano — vos trabajás en una rama y hacés commit, no hace falta abrir PR salvo que te lo pidan explícitamente.
