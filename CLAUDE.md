@@ -22,9 +22,11 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
 - **Museo** con 4 vitrinas, mensaje de "Colección completa" y celebración especial (flash + chispas en las 4 zonas) la primera vez que se completan las 4.
 - **Controles duales**: teclado/mouse en desktop, joystick virtual táctil + **botón de interacción** (aparece al acercarse a un objeto conectable, evita tener que acertar el toque exacto sobre algo pequeño).
 - **Adaptación real a móvil vertical**: la resolución interna del juego cambia (960×540 landscape ↔ 540×960 portrait) según orientación + tipo de puntero, para llenar la pantalla en vez de dejar barras negras. Ver `src/config/gameConfig.ts`.
-- **Sonido**: tonos generados por código (Web Audio, sin archivos de audio) para conectar/error/recolectar.
+- **Sonido**: tonos generados por código (Web Audio, sin archivos de audio) para conectar/error/recolectar, con botón de mute/unmute (🔊/🔇, esquina superior izquierda de `WorldScene`) que persiste en `localStorage`.
 - **Animaciones del Nexus**: idle, caminar, conectar (implícito en el cable), celebrar (salto + chispas al recoger fragmentos).
 - **Progreso persistente** en `localStorage` (fragmentos recolectados, apariencia elegida, si ya vio la celebración final).
+- **Pantalla de título** (`BootScene`): "Jugar" si no hay progreso guardado, o "Continuar" (directo a `WorldScene`) + "Nueva partida" si ya hay fragmentos recolectados.
+- **Pulido visual**: transiciones de fade in/out entre las 4 escenas (`src/utils/sceneTransition.ts`), fondo con parallax en `WorldScene` (nubes + dos capas de colinas con distinto `scrollFactor`), cable de conexión dibujado como curva bezier con una chispa que lo recorre al conectar válido, e indicador `★ n/4` fijo en el HUD del mundo que se actualiza al recolectar cada fragmento.
 
 Todo esto se probó jugando de verdad (no solo `npm run build`) usando Playwright headless para simular clics/toques y tomar capturas de pantalla, además de pruebas reales en el celular de Luca que revelaron bugs que el simulador no mostraba.
 
@@ -69,6 +71,8 @@ src/
     InteractButton.ts        — botón fijo de interacción por proximidad (¡NO usar Container, ver abajo!)
   data/
     gameState.ts             — shape del estado guardado + carga/guardado con merge seguro
+  utils/
+    sceneTransition.ts       — fadeToScene(): fade out + scene.start(), usado por las 4 escenas
   styles/main.css
 ```
 
