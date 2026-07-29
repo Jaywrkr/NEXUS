@@ -100,21 +100,41 @@ export class ConnectionSystem {
     const end = to.getPlugPoint();
     const color = valid ? CABLE_COLOR : CABLE_COLOR_INVALID;
 
-    this.cableGraphics.clear();
-    this.cableGraphics.lineStyle(4, color, 0.9);
-
     const midX = (start.x + end.x) / 2;
     const midY = Math.min(start.y, end.y) - 40;
+    const curve = new Phaser.Curves.QuadraticBezier(
+      new Phaser.Math.Vector2(start.x, start.y),
+      new Phaser.Math.Vector2(midX, midY),
+      new Phaser.Math.Vector2(end.x, end.y),
+    );
 
-    this.cableGraphics.beginPath();
-    this.cableGraphics.moveTo(start.x, start.y);
-    this.cableGraphics.lineTo(midX, midY);
-    this.cableGraphics.lineTo(end.x, end.y);
-    this.cableGraphics.strokePath();
+    this.cableGraphics.clear();
+    this.cableGraphics.lineStyle(4, color, 0.9);
+    curve.draw(this.cableGraphics, 32);
 
     if (!valid) {
       this.scene.time.delayedCall(500, () => this.cableGraphics.clear());
+      return;
     }
+
+    this.spawnEnergyPulse(curve, color);
+  }
+
+  /** Chispa de energía que recorre el cable una vez, para reforzar la conexión válida. */
+  private spawnEnergyPulse(curve: Phaser.Curves.QuadraticBezier, color: number): void {
+    const pulse = this.scene.add.circle(0, 0, 6, color).setDepth(16);
+    const point = curve.getPoint(0);
+    pulse.setPosition(point.x, point.y);
+
+    this.scene.tweens.add({
+      targets: pulse,
+      duration: 500,
+      onUpdate: (tween) => {
+        const p = curve.getPoint(tween.progress);
+        pulse.setPosition(p.x, p.y);
+      },
+      onComplete: () => pulse.destroy(),
+    });
   }
 
   private showFeedback(message: string, color: string): void {
