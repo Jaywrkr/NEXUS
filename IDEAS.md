@@ -34,6 +34,11 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 ## Mini-túnel del cable (idea de Luca, prototipo en fuente→lámpara de la plaza)
 - Probarlo con Luca de verdad antes de decidir si se aplica a más conexiones —
   por ahora solo está en esa una, a propósito (Decisión 016).
+- Ajustar la dificultad real jugándolo (amplitud/frecuencia de la curva vs.
+  velocidad del barco) — se corrigió un bug donde quedarse quieto nunca
+  fallaba (la posición dependía del propio centro del tubo en vez de ser
+  independiente), pero el balance fino de qué tan difícil se siente hay que
+  afinarlo jugando de verdad, no solo con la cuenta matemática.
 - Si se siente bien: aplicarlo a más conexiones, quizás con dificultad creciente
   (túnel más angosto o más ondulado en zonas más avanzadas).
 - Posible variante: que el ancho del túnel varíe (no solo constante), para más

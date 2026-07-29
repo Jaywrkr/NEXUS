@@ -6,8 +6,8 @@ import { VirtualJoystick } from '../ui/VirtualJoystick';
 const TUNNEL_LENGTH = 2200;
 const FORWARD_SPEED = 0.32; // progreso (profundidad) por ms
 const TUBE_RADIUS = 210;
-const WAVE_AMPLITUDE_X = 70;
-const WAVE_AMPLITUDE_Y = 60;
+const WAVE_AMPLITUDE_X = 160;
+const WAVE_AMPLITUDE_Y = 140;
 const WAVE_FREQUENCY_X = 0.0026;
 const WAVE_FREQUENCY_Y = 0.0034;
 const FOCAL_LENGTH = 260;
@@ -82,6 +82,13 @@ export class CableTunnelScene extends Phaser.Scene {
 
     this.tunnelGraphics = this.add.graphics().setDepth(1);
 
+    // El barco arranca exactamente en el centro real del tubo (en progreso 0),
+    // pero a partir de ahí su posición es propia — si el tubo se curva y no
+    // lo seguís, el tubo se "aleja" de vos de verdad.
+    const startCenter = this.tubeCenterAt(0);
+    this.shipX = startCenter.x;
+    this.shipY = startCenter.y;
+
     const shipAnchorX = width / 2;
     const shipAnchorY = height * VANISHING_POINT_Y_RATIO;
     this.shipGlow = this.add.circle(shipAnchorX, shipAnchorY, 20, 0x5ee7ff, 0.3).setDepth(4);
@@ -140,7 +147,10 @@ export class CableTunnelScene extends Phaser.Scene {
     this.drawTunnel();
     this.progressBarFill.width = Math.max(1, (this.scale.width - 80) * Math.min(1, this.progress / TUNNEL_LENGTH));
 
-    const offCenter = Math.sqrt(this.shipX * this.shipX + this.shipY * this.shipY);
+    const currentCenter = this.tubeCenterAt(this.progress);
+    const deviationX = this.shipX - currentCenter.x;
+    const deviationY = this.shipY - currentCenter.y;
+    const offCenter = Math.sqrt(deviationX * deviationX + deviationY * deviationY);
     if (offCenter > TUBE_RADIUS - 10) {
       this.finish(false);
       return;
@@ -156,7 +166,11 @@ export class CableTunnelScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const vanishingX = width / 2;
     const vanishingY = height * VANISHING_POINT_Y_RATIO;
-    const baseCenter = this.tubeCenterAt(this.progress);
+    // Todo se dibuja relativo a dónde está REALMENTE el barco (no al centro
+    // del tubo): así, si el tubo se curva y no lo seguís, se ve la pared
+    // (el anillo de "acá y ahora") desplazarse lejos del centro de la
+    // pantalla — la señal de que te estás quedando atrás.
+    const baseCenter = new Phaser.Math.Vector2(this.shipX, this.shipY);
 
     this.tunnelGraphics.clear();
     this.tunnelGraphics.fillStyle(0x0a1f2e, 1);
@@ -187,12 +201,18 @@ export class CableTunnelScene extends Phaser.Scene {
       this.tunnelGraphics.fillCircle(vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius);
     });
 
-    // Borde brillante en la boca del túnel (donde está la chispa ahora mismo), como referencia de la pared real.
+    // Borde brillante de la pared real, AHORA MISMO (profundidad 0). Si el
+    // tubo se curva y no lo seguís, este círculo se desplaza lejos del
+    // centro — esa es la señal de que te estás quedando atrás de la curva.
+    const currentCenter = this.tubeCenterAt(this.progress);
+    const wallOffsetX = currentCenter.x - baseCenter.x;
+    const wallOffsetY = currentCenter.y - baseCenter.y;
     this.tunnelGraphics.lineStyle(3, 0x5ee7ff, 0.8);
-    this.tunnelGraphics.strokeCircle(vanishingX, vanishingY, TUBE_RADIUS);
+    this.tunnelGraphics.strokeCircle(vanishingX + wallOffsetX, vanishingY + wallOffsetY, TUBE_RADIUS);
 
-    // Posición visible de la chispa: anclada abajo, desplazada por su offset dentro del tubo.
-    this.ship.setPosition(vanishingX + this.shipX, vanishingY + this.shipY);
+    // La chispa siempre se dibuja en el punto de fuga: ella ES el punto de
+    // vista de la cámara, lo que se mueve alrededor suyo es el tubo.
+    this.ship.setPosition(vanishingX, vanishingY);
     this.shipGlow.setPosition(this.ship.x, this.ship.y);
   }
 
