@@ -28,6 +28,12 @@ export abstract class ConnectableObject extends Phaser.GameObjects.Container {
     return this.role === 'source';
   }
 
+  /** Sombra pintada en la base del objeto, para que se sienta apoyado en el piso. */
+  protected addShadow(offsetY: number, width = 40, height = 12): void {
+    const shadow = this.scene.add.ellipse(0, offsetY, width, height, 0x000000, 0.18);
+    this.addAt(shadow, 0);
+  }
+
   /** Se llama cuando este objeto queda conectado correctamente. */
   abstract activate(): void;
 }

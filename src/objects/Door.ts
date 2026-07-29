@@ -25,6 +25,7 @@ export class Door extends ConnectableObject {
     this.knob = scene.add.circle(16, 4, 3, 0xffe066);
 
     this.add([this.glow, this.frame, this.doorway, this.panel, this.knob]);
+    this.addShadow(54, 54, 12);
 
     // Pulso tenue mientras está cerrada, para que se note que es interactiva.
     scene.tweens.add({

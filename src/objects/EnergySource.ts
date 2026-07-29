@@ -13,6 +13,7 @@ export class EnergySource extends ConnectableObject {
     this.core = scene.add.star(0, 0, 6, 10, 20, 0xffd93d);
 
     this.add([this.glow, base, this.core]);
+    this.addShadow(30, 36, 10);
 
     scene.tweens.add({
       targets: this.core,

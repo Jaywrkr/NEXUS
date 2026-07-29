@@ -15,7 +15,6 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 - Micro-juice de movimiento: easing en vez de movimiento lineal, squash/stretch
   sutil al saltar/celebrar.
 - Más variedad de partículas al conectar (ahora es una sola chispa por el cable).
-- Sombra o contorno sutil en los objetos del mundo para que no se sientan "placeholder".
 
 ## Producto / UX
 - Pantalla de opciones más completa (volumen si se agregan más tipos de sonido,
@@ -31,10 +30,3 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 
 ## Ideas de contenido (mecánica, siempre reutilizando "conectar")
 - (vacío por ahora — agregar acá si surge una quinta zona, variante de puzzle, etc.)
-
-## Realismo (pedido explícito del usuario, 3 frentes — ir de a uno)
-- **Iluminación y sombras**: sombra debajo del Nexus y los objetos; halo de luz
-  real (no solo cambio de color) cuando se enciende la lámpara/otros objetos.
-- **Mundo más vivo**: detalles ambientales con movimiento propio — pájaros o
-  mariposas cruzando, viento sutil en las hojas del árbol — para que no se
-  sienta estático incluso sin que el jugador haga nada.

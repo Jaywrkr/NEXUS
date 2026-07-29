@@ -75,6 +75,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.buildParallaxBackground(width, height, vScale);
     this.buildStaticZone(width, height, vScale);
+    this.buildAmbientLife(width, height, vScale);
 
     this.nexus = new Nexus(this, 480, height / 2 + 100 * vScale, this.progress.getAppearance());
     this.nexus.setDepth(10);
@@ -515,6 +516,51 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
+  /** Detalles ambientales con movimiento propio, para que el mundo no se sienta estático. */
+  private buildAmbientLife(_width: number, height: number, vScale: number): void {
+    // Viento sutil en la copa del árbol.
+    this.tweens.add({
+      targets: this.treeCrown,
+      angle: { from: -4, to: 4 },
+      duration: 2200,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // Mariposas cruzando el cielo en distintas zonas del mundo.
+    const butterflySpots = [520, 1400, 2100, 2750];
+    butterflySpots.forEach((baseX, index) => {
+      const baseY = height / 2 - 160 * vScale - (index % 2) * 30 * vScale;
+      this.spawnButterfly(baseX, baseY);
+    });
+  }
+
+  private spawnButterfly(baseX: number, baseY: number): void {
+    const color = Phaser.Math.RND.pick([0xff9ff3, 0xffe066, 0x9be37a]);
+    const butterfly = this.add.ellipse(baseX, baseY, 10, 7, color).setDepth(9);
+    const wingFlutter = this.tweens.add({
+      targets: butterfly,
+      scaleX: { from: 1, to: 0.4 },
+      duration: 180,
+      yoyo: true,
+      repeat: -1,
+    });
+
+    this.tweens.add({
+      targets: butterfly,
+      x: baseX + 90,
+      duration: 3000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        butterfly.y = baseY + Math.sin(this.time.now / 260 + baseX) * 14;
+      },
+      onStop: () => wingFlutter.stop(),
+    });
+  }
+
   private buildStaticZone(width: number, height: number, vScale: number): void {
     const midY = height / 2;
 
@@ -548,6 +594,11 @@ export class WorldScene extends Phaser.Scene {
     // Flor decorativa en la isla nueva
     this.add.rectangle(2870, midY + 30 * vScale, 4, 20 * vScale, 0x4a7c3a).setDepth(2);
     this.add.circle(2870, midY + 20 * vScale, 10, 0xff9ff3).setDepth(2);
+
+    // Sombras de la decoración estática, para que se sientan apoyadas en el piso.
+    this.add.ellipse(280, midY + 32 * vScale, 150, 22, 0x000000, 0.15).setDepth(1);
+    this.add.ellipse(940, midY + 22 * vScale, 60, 14, 0x000000, 0.15).setDepth(1);
+    this.add.ellipse(2200, midY + 178 * vScale, 40, 12, 0x000000, 0.15).setDepth(1);
 
     // Casa apagada (silueta simple, sin luz encendida todavía)
     this.add.rectangle(280, midY - 40 * vScale, 160, 140, 0x4a4e5c).setDepth(2);

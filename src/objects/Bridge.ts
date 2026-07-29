@@ -24,6 +24,7 @@ export class Bridge extends ConnectableObject {
     this.knob = scene.add.circle(0, -10, 5, OFF_COLOR);
 
     this.add([this.glow, this.post, this.handle, this.knob]);
+    this.addShadow(38, 40, 12);
 
     // Pulso tenue mientras está apagado, para que se note que es interactivo.
     scene.tweens.add({
