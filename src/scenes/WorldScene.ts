@@ -71,6 +71,7 @@ export class WorldScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, width, height);
     this.cameras.main.setBounds(0, 0, width, height);
 
+    this.buildParallaxBackground(width, height, vScale);
     this.buildStaticZone(width, height, vScale);
 
     this.nexus = new Nexus(this, 480, height / 2 + 100 * vScale, this.progress.getAppearance());
@@ -445,6 +446,36 @@ export class WorldScene extends Phaser.Scene {
 
     const label = this.connectionSystem.hasSelection() ? 'Conectar' : 'Tocar';
     this.interactButton.show(label);
+  }
+
+  /** Fondo con parallax: cielo + dos capas de colinas que se mueven más lento que la cámara. */
+  private buildParallaxBackground(width: number, height: number, vScale: number): void {
+    const margin = 500;
+    const midY = height / 2;
+
+    this.add
+      .rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0xe8f4ea)
+      .setDepth(-30)
+      .setScrollFactor(0);
+
+    // Nubes lejanas
+    for (let x = -margin; x < width + margin; x += 340) {
+      const y = midY - 200 * vScale + Math.sin(x * 0.01) * 30 * vScale;
+      const cloud = this.add.ellipse(x, y, 90, 34, 0xffffff, 0.6).setDepth(-20);
+      cloud.setScrollFactor(0.15);
+    }
+
+    // Colinas lejanas
+    for (let x = -margin; x < width + margin; x += 260) {
+      const hill = this.add.circle(x, height + 40 * vScale, 160 * vScale, 0xb7ddc0).setDepth(-11);
+      hill.setScrollFactor(0.35);
+    }
+
+    // Colinas cercanas, un poco más oscuras y bajas
+    for (let x = -margin; x < width + margin; x += 220) {
+      const hill = this.add.circle(x + 110, height + 20 * vScale, 130 * vScale, 0x9ecfab).setDepth(-10);
+      hill.setScrollFactor(0.55);
+    }
   }
 
   private buildStaticZone(width: number, height: number, vScale: number): void {
