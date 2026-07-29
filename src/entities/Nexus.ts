@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 
 export type CapStyle = 'none' | 'gorra' | 'gorro';
+export type BackpackStyle = 'core' | 'square' | 'round';
 
 export interface NexusAppearance {
   bodyColor: number;
@@ -8,6 +9,7 @@ export interface NexusAppearance {
   shoesColor: number;
   capColor: number;
   capStyle: CapStyle;
+  backpackStyle: BackpackStyle;
 }
 
 export const DEFAULT_APPEARANCE: NexusAppearance = {
@@ -16,6 +18,7 @@ export const DEFAULT_APPEARANCE: NexusAppearance = {
   shoesColor: 0xf4f1e8,
   capColor: 0x5ee7ff,
   capStyle: 'none',
+  backpackStyle: 'core',
 };
 
 const FACE_COLOR = 0x14161f;
@@ -59,8 +62,7 @@ export class Nexus extends Phaser.GameObjects.Container {
     const shadow = this.scene.add.ellipse(0, 34, 40, 12, 0x000000, 0.2);
 
     // Mochila / núcleo energético, con cable de energía colgando
-    const backpack = this.scene.add.rectangle(-18, -6, 16, 26, HEAD_COLOR).setStrokeStyle(2, 0x8a8f9c, 0.5);
-    const core = this.scene.add.circle(-18, -6, 6, appearance.capColor);
+    const backpackParts = this.buildBackpack(appearance);
     const cable = this.scene.add.graphics();
     cable.lineStyle(2, CABLE_COLOR, 0.9);
     cable.beginPath();
@@ -114,8 +116,7 @@ export class Nexus extends Phaser.GameObjects.Container {
 
     container.add([
       shadow,
-      backpack,
-      core,
+      ...backpackParts,
       cable,
       cableTip,
       leftLeg,
@@ -140,6 +141,26 @@ export class Nexus extends Phaser.GameObjects.Container {
     ]);
 
     return container;
+  }
+
+  /** Mochila: tres formas distintas, con el núcleo energético en el color de acento. */
+  private buildBackpack(appearance: NexusAppearance): Phaser.GameObjects.GameObject[] {
+    if (appearance.backpackStyle === 'square') {
+      const body = this.scene.add.rectangle(-18, -6, 18, 22, HEAD_COLOR).setStrokeStyle(2, 0x8a8f9c, 0.5);
+      const stripe = this.scene.add.rectangle(-18, -10, 14, 4, appearance.capColor);
+      return [body, stripe];
+    }
+
+    if (appearance.backpackStyle === 'round') {
+      const body = this.scene.add.circle(-18, -6, 12, HEAD_COLOR).setStrokeStyle(2, 0x8a8f9c, 0.5);
+      const core = this.scene.add.circle(-18, -6, 5, appearance.capColor);
+      return [body, core];
+    }
+
+    // 'core' (por defecto)
+    const body = this.scene.add.rectangle(-18, -6, 16, 26, HEAD_COLOR).setStrokeStyle(2, 0x8a8f9c, 0.5);
+    const core = this.scene.add.circle(-18, -6, 6, appearance.capColor);
+    return [body, core];
   }
 
   /** Gorra opcional, un accesorio real (no solo color) sobre la cabeza. */

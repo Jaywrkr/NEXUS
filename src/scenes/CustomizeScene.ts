@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { Nexus } from '../entities/Nexus';
-import type { NexusAppearance, CapStyle } from '../entities/Nexus';
+import type { NexusAppearance, CapStyle, BackpackStyle } from '../entities/Nexus';
 import { ProgressSystem } from '../systems/ProgressSystem';
 
 type AppearanceKey = keyof NexusAppearance;
@@ -12,8 +12,8 @@ interface SwatchRow {
   y: number;
 }
 
-interface StyleOption {
-  value: CapStyle;
+interface StyleOption<T extends string> {
+  value: T;
   label: string;
 }
 
@@ -24,15 +24,21 @@ const ROWS: SwatchRow[] = [
   { key: 'shoesColor', label: 'Zapatos', colors: [0x2b2e43, 0xf4f1e8, 0x8a4b1f, 0x1b6b3a], y: 0 },
 ];
 
-const CAP_STYLES: StyleOption[] = [
+const CAP_STYLES: StyleOption<CapStyle>[] = [
   { value: 'none', label: 'Sin gorra' },
   { value: 'gorra', label: 'Gorra' },
   { value: 'gorro', label: 'Gorro' },
 ];
 
+const BACKPACK_STYLES: StyleOption<BackpackStyle>[] = [
+  { value: 'core', label: 'Núcleo' },
+  { value: 'square', label: 'Cuadrada' },
+  { value: 'round', label: 'Redonda' },
+];
+
 const SWATCH_SIZE = 34;
 const SWATCH_GAP = 12;
-const ROW_GAP = 56;
+const ROW_GAP = 48;
 const STYLE_BTN_WIDTH = 84;
 const STYLE_BTN_HEIGHT = 30;
 const STYLE_BTN_GAP = 8;
@@ -66,26 +72,42 @@ export class CustomizeScene extends Phaser.Scene {
     this.preview.playIdle();
 
     const panelX = width / 2 - 220;
-    const panelStartY = 200;
+    const panelStartY = 190;
 
     ROWS.forEach((row, index) => {
       row.y = panelStartY + index * ROW_GAP;
       this.buildRow(row, panelX);
     });
 
-    const styleRowY = panelStartY + ROWS.length * ROW_GAP;
-    this.buildCapStyleRow(panelX, styleRowY);
+    const capRowY = panelStartY + ROWS.length * ROW_GAP;
+    this.buildStyleRow(panelX, capRowY, 'Gorra', CAP_STYLES, this.appearance.capStyle, (value) => {
+      this.appearance = { ...this.appearance, capStyle: value };
+      this.refreshPreview();
+    });
+
+    const backpackRowY = capRowY + ROW_GAP;
+    this.buildStyleRow(panelX, backpackRowY, 'Mochila', BACKPACK_STYLES, this.appearance.backpackStyle, (value) => {
+      this.appearance = { ...this.appearance, backpackStyle: value };
+      this.refreshPreview();
+    });
 
     // El botón va justo debajo de los controles, no pegado al borde inferior:
     // en pantallas altas (celular vertical) el borde puede quedar fuera del
     // área realmente visible por la barra de direcciones del navegador.
-    const buttonY = Math.min(height - 50, styleRowY + 50);
+    const buttonY = Math.min(height - 50, backpackRowY + 50);
     this.buildPlayButton(width / 2, buttonY);
   }
 
-  private buildCapStyleRow(startX: number, y: number): void {
+  private buildStyleRow<T extends string>(
+    startX: number,
+    y: number,
+    label: string,
+    options: StyleOption<T>[],
+    currentValue: T,
+    onSelect: (value: T) => void,
+  ): void {
     this.add
-      .text(startX, y - 22, 'Gorra', {
+      .text(startX, y - 22, label, {
         fontFamily: 'sans-serif',
         fontSize: '14px',
         color: '#1b1f3b',
@@ -94,9 +116,9 @@ export class CustomizeScene extends Phaser.Scene {
 
     const buttons: Phaser.GameObjects.Rectangle[] = [];
 
-    CAP_STYLES.forEach((option, i) => {
+    options.forEach((option, i) => {
       const x = startX + STYLE_BTN_WIDTH / 2 + i * (STYLE_BTN_WIDTH + STYLE_BTN_GAP);
-      const isSelected = this.appearance.capStyle === option.value;
+      const isSelected = currentValue === option.value;
 
       const btn = this.add
         .rectangle(x, y, STYLE_BTN_WIDTH, STYLE_BTN_HEIGHT, 0xffffff, 0.6)
@@ -112,20 +134,15 @@ export class CustomizeScene extends Phaser.Scene {
         .setOrigin(0.5);
 
       buttons.push(btn);
-      btn.on('pointerdown', () => this.selectCapStyle(option.value, buttons, btn));
+      btn.on('pointerdown', () => {
+        buttons.forEach((b) => b.setStrokeStyle(2, 0x1b1f3b, 0.3));
+        btn.setStrokeStyle(2, 0x1b1f3b, 1);
+        onSelect(option.value);
+      });
     });
   }
 
-  private selectCapStyle(
-    value: CapStyle,
-    allButtons: Phaser.GameObjects.Rectangle[],
-    activeButton: Phaser.GameObjects.Rectangle,
-  ): void {
-    this.appearance = { ...this.appearance, capStyle: value };
-
-    allButtons.forEach((btn) => btn.setStrokeStyle(2, 0x1b1f3b, 0.3));
-    activeButton.setStrokeStyle(2, 0x1b1f3b, 1);
-
+  private refreshPreview(): void {
     this.preview.destroy();
     this.preview = new Nexus(this, this.scale.width / 2, 120, { ...this.appearance });
     this.preview.playIdle();
@@ -172,9 +189,7 @@ export class CustomizeScene extends Phaser.Scene {
     rowMarkers.forEach((marker) => marker.setStrokeStyle(3, 0x1b1f3b, 0));
     activeMarker.setStrokeStyle(3, 0x1b1f3b, 1);
 
-    this.preview.destroy();
-    this.preview = new Nexus(this, this.scale.width / 2, 120, { ...this.appearance });
-    this.preview.playIdle();
+    this.refreshPreview();
   }
 
   private buildPlayButton(x: number, y: number): void {
