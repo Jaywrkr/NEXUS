@@ -12,8 +12,6 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 
 ## Pulido visual pendiente
 - Pantalla de créditos simple (nombres, "hecho con Luca", fecha).
-- Micro-juice de movimiento: easing en vez de movimiento lineal, squash/stretch
-  sutil al saltar/celebrar.
 - Más variedad de partículas al conectar (ahora es una sola chispa por el cable).
 
 ## Producto / UX
