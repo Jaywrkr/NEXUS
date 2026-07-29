@@ -215,7 +215,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.connectables.forEach((obj) => this.connectionSystem.register(obj));
 
-    this.connectionSystem.addRule({ sourceId: source.id, targetId: this.lamp.id });
+    this.connectionSystem.addRule({ sourceId: source.id, targetId: this.lamp.id, useTunnel: true });
     this.connectionSystem.addRule({ sourceId: this.lamp.id, targetId: this.door.id });
     this.connectionSystem.addRule({ sourceId: fountainSource.id, targetId: this.fountain.id });
     this.connectionSystem.addRule({ sourceId: beaconSourceA.id, targetId: this.beacon.id });
@@ -225,6 +225,19 @@ export class WorldScene extends Phaser.Scene {
     this.bridgeBlocker = this.add.zone(GAP_X, midY, GAP_WIDTH - 20, height);
     this.physics.add.existing(this.bridgeBlocker, true);
     this.bridgeCollider = this.physics.add.collider(this.nexus, this.bridgeBlocker);
+
+    this.events.on('tunnel-requested', (data: { source: ConnectableObject; target: ConnectableObject }) => {
+      this.scene.launch('CableTunnelScene', data);
+      this.scene.pause();
+    });
+
+    this.events.on(
+      'resume',
+      (_sys: Phaser.Scenes.Systems, data?: { tunnelSuccess: boolean; source: ConnectableObject; target: ConnectableObject }) => {
+        if (!data) return;
+        this.connectionSystem.finishTunnel(data.source, data.target, data.tunnelSuccess);
+      },
+    );
 
     this.events.on('connection-made', (targetId: string) => {
       if (targetId === this.lamp.id) {

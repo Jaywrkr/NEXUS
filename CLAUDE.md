@@ -27,6 +27,8 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
 - **Progreso persistente** en `localStorage` (fragmentos recolectados, apariencia elegida, si ya vio la celebración final).
 - **Pantalla de título** (`BootScene`): "Jugar" si no hay progreso guardado, o "Continuar" (directo a `WorldScene`) + "Nueva partida" si ya hay fragmentos recolectados.
 - **Pulido visual**: transiciones de fade in/out entre las 4 escenas (`src/utils/sceneTransition.ts`), fondo con parallax en `WorldScene` (nubes + dos capas de colinas con distinto `scrollFactor`), cable de conexión dibujado como curva bezier con una chispa que lo recorre al conectar válido, e indicador `★ n/4` fijo en el HUD del mundo que se actualiza al recolectar cada fragmento.
+- **Realismo**: movimiento del Nexus con aceleración/desaceleración gradual (no velocidad instantánea), sombras de piso en todos los objetos interactivos y decoración estática, viento sutil en el árbol y mariposas cruzando el mundo.
+- **Mini-túnel del cable** (idea de Luca, `CableTunnelScene`): la conexión fuente→lámpara de la plaza, en vez de resolverse al toque, abre un mini-juego donde la chispa avanza sola por un túnel ondulado y hay que guiarla con flechas/WASD (arriba/abajo) sin tocar los bordes. Perder devuelve a intentar la conexión; ganar la completa normalmente. Ver Decisión 016. Por ahora solo esa conexión lo usa — el resto sigue resolviéndose al toque directo.
 
 Todo esto se probó jugando de verdad (no solo `npm run build`) usando Playwright headless para simular clics/toques y tomar capturas de pantalla, además de pruebas reales en el celular de Luca que revelaron bugs que el simulador no mostraba.
 
@@ -57,6 +59,7 @@ src/
     CustomizeScene.ts        — elegir apariencia antes de jugar
     WorldScene.ts            — el mundo completo, las 4 zonas, cámara, joystick, botón de interacción
     MuseumScene.ts           — vitrinas de fragmentos
+    CableTunnelScene.ts      — mini-túnel dentro del cable (ver Decisión 016), se lanza sobre WorldScene pausada
   entities/
     Nexus.ts                 — el personaje jugable (visual + movimiento + celebrar)
   systems/
@@ -92,6 +95,7 @@ Ver `DECISIONS.md` para la lista completa. Las más importantes:
 4. **`100vh` en CSS no es confiable en navegadores móviles** (la barra de direcciones ocupa espacio variable). Se usa `100dvh` con `100vh` como respaldo. Además, ningún elemento de UI importante (como el botón "Jugar") debería depender de estar pegado al borde inferior de la pantalla — mejor calcularlo relativo al contenido de arriba.
 5. **`window.matchMedia('(orientation: portrait) and (pointer: coarse)')`** es la forma de distinguir un celular real en vertical de una ventana de escritorio angosta (que tiene `pointer: fine`). No uses solo el ancho de la ventana para esa detección.
 6. **Cuidado al probar con Playwright**: mover al Nexus solo en un eje (por ejemplo solo `ArrowRight`) y luego hacer clic en el botón de interacción puede fallar si el objetivo está a más de 90px en el otro eje (el radio de interacción es circular, no solo horizontal). Varias veces esto se confundió con un bug real cuando en realidad era el script de prueba. Siempre mover en diagonal (mantener dos teclas) para acercarse de verdad, o usar clics directos con coordenadas ya validadas en este documento/commits anteriores.
+7. **Patrón para mini-juegos que se abren "sobre" `WorldScene`** (como `CableTunnelScene`): `this.scene.launch('OtraEscena', data)` + `this.scene.pause()` desde `WorldScene`, y al terminar la escena hija hace `this.scene.stop()` + `this.scene.resume('WorldScene', resultado)`. `WorldScene` escucha su propio evento `'resume'` (`this.events.on('resume', (sys, data) => ...)`) para recibir el resultado. Pausar la escena para el input/física del Nexus automáticamente sin código extra.
 
 ## Coordenadas de referencia del mundo (para pruebas o debug futuro)
 

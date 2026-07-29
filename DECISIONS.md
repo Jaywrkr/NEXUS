@@ -44,3 +44,6 @@ Además de tocar los objetos directamente, debe existir una forma de interactuar
 
 **Decisión 015**
 Los problemas reales solo se confirman probando el juego jugando (build limpio no alcanza). Toda funcionalidad nueva se verifica con pruebas automatizadas de interacción (Playwright + capturas) antes de darla por terminada, y las pruebas en dispositivo real del usuario son la validación final que puede revelar cosas que el simulador no muestra.
+
+**Decisión 016**
+Idea de Luca: algunas conexiones pueden abrir un mini-juego "dentro" del cable (`CableTunnelScene`) en vez de resolverse al toque — la chispa avanza sola por un túnel ondulado y hay que guiarla (arriba/abajo) sin tocar los bordes; perder devuelve a intentar la conexión de nuevo, sin penalidad extra. Sigue siendo la acción de conectar (Decisión 008), solo que con un paso intermedio. Se probó primero en una sola conexión (fuente→lámpara de la plaza) antes de aplicarlo a otras.
