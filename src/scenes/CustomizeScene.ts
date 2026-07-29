@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { Nexus } from '../entities/Nexus';
 import type { NexusAppearance, CapStyle, BackpackStyle } from '../entities/Nexus';
 import { ProgressSystem } from '../systems/ProgressSystem';
+import { fadeToScene } from '../utils/sceneTransition';
 
 type AppearanceKey = keyof NexusAppearance;
 
@@ -59,6 +60,7 @@ export class CustomizeScene extends Phaser.Scene {
     this.appearance = this.progress.getAppearance();
 
     this.cameras.main.setBackgroundColor('#f4f1e8');
+    this.cameras.main.fadeIn(300, 244, 241, 232);
 
     this.add
       .text(width / 2, 32, 'Elige tu Nexus', {
@@ -207,7 +209,7 @@ export class CustomizeScene extends Phaser.Scene {
 
     button.on('pointerdown', () => {
       this.progress.saveAppearance(this.appearance);
-      this.scene.start('WorldScene');
+      fadeToScene(this, 'WorldScene', [207, 232, 216]);
     });
   }
 }

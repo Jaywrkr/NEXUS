@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { fadeToScene } from '../utils/sceneTransition';
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -9,6 +10,7 @@ export class BootScene extends Phaser.Scene {
     const { width, height } = this.scale;
 
     this.cameras.main.setBackgroundColor('#f4f1e8');
+    this.cameras.main.fadeIn(300, 244, 241, 232);
 
     this.add
       .text(width / 2, height / 2, 'Los Nexus', {
@@ -18,6 +20,6 @@ export class BootScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.time.delayedCall(700, () => this.scene.start('CustomizeScene'));
+    this.time.delayedCall(700, () => fadeToScene(this, 'CustomizeScene', [244, 241, 232]));
   }
 }
