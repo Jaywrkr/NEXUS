@@ -51,7 +51,7 @@ src/
   main.ts                    — entrada, crea el Phaser.Game, recarga si cambia orientación
   config/gameConfig.ts       — resolución dinámica según orientación/puntero
   scenes/
-    BootScene.ts             — splash breve, pasa a CustomizeScene
+    BootScene.ts             — pantalla de título: "Jugar"/"Continuar" según haya progreso guardado
     CustomizeScene.ts        — elegir apariencia antes de jugar
     WorldScene.ts            — el mundo completo, las 4 zonas, cámara, joystick, botón de interacción
     MuseumScene.ts           — vitrinas de fragmentos
