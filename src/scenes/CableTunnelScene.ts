@@ -153,21 +153,30 @@ export class CableTunnelScene extends Phaser.Scene {
     this.tunnelGraphics.fillStyle(0x0a1f2e, 1);
     this.tunnelGraphics.fillRect(0, 0, width, height);
 
-    // De más cerca (radio grande) a más lejos (radio chico): cada disco más
-    // chico se dibuja encima del anterior, tapando su centro y dejando ver
-    // el anillo previo alrededor — así se forman las bandas concéntricas.
+    // Cada banda tiene una profundidad que disminuye con el progreso (por
+    // eso "se acercan" de verdad) y da la vuelta al llegar a 0, para que el
+    // túnel sea infinito. Sin esta fase las bandas quedaban quietas.
     const ringCount = Math.floor(VIEW_DEPTH / RING_STEP);
-    for (let i = 0; i <= ringCount; i += 1) {
-      const depth = i * RING_STEP;
-      const scale = FOCAL_LENGTH / (FOCAL_LENGTH + depth);
-      const ringCenter = this.tubeCenterAt(this.progress + depth);
-      const offsetX = (ringCenter.x - baseCenter.x) * scale;
-      const offsetY = (ringCenter.y - baseCenter.y) * scale;
-      const radius = TUBE_RADIUS * scale;
-
-      this.tunnelGraphics.fillStyle(RING_COLORS[i % 2], 1);
-      this.tunnelGraphics.fillCircle(vanishingX + offsetX, vanishingY + offsetY, radius);
+    const rings = [];
+    for (let i = 0; i < ringCount; i += 1) {
+      const cycleDepth = (((i * RING_STEP - this.progress) % VIEW_DEPTH) + VIEW_DEPTH) % VIEW_DEPTH;
+      const scale = FOCAL_LENGTH / (FOCAL_LENGTH + cycleDepth);
+      const ringCenter = this.tubeCenterAt(this.progress + cycleDepth);
+      rings.push({
+        offsetX: (ringCenter.x - baseCenter.x) * scale,
+        offsetY: (ringCenter.y - baseCenter.y) * scale,
+        radius: TUBE_RADIUS * scale,
+        color: RING_COLORS[i % 2],
+      });
     }
+
+    // Dibuja de radio grande a chico, así cada banda más chica se recorta
+    // sobre la anterior y quedan como anillos concéntricos limpios.
+    rings.sort((a, b) => b.radius - a.radius);
+    rings.forEach((ring) => {
+      this.tunnelGraphics.fillStyle(ring.color, 1);
+      this.tunnelGraphics.fillCircle(vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius);
+    });
 
     // Borde brillante en la boca del túnel (donde está la chispa ahora mismo), como referencia de la pared real.
     this.tunnelGraphics.lineStyle(3, 0x5ee7ff, 0.8);
