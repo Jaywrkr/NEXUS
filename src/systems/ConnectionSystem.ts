@@ -8,6 +8,8 @@ const CABLE_COLOR_INVALID = 0xff6b6b;
 export interface ConnectionRule {
   sourceId: string;
   targetId: string;
+  /** Si es true, antes de completarse hay que superar el mini-túnel del cable (ver CableTunnelScene). */
+  useTunnel?: boolean;
 }
 
 /**
@@ -77,22 +79,44 @@ export class ConnectionSystem {
     const target = object;
     this.selected = null;
 
-    const isValid = this.rules.some(
-      (rule) => rule.sourceId === source.id && rule.targetId === target.id,
+    const rule = this.rules.find(
+      (r) => r.sourceId === source.id && r.targetId === target.id,
     );
 
-    this.drawCable(source, target, isValid);
-
-    if (isValid) {
-      source.activate();
-      target.activate();
-      this.showFeedback('¡Conexión correcta!', '#1b6b3a');
-      this.audio.playSuccess();
-      this.scene.events.emit('connection-made', target.id);
-    } else {
+    if (!rule) {
+      this.drawCable(source, target, false);
       this.showFeedback('Esa conexión no encaja, prueba otra', '#8a4b1f');
       this.audio.playError();
+      return;
     }
+
+    if (rule.useTunnel) {
+      this.scene.events.emit('tunnel-requested', { source, target });
+      return;
+    }
+
+    this.completeConnection(source, target);
+  }
+
+  /** Se llama cuando el jugador supera (o pierde) el mini-túnel de una conexión con useTunnel. */
+  finishTunnel(source: ConnectableObject, target: ConnectableObject, success: boolean): void {
+    if (success) {
+      this.completeConnection(source, target);
+      return;
+    }
+
+    this.drawCable(source, target, false);
+    this.showFeedback('Perdiste el control en el túnel, ¡inténtalo de nuevo!', '#8a4b1f');
+    this.audio.playError();
+  }
+
+  private completeConnection(source: ConnectableObject, target: ConnectableObject): void {
+    this.drawCable(source, target, true);
+    source.activate();
+    target.activate();
+    this.showFeedback('¡Conexión correcta!', '#1b6b3a');
+    this.audio.playSuccess();
+    this.scene.events.emit('connection-made', target.id);
   }
 
   private drawCable(from: ConnectableObject, to: ConnectableObject, valid: boolean): void {

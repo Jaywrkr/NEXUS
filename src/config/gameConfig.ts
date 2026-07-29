@@ -3,6 +3,7 @@ import { BootScene } from '../scenes/BootScene';
 import { CustomizeScene } from '../scenes/CustomizeScene';
 import { WorldScene } from '../scenes/WorldScene';
 import { MuseumScene } from '../scenes/MuseumScene';
+import { CableTunnelScene } from '../scenes/CableTunnelScene';
 
 function isPortraitTouch(): boolean {
   return window.matchMedia('(orientation: portrait) and (pointer: coarse)').matches;
@@ -30,5 +31,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, CustomizeScene, WorldScene, MuseumScene],
+  scene: [BootScene, CustomizeScene, WorldScene, MuseumScene, CableTunnelScene],
 };
