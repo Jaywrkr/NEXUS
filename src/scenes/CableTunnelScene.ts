@@ -3,13 +3,19 @@ import { ConnectableObject } from '../objects/ConnectableObject';
 import { AudioSystem } from '../systems/AudioSystem';
 
 const TUNNEL_LENGTH = 2200;
-const FORWARD_SPEED = 0.32; // progreso por ms
-const HALF_WIDTH = 66;
-const WAVE_AMPLITUDE = 78;
-const WAVE_FREQUENCY = 0.0032;
-const SPARK_SCREEN_X_RATIO = 0.28;
-const SPARK_ACCEL_MS = 90;
-const SPARK_SPEED = 260;
+const FORWARD_SPEED = 0.32; // progreso (profundidad) por ms
+const TUBE_RADIUS = 100;
+const WAVE_AMPLITUDE_X = 70;
+const WAVE_AMPLITUDE_Y = 60;
+const WAVE_FREQUENCY_X = 0.0026;
+const WAVE_FREQUENCY_Y = 0.0034;
+const FOCAL_LENGTH = 220;
+const VIEW_DEPTH = 900;
+const RING_STEP = 24;
+const SHIP_ACCEL_MS = 90;
+const SHIP_SPEED = 220;
+const VANISHING_POINT_Y_RATIO = 0.42;
+const SHIP_ANCHOR_Y_RATIO = 0.78;
 
 export interface CableTunnelData {
   source: ConnectableObject;
@@ -18,8 +24,11 @@ export interface CableTunnelData {
 
 /**
  * Mini-juego que se abre "dentro" del cable al conectar ciertos pares
- * (idea de Luca): la chispa avanza sola por el túnel y hay que guiarla
- * con el teclado para que no toque las paredes onduladas.
+ * (idea de Luca): la chispa vuela sola hacia adelante por un tubo que
+ * serpentea, visto desde atrás (perspectiva estilo Mario Kart, con
+ * anillos concéntricos que se agrandan al acercarse). El jugador se
+ * mueve libre en 2D (arriba/abajo/izquierda/derecha) dentro del tubo
+ * para no tocar sus paredes.
  */
 export class CableTunnelScene extends Phaser.Scene {
   private source!: ConnectableObject;
@@ -27,12 +36,15 @@ export class CableTunnelScene extends Phaser.Scene {
   private audio!: AudioSystem;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
-  private wallsGraphics!: Phaser.GameObjects.Graphics;
-  private spark!: Phaser.GameObjects.Arc;
+  private tunnelGraphics!: Phaser.GameObjects.Graphics;
+  private ship!: Phaser.GameObjects.Arc;
+  private shipGlow!: Phaser.GameObjects.Arc;
   private progressBarFill!: Phaser.GameObjects.Rectangle;
   private progress = 0;
-  private sparkY = 0;
-  private sparkVelY = 0;
+  private shipX = 0;
+  private shipY = 0;
+  private shipVelX = 0;
+  private shipVelY = 0;
   private finished = false;
 
   constructor() {
@@ -43,31 +55,35 @@ export class CableTunnelScene extends Phaser.Scene {
     this.source = data.source;
     this.target = data.target;
     this.progress = 0;
-    this.sparkVelY = 0;
+    this.shipX = 0;
+    this.shipY = 0;
+    this.shipVelX = 0;
+    this.shipVelY = 0;
     this.finished = false;
   }
 
   create(): void {
     const { width, height } = this.scale;
     this.audio = new AudioSystem();
-    this.sparkY = height / 2;
 
     this.cameras.main.setBackgroundColor('#0a1f2e');
     this.cameras.main.fadeIn(200, 10, 31, 46);
 
     this.add
-      .text(width / 2, 20, 'Guía la chispa por el cable — no toques los bordes', {
+      .text(width / 2, 20, 'Guía la chispa por el cable — no toques las paredes', {
         fontFamily: 'sans-serif',
         fontSize: '16px',
         color: '#d8f4ff',
       })
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5, 0)
+      .setDepth(20);
 
-    this.wallsGraphics = this.add.graphics().setDepth(1);
+    this.tunnelGraphics = this.add.graphics().setDepth(1);
 
-    const sparkScreenX = width * SPARK_SCREEN_X_RATIO;
-    this.spark = this.add.circle(sparkScreenX, this.sparkY, 8, 0x5ee7ff).setDepth(5);
-    this.add.circle(sparkScreenX, this.sparkY, 14, 0x5ee7ff, 0.25).setDepth(4);
+    const shipAnchorX = width / 2;
+    const shipAnchorY = height * SHIP_ANCHOR_Y_RATIO;
+    this.shipGlow = this.add.circle(shipAnchorX, shipAnchorY, 16, 0x5ee7ff, 0.3).setDepth(4);
+    this.ship = this.add.circle(shipAnchorX, shipAnchorY, 9, 0x5ee7ff).setDepth(5);
 
     // Barra de progreso del túnel.
     this.add.rectangle(width / 2, height - 20, width - 80, 10, 0x14324a).setDepth(10);
@@ -80,29 +96,43 @@ export class CableTunnelScene extends Phaser.Scene {
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as typeof this.wasd;
   }
 
-  private centerYAt(worldProgress: number): number {
-    return this.scale.height / 2 + Math.sin(worldProgress * WAVE_FREQUENCY) * WAVE_AMPLITUDE;
+  /** Centro del tubo (offset respecto al eje recto) a una profundidad dada. */
+  private tubeCenterAt(worldProgress: number): Phaser.Math.Vector2 {
+    return new Phaser.Math.Vector2(
+      Math.sin(worldProgress * WAVE_FREQUENCY_X) * WAVE_AMPLITUDE_X,
+      Math.sin(worldProgress * WAVE_FREQUENCY_Y + 1.3) * WAVE_AMPLITUDE_Y,
+    );
   }
 
   update(_time: number, delta: number): void {
     if (this.finished) return;
 
+    let dx = 0;
     let dy = 0;
+    if (this.cursors.left.isDown || this.wasd.A.isDown) dx -= 1;
+    if (this.cursors.right.isDown || this.wasd.D.isDown) dx += 1;
     if (this.cursors.up.isDown || this.wasd.W.isDown) dy -= 1;
     if (this.cursors.down.isDown || this.wasd.S.isDown) dy += 1;
 
-    const smoothing = 1 - Math.exp(-delta / SPARK_ACCEL_MS);
-    this.sparkVelY += (dy * SPARK_SPEED - this.sparkVelY) * smoothing;
-    this.sparkY += (this.sparkVelY * delta) / 1000;
-    this.spark.setPosition(this.spark.x, this.sparkY);
+    if (dx !== 0 && dy !== 0) {
+      const norm = Math.SQRT1_2;
+      dx *= norm;
+      dy *= norm;
+    }
+
+    const smoothing = 1 - Math.exp(-delta / SHIP_ACCEL_MS);
+    this.shipVelX += (dx * SHIP_SPEED - this.shipVelX) * smoothing;
+    this.shipVelY += (dy * SHIP_SPEED - this.shipVelY) * smoothing;
+    this.shipX += (this.shipVelX * delta) / 1000;
+    this.shipY += (this.shipVelY * delta) / 1000;
 
     this.progress += FORWARD_SPEED * delta;
 
     this.drawTunnel();
     this.progressBarFill.width = Math.max(1, (this.scale.width - 80) * Math.min(1, this.progress / TUNNEL_LENGTH));
 
-    const center = this.centerYAt(this.progress);
-    if (Math.abs(this.sparkY - center) > HALF_WIDTH) {
+    const offCenter = Math.sqrt(this.shipX * this.shipX + this.shipY * this.shipY);
+    if (offCenter > TUBE_RADIUS - 10) {
       this.finish(false);
       return;
     }
@@ -112,49 +142,36 @@ export class CableTunnelScene extends Phaser.Scene {
     }
   }
 
+  /** Dibuja el tubo como anillos concéntricos que se agrandan al acercarse (perspectiva tipo Mario Kart). */
   private drawTunnel(): void {
     const { width, height } = this.scale;
-    const sparkScreenX = width * SPARK_SCREEN_X_RATIO;
-    const step = 12;
+    const vanishingX = width / 2;
+    const vanishingY = height * VANISHING_POINT_Y_RATIO;
+    const baseCenter = this.tubeCenterAt(this.progress);
 
-    this.wallsGraphics.clear();
-    this.wallsGraphics.lineStyle(4, 0x5ee7ff, 0.7);
-    this.wallsGraphics.fillStyle(0x123246, 1);
+    this.tunnelGraphics.clear();
+    this.tunnelGraphics.fillStyle(0x0a1f2e, 1);
+    this.tunnelGraphics.fillRect(0, 0, width, height);
 
-    const topPoints: Phaser.Math.Vector2[] = [];
-    const bottomPoints: Phaser.Math.Vector2[] = [];
+    for (let depth = VIEW_DEPTH; depth >= 0; depth -= RING_STEP) {
+      const scale = FOCAL_LENGTH / (FOCAL_LENGTH + depth);
+      const ringCenter = this.tubeCenterAt(this.progress + depth);
+      const offsetX = (ringCenter.x - baseCenter.x) * scale;
+      const offsetY = (ringCenter.y - baseCenter.y) * scale;
+      const radius = TUBE_RADIUS * scale;
+      const alpha = 0.25 + 0.6 * scale;
 
-    for (let x = 0; x <= width; x += step) {
-      const worldProgress = this.progress + (x - sparkScreenX);
-      const center = this.centerYAt(worldProgress);
-      topPoints.push(new Phaser.Math.Vector2(x, Math.max(0, center - HALF_WIDTH)));
-      bottomPoints.push(new Phaser.Math.Vector2(x, Math.min(height, center + HALF_WIDTH)));
+      this.tunnelGraphics.lineStyle(Math.max(1, 4 * scale), 0x5ee7ff, alpha);
+      this.tunnelGraphics.strokeCircle(vanishingX + offsetX, vanishingY + offsetY, radius);
     }
 
-    this.wallsGraphics.fillRect(0, 0, width, height);
-    this.wallsGraphics.fillStyle(0x0a1f2e, 1);
+    // Reticle central, referencia de "hacia dónde se mira".
+    this.tunnelGraphics.lineStyle(1, 0x5ee7ff, 0.35);
+    this.tunnelGraphics.strokeCircle(vanishingX, vanishingY, 4);
 
-    this.wallsGraphics.beginPath();
-    this.wallsGraphics.moveTo(0, 0);
-    topPoints.forEach((p) => this.wallsGraphics.lineTo(p.x, p.y));
-    this.wallsGraphics.lineTo(width, 0);
-    this.wallsGraphics.closePath();
-    this.wallsGraphics.fillPath();
-
-    this.wallsGraphics.beginPath();
-    this.wallsGraphics.moveTo(0, height);
-    bottomPoints.forEach((p) => this.wallsGraphics.lineTo(p.x, p.y));
-    this.wallsGraphics.lineTo(width, height);
-    this.wallsGraphics.closePath();
-    this.wallsGraphics.fillPath();
-
-    this.wallsGraphics.beginPath();
-    topPoints.forEach((p, i) => (i === 0 ? this.wallsGraphics.moveTo(p.x, p.y) : this.wallsGraphics.lineTo(p.x, p.y)));
-    this.wallsGraphics.strokePath();
-
-    this.wallsGraphics.beginPath();
-    bottomPoints.forEach((p, i) => (i === 0 ? this.wallsGraphics.moveTo(p.x, p.y) : this.wallsGraphics.lineTo(p.x, p.y)));
-    this.wallsGraphics.strokePath();
+    // Posición visible de la chispa: anclada abajo, desplazada por su offset dentro del tubo.
+    this.ship.setPosition(width / 2 + this.shipX, height * SHIP_ANCHOR_Y_RATIO + this.shipY);
+    this.shipGlow.setPosition(this.ship.x, this.ship.y);
   }
 
   private finish(success: boolean): void {
