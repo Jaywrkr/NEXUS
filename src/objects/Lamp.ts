@@ -20,6 +20,7 @@ export class Lamp extends ConnectableObject {
       .setStrokeStyle(3, 0x1b1f3b, 0.4);
 
     this.add([base, this.pole, this.glow, this.bulb]);
+    this.addShadow(52, 34, 10);
 
     // Pulso tenue mientras está apagada, para que se note que es interactiva.
     scene.tweens.add({

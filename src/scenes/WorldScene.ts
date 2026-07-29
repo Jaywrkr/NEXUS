@@ -549,6 +549,11 @@ export class WorldScene extends Phaser.Scene {
     this.add.rectangle(2870, midY + 30 * vScale, 4, 20 * vScale, 0x4a7c3a).setDepth(2);
     this.add.circle(2870, midY + 20 * vScale, 10, 0xff9ff3).setDepth(2);
 
+    // Sombras de la decoración estática, para que se sientan apoyadas en el piso.
+    this.add.ellipse(280, midY + 32 * vScale, 150, 22, 0x000000, 0.15).setDepth(1);
+    this.add.ellipse(940, midY + 22 * vScale, 60, 14, 0x000000, 0.15).setDepth(1);
+    this.add.ellipse(2200, midY + 178 * vScale, 40, 12, 0x000000, 0.15).setDepth(1);
+
     // Casa apagada (silueta simple, sin luz encendida todavía)
     this.add.rectangle(280, midY - 40 * vScale, 160, 140, 0x4a4e5c).setDepth(2);
     this.add.triangle(280, midY - 130 * vScale, -90, 20, 90, 20, 0, -60, 0x3a3d48).setDepth(2);

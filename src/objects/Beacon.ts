@@ -30,6 +30,7 @@ export class Beacon extends ConnectableObject {
       .setStrokeStyle(3, 0x1b1f3b, 0.35);
 
     this.add([this.glow, pole, this.dish]);
+    this.addShadow(62, 50, 14);
 
     for (let i = 0; i < REQUIRED_CONNECTIONS; i += 1) {
       const indicator = scene.add.circle(-10 + i * 20, 54, 6, INDICATOR_OFF);

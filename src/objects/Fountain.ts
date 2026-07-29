@@ -23,6 +23,7 @@ export class Fountain extends ConnectableObject {
     this.spout = scene.add.circle(0, 4, 11, 0x555b6e);
 
     this.add([this.glow, this.basin, this.water, this.spout]);
+    this.addShadow(66, 92, 16);
 
     // Pulso tenue mientras está apagada, para que se note que es interactiva.
     scene.tweens.add({
