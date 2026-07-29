@@ -4,18 +4,18 @@ import { AudioSystem } from '../systems/AudioSystem';
 
 const TUNNEL_LENGTH = 2200;
 const FORWARD_SPEED = 0.32; // progreso (profundidad) por ms
-const TUBE_RADIUS = 100;
+const TUBE_RADIUS = 210;
 const WAVE_AMPLITUDE_X = 70;
 const WAVE_AMPLITUDE_Y = 60;
 const WAVE_FREQUENCY_X = 0.0026;
 const WAVE_FREQUENCY_Y = 0.0034;
-const FOCAL_LENGTH = 220;
+const FOCAL_LENGTH = 260;
 const VIEW_DEPTH = 900;
-const RING_STEP = 24;
+const RING_STEP = 90;
+const RING_COLORS = [0x0c2942, 0x1f6e8c];
 const SHIP_ACCEL_MS = 90;
 const SHIP_SPEED = 220;
-const VANISHING_POINT_Y_RATIO = 0.42;
-const SHIP_ANCHOR_Y_RATIO = 0.78;
+const VANISHING_POINT_Y_RATIO = 0.4;
 
 export interface CableTunnelData {
   source: ConnectableObject;
@@ -81,9 +81,9 @@ export class CableTunnelScene extends Phaser.Scene {
     this.tunnelGraphics = this.add.graphics().setDepth(1);
 
     const shipAnchorX = width / 2;
-    const shipAnchorY = height * SHIP_ANCHOR_Y_RATIO;
-    this.shipGlow = this.add.circle(shipAnchorX, shipAnchorY, 16, 0x5ee7ff, 0.3).setDepth(4);
-    this.ship = this.add.circle(shipAnchorX, shipAnchorY, 9, 0x5ee7ff).setDepth(5);
+    const shipAnchorY = height * VANISHING_POINT_Y_RATIO;
+    this.shipGlow = this.add.circle(shipAnchorX, shipAnchorY, 20, 0x5ee7ff, 0.3).setDepth(4);
+    this.ship = this.add.circle(shipAnchorX, shipAnchorY, 11, 0x5ee7ff).setDepth(5);
 
     // Barra de progreso del túnel.
     this.add.rectangle(width / 2, height - 20, width - 80, 10, 0x14324a).setDepth(10);
@@ -142,7 +142,7 @@ export class CableTunnelScene extends Phaser.Scene {
     }
   }
 
-  /** Dibuja el tubo como anillos concéntricos que se agrandan al acercarse (perspectiva tipo Mario Kart). */
+  /** Dibuja el tubo como bandas concéntricas rellenas (como una diana) que se agrandan al acercarse. */
   private drawTunnel(): void {
     const { width, height } = this.scale;
     const vanishingX = width / 2;
@@ -153,24 +153,28 @@ export class CableTunnelScene extends Phaser.Scene {
     this.tunnelGraphics.fillStyle(0x0a1f2e, 1);
     this.tunnelGraphics.fillRect(0, 0, width, height);
 
-    for (let depth = VIEW_DEPTH; depth >= 0; depth -= RING_STEP) {
+    // De más cerca (radio grande) a más lejos (radio chico): cada disco más
+    // chico se dibuja encima del anterior, tapando su centro y dejando ver
+    // el anillo previo alrededor — así se forman las bandas concéntricas.
+    const ringCount = Math.floor(VIEW_DEPTH / RING_STEP);
+    for (let i = 0; i <= ringCount; i += 1) {
+      const depth = i * RING_STEP;
       const scale = FOCAL_LENGTH / (FOCAL_LENGTH + depth);
       const ringCenter = this.tubeCenterAt(this.progress + depth);
       const offsetX = (ringCenter.x - baseCenter.x) * scale;
       const offsetY = (ringCenter.y - baseCenter.y) * scale;
       const radius = TUBE_RADIUS * scale;
-      const alpha = 0.25 + 0.6 * scale;
 
-      this.tunnelGraphics.lineStyle(Math.max(1, 4 * scale), 0x5ee7ff, alpha);
-      this.tunnelGraphics.strokeCircle(vanishingX + offsetX, vanishingY + offsetY, radius);
+      this.tunnelGraphics.fillStyle(RING_COLORS[i % 2], 1);
+      this.tunnelGraphics.fillCircle(vanishingX + offsetX, vanishingY + offsetY, radius);
     }
 
-    // Reticle central, referencia de "hacia dónde se mira".
-    this.tunnelGraphics.lineStyle(1, 0x5ee7ff, 0.35);
-    this.tunnelGraphics.strokeCircle(vanishingX, vanishingY, 4);
+    // Borde brillante en la boca del túnel (donde está la chispa ahora mismo), como referencia de la pared real.
+    this.tunnelGraphics.lineStyle(3, 0x5ee7ff, 0.8);
+    this.tunnelGraphics.strokeCircle(vanishingX, vanishingY, TUBE_RADIUS);
 
     // Posición visible de la chispa: anclada abajo, desplazada por su offset dentro del tubo.
-    this.ship.setPosition(width / 2 + this.shipX, height * SHIP_ANCHOR_Y_RATIO + this.shipY);
+    this.ship.setPosition(vanishingX + this.shipX, vanishingY + this.shipY);
     this.shipGlow.setPosition(this.ship.x, this.ship.y);
   }
 
