@@ -1,3 +1,5 @@
+> **Estado: MVP 0.0 completado y probado con Luca.** El proyecto avanzó más allá de este alcance original (4 zonas en vez de 1, personalización con formas, adaptación móvil, botón de interacción). Este documento describe el alcance ORIGINAL del primer MVP, tal como se definió al principio — se conserva como referencia histórica. Para el estado actual del proyecto, ver `CLAUDE.md`.
+
 # MVP 0.0 — Alcance
 
 Duración objetivo: 2 a 5 minutos.
