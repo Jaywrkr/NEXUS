@@ -44,6 +44,7 @@ export class WorldScene extends Phaser.Scene {
   private bridgeBlocker!: Phaser.GameObjects.Zone;
   private bridgeCollider!: Phaser.Physics.Arcade.Collider;
   private instructionText!: Phaser.GameObjects.Text;
+  private fragmentHud!: Phaser.GameObjects.Text;
   private houseWindow!: Phaser.GameObjects.Rectangle;
   private treeCrown!: Phaser.GameObjects.Arc;
   private plazaGround!: Phaser.GameObjects.Rectangle;
@@ -100,6 +101,16 @@ export class WorldScene extends Phaser.Scene {
         color: '#1b1f3b',
       })
       .setOrigin(0.5)
+      .setDepth(20)
+      .setScrollFactor(0);
+
+    this.fragmentHud = this.add
+      .text(this.scale.width - 16, 16, this.fragmentHudLabel(), {
+        fontFamily: 'sans-serif',
+        fontSize: '18px',
+        color: '#1b1f3b',
+      })
+      .setOrigin(1, 0)
       .setDepth(20)
       .setScrollFactor(0);
 
@@ -337,6 +348,7 @@ export class WorldScene extends Phaser.Scene {
     this.progress.collectFragment(id);
     this.audio.playCollect();
     this.nexus.celebrate();
+    this.fragmentHud.setText(this.fragmentHudLabel());
 
     const allDone = ALL_FRAGMENT_IDS.every((fid) => this.progress.hasFragment(fid));
     const isFirstCompletion = allDone && !this.progress.hasSeenCompletion();
@@ -449,6 +461,10 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /** Fondo con parallax: cielo + dos capas de colinas que se mueven más lento que la cámara. */
+  private fragmentHudLabel(): string {
+    return `★ ${this.progress.getCollectedFragments().length}/${ALL_FRAGMENT_IDS.length}`;
+  }
+
   private buildParallaxBackground(width: number, height: number, vScale: number): void {
     const margin = 500;
     const midY = height / 2;
