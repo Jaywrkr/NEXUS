@@ -45,6 +45,7 @@ export class WorldScene extends Phaser.Scene {
   private bridgeCollider!: Phaser.Physics.Arcade.Collider;
   private instructionText!: Phaser.GameObjects.Text;
   private fragmentHud!: Phaser.GameObjects.Text;
+  private muteButton!: Phaser.GameObjects.Text;
   private houseWindow!: Phaser.GameObjects.Rectangle;
   private treeCrown!: Phaser.GameObjects.Arc;
   private plazaGround!: Phaser.GameObjects.Rectangle;
@@ -113,6 +114,22 @@ export class WorldScene extends Phaser.Scene {
       .setOrigin(1, 0)
       .setDepth(20)
       .setScrollFactor(0);
+
+    this.muteButton = this.add
+      .text(16, 16, this.muteButtonLabel(), {
+        fontFamily: 'sans-serif',
+        fontSize: '18px',
+        color: '#1b1f3b',
+      })
+      .setOrigin(0, 0)
+      .setDepth(20)
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true });
+
+    this.muteButton.on('pointerdown', () => {
+      AudioSystem.setMuted(!AudioSystem.isMuted());
+      this.muteButton.setText(this.muteButtonLabel());
+    });
 
     const plazaDone = this.progress.hasFragment(PLAZA_FRAGMENT_ID);
     const fountainDone = this.progress.hasFragment(FOUNTAIN_FRAGMENT_ID);
@@ -463,6 +480,10 @@ export class WorldScene extends Phaser.Scene {
   /** Fondo con parallax: cielo + dos capas de colinas que se mueven más lento que la cámara. */
   private fragmentHudLabel(): string {
     return `★ ${this.progress.getCollectedFragments().length}/${ALL_FRAGMENT_IDS.length}`;
+  }
+
+  private muteButtonLabel(): string {
+    return AudioSystem.isMuted() ? '🔇' : '🔊';
   }
 
   private buildParallaxBackground(width: number, height: number, vScale: number): void {

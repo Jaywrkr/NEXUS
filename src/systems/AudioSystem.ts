@@ -1,9 +1,19 @@
+const MUTED_KEY = 'los-nexus-muted';
+
 /**
  * Sonidos cortos generados por código (osciladores Web Audio),
  * sin depender de archivos de audio externos.
  */
 export class AudioSystem {
   private ctx: AudioContext | null = null;
+
+  static isMuted(): boolean {
+    return localStorage.getItem(MUTED_KEY) === 'true';
+  }
+
+  static setMuted(muted: boolean): void {
+    localStorage.setItem(MUTED_KEY, String(muted));
+  }
 
   private getContext(): AudioContext {
     if (!this.ctx) {
@@ -16,6 +26,7 @@ export class AudioSystem {
   }
 
   private playTone(freq: number, startDelay: number, duration: number, type: OscillatorType = 'sine', gain = 0.15): void {
+    if (AudioSystem.isMuted()) return;
     const ctx = this.getContext();
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
