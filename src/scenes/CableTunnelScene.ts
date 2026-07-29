@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ConnectableObject } from '../objects/ConnectableObject';
 import { AudioSystem } from '../systems/AudioSystem';
+import { VirtualJoystick } from '../ui/VirtualJoystick';
 
 const TUNNEL_LENGTH = 2200;
 const FORWARD_SPEED = 0.32; // progreso (profundidad) por ms
@@ -36,6 +37,7 @@ export class CableTunnelScene extends Phaser.Scene {
   private audio!: AudioSystem;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
+  private joystick!: VirtualJoystick;
   private tunnelGraphics!: Phaser.GameObjects.Graphics;
   private ship!: Phaser.GameObjects.Arc;
   private shipGlow!: Phaser.GameObjects.Arc;
@@ -94,6 +96,7 @@ export class CableTunnelScene extends Phaser.Scene {
 
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as typeof this.wasd;
+    this.joystick = new VirtualJoystick(this, 90, height - 90);
   }
 
   /** Centro del tubo (offset respecto al eje recto) a una profundidad dada. */
@@ -118,6 +121,12 @@ export class CableTunnelScene extends Phaser.Scene {
       const norm = Math.SQRT1_2;
       dx *= norm;
       dy *= norm;
+    }
+
+    const joyVector = this.joystick.getVector();
+    if (joyVector.x !== 0 || joyVector.y !== 0) {
+      dx = joyVector.x;
+      dy = joyVector.y;
     }
 
     const smoothing = 1 - Math.exp(-delta / SHIP_ACCEL_MS);

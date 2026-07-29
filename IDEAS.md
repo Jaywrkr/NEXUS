@@ -36,7 +36,5 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
   por ahora solo está en esa una, a propósito (Decisión 016).
 - Si se siente bien: aplicarlo a más conexiones, quizás con dificultad creciente
   (túnel más angosto o más ondulado en zonas más avanzadas).
-- Falta soporte táctil dentro del túnel (por ahora solo teclado/WASD) — pensar
-  cómo se controla arriba/abajo con el dedo antes de llevarlo a más conexiones.
 - Posible variante: que el ancho del túnel varíe (no solo constante), para más
   variedad de dificultad entre conexiones.
