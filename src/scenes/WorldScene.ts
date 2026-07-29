@@ -75,6 +75,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.buildParallaxBackground(width, height, vScale);
     this.buildStaticZone(width, height, vScale);
+    this.buildAmbientLife(width, height, vScale);
 
     this.nexus = new Nexus(this, 480, height / 2 + 100 * vScale, this.progress.getAppearance());
     this.nexus.setDepth(10);
@@ -513,6 +514,51 @@ export class WorldScene extends Phaser.Scene {
       const hill = this.add.circle(x + 110, height + 20 * vScale, 130 * vScale, 0x9ecfab).setDepth(-10);
       hill.setScrollFactor(0.55);
     }
+  }
+
+  /** Detalles ambientales con movimiento propio, para que el mundo no se sienta estático. */
+  private buildAmbientLife(_width: number, height: number, vScale: number): void {
+    // Viento sutil en la copa del árbol.
+    this.tweens.add({
+      targets: this.treeCrown,
+      angle: { from: -4, to: 4 },
+      duration: 2200,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
+
+    // Mariposas cruzando el cielo en distintas zonas del mundo.
+    const butterflySpots = [520, 1400, 2100, 2750];
+    butterflySpots.forEach((baseX, index) => {
+      const baseY = height / 2 - 160 * vScale - (index % 2) * 30 * vScale;
+      this.spawnButterfly(baseX, baseY);
+    });
+  }
+
+  private spawnButterfly(baseX: number, baseY: number): void {
+    const color = Phaser.Math.RND.pick([0xff9ff3, 0xffe066, 0x9be37a]);
+    const butterfly = this.add.ellipse(baseX, baseY, 10, 7, color).setDepth(9);
+    const wingFlutter = this.tweens.add({
+      targets: butterfly,
+      scaleX: { from: 1, to: 0.4 },
+      duration: 180,
+      yoyo: true,
+      repeat: -1,
+    });
+
+    this.tweens.add({
+      targets: butterfly,
+      x: baseX + 90,
+      duration: 3000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        butterfly.y = baseY + Math.sin(this.time.now / 260 + baseX) * 14;
+      },
+      onStop: () => wingFlutter.stop(),
+    });
   }
 
   private buildStaticZone(width: number, height: number, vScale: number): void {

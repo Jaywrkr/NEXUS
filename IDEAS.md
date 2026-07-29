@@ -30,8 +30,3 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 
 ## Ideas de contenido (mecánica, siempre reutilizando "conectar")
 - (vacío por ahora — agregar acá si surge una quinta zona, variante de puzzle, etc.)
-
-## Realismo (pedido explícito del usuario, 3 frentes — ir de a uno)
-- **Mundo más vivo**: detalles ambientales con movimiento propio — pájaros o
-  mariposas cruzando, viento sutil en las hojas del árbol — para que no se
-  sienta estático incluso sin que el jugador haga nada.
