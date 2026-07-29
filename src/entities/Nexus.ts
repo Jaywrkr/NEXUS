@@ -30,6 +30,7 @@ const EAR_TIP_ACCENT = 0xff8c42;
 const CABLE_COLOR = 0xd4e157;
 
 const SPEED = 220;
+const ACCEL_MS = 90;
 
 export class Nexus extends Phaser.GameObjects.Container {
   declare body: Phaser.Physics.Arcade.Body;
@@ -40,6 +41,8 @@ export class Nexus extends Phaser.GameObjects.Container {
   private earTips: Phaser.GameObjects.Arc[] = [];
   private facing: 1 | -1 = 1;
   private walkTime = 0;
+  private velX = 0;
+  private velY = 0;
 
   constructor(scene: Phaser.Scene, x: number, y: number, appearance: NexusAppearance = DEFAULT_APPEARANCE) {
     super(scene, x, y);
@@ -181,7 +184,12 @@ export class Nexus extends Phaser.GameObjects.Container {
   }
 
   move(dx: number, dy: number, delta: number): void {
-    this.body.setVelocity(dx * SPEED, dy * SPEED);
+    // Suaviza el arranque y la frenada en vez de velocidad instantánea,
+    // para que el Nexus se sienta con algo de peso al moverse.
+    const smoothing = 1 - Math.exp(-delta / ACCEL_MS);
+    this.velX += (dx * SPEED - this.velX) * smoothing;
+    this.velY += (dy * SPEED - this.velY) * smoothing;
+    this.body.setVelocity(this.velX, this.velY);
 
     const isMoving = dx !== 0 || dy !== 0;
 
@@ -207,6 +215,8 @@ export class Nexus extends Phaser.GameObjects.Container {
   /** Animación corta de celebración: salto, orejas brillantes y chispas. */
   celebrate(): void {
     this.walkTime = 0;
+    this.velX = 0;
+    this.velY = 0;
     this.body.setVelocity(0, 0);
 
     this.scene.tweens.add({
