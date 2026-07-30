@@ -13,12 +13,14 @@ const WAVE_FREQUENCY_Y = 0.0034;
 const FOCAL_LENGTH = 260;
 const VIEW_DEPTH = 900;
 const RING_STEP = 90;
-const RING_COLORS = [0x0c2942, 0x1a4a68, 0x123a55, 0x2d7a9c];
+const RING_COLOR_FAR = new Phaser.Display.Color(6, 16, 28); // profundidad del túnel, casi negro
+const RING_COLOR_NEAR = new Phaser.Display.Color(64, 168, 214); // banda más cercana, iluminada por la chispa
 const SHIP_ACCEL_MS = 90;
 const SHIP_SPEED = 220;
 const VANISHING_POINT_Y_RATIO = 0.4;
 const TRAIL_LENGTH = 14;
 const DANGER_RATIO = 0.78; // fracción de TUBE_RADIUS a partir de la que las paredes avisan peligro
+const SPARK_COUNT = 36;
 
 export interface CableTunnelData {
   source: ConnectableObject;
@@ -45,6 +47,8 @@ export class CableTunnelScene extends Phaser.Scene {
   private shipGlow!: Phaser.GameObjects.Arc;
   private progressBarFill!: Phaser.GameObjects.Rectangle;
   private starGraphics!: Phaser.GameObjects.Graphics;
+  private sparkGraphics!: Phaser.GameObjects.Graphics;
+  private sparks: { angle: number; radiusFrac: number; depthOffset: number }[] = [];
   private trail: { x: number; y: number }[] = [];
   private progress = 0;
   private shipX = 0;
@@ -53,6 +57,7 @@ export class CableTunnelScene extends Phaser.Scene {
   private shipVelY = 0;
   private elapsed = 0;
   private finished = false;
+  private shakeCooldown = false;
 
   constructor() {
     super('CableTunnelScene');
@@ -69,6 +74,7 @@ export class CableTunnelScene extends Phaser.Scene {
     this.elapsed = 0;
     this.trail = [];
     this.finished = false;
+    this.shakeCooldown = false;
   }
 
   create(): void {
@@ -88,7 +94,36 @@ export class CableTunnelScene extends Phaser.Scene {
       .setDepth(20);
 
     this.tunnelGraphics = this.add.graphics().setDepth(1);
+    this.sparkGraphics = this.add.graphics().setDepth(2);
     this.starGraphics = this.add.graphics().setDepth(3);
+
+    // Motas de polvo/chispas fijas en ángulo y radio dentro del tubo (no
+    // solo detrás de la nave) que viajan hacia la cámara igual que los
+    // anillos, dibujadas como trazos cortos (no puntos) para dar sensación
+    // de velocidad real, tipo líneas de "warp".
+    this.sparks = Array.from({ length: SPARK_COUNT }, () => ({
+      angle: Math.random() * Math.PI * 2,
+      radiusFrac: 0.35 + Math.random() * 0.6,
+      depthOffset: Math.random() * VIEW_DEPTH,
+    }));
+
+    // Viñeta radial (generada una sola vez en un canvas) para oscurecer las
+    // esquinas y dar sensación de profundidad/lente en vez de un rectángulo
+    // parejo — el detalle que más se nota como "más realista".
+    if (!this.textures.exists('tunnel-vignette')) {
+      const canvasTex = this.textures.createCanvas('tunnel-vignette', width, height);
+      const ctx = canvasTex!.getContext();
+      const cx = width / 2;
+      const cy = height * VANISHING_POINT_Y_RATIO;
+      const radius = Math.max(width, height) * 0.75;
+      const gradient = ctx.createRadialGradient(cx, cy, radius * 0.25, cx, cy, radius);
+      gradient.addColorStop(0, 'rgba(0,0,0,0)');
+      gradient.addColorStop(1, 'rgba(0,0,0,0.75)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, width, height);
+      canvasTex!.refresh();
+    }
+    this.add.image(width / 2, height / 2, 'tunnel-vignette').setDepth(6).setScrollFactor(0);
 
     // El barco arranca exactamente en el centro real del tubo (en progreso 0),
     // pero a partir de ahí su posición es propia — si el tubo se curva y no
@@ -197,11 +232,21 @@ export class CableTunnelScene extends Phaser.Scene {
       const cycleDepth = (((i * RING_STEP - this.progress) % VIEW_DEPTH) + VIEW_DEPTH) % VIEW_DEPTH;
       const scale = FOCAL_LENGTH / (FOCAL_LENGTH + cycleDepth);
       const ringCenter = this.tubeCenterAt(this.progress + cycleDepth);
+      // La luz de la chispa "ilumina" las bandas cercanas y se pierde en la
+      // oscuridad hacia el fondo del túnel — gradiente real de profundidad
+      // en vez de dos colores alternados, con un leve parpadeo por banda
+      // para que no se vea perfectamente liso.
+      const lit = Phaser.Display.Color.Interpolate.ColorWithColor(RING_COLOR_FAR, RING_COLOR_NEAR, 1, scale);
+      const flicker = 1 + Math.sin(this.elapsed * 0.002 + i * 1.7) * 0.04;
       rings.push({
         offsetX: (ringCenter.x - baseCenter.x) * scale,
         offsetY: (ringCenter.y - baseCenter.y) * scale,
         radius: TUBE_RADIUS * scale,
-        color: RING_COLORS[i % 2],
+        color: Phaser.Display.Color.GetColor(
+          Phaser.Math.Clamp(lit.r * flicker, 0, 255),
+          Phaser.Math.Clamp(lit.g * flicker, 0, 255),
+          Phaser.Math.Clamp(lit.b * flicker, 0, 255),
+        ),
       });
     }
 
@@ -213,7 +258,7 @@ export class CableTunnelScene extends Phaser.Scene {
     rings.forEach((ring) => {
       this.tunnelGraphics.fillStyle(ring.color, 1);
       this.tunnelGraphics.fillCircle(vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius);
-      this.tunnelGraphics.lineStyle(2, 0x3fb8e0, 0.35);
+      this.tunnelGraphics.lineStyle(2, 0x3fb8e0, 0.3);
       this.tunnelGraphics.strokeCircle(vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius);
     });
 
@@ -236,6 +281,36 @@ export class CableTunnelScene extends Phaser.Scene {
     const pulse = 0.6 + 0.4 * Math.sin(this.elapsed * (0.004 + dangerT * 0.012));
     this.tunnelGraphics.lineStyle(3 + dangerT * 2, Phaser.Display.Color.GetColor(wallColor.r, wallColor.g, wallColor.b), 0.6 + pulse * 0.3);
     this.tunnelGraphics.strokeCircle(vanishingX + wallOffsetX, vanishingY + wallOffsetY, TUBE_RADIUS);
+    if (dangerT > 0.5 && !this.shakeCooldown) {
+      this.cameras.main.shake(120, 0.002 * dangerT);
+      this.shakeCooldown = true;
+      this.time.delayedCall(200, () => {
+        this.shakeCooldown = false;
+      });
+    }
+
+    // Motas de polvo dispersas dentro del tubo (no solo detrás de la nave),
+    // dibujadas como trazos cortos entre dos profundidades consecutivas
+    // para simular estela de velocidad ("warp streaks") en vez de puntos
+    // estáticos — dan textura al interior del túnel, que si no queda liso.
+    this.sparkGraphics.clear();
+    this.sparks.forEach((spark) => {
+      const cycleDepth = (((spark.depthOffset - this.progress) % VIEW_DEPTH) + VIEW_DEPTH) % VIEW_DEPTH;
+      const trailDepth = Math.min(cycleDepth + 40, VIEW_DEPTH);
+      const scaleA = FOCAL_LENGTH / (FOCAL_LENGTH + cycleDepth);
+      const scaleB = FOCAL_LENGTH / (FOCAL_LENGTH + trailDepth);
+      const centerA = this.tubeCenterAt(this.progress + cycleDepth);
+      const centerB = this.tubeCenterAt(this.progress + trailDepth);
+      const rA = TUBE_RADIUS * spark.radiusFrac * scaleA;
+      const rB = TUBE_RADIUS * spark.radiusFrac * scaleB;
+      const ax = vanishingX + (centerA.x - baseCenter.x) * scaleA + Math.cos(spark.angle) * rA;
+      const ay = vanishingY + (centerA.y - baseCenter.y) * scaleA + Math.sin(spark.angle) * rA;
+      const bx = vanishingX + (centerB.x - baseCenter.x) * scaleB + Math.cos(spark.angle) * rB;
+      const by = vanishingY + (centerB.y - baseCenter.y) * scaleB + Math.sin(spark.angle) * rB;
+      const alpha = Phaser.Math.Clamp(scaleA * 0.9, 0, 0.85);
+      this.sparkGraphics.lineStyle(1.5, 0xbfeeff, alpha);
+      this.sparkGraphics.lineBetween(ax, ay, bx, by);
+    });
 
     // Rastro de chispas que se van apagando detrás de la nave, dibujado en
     // el mismo espacio relativo al tubo actual para que "quede atrás" si el
