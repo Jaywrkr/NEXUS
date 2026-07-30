@@ -13,10 +13,12 @@ const WAVE_FREQUENCY_Y = 0.0034;
 const FOCAL_LENGTH = 260;
 const VIEW_DEPTH = 900;
 const RING_STEP = 90;
-const RING_COLORS = [0x0c2942, 0x1f6e8c];
+const RING_COLORS = [0x0c2942, 0x1a4a68, 0x123a55, 0x2d7a9c];
 const SHIP_ACCEL_MS = 90;
 const SHIP_SPEED = 220;
 const VANISHING_POINT_Y_RATIO = 0.4;
+const TRAIL_LENGTH = 14;
+const DANGER_RATIO = 0.78; // fracción de TUBE_RADIUS a partir de la que las paredes avisan peligro
 
 export interface CableTunnelData {
   source: ConnectableObject;
@@ -42,11 +44,14 @@ export class CableTunnelScene extends Phaser.Scene {
   private ship!: Phaser.GameObjects.Arc;
   private shipGlow!: Phaser.GameObjects.Arc;
   private progressBarFill!: Phaser.GameObjects.Rectangle;
+  private starGraphics!: Phaser.GameObjects.Graphics;
+  private trail: { x: number; y: number }[] = [];
   private progress = 0;
   private shipX = 0;
   private shipY = 0;
   private shipVelX = 0;
   private shipVelY = 0;
+  private elapsed = 0;
   private finished = false;
 
   constructor() {
@@ -61,6 +66,8 @@ export class CableTunnelScene extends Phaser.Scene {
     this.shipY = 0;
     this.shipVelX = 0;
     this.shipVelY = 0;
+    this.elapsed = 0;
+    this.trail = [];
     this.finished = false;
   }
 
@@ -81,6 +88,7 @@ export class CableTunnelScene extends Phaser.Scene {
       .setDepth(20);
 
     this.tunnelGraphics = this.add.graphics().setDepth(1);
+    this.starGraphics = this.add.graphics().setDepth(3);
 
     // El barco arranca exactamente en el centro real del tubo (en progreso 0),
     // pero a partir de ahí su posición es propia — si el tubo se curva y no
@@ -143,6 +151,10 @@ export class CableTunnelScene extends Phaser.Scene {
     this.shipY += (this.shipVelY * delta) / 1000;
 
     this.progress += FORWARD_SPEED * delta;
+    this.elapsed += delta;
+
+    this.trail.push({ x: this.shipX, y: this.shipY });
+    if (this.trail.length > TRAIL_LENGTH) this.trail.shift();
 
     this.drawTunnel();
     this.progressBarFill.width = Math.max(1, (this.scale.width - 80) * Math.min(1, this.progress / TUNNEL_LENGTH));
@@ -194,26 +206,55 @@ export class CableTunnelScene extends Phaser.Scene {
     }
 
     // Dibuja de radio grande a chico, así cada banda más chica se recorta
-    // sobre la anterior y quedan como anillos concéntricos limpios.
+    // sobre la anterior y quedan como anillos concéntricos limpios. Cada
+    // banda lleva además un aro fino más claro pegado a su borde interior,
+    // para dar sensación de tubo iluminado en vez de círculos planos.
     rings.sort((a, b) => b.radius - a.radius);
     rings.forEach((ring) => {
       this.tunnelGraphics.fillStyle(ring.color, 1);
       this.tunnelGraphics.fillCircle(vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius);
+      this.tunnelGraphics.lineStyle(2, 0x3fb8e0, 0.35);
+      this.tunnelGraphics.strokeCircle(vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius);
     });
 
     // Borde brillante de la pared real, AHORA MISMO (profundidad 0). Si el
     // tubo se curva y no lo seguís, este círculo se desplaza lejos del
     // centro — esa es la señal de que te estás quedando atrás de la curva.
+    // Cuando te acercás al límite de choque, el borde vira a un tono de
+    // alerta y pulsa más rápido, como aviso visual además del gameplay.
     const currentCenter = this.tubeCenterAt(this.progress);
     const wallOffsetX = currentCenter.x - baseCenter.x;
     const wallOffsetY = currentCenter.y - baseCenter.y;
-    this.tunnelGraphics.lineStyle(3, 0x5ee7ff, 0.8);
+    const deviation = Math.sqrt(wallOffsetX * wallOffsetX + wallOffsetY * wallOffsetY);
+    const dangerT = Phaser.Math.Clamp((deviation / TUBE_RADIUS - DANGER_RATIO) / (1 - DANGER_RATIO), 0, 1);
+    const wallColor = Phaser.Display.Color.Interpolate.ColorWithColor(
+      new Phaser.Display.Color(94, 231, 255),
+      new Phaser.Display.Color(255, 90, 90),
+      1,
+      dangerT,
+    );
+    const pulse = 0.6 + 0.4 * Math.sin(this.elapsed * (0.004 + dangerT * 0.012));
+    this.tunnelGraphics.lineStyle(3 + dangerT * 2, Phaser.Display.Color.GetColor(wallColor.r, wallColor.g, wallColor.b), 0.6 + pulse * 0.3);
     this.tunnelGraphics.strokeCircle(vanishingX + wallOffsetX, vanishingY + wallOffsetY, TUBE_RADIUS);
 
+    // Rastro de chispas que se van apagando detrás de la nave, dibujado en
+    // el mismo espacio relativo al tubo actual para que "quede atrás" si el
+    // barco se mueve.
+    this.starGraphics.clear();
+    this.trail.forEach((point, i) => {
+      const t = i / TRAIL_LENGTH;
+      const relX = (point.x - this.shipX) * 0.5;
+      const relY = (point.y - this.shipY) * 0.5;
+      this.starGraphics.fillStyle(0x5ee7ff, t * 0.35);
+      this.starGraphics.fillCircle(vanishingX + relX, vanishingY + relY, 4 + t * 4);
+    });
+
     // La chispa siempre se dibuja en el punto de fuga: ella ES el punto de
-    // vista de la cámara, lo que se mueve alrededor suyo es el tubo.
+    // vista de la cámara, lo que se mueve alrededor suyo es el tubo. Un
+    // leve pulso en el glow le da vida sin distraer del control.
     this.ship.setPosition(vanishingX, vanishingY);
     this.shipGlow.setPosition(this.ship.x, this.ship.y);
+    this.shipGlow.setScale(1 + pulse * 0.5);
   }
 
   private finish(success: boolean): void {
