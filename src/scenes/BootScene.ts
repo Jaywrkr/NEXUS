@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { fadeToScene } from '../utils/sceneTransition';
 import { ProgressSystem } from '../systems/ProgressSystem';
+import { loadNexusAssets } from '../entities/nexusAssets';
 
 const BUTTON_WIDTH = 200;
 const BUTTON_HEIGHT = 48;
@@ -8,6 +9,10 @@ const BUTTON_HEIGHT = 48;
 export class BootScene extends Phaser.Scene {
   constructor() {
     super('BootScene');
+  }
+
+  preload(): void {
+    loadNexusAssets(this);
   }
 
   create(): void {
@@ -41,11 +46,11 @@ export class BootScene extends Phaser.Scene {
         fadeToScene(this, 'WorldScene', [207, 232, 216]);
       });
       this.buildButton(width / 2, firstButtonY + BUTTON_HEIGHT + 16, 'Nueva partida', 0x5ee7ff, () => {
-        fadeToScene(this, 'CustomizeScene', [244, 241, 232]);
+        fadeToScene(this, 'WorldScene', [207, 232, 216]);
       });
     } else {
       this.buildButton(width / 2, firstButtonY, 'Jugar', 0x5ee7ff, () => {
-        fadeToScene(this, 'CustomizeScene', [244, 241, 232]);
+        fadeToScene(this, 'WorldScene', [207, 232, 216]);
       });
     }
   }
