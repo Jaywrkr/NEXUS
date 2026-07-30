@@ -1,17 +1,12 @@
-import type { NexusAppearance } from '../entities/Nexus';
-import { DEFAULT_APPEARANCE } from '../entities/Nexus';
-
 const STORAGE_KEY = 'los-nexus-progress';
 
 export interface GameState {
   fragmentsCollected: string[];
-  appearance: NexusAppearance;
   seenCompletion: boolean;
 }
 
 const DEFAULT_STATE: GameState = {
   fragmentsCollected: [],
-  appearance: DEFAULT_APPEARANCE,
   seenCompletion: false,
 };
 
@@ -23,7 +18,6 @@ export function loadGameState(): GameState {
     const parsed = JSON.parse(raw) as Partial<GameState>;
     return {
       fragmentsCollected: parsed.fragmentsCollected ?? [],
-      appearance: { ...DEFAULT_APPEARANCE, ...parsed.appearance },
       seenCompletion: parsed.seenCompletion ?? false,
     };
   } catch {

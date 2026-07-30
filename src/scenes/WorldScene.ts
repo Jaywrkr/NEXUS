@@ -77,7 +77,7 @@ export class WorldScene extends Phaser.Scene {
     this.buildStaticZone(width, height, vScale);
     this.buildAmbientLife(width, height, vScale);
 
-    this.nexus = new Nexus(this, 480, height / 2 + 100 * vScale, this.progress.getAppearance());
+    this.nexus = new Nexus(this, 480, height / 2 + 100 * vScale);
     this.nexus.setDepth(10);
     this.cameras.main.startFollow(this.nexus, true, 0.12, 0.12);
 

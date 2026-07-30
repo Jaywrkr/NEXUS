@@ -17,15 +17,14 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
   2. **La fuente de agua**: fuente → fuente de agua (puzzle de un solo paso).
   3. **La antena**: dos fuentes → una antena (necesita **dos** conexiones simultáneas).
   4. **El puente**: un interruptor revela un puente sobre una grieta que **físicamente bloquea el paso** hasta conectarlo (única zona con barrera real de colisión).
-- **Personalización profunda**: color de cuerpo, chaqueta, acento y zapatos + **forma** de gorra (ninguna/gorra/gorro) + **forma** de mochila (núcleo/cuadrada/redonda). 36 combinaciones. Pantalla `CustomizeScene` antes de jugar.
-- **Personaje rediseñado** siguiendo una referencia visual que el usuario compartió: orejas tipo conejo con puntas de color, cabeza clara con cara negra y ojos ovalados amarillos, hoodie con capucha asomando, mochila con cable de energía colgando (ver `src/entities/Nexus.ts`).
+- **Personaje con sprites reales** (Decisión 017): el Nexus ya no se dibuja con formas de Phaser — son 4 imágenes PNG generadas por IA (idle, dos de caminata, celebrar) en `public/assets/nexus/`, cargadas por `loadNexusAssets()` desde `BootScene.preload()`. Sin personalización por ahora (se sacó `CustomizeScene`, ver más abajo) — el diseño es fijo: orejas tipo conejo con puntas de color, cabeza clara con cara negra y ojos ovalados amarillos, hoodie turquesa, mochila con cable de energía colgando. Los prompts usados están en `ART_PROMPTS.md` por si hay que generar más poses o variantes.
 - **Museo** con 4 vitrinas, mensaje de "Colección completa" y celebración especial (flash + chispas en las 4 zonas) la primera vez que se completan las 4.
 - **Controles duales**: teclado/mouse en desktop, joystick virtual táctil + **botón de interacción** (aparece al acercarse a un objeto conectable, evita tener que acertar el toque exacto sobre algo pequeño).
 - **Adaptación real a móvil vertical**: la resolución interna del juego cambia (960×540 landscape ↔ 540×960 portrait) según orientación + tipo de puntero, para llenar la pantalla en vez de dejar barras negras. Ver `src/config/gameConfig.ts`.
 - **Sonido**: tonos generados por código (Web Audio, sin archivos de audio) para conectar/error/recolectar, con botón de mute/unmute (🔊/🔇, esquina superior izquierda de `WorldScene`) que persiste en `localStorage`.
 - **Animaciones del Nexus**: idle, caminar, conectar (implícito en el cable), celebrar (salto + chispas al recoger fragmentos).
-- **Progreso persistente** en `localStorage` (fragmentos recolectados, apariencia elegida, si ya vio la celebración final).
-- **Pantalla de título** (`BootScene`): "Jugar" si no hay progreso guardado, o "Continuar" (directo a `WorldScene`) + "Nueva partida" si ya hay fragmentos recolectados.
+- **Progreso persistente** en `localStorage` (fragmentos recolectados, si ya vio la celebración final).
+- **Pantalla de título** (`BootScene`): "Jugar" si no hay progreso guardado, o "Continuar" + "Nueva partida" si ya hay fragmentos recolectados — las tres van directo a `WorldScene` (no hay pantalla de personalización).
 - **Pulido visual**: transiciones de fade in/out entre las 4 escenas (`src/utils/sceneTransition.ts`), fondo con parallax en `WorldScene` (nubes + dos capas de colinas con distinto `scrollFactor`), cable de conexión dibujado como curva bezier con una chispa que lo recorre al conectar válido, e indicador `★ n/4` fijo en el HUD del mundo que se actualiza al recolectar cada fragmento.
 - **Realismo**: movimiento del Nexus con aceleración/desaceleración gradual (no velocidad instantánea), sombras de piso en todos los objetos interactivos y decoración estática, viento sutil en el árbol y mariposas cruzando el mundo.
 - **Mini-túnel del cable** (idea de Luca, `CableTunnelScene`): la conexión fuente→lámpara de la plaza, en vez de resolverse al toque, abre un mini-juego con perspectiva tipo Mario Kart — anillos concéntricos que se agrandan al acercarse (efecto vórtex dibujado con `Graphics`, sin assets), la chispa vista desde atrás/abajo, y control libre en 2D (flechas/WASD, las 4 direcciones, o el mismo joystick táctil que en `WorldScene`) para esquivar las paredes del tubo mientras serpentea. Perder devuelve a intentar la conexión; ganar la completa normalmente. Ver Decisión 016. Por ahora solo esa conexión lo usa — el resto sigue resolviéndose al toque directo.
@@ -55,16 +54,16 @@ src/
   main.ts                    — entrada, crea el Phaser.Game, recarga si cambia orientación
   config/gameConfig.ts       — resolución dinámica según orientación/puntero
   scenes/
-    BootScene.ts             — pantalla de título: "Jugar"/"Continuar" según haya progreso guardado
-    CustomizeScene.ts        — elegir apariencia antes de jugar
+    BootScene.ts             — pantalla de título: "Jugar"/"Continuar" según haya progreso guardado, precarga los sprites del Nexus
     WorldScene.ts            — el mundo completo, las 4 zonas, cámara, joystick, botón de interacción
     MuseumScene.ts           — vitrinas de fragmentos
     CableTunnelScene.ts      — mini-túnel dentro del cable (ver Decisión 016), se lanza sobre WorldScene pausada
   entities/
-    Nexus.ts                 — el personaje jugable (visual + movimiento + celebrar)
+    Nexus.ts                 — el personaje jugable (sprite real + movimiento + celebrar, ver Decisión 017)
+    nexusAssets.ts           — claves y loader de los PNG del Nexus (public/assets/nexus/)
   systems/
     ConnectionSystem.ts      — la mecánica de conectar (seleccionar origen → destino, reglas, cable)
-    ProgressSystem.ts        — wrapper de localStorage (fragmentos, apariencia, seenCompletion)
+    ProgressSystem.ts        — wrapper de localStorage (fragmentos, seenCompletion)
     AudioSystem.ts           — tonos generados por Web Audio
   objects/
     ConnectableObject.ts     — clase base abstracta de todo lo conectable
@@ -83,19 +82,20 @@ src/
 
 Ver `DECISIONS.md` para la lista completa. Las más importantes:
 - **Toda mecánica nueva debe reutilizar la acción de conectar** (Decisión 008). La antena (doble conexión) y el puente (bloqueo físico) son ejemplos de cómo variar el ritmo sin salirse de esto.
-- Nada de assets externos — todo son formas de Phaser (rectángulos, elipses, círculos, líneas, graphics).
+- El resto del juego (objetos, mundo, UI) sigue siendo formas de Phaser sin assets externos — la única excepción es el Nexus, que desde la Decisión 017 usa sprites PNG reales en `public/assets/nexus/`. No asumas que se puede extender esa excepción a otras cosas sin que el usuario lo pida.
 - No agregar combate, inventario complejo, economía, multijugador, login (Decisión 006).
 - No ampliar el alcance sin que el usuario lo pida explícitamente.
 
 ## Gotchas / bugs reales ya encontrados y arreglados (no los repitas)
 
-1. **`Phaser.GameObjects.Container` con hijos interactivos es poco confiable para botones de UI**: el primer clic funciona, los siguientes no se registran. `InteractButton` se reescribió usando objetos de escena planos (rectángulo + texto sueltos, sin Container) — igual que el botón "Jugar" de `CustomizeScene`, que siempre funcionó bien. Si agregás un botón nuevo, seguí ese patrón (sin Container).
+1. **`Phaser.GameObjects.Container` con hijos interactivos es poco confiable para botones de UI**: el primer clic funciona, los siguientes no se registran. `InteractButton` se reescribió usando objetos de escena planos (rectángulo + texto sueltos, sin Container) — igual que los botones de `BootScene`, que siempre funcionaron bien. Si agregás un botón nuevo, seguí ese patrón (sin Container).
 2. **`StaticBody.updateFromGameObject()` no funciona con `Container`**: llama a `gameObject.getTopLeft()`, que `Container` no implementa. Si necesitás mover un cuerpo físico estático cada frame (ej. un objeto que flota), actualizá `body.x`/`body.y` manualmente en vez de usar ese método.
 3. **Objetos de texto/gráficos de UI necesitan `setScrollFactor(0)` explícito**, incluso si están dentro de un sistema que ya parece "fijo en pantalla". El texto de feedback de `ConnectionSystem` quedó invisible en la zona 2 por esto — se posicionaba en coordenadas de mundo y la cámara lo dejaba fuera de vista al hacer scroll.
 4. **`100vh` en CSS no es confiable en navegadores móviles** (la barra de direcciones ocupa espacio variable). Se usa `100dvh` con `100vh` como respaldo. Además, ningún elemento de UI importante (como el botón "Jugar") debería depender de estar pegado al borde inferior de la pantalla — mejor calcularlo relativo al contenido de arriba.
 5. **`window.matchMedia('(orientation: portrait) and (pointer: coarse)')`** es la forma de distinguir un celular real en vertical de una ventana de escritorio angosta (que tiene `pointer: fine`). No uses solo el ancho de la ventana para esa detección.
 6. **Cuidado al probar con Playwright**: mover al Nexus solo en un eje (por ejemplo solo `ArrowRight`) y luego hacer clic en el botón de interacción puede fallar si el objetivo está a más de 90px en el otro eje (el radio de interacción es circular, no solo horizontal). Varias veces esto se confundió con un bug real cuando en realidad era el script de prueba. Siempre mover en diagonal (mantener dos teclas) para acercarse de verdad, o usar clics directos con coordenadas ya validadas en este documento/commits anteriores.
 7. **Patrón para mini-juegos que se abren "sobre" `WorldScene`** (como `CableTunnelScene`): `this.scene.launch('OtraEscena', data)` + `this.scene.pause()` desde `WorldScene`, y al terminar la escena hija hace `this.scene.stop()` + `this.scene.resume('WorldScene', resultado)`. `WorldScene` escucha su propio evento `'resume'` (`this.events.on('resume', (sys, data) => ...)`) para recibir el resultado. Pausar la escena para el input/física del Nexus automáticamente sin código extra.
+8. **PNGs generados por IA suelen venir con mucho margen transparente/halo y en una resolución enorme** (las 4 imágenes del Nexus llegaron en 1024×1536, ~2MB cada una — 8MB en total, demasiado para cargar bien en celular). Antes de usarlos: recortar al bounding box del contenido visible (umbral de alpha, no 0 exacto, para no cortar el halo de brillo intencional) + un padding chico, y reescalar a una altura razonable (se usó 480px). Con Pillow: `alpha.point(lambda a: 255 if a > 40 else 0).getbbox()`. Esto bajó el total a ~700KB sin perder calidad visible. También: todas las poses deben quedar recortadas con el mismo criterio para que los pies terminen a la misma distancia del borde inferior — si no, el personaje "salta" verticalmente al cambiar de sprite (idle↔caminar↔festejar) porque cada imagen tiene su propio contenido a distinta altura dentro del lienzo.
 
 ## Coordenadas de referencia del mundo (para pruebas o debug futuro)
 

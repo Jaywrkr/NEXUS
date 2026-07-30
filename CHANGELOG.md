@@ -75,3 +75,12 @@ El usuario reportó que tocar los objetos pequeños es difícil. Se agregó `Int
 
 ## Documentación de contexto
 Se crean/actualizan `CLAUDE.md`, `CHANGELOG.md`, y se actualizan `DECISIONS.md`, `MVP_SCOPE.md`, `README.md` para que una sesión nueva de Claude tenga contexto completo del proyecto sin depender del historial de conversación.
+
+## Pulido general: transiciones, parallax, cable curvo, HUD, sonido, mundo vivo
+Ronda de pulido para "hacer el juego más profesional": fade in/out entre escenas, fondo con parallax en `WorldScene`, cable de conexión dibujado como curva bezier con chispa animada, indicador `★ n/4` en el HUD, pantalla de título con Jugar/Continuar, control de mute, movimiento del Nexus con aceleración/desaceleración, sombras de piso, viento en el árbol y mariposas, y micro-juice de movimiento (squash/stretch al girar y caminar).
+
+## Mini-túnel del cable (idea de Luca)
+`CableTunnelScene`: algunas conexiones (por ahora solo fuente→lámpara de la plaza) abren un mini-juego donde la chispa vuela sola por un tubo que serpentea, visto desde atrás con perspectiva tipo Mario Kart (anillos concéntricos). Hubo que corregir dos bugs reales encontrados jugando: el dibujo de los anillos tapaba los internos por el orden incorrecto, y la posición del jugador se calculaba relativa al centro del tubo en vez de ser independiente (por lo que quedarse quieto nunca fallaba pase lo que pasara la curva). Se agregó soporte de joystick táctil.
+
+## El Nexus pasa a usar imágenes reales (Decisión 017)
+El usuario decidió romper la regla de "solo formas de Phaser" para el personaje, para acercarlo a una hoja de referencia visual más detallada. Se generaron 4 poses (idle, dos de caminata, celebrar) con un generador de imágenes por IA usando prompts preparados en `ART_PROMPTS.md`, se recortaron/optimizaron (de ~8MB a ~700KB en total) y se integraron como sprites en `Nexus.ts`. Como consecuencia, se sacó la personalización (`CustomizeScene` se eliminó): el Nexus ahora tiene un único diseño fijo, ya no hay elección de color/gorra/mochila antes de jugar.
