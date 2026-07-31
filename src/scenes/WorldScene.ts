@@ -14,6 +14,9 @@ import { VirtualJoystick } from '../ui/VirtualJoystick';
 import { InteractButton } from '../ui/InteractButton';
 import type { ConnectableObject } from '../objects/ConnectableObject';
 import { fadeToScene } from '../utils/sceneTransition';
+import { ensureRoundedRectTexture } from '../utils/uiTextures';
+
+const HUD_PILL_TEXTURE = 'hud-pill-bg';
 
 const INTERACT_RADIUS = 90;
 
@@ -96,6 +99,8 @@ export class WorldScene extends Phaser.Scene {
       if (target) this.connectionSystem.interact(target);
     });
 
+    ensureRoundedRectTexture(this, HUD_PILL_TEXTURE, 100, 36, 18);
+
     this.instructionText = this.add
       .text(this.scale.width / 2, 24, '', {
         fontFamily: 'sans-serif',
@@ -104,30 +109,50 @@ export class WorldScene extends Phaser.Scene {
       })
       .setOrigin(0.5)
       .setDepth(20)
+      .setScrollFactor(0)
+      .setShadow(0, 2, 'rgba(255,255,255,0.6)', 3, false, true);
+
+    this.add
+      .image(this.scale.width - 16 - 42, 16 + 18, HUD_PILL_TEXTURE)
+      .setDisplaySize(84, 36)
+      .setTint(0xffffff)
+      .setAlpha(0.55)
+      .setDepth(19)
       .setScrollFactor(0);
 
     this.fragmentHud = this.add
-      .text(this.scale.width - 16, 16, this.fragmentHudLabel(), {
+      .text(this.scale.width - 16, 16 + 18, this.fragmentHudLabel(), {
         fontFamily: 'sans-serif',
         fontSize: '18px',
-        color: '#1b1f3b',
+        fontStyle: 'bold',
+        color: '#8a6d1f',
       })
-      .setOrigin(1, 0)
+      .setOrigin(1, 0.5)
       .setDepth(20)
       .setScrollFactor(0);
 
+    const mutePill = this.add
+      .image(16 + 42, 16 + 18, HUD_PILL_TEXTURE)
+      .setDisplaySize(84, 36)
+      .setTint(0xffffff)
+      .setAlpha(0.55)
+      .setDepth(19)
+      .setScrollFactor(0)
+      .setInteractive({ useHandCursor: true });
+
     this.muteButton = this.add
-      .text(16, 16, this.muteButtonLabel(), {
+      .text(16 + 42, 16 + 18, this.muteButtonLabel(), {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#1b1f3b',
       })
-      .setOrigin(0, 0)
+      .setOrigin(0.5)
       .setDepth(20)
-      .setScrollFactor(0)
-      .setInteractive({ useHandCursor: true });
+      .setScrollFactor(0);
 
-    this.muteButton.on('pointerdown', () => {
+    mutePill.on('pointerover', () => mutePill.setAlpha(0.8));
+    mutePill.on('pointerout', () => mutePill.setAlpha(0.55));
+    mutePill.on('pointerdown', () => {
       AudioSystem.setMuted(!AudioSystem.isMuted());
       this.muteButton.setText(this.muteButtonLabel());
     });
