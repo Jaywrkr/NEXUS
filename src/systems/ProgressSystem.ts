@@ -1,5 +1,5 @@
 import type { GameState } from '../data/gameState';
-import { loadGameState, saveGameState } from '../data/gameState';
+import { clearGameState, loadGameState, saveGameState } from '../data/gameState';
 
 /**
  * Punto único de acceso al progreso guardado (localStorage):
@@ -33,5 +33,11 @@ export class ProgressSystem {
   markCompletionSeen(): void {
     this.state.seenCompletion = true;
     saveGameState(this.state);
+  }
+
+  /** Borra todo el progreso guardado (fragmentos y celebración vista). Usado por "Nueva partida". */
+  resetProgress(): void {
+    clearGameState();
+    this.state = loadGameState();
   }
 }
