@@ -12,7 +12,6 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 
 ## Pulido visual pendiente
 - Pantalla de créditos simple (nombres, "hecho con Luca", fecha).
-- Más variedad de partículas al conectar (ahora es una sola chispa por el cable).
 
 ## Producto / UX
 - Pantalla de opciones más completa (volumen si se agregan más tipos de sonido,
@@ -27,7 +26,21 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 - Dominio propio.
 
 ## Ideas de contenido (mecánica, siempre reutilizando "conectar")
-- (vacío por ahora — agregar acá si surge una quinta zona, variante de puzzle, etc.)
+Backlog acordado con el usuario (2026-08-06) para ir probando de a una, ordenado
+de menor a mayor esfuerzo/riesgo de romper zonas existentes:
+- Conexión con señuelo: un objeto extra en una zona que no debe conectarse (o
+  rompe la conexión si se usa), para que haya que observar antes de tocar.
+- Fragmento secreto oculto, además de los 4 de zona, premiando la exploración.
+- Criatura que se despierta al conectar algo y sigue un rato al Nexus,
+  reaccionando cerca de conexiones pendientes (sin diálogo, sin ser NPC complejo).
+- Objeto en movimiento (péndulo, luz que gira) que solo se puede conectar
+  cuando está en la posición correcta — variante de timing.
+- Energía compartida: una fuente que solo alimenta un objeto a la vez, hay que
+  decidir el orden de conexión. Toca las reglas del `ConnectionSystem`, más
+  riesgo de afectar zonas existentes — dejar para cuando el resto esté probado.
+- Cable largo entre zonas: conectar algo en una zona con algo en otra ya
+  visitada. La más compleja (cable cruzando cámara/scroll, estado entre zonas
+  lejanas) — dejar para el final.
 
 ## Mini-túnel del cable (idea de Luca, prototipo en fuente→lámpara de la plaza)
 - Probarlo con Luca de verdad antes de decidir si se aplica a más conexiones —

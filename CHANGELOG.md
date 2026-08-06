@@ -84,3 +84,6 @@ Ronda de pulido para "hacer el juego más profesional": fade in/out entre escena
 
 ## El Nexus pasa a usar imágenes reales (Decisión 017)
 El usuario decidió romper la regla de "solo formas de Phaser" para el personaje, para acercarlo a una hoja de referencia visual más detallada. Se generaron 4 poses (idle, dos de caminata, celebrar) con un generador de imágenes por IA usando prompts preparados en `ART_PROMPTS.md`, se recortaron/optimizaron (de ~8MB a ~700KB en total) y se integraron como sprites en `Nexus.ts`. Como consecuencia, se sacó la personalización (`CustomizeScene` se eliminó): el Nexus ahora tiene un único diseño fijo, ya no hay elección de color/gorra/mochila antes de jugar.
+
+## Más variedad de partículas al conectar
+`ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.
