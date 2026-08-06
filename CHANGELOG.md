@@ -90,3 +90,6 @@ El usuario decidió romper la regla de "solo formas de Phaser" para el personaje
 
 ## Fuente señuelo en la antena
 `EnergySource` ahora acepta un `variant` ('active' | 'dim'); la variante 'dim' no tiene brillo animado ni rotación. Se agregó una tercera fuente (`beacon-source-fake`, variante 'dim') en la zona de la antena, entre las dos fuentes reales y la antena, sin ninguna regla de conexión asociada — cualquier intento de conectarla da el mensaje genérico de "no encaja". No requirió tocar `ConnectionSystem`: el comportamiento de señuelo sale gratis del manejo existente de conexiones inválidas, solo hacía falta un objeto de más para que el jugador tuviera que observar antes de conectar.
+
+## Fragmento secreto
+Quinto fragmento (`secret-fragment`) escondido detrás de la casa apagada, al oeste del punto de partida — visible desde el arranque (no depende de ninguna conexión), premia a quien explore para atrás en vez de ir directo a la derecha. No cuenta para el contador `★ n/4` del HUD ni para "¡Colección completa!" (esos siguen atados solo a los 4 fragmentos de zona), pero sí tiene su propia vitrina en el Museo. `MuseumScene` ahora separa `FRAGMENTS` (los 4 que definen la colección completa) de `SECRET_FRAGMENT` (se muestra igual, no afecta ese chequeo).

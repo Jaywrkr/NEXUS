@@ -9,6 +9,9 @@ const FRAGMENTS = [
   { id: 'bridge-fragment', label: 'Fragmento del puente' },
 ];
 
+/** Fragmento secreto (no ligado a una conexión). No cuenta para "¡Colección completa!". */
+const SECRET_FRAGMENT = { id: 'secret-fragment', label: 'Fragmento secreto' };
+
 export class MuseumScene extends Phaser.Scene {
   private progress!: ProgressSystem;
 
@@ -31,10 +34,11 @@ export class MuseumScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    const spacing = Math.min(220, (width - 140) / (FRAGMENTS.length - 1));
-    const startX = width / 2 - (spacing * (FRAGMENTS.length - 1)) / 2;
+    const displayedFragments = [...FRAGMENTS, SECRET_FRAGMENT];
+    const spacing = Math.min(180, (width - 140) / (displayedFragments.length - 1));
+    const startX = width / 2 - (spacing * (displayedFragments.length - 1)) / 2;
 
-    FRAGMENTS.forEach((fragment, index) => {
+    displayedFragments.forEach((fragment, index) => {
       this.buildVitrina(startX + index * spacing, height / 2, fragment.id, fragment.label);
     });
 

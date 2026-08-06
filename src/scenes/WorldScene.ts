@@ -24,6 +24,8 @@ const PLAZA_FRAGMENT_ID = 'plaza-fragment';
 const FOUNTAIN_FRAGMENT_ID = 'fountain-fragment';
 const BEACON_FRAGMENT_ID = 'beacon-fragment';
 const BRIDGE_FRAGMENT_ID = 'bridge-fragment';
+/** Fragmento extra, no ligado a ninguna conexión: premia explorar detrás de la casa apagada. */
+const SECRET_FRAGMENT_ID = 'secret-fragment';
 const ALL_FRAGMENT_IDS = [PLAZA_FRAGMENT_ID, FOUNTAIN_FRAGMENT_ID, BEACON_FRAGMENT_ID, BRIDGE_FRAGMENT_ID];
 const WORLD_WIDTH = 2950;
 const GAP_X = 2610;
@@ -43,6 +45,7 @@ export class WorldScene extends Phaser.Scene {
   private beaconFragment!: Fragment;
   private bridge!: Bridge;
   private bridgeFragment!: Fragment;
+  private secretFragment!: Fragment;
   private bridgeDeck!: Phaser.GameObjects.Rectangle;
   private bridgeBlocker!: Phaser.GameObjects.Zone;
   private bridgeCollider!: Phaser.Physics.Arcade.Collider;
@@ -203,6 +206,12 @@ export class WorldScene extends Phaser.Scene {
     this.door = new Door(this, 820, midY + 60 * vScale);
     this.plazaFragment = new Fragment(this, 820, midY - 10 * vScale);
 
+    // Fragmento secreto: detrás de la casa apagada, al oeste del punto de partida.
+    // No depende de ninguna conexión, ya está visible — premia a quien explore para atrás.
+    this.secretFragment = new Fragment(this, 140, midY + 60 * vScale);
+    this.secretFragment.setDepth(12);
+    this.secretFragment.reveal();
+
     // Zona 2: la fuente restaurada (segunda fuente → fuente de agua)
     const fountainSource = new EnergySource(this, 1300, midY - 40 * vScale, 'fountain-source');
     this.fountain = new Fountain(this, 1460, midY + 40 * vScale);
@@ -310,6 +319,9 @@ export class WorldScene extends Phaser.Scene {
     );
     this.physics.add.overlap(this.nexus, this.bridgeFragment, () =>
       this.collectFragment(this.bridgeFragment, BRIDGE_FRAGMENT_ID),
+    );
+    this.physics.add.overlap(this.nexus, this.secretFragment, () =>
+      this.collectFragment(this.secretFragment, SECRET_FRAGMENT_ID),
     );
   }
 
@@ -520,7 +532,8 @@ export class WorldScene extends Phaser.Scene {
 
   /** Fondo con parallax: cielo + dos capas de colinas que se mueven más lento que la cámara. */
   private fragmentHudLabel(): string {
-    return `★ ${this.progress.getCollectedFragments().length}/${ALL_FRAGMENT_IDS.length}`;
+    const zoneCollected = ALL_FRAGMENT_IDS.filter((fid) => this.progress.hasFragment(fid)).length;
+    return `★ ${zoneCollected}/${ALL_FRAGMENT_IDS.length}`;
   }
 
   private muteButtonLabel(): string {
