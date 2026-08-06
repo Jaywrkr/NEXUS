@@ -87,3 +87,6 @@ El usuario decidió romper la regla de "solo formas de Phaser" para el personaje
 
 ## Más variedad de partículas al conectar
 `ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.
+
+## Fuente señuelo en la antena
+`EnergySource` ahora acepta un `variant` ('active' | 'dim'); la variante 'dim' no tiene brillo animado ni rotación. Se agregó una tercera fuente (`beacon-source-fake`, variante 'dim') en la zona de la antena, entre las dos fuentes reales y la antena, sin ninguna regla de conexión asociada — cualquier intento de conectarla da el mensaje genérico de "no encaja". No requirió tocar `ConnectionSystem`: el comportamiento de señuelo sale gratis del manejo existente de conexiones inválidas, solo hacía falta un objeto de más para que el jugador tuviera que observar antes de conectar.

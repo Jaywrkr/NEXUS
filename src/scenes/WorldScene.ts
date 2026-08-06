@@ -208,9 +208,10 @@ export class WorldScene extends Phaser.Scene {
     this.fountain = new Fountain(this, 1460, midY + 40 * vScale);
     this.fountainFragment = new Fragment(this, 1460, midY - 60 * vScale);
 
-    // Zona 3: la antena (dos fuentes → una sola antena)
+    // Zona 3: la antena (dos fuentes → una sola antena, más una fuente señuelo sin brillo que no sirve)
     const beaconSourceA = new EnergySource(this, 1980, midY - 80 * vScale, 'beacon-source-a');
     const beaconSourceB = new EnergySource(this, 1980, midY + 80 * vScale, 'beacon-source-b');
+    const beaconSourceFake = new EnergySource(this, 2100, midY, 'beacon-source-fake', 'dim');
     this.beacon = new Beacon(this, 2220, midY);
     this.beaconFragment = new Fragment(this, 2220, midY - 90 * vScale);
 
@@ -227,6 +228,7 @@ export class WorldScene extends Phaser.Scene {
       this.fountain,
       beaconSourceA,
       beaconSourceB,
+      beaconSourceFake,
       this.beacon,
       bridgeSource,
       this.bridge,

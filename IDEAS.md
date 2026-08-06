@@ -28,8 +28,6 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 ## Ideas de contenido (mecánica, siempre reutilizando "conectar")
 Backlog acordado con el usuario (2026-08-06) para ir probando de a una, ordenado
 de menor a mayor esfuerzo/riesgo de romper zonas existentes:
-- Conexión con señuelo: un objeto extra en una zona que no debe conectarse (o
-  rompe la conexión si se usa), para que haya que observar antes de tocar.
 - Fragmento secreto oculto, además de los 4 de zona, premiando la exploración.
 - Criatura que se despierta al conectar algo y sigue un rato al Nexus,
   reaccionando cerca de conexiones pendientes (sin diálogo, sin ser NPC complejo).
