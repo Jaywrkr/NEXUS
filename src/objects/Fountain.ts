@@ -37,7 +37,7 @@ export class Fountain extends ConnectableObject {
     });
 
     this.setSize(92, 92);
-    this.setInteractive(new Phaser.Geom.Rectangle(-46, -26, 92, 92), Phaser.Geom.Rectangle.Contains);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 20, 92, 92), Phaser.Geom.Rectangle.Contains);
   }
 
   activate(): void {

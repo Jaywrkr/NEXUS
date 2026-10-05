@@ -38,7 +38,7 @@ export class Door extends ConnectableObject {
     });
 
     this.setSize(60, 100);
-    this.setInteractive(new Phaser.Geom.Rectangle(-30, -50, 60, 100), Phaser.Geom.Rectangle.Contains);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 60, 100), Phaser.Geom.Rectangle.Contains);
   }
 
   activate(): void {

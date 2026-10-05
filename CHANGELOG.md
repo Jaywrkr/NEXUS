@@ -90,3 +90,10 @@ Botón «Volver al mundo» accesible por toque y clic, conservando ESPACIO como 
 
 ## Continuar conexiones y posición
 El guardado incluye las conexiones resueltas y la posición del Nexus, además de los fragmentos. Al continuar o volver del museo se restauran la lámpara, puerta, fuente, antena parcial/completa, puente y fragmentos pendientes. La posición vertical es relativa a la altura para soportar la rotación; se valida contra los límites del mundo y un puente cerrado. «Continuar» también aparece antes del primer fragmento y «Nueva partida» borra todos los campos. Las partidas antiguas conservan sus fragmentos. Las conexiones repetidas ya no cuentan dos veces para la antena. Se añaden cuatro pruebas de serialización, migración, datos inválidos y reinicio (`node --test tests/gameState.test.mjs`, Node 24).
+
+## Pruebas automatizadas del recorrido e interacción
+Se incorpora Playwright como dependencia de desarrollo y los comandos `npm test`, `npm run test:unit` y `npm run test:e2e`. Tres escenarios se ejecutan en escritorio y móvil vertical: las cuatro zonas (incluidos perder/ganar el túnel con controles reales, física del puente y museo completo), recuperación de conexiones/posición y rotación móvil, y partidas antiguas con cancelación/confirmación de «Nueva partida». El runner inicia un Vite propio, aísla el almacenamiento y conserva capturas y trazas de fallos. Preparación y límites en `tests/README.md`.
+
+Las pruebas encontraron áreas interactivas desplazadas por el origen de los Container de Phaser: el centro del interruptor del puente no recibía el toque y otros centros quedaban en el límite de sus áreas. Se corrigieron las coordenadas de los hit areas de fuente de energía, lámpara, puerta, fuente de agua, antena y puente para coincidir con las zonas previstas.
+
+El recorrido completo también detectó listeners del mundo que se acumulaban al volver del museo: abrir el puente intentaba destruir su collider varias veces. Se eliminan los listeners propios en shutdown y la retirada de la barrera es idempotente, incluyendo puentes restaurados desde partidas antiguas.
