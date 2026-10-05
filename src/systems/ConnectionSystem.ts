@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import type { SavedConnection } from '../data/gameState';
 import { ConnectableObject } from '../objects/ConnectableObject';
 import { AudioSystem } from './AudioSystem';
 
@@ -21,6 +22,7 @@ export class ConnectionSystem {
   private scene: Phaser.Scene;
   private objects: ConnectableObject[] = [];
   private rules: ConnectionRule[] = [];
+  private completed = new Set<string>();
   private selected: ConnectableObject | null = null;
   private cableGraphics: Phaser.GameObjects.Graphics;
   private feedbackText: Phaser.GameObjects.Text;
@@ -50,6 +52,20 @@ export class ConnectionSystem {
 
   addRule(rule: ConnectionRule): void {
     this.rules.push(rule);
+  }
+
+  /** Replay only registered rules, in puzzle order, without tunnel, sound or rewards. */
+  restoreConnections(connections: SavedConnection[]): void {
+    for (const rule of this.rules) {
+      if (!connections.some((c) => c.sourceId === rule.sourceId && c.targetId === rule.targetId)) continue;
+      const source = this.objects.find((object) => object.id === rule.sourceId);
+      const target = this.objects.find((object) => object.id === rule.targetId);
+      const key = JSON.stringify([rule.sourceId, rule.targetId]);
+      if (!source || !target || !source.canInitiate() || this.completed.has(key)) continue;
+      this.completed.add(key);
+      source.activate();
+      target.activate();
+    }
   }
 
   /** Punto de entrada público: tocar el objeto directamente o presionar el botón de interacción hacen lo mismo. */
@@ -90,6 +106,11 @@ export class ConnectionSystem {
       return;
     }
 
+    if (this.completed.has(JSON.stringify([source.id, target.id]))) {
+      this.showFeedback('Esa conexión ya está lista', '#1b6b3a');
+      return;
+    }
+
     if (rule.useTunnel) {
       this.scene.events.emit('tunnel-requested', { source, target });
       return;
@@ -111,13 +132,16 @@ export class ConnectionSystem {
   }
 
   private completeConnection(source: ConnectableObject, target: ConnectableObject): void {
+    const key = JSON.stringify([source.id, target.id]);
+    if (this.completed.has(key)) return;
+    this.completed.add(key);
     this.drawCable(source, target, true);
     source.activate();
     target.activate();
     this.showFeedback('¡Conexión correcta!', '#1b6b3a');
     this.audio.playSuccess();
     this.spawnConnectBurst(target.getPlugPoint());
-    this.scene.events.emit('connection-made', target.id);
+    this.scene.events.emit('connection-made', target.id, source.id);
   }
 
   /** Ráfaga de chispas que se disparan desde el objetivo al completar una conexión, como remate visual. */

@@ -20,7 +20,7 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     const { width, height } = this.scale;
     const progress = new ProgressSystem();
-    const hasProgress = progress.getCollectedFragments().length > 0;
+    const hasProgress = progress.hasProgress();
 
     ensureRoundedRectTexture(this, BUTTON_TEXTURE, BUTTON_WIDTH, BUTTON_HEIGHT, 14);
 

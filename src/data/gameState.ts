@@ -1,27 +1,52 @@
 const STORAGE_KEY = 'los-nexus-progress';
 
+export interface SavedConnection {
+  sourceId: string;
+  targetId: string;
+}
+
+export interface SavedPosition {
+  x: number;
+  /** Relative world height, so rotating the phone preserves the location. */
+  yRatio: number;
+}
+
 export interface GameState {
   fragmentsCollected: string[];
   seenCompletion: boolean;
+  connections: SavedConnection[];
+  position: SavedPosition | null;
 }
 
-const DEFAULT_STATE: GameState = {
-  fragmentsCollected: [],
-  seenCompletion: false,
-};
+function emptyState(): GameState {
+  return { fragmentsCollected: [], seenCompletion: false, connections: [], position: null };
+}
 
 export function loadGameState(): GameState {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return { ...DEFAULT_STATE };
-
   try {
-    const parsed = JSON.parse(raw) as Partial<GameState>;
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return emptyState();
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object') return emptyState();
+    const position = parsed.position;
     return {
-      fragmentsCollected: parsed.fragmentsCollected ?? [],
-      seenCompletion: parsed.seenCompletion ?? false,
+      fragmentsCollected: Array.isArray(parsed.fragmentsCollected)
+        ? [...new Set<string>(parsed.fragmentsCollected.filter((id: unknown) => typeof id === 'string'))]
+        : [],
+      seenCompletion: parsed.seenCompletion === true,
+      connections: Array.isArray(parsed.connections)
+        ? parsed.connections.filter((connection: unknown): connection is SavedConnection => {
+            if (!connection || typeof connection !== 'object') return false;
+            const candidate = connection as Partial<SavedConnection>;
+            return typeof candidate.sourceId === 'string' && typeof candidate.targetId === 'string';
+          })
+        : [],
+      position: position && Number.isFinite(position.x) && Number.isFinite(position.yRatio)
+        ? { x: position.x, yRatio: position.yRatio }
+        : null,
     };
   } catch {
-    return { ...DEFAULT_STATE };
+    return emptyState();
   }
 }
 
