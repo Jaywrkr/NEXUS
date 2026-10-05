@@ -71,7 +71,7 @@ export async function near(page, id, sourceId) {
     s.nexus.setPosition(source ? (source.x + target.x) / 2 : target.x, s.scale.height * 0.8);
     s.nexus.body.updateFromGameObject();
     s.cameras.main.centerOn(s.nexus.x, s.nexus.y);`);
-  await expect.poll(() => world(page, 'return Math.abs(s.cameras.main.midPoint.x - Math.max(s.scale.width / 2, Math.min(2950 - s.scale.width / 2, s.nexus.x)));')).toBeLessThan(1);
+  await expect.poll(() => world(page, 'return Math.abs(s.cameras.main.midPoint.x - Math.max(s.scale.width / 2, Math.min(s.physics.world.bounds.width - s.scale.width / 2, s.nexus.x)));')).toBeLessThan(1);
 }
 
 export async function clickObject(page, id) {

@@ -6,6 +6,9 @@ import { Door } from '../objects/Door';
 import { Fountain } from '../objects/Fountain';
 import { Beacon } from '../objects/Beacon';
 import { Bridge } from '../objects/Bridge';
+import { Sprinkler } from '../objects/Sprinkler';
+import { FlowerBed } from '../objects/FlowerBed';
+import { COLLECTION } from '../data/collection';
 import { Fragment } from '../objects/Fragment';
 import { ConnectionSystem } from '../systems/ConnectionSystem';
 import { ProgressSystem } from '../systems/ProgressSystem';
@@ -25,8 +28,9 @@ const PLAZA_FRAGMENT_ID = 'plaza-fragment';
 const FOUNTAIN_FRAGMENT_ID = 'fountain-fragment';
 const BEACON_FRAGMENT_ID = 'beacon-fragment';
 const BRIDGE_FRAGMENT_ID = 'bridge-fragment';
-const ALL_FRAGMENT_IDS = [PLAZA_FRAGMENT_ID, FOUNTAIN_FRAGMENT_ID, BEACON_FRAGMENT_ID, BRIDGE_FRAGMENT_ID];
-const WORLD_WIDTH = 2950;
+const GARDEN_FRAGMENT_ID = 'garden-fragment';
+const ALL_FRAGMENT_IDS = COLLECTION.map(item => item.id);
+const WORLD_WIDTH = 3750;
 const GAP_X = 2610;
 const GAP_WIDTH = 100;
 
@@ -44,6 +48,10 @@ export class WorldScene extends Phaser.Scene {
   private beaconFragment!: Fragment;
   private bridge!: Bridge;
   private bridgeFragment!: Fragment;
+  private sprinkler!: Sprinkler;
+  private flowerBed!: FlowerBed;
+  private gardenFragment!: Fragment;
+  private gardenGround!: Phaser.GameObjects.Rectangle;
   private bridgeDeck!: Phaser.GameObjects.Rectangle;
   private bridgeBlocker!: Phaser.GameObjects.Zone;
   private bridgeCollider!: Phaser.Physics.Arcade.Collider;
@@ -107,8 +115,9 @@ export class WorldScene extends Phaser.Scene {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#1b1f3b',
+        wordWrap: { width: this.scale.width - 220, useAdvancedWrap: true },
       })
-      .setOrigin(0.5)
+      .setOrigin(0.5, 0)
       .setDepth(20)
       .setScrollFactor(0)
       .setShadow(0, 2, 'rgba(255,255,255,0.6)', 3, false, true);
@@ -162,6 +171,7 @@ export class WorldScene extends Phaser.Scene {
     const fountainDone = this.progress.hasFragment(FOUNTAIN_FRAGMENT_ID);
     const beaconDone = this.progress.hasFragment(BEACON_FRAGMENT_ID);
     const bridgeDone = this.progress.hasFragment(BRIDGE_FRAGMENT_ID);
+    const gardenDone = this.progress.hasFragment(GARDEN_FRAGMENT_ID);
 
     if (plazaDone) {
       this.door.activate();
@@ -183,6 +193,11 @@ export class WorldScene extends Phaser.Scene {
       this.removeBridgeBlocker();
     }
 
+    if (gardenDone) {
+      this.sprinkler.activate();
+      this.flowerBed.activate();
+    }
+
     this.connectionSystem.restoreConnections(this.progress.getConnections());
     if (this.lamp.isActive) this.lightHouseWindow(false);
     if (this.door.isActive && !plazaDone) {
@@ -196,6 +211,10 @@ export class WorldScene extends Phaser.Scene {
       this.removeBridgeBlocker();
       this.bridgeFragment.reveal();
     }
+    if (this.flowerBed.isActive) {
+      this.gardenGround.setFillStyle(0xd4edb6);
+      if (!gardenDone) this.gardenFragment.reveal();
+    }
 
     const position = this.progress.getPosition();
     if (position) {
@@ -208,7 +227,7 @@ export class WorldScene extends Phaser.Scene {
       this.nexus.body.updateFromGameObject();
     }
 
-    this.instructionText.setText(this.getStatusMessage(plazaDone, fountainDone, beaconDone, bridgeDone));
+    this.instructionText.setText(this.getStatusMessage());
     if (!plazaDone && this.lamp.isActive) {
       this.instructionText.setText(this.door.isActive
         ? '¡La puerta se abrió! Acércate al fragmento'
@@ -230,12 +249,12 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  private getStatusMessage(plazaDone: boolean, fountainDone: boolean, beaconDone: boolean, bridgeDone: boolean): string {
-    const doneCount = [plazaDone, fountainDone, beaconDone, bridgeDone].filter(Boolean).length;
+  private getStatusMessage(): string {
+    const doneCount = ALL_FRAGMENT_IDS.filter(id => this.progress.hasFragment(id)).length;
 
-    if (doneCount === 4) return 'Ya restauraste toda la zona';
+    if (doneCount === ALL_FRAGMENT_IDS.length) return 'Ya restauraste todo el lugar';
     if (doneCount === 0) return 'Los Nexus — conecta la fuente con la lámpara';
-    return `Restauraste ${doneCount} de 4 lugares — sigue explorando`;
+    return `Restauraste ${doneCount} de ${ALL_FRAGMENT_IDS.length} lugares — sigue explorando`;
   }
 
   private setupConnections(height: number, vScale: number): void {
@@ -264,6 +283,17 @@ export class WorldScene extends Phaser.Scene {
     this.bridge = new Bridge(this, 2560, midY);
     this.bridgeFragment = new Fragment(this, 2820, midY - 40 * vScale);
 
+    // Zona 5: energía → aspersor → flores, al otro lado del puente.
+    const gardenSource = new EnergySource(this, 3150, midY - 40 * vScale, 'garden-source');
+    this.sprinkler = new Sprinkler(this, 3310, midY + 10 * vScale);
+    this.flowerBed = new FlowerBed(this, 3500, midY + 40 * vScale);
+    this.gardenFragment = new Fragment(this, 3500, midY - 85 * vScale);
+    for (const [object, label] of [[gardenSource, 'Energía'], [this.sprinkler, 'Aspersor'], [this.flowerBed, 'Flores']] as const) {
+      this.add.text(object.x, object.y + 65, label, {
+        fontFamily: 'sans-serif', fontSize: '16px', color: '#365137',
+      }).setOrigin(0.5).setDepth(9);
+    }
+
     this.connectables = [
       source,
       this.lamp,
@@ -275,6 +305,9 @@ export class WorldScene extends Phaser.Scene {
       this.beacon,
       bridgeSource,
       this.bridge,
+      gardenSource,
+      this.sprinkler,
+      this.flowerBed,
     ];
 
     this.connectables.forEach((obj) => obj.setDepth(11));
@@ -282,6 +315,7 @@ export class WorldScene extends Phaser.Scene {
     this.fountainFragment.setDepth(12);
     this.beaconFragment.setDepth(12);
     this.bridgeFragment.setDepth(12);
+    this.gardenFragment.setDepth(12);
 
     this.connectables.forEach((obj) => this.connectionSystem.register(obj));
 
@@ -291,6 +325,8 @@ export class WorldScene extends Phaser.Scene {
     this.connectionSystem.addRule({ sourceId: beaconSourceA.id, targetId: this.beacon.id });
     this.connectionSystem.addRule({ sourceId: beaconSourceB.id, targetId: this.beacon.id });
     this.connectionSystem.addRule({ sourceId: bridgeSource.id, targetId: this.bridge.id });
+    this.connectionSystem.addRule({ sourceId: gardenSource.id, targetId: this.sprinkler.id });
+    this.connectionSystem.addRule({ sourceId: this.sprinkler.id, targetId: this.flowerBed.id });
 
     this.bridgeBlocker = this.add.zone(GAP_X, midY, GAP_WIDTH - 20, height);
     this.physics.add.existing(this.bridgeBlocker, true);
@@ -343,6 +379,14 @@ export class WorldScene extends Phaser.Scene {
         this.bridgeFragment.reveal();
         this.instructionText.setText('¡El puente se abrió! Cruza y busca el fragmento');
       }
+      if (targetId === this.sprinkler.id) {
+        this.instructionText.setText('¡Hay agua! Conecta el aspersor con las flores');
+      }
+      if (targetId === this.flowerBed.id) {
+        this.gardenGround.setFillStyle(0xd4edb6);
+        this.gardenFragment.reveal();
+        this.instructionText.setText('¡El jardín floreció! Acércate al fragmento');
+      }
     };
 
     this.events.on('tunnel-requested', onTunnelRequested);
@@ -365,6 +409,9 @@ export class WorldScene extends Phaser.Scene {
     );
     this.physics.add.overlap(this.nexus, this.bridgeFragment, () =>
       this.collectFragment(this.bridgeFragment, BRIDGE_FRAGMENT_ID),
+    );
+    this.physics.add.overlap(this.nexus, this.gardenFragment, () =>
+      this.collectFragment(this.gardenFragment, GARDEN_FRAGMENT_ID),
     );
   }
 
@@ -465,10 +512,10 @@ export class WorldScene extends Phaser.Scene {
     this.fragmentHud.setText(this.fragmentHudLabel());
 
     const allDone = ALL_FRAGMENT_IDS.every((fid) => this.progress.hasFragment(fid));
-    const isFirstCompletion = allDone && !this.progress.hasSeenCompletion();
+    const isFirstCompletion = allDone && !this.progress.hasSeenCompletion(ALL_FRAGMENT_IDS.length);
 
     if (isFirstCompletion) {
-      this.progress.markCompletionSeen();
+      this.progress.markCompletionSeen(ALL_FRAGMENT_IDS.length);
       this.instructionText.setText('¡Restauraste todo el lugar!');
       this.audio.playSuccess();
       this.spawnWorldCelebration();
@@ -482,7 +529,7 @@ export class WorldScene extends Phaser.Scene {
     });
   }
 
-  /** Celebración especial al restaurar las cuatro zonas por primera vez. */
+  /** Celebración especial al completar la colección actual por primera vez. */
   private spawnWorldCelebration(): void {
     if (!EffectsSettings.isReduced()) this.cameras.main.flash(500, 255, 230, 150);
 
@@ -494,6 +541,7 @@ export class WorldScene extends Phaser.Scene {
       { x: 1460, y: midY + 40 * vScale },
       { x: 2220, y: midY },
       { x: 2820, y: midY - 40 * vScale },
+      { x: 3500, y: midY + 40 * vScale },
     ];
 
     spots.forEach((spot, index) => {
@@ -626,7 +674,7 @@ export class WorldScene extends Phaser.Scene {
     });
 
     // Mariposas cruzando el cielo en distintas zonas del mundo.
-    const butterflySpots = [520, 1400, 2100, 2750];
+    const butterflySpots = [520, 1400, 2100, 2750, 3430];
     butterflySpots.forEach((baseX, index) => {
       const baseY = height / 2 - 160 * vScale - (index % 2) * 30 * vScale;
       this.spawnButterfly(baseX, baseY);
@@ -677,6 +725,16 @@ export class WorldScene extends Phaser.Scene {
 
     // Cuarta zona: la isla al otro lado del puente
     this.add.rectangle(2820, midY, 340, 300 * vScale, 0xdcefd8).setDepth(1);
+
+    // Quinta zona: el jardín seco, que se vuelve verde al regar las flores.
+    this.gardenGround = this.add.rectangle(3370, midY + 30 * vScale, 650, 300 * vScale, 0xe6ddbb).setDepth(1);
+    this.add.text(3370, midY - 160 * vScale, 'El jardín', {
+      fontFamily: 'sans-serif', fontSize: '24px', color: '#365137',
+    }).setOrigin(0.5).setDepth(2);
+    for (const x of [3100, 3200, 3300, 3400, 3500, 3600]) {
+      this.add.rectangle(x, midY + 165 * vScale, 8, 30, 0x9c7851).setDepth(2);
+    }
+    this.add.rectangle(3350, midY + 155 * vScale, 520, 6, 0x9c7851).setDepth(2);
 
     // Camino que conecta las zonas
     this.add.rectangle(width / 2, height - 40 * vScale, width, 80 * vScale, 0xb9ac8a).setDepth(1);

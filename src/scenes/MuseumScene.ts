@@ -3,15 +3,7 @@ import { ProgressSystem } from '../systems/ProgressSystem';
 import { fadeToScene } from '../utils/sceneTransition';
 import { ensureRoundedRectTexture } from '../utils/uiTextures';
 import { EffectsSettings } from '../systems/EffectsSettings';
-
-const FRAGMENTS = [
-  { id: 'plaza-fragment', label: 'Luz de la plaza', memory: '¡La plaza se iluminó!', color: 0xffe066 },
-  { id: 'fountain-fragment', label: 'Gota de la fuente', memory: '¡El agua volvió a fluir!', color: 0x5ee7ff },
-  { id: 'beacon-fragment', label: 'Señal de la antena', memory: '¡Dos cables, una señal!', color: 0xff9ff3 },
-  { id: 'bridge-fragment', label: 'Puente de madera', memory: '¡Ya podemos cruzar!', color: 0xcfa574 },
-];
-
-type Souvenir = typeof FRAGMENTS[number];
+import { COLLECTION, type Souvenir } from '../data/collection';
 
 export class MuseumScene extends Phaser.Scene {
   private progress!: ProgressSystem;
@@ -41,19 +33,23 @@ export class MuseumScene extends Phaser.Scene {
       fontFamily: 'sans-serif', fontSize: '16px', color: '#c9cbe0',
     }).setOrigin(0.5);
 
-    const spacing = Math.min(220, (width - 140) / (FRAGMENTS.length - 1));
-    const startX = width / 2 - (spacing * (FRAGMENTS.length - 1)) / 2;
+    const spacing = Math.min(220, (width - 160) / (COLLECTION.length - 1));
+    const startX = width / 2 - (spacing * (COLLECTION.length - 1)) / 2;
+    const rows = Math.ceil(COLLECTION.length / 2);
+    const firstRowY = 210;
+    const lastRowY = height - 290;
 
-    FRAGMENTS.forEach((fragment, index) => {
-      const x = portrait ? width * (index % 2 === 0 ? 0.28 : 0.72) : startX + index * spacing;
-      const y = portrait ? height * (index < 2 ? 0.3 : 0.6) : height / 2;
+    COLLECTION.forEach((fragment, index) => {
+      const lastSingle = COLLECTION.length % 2 === 1 && index === COLLECTION.length - 1;
+      const x = portrait ? (lastSingle ? width / 2 : width * (index % 2 === 0 ? 0.28 : 0.72)) : startX + index * spacing;
+      const y = portrait ? firstRowY + Math.floor(index / 2) * (lastRowY - firstRowY) / Math.max(1, rows - 1) : height / 2;
       this.buildVitrina(x, y, fragment);
     });
 
-    const allCollected = FRAGMENTS.every((f) => this.progress.hasFragment(f.id));
+    const allCollected = COLLECTION.every((f) => this.progress.hasFragment(f.id));
     if (allCollected) {
       this.add
-        .text(width / 2, portrait ? height * 0.6 + 160 : height / 2 + 145, '¡Colección completa!', {
+        .text(width / 2, portrait ? lastRowY + 145 : height / 2 + 145, '¡Colección completa!', {
           fontFamily: 'sans-serif',
           fontSize: '20px',
           color: '#ffe066',
@@ -174,6 +170,20 @@ export class MuseumScene extends Phaser.Scene {
         art.lineBetween(-38, 43, -12, 39);
         art.lineBetween(-12, 39, 12, 43);
         art.lineBetween(12, 43, 38, 39);
+        break;
+      case 'garden-fragment':
+        art.lineStyle(4, 0x9be37a);
+        art.lineBetween(0, -5, 0, 40);
+        art.fillStyle(0x9be37a);
+        art.fillEllipse(-12, 22, 26, 12);
+        art.fillEllipse(12, 10, 26, 12);
+        art.fillStyle(fragment.color);
+        for (let petal = 0; petal < 5; petal++) {
+          const angle = petal * Math.PI * 2 / 5;
+          art.fillCircle(Math.cos(angle) * 17, -18 + Math.sin(angle) * 17, 12);
+        }
+        art.fillStyle(0xfff8c9);
+        art.fillCircle(0, -18, 10);
         break;
     }
     return art;

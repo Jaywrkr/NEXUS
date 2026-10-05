@@ -27,6 +27,19 @@ test('connections and relative position survive saving and loading', () => {
   assert.deepEqual(loadGameState(), state);
 });
 
+test('expanded collection completion survives saving and rejects malformed counts', () => {
+  const state = { fragmentsCollected: ['garden-fragment'], seenCompletion: true,
+    completionCount: 5, connections: [], position: null };
+  saveGameState(state);
+  assert.deepEqual(loadGameState(), state);
+  for (const completionCount of [-1, 1.5, '5', null]) {
+    storage.set(key, JSON.stringify({ ...state, completionCount }));
+    assert.equal(loadGameState().completionCount, undefined);
+    assert.equal(loadGameState().seenCompletion, true);
+    assert.deepEqual(loadGameState().fragmentsCollected, ['garden-fragment']);
+  }
+});
+
 test('invalid or incomplete saves cannot supply unusable coordinates or arrays', () => {
   for (const value of ['null', '{', '42']) {
     storage.set(key, value);
