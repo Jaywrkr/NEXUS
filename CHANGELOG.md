@@ -105,3 +105,8 @@ La conexión fuente→lámpara abre una fase de práctica con los mismos control
 Tras diez segundos sin interacción, un aro señala un origen pendiente de la zona visible o un destino válido si ya hay origen seleccionado. No aparece inmediatamente ni marca conexiones resueltas; se oculta al interactuar/completar y reinicia la espera al volver del túnel.
 
 «Efectos suaves» en el título desactiva flashes y sacudidas de cámara en túnel y celebración del mundo, y mantiene las pistas estáticas. Por defecto respeta la preferencia del dispositivo; la elección explícita persiste aparte del progreso y sobrevive a «Nueva partida». No cambia dificultad ni recompensas. Se amplían las pruebas con preferencias y un escenario de pistas/efectos en escritorio y móvil; las llamadas de cámara se observan conservando su comportamiento real.
+
+## Recuerdos únicos e interactivos del museo
+Cada vitrina obtenida muestra un recuerdo propio: luz de la plaza, gota de la fuente, señal de la antena o puente de madera. Se dibujan con formas de Phaser, sin assets externos. Tocar o hacer clic en toda la vitrina muestra una frase de su zona y un pulso breve; los toques repetidos reinician el pulso sin acumular animaciones. Con «Efectos suaves» la respuesta es solo textual. Se mantienen los IDs de fragmentos, el guardado y la distribución vertical/horizontal. Se añaden pruebas de museo vacío, parcial y completo, interacción repetida y ambas opciones de efectos en escritorio y móvil, con capturas.
+
+La comprobación de reintento del túnel compara el avance tras reiniciar con el punto de derrota, en lugar de un límite fijo de 200: el navegador sigue simulando mientras procesa entradas, y esa cifra producía fallos de tiempo aunque el reinicio funcionara.

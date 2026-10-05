@@ -50,7 +50,7 @@ test('complete all four zones, lose and win the tunnel, and revisit the museum',
   await connect(page, 'lamp', 'door');
   expect(await world(page, 'return s.door.isActive && s.plazaFragment.visible;')).toBe(true);
   await collect(page, 'plazaFragment', fragmentIds[0]);
-  expect((await museumLayout(page)).filter(t => t.startsWith('Fragmento de'))).toHaveLength(1);
+  expect(await museumLayout(page)).toContain('Luz de la plaza');
   await checkpoint(page, testInfo, 'museum-partial');
   await returnToWorld(page, !isMobile);
 
@@ -213,13 +213,15 @@ test('practice safely, cancel, and retry multiple times without reselecting obje
   await runningTunnel(page);
   for (let attempt = 0; attempt < 2; attempt += 1) {
     await failedTunnel(page);
+    const failedProgress = await page.evaluate(() => window.__nexusTest.scene.getScene('CableTunnelScene').progress);
     expect(await world(page, 'return s.lamp.isActive;')).toBe(false);
     expect((await saved(page)).connections).toEqual([]);
     if (isMobile) await tunnelButton(page, 'Reintentar');
     else await page.keyboard.press('Space');
     await runningTunnel(page);
     expect(await page.evaluate(() => window.__nexusTest.scene.isPaused('WorldScene'))).toBe(true);
-    expect(await page.evaluate(() => window.__nexusTest.scene.getScene('CableTunnelScene').progress)).toBeLessThan(200);
+    // Observe the actual rewind; progress advances while the browser processes inputs.
+    expect(await page.evaluate(() => window.__nexusTest.scene.getScene('CableTunnelScene').progress)).toBeLessThan(failedProgress);
   }
   await failedTunnel(page);
   await checkpoint(page, testInfo, 'retry-menu');
