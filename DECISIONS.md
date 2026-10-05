@@ -50,3 +50,7 @@ Idea de Luca: algunas conexiones pueden abrir un mini-juego "dentro" del cable (
 
 **Decisión 017**
 El usuario decidió explícitamente romper la regla de "nada de assets externos" (parte de la Decisión original de solo usar formas de Phaser) para acercar el visual del Nexus al nivel de detalle de una hoja de referencia de personaje que compartió (proporciones, paleta, expresión, mochila/cable, orejas con puntas de color). Las imágenes se generan afuera (otra herramienta de IA, o dibujo) usando los prompts de `ART_PROMPTS.md`, y se integran como sprites en `public/assets/nexus/` (ver ese README para el detalle técnico). Hasta que los archivos reales existan, `Nexus.ts` sigue dibujando el personaje con formas — el cambio de renderizado se hace recién cuando lleguen las imágenes. La personalización (colores/gorra/mochila) habrá que resolverla con capas separadas por prenda + tint, no con un único PNG a todo color, para no perder esa funcionalidad ya existente.
+
+
+**Decisión 018**
+El mini-túnel ofrece una fase de práctica sin derrota antes de empezar. Tras perder permite reintentar directamente la misma conexión o volver al mundo; no hay penalidad ni recompensa por cancelar. Solo superar el recorrido completa la conexión. Esta mejora forma parte del plan aprobado de desarrollo; la dificultad se ajustará después de probar con Luca.

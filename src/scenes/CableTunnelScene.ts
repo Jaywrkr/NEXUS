@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { ConnectableObject } from '../objects/ConnectableObject';
 import { AudioSystem } from '../systems/AudioSystem';
 import { VirtualJoystick } from '../ui/VirtualJoystick';
+import { ensureRoundedRectTexture } from '../utils/uiTextures';
 
 const TUNNEL_LENGTH = 2200;
 const FORWARD_SPEED = 0.32; // progreso (profundidad) por ms
@@ -25,6 +26,7 @@ const SPARK_COUNT = 36;
 export interface CableTunnelData {
   source: ConnectableObject;
   target: ConnectableObject;
+  skipPractice?: boolean;
 }
 
 /**
@@ -57,6 +59,9 @@ export class CableTunnelScene extends Phaser.Scene {
   private shipVelY = 0;
   private elapsed = 0;
   private finished = false;
+  private phase: 'practice' | 'running' | 'failed' | 'finished' = 'practice';
+  private instructionText!: Phaser.GameObjects.Text;
+  private menuObjects: Phaser.GameObjects.GameObject[] = [];
   private shakeCooldown = false;
 
   constructor() {
@@ -64,6 +69,8 @@ export class CableTunnelScene extends Phaser.Scene {
   }
 
   init(data: CableTunnelData): void {
+    this.phase = data.skipPractice ? 'running' : 'practice';
+    this.menuObjects = [];
     this.source = data.source;
     this.target = data.target;
     this.progress = 0;
@@ -84,11 +91,13 @@ export class CableTunnelScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#0a1f2e');
     this.cameras.main.fadeIn(200, 10, 31, 46);
 
-    this.add
+    this.instructionText = this.add
       .text(width / 2, 20, 'Guía la chispa por el cable — no toques las paredes', {
         fontFamily: 'sans-serif',
         fontSize: '16px',
         color: '#d8f4ff',
+        align: 'center',
+        wordWrap: { width: width - 40 },
       })
       .setOrigin(0.5, 0)
       .setDepth(20);
@@ -147,6 +156,84 @@ export class CableTunnelScene extends Phaser.Scene {
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as typeof this.wasd;
     this.joystick = new VirtualJoystick(this, 90, height - 90);
+    if (this.phase === 'practice') this.showMenu(false);
+
+    const onSpace = (): void => {
+      if (this.phase === 'practice') this.startRun();
+      else if (this.phase === 'failed') this.retry();
+    };
+    const onEscape = (): void => {
+      if (this.phase === 'practice' || this.phase === 'failed') this.leaveTunnel();
+    };
+    this.input.keyboard!.on('keydown-SPACE', onSpace);
+    this.input.keyboard!.on('keydown-ESC', onEscape);
+    this.events.once('shutdown', () => {
+      this.input.keyboard!.off('keydown-SPACE', onSpace);
+      this.input.keyboard!.off('keydown-ESC', onEscape);
+    });
+    this.drawTunnel();
+  }
+
+  private showMenu(failed: boolean): void {
+    const { width, height } = this.scale;
+    this.instructionText.setText(failed
+      ? '¡Casi! Vuelve a intentarlo'
+      : 'Practica con las flechas, WASD o el joystick');
+    const message = this.add.text(width / 2, height - 235,
+      failed ? 'Tu progreso está a salvo' : 'Aquí puedes probar sin perder', {
+        fontFamily: 'sans-serif', fontSize: '18px', color: '#d8f4ff',
+        align: 'center', wordWrap: { width: width - 40 },
+      }).setOrigin(0.5).setDepth(70);
+    this.menuObjects.push(message);
+    this.buildMenuButton(height - 155, failed ? 'Reintentar' : 'Empezar', 0x5ee7ff, () => {
+      if (failed) this.retry();
+      else this.startRun();
+    });
+    this.buildMenuButton(height - 90, 'Volver al mundo', 0xb9d4e0, () => this.leaveTunnel());
+  }
+
+  private buildMenuButton(y: number, label: string, color: number, onPress: () => void): void {
+    ensureRoundedRectTexture(this, 'tunnel-menu-button', 220, 52, 14);
+    const button = this.add.image(this.scale.width / 2, y, 'tunnel-menu-button')
+      .setTint(color).setDepth(70).setInteractive({ useHandCursor: true });
+    const text = this.add.text(this.scale.width / 2, y, label, {
+      fontFamily: 'sans-serif', fontSize: '20px', fontStyle: 'bold', color: '#1b1f3b',
+    }).setOrigin(0.5).setDepth(71);
+    button.on('pointerover', () => button.setTint(0x9be37a));
+    button.on('pointerout', () => button.setTint(color));
+    button.on('pointerdown', onPress);
+    this.menuObjects.push(button, text);
+  }
+
+  private startRun(): void {
+    if (this.phase !== 'practice') return;
+    this.phase = 'running';
+    const center = this.tubeCenterAt(0);
+    this.shipX = center.x;
+    this.shipY = center.y;
+    this.shipVelX = 0;
+    this.shipVelY = 0;
+    this.trail = [];
+    this.elapsed = 0;
+    this.joystick.reset();
+    this.menuObjects.forEach((object) => object.destroy());
+    this.menuObjects = [];
+    this.instructionText.setText('Guía la chispa por el cable — no toques las paredes');
+  }
+
+  private retry(): void {
+    if (this.phase !== 'failed') return;
+    this.phase = 'finished';
+    this.scene.restart({ source: this.source, target: this.target, skipPractice: true });
+  }
+
+  private leaveTunnel(): void {
+    if (this.phase !== 'practice' && this.phase !== 'failed') return;
+    this.phase = 'finished';
+    this.finished = true;
+    this.scene.stop();
+    // No result: cancelling must not award a connection or report a new failure.
+    this.scene.resume('WorldScene');
   }
 
   /** Centro del tubo (offset respecto al eje recto) a una profundidad dada. */
@@ -185,7 +272,16 @@ export class CableTunnelScene extends Phaser.Scene {
     this.shipX += (this.shipVelX * delta) / 1000;
     this.shipY += (this.shipVelY * delta) / 1000;
 
-    this.progress += FORWARD_SPEED * delta;
+    if (this.phase === 'running') this.progress += FORWARD_SPEED * delta;
+    else {
+      const center = this.tubeCenterAt(0);
+      const offset = new Phaser.Math.Vector2(this.shipX - center.x, this.shipY - center.y);
+      if (offset.length() > TUBE_RADIUS - 30) {
+        offset.setLength(TUBE_RADIUS - 30);
+        this.shipX = center.x + offset.x;
+        this.shipY = center.y + offset.y;
+      }
+    }
     this.elapsed += delta;
 
     this.trail.push({ x: this.shipX, y: this.shipY });
@@ -198,7 +294,7 @@ export class CableTunnelScene extends Phaser.Scene {
     const deviationX = this.shipX - currentCenter.x;
     const deviationY = this.shipY - currentCenter.y;
     const offCenter = Math.sqrt(deviationX * deviationX + deviationY * deviationY);
-    if (offCenter > TUBE_RADIUS - 10) {
+    if (this.phase === 'running' && offCenter > TUBE_RADIUS - 10) {
       this.finish(false);
       return;
     }
@@ -281,7 +377,7 @@ export class CableTunnelScene extends Phaser.Scene {
     const pulse = 0.6 + 0.4 * Math.sin(this.elapsed * (0.004 + dangerT * 0.012));
     this.tunnelGraphics.lineStyle(3 + dangerT * 2, Phaser.Display.Color.GetColor(wallColor.r, wallColor.g, wallColor.b), 0.6 + pulse * 0.3);
     this.tunnelGraphics.strokeCircle(vanishingX + wallOffsetX, vanishingY + wallOffsetY, TUBE_RADIUS);
-    if (dangerT > 0.5 && !this.shakeCooldown) {
+    if (this.phase === 'running' && dangerT > 0.5 && !this.shakeCooldown) {
       this.cameras.main.shake(120, 0.002 * dangerT);
       this.shakeCooldown = true;
       this.time.delayedCall(200, () => {
@@ -334,6 +430,7 @@ export class CableTunnelScene extends Phaser.Scene {
 
   private finish(success: boolean): void {
     this.finished = true;
+    this.phase = success ? 'finished' : 'failed';
 
     if (success) {
       this.audio.playSuccess();
@@ -341,6 +438,9 @@ export class CableTunnelScene extends Phaser.Scene {
     } else {
       this.audio.playError();
       this.cameras.main.flash(200, 255, 107, 107);
+      this.joystick.reset();
+      this.showMenu(true);
+      return;
     }
 
     this.time.delayedCall(250, () => {

@@ -144,3 +144,24 @@ export async function winTunnel(page) {
   await ready(page, 'WorldScene');
   expect(await world(page, 'return s.lamp.isActive;'), 'Steering must actually win the tunnel').toBe(true);
 }
+
+export async function tunnelButton(page, label) {
+  const point = await page.evaluate((label) => {
+    const s = window.__nexusTest.scene.getScene('CableTunnelScene');
+    const text = s.children.list.find(o => o.type === 'Text' && o.text === label);
+    if (!text) throw new Error(`Missing tunnel button: ${label}`);
+    return { x: text.x, y: text.y };
+  }, label);
+  await tap(page, point.x, point.y);
+}
+
+export async function runningTunnel(page) {
+  await page.waitForFunction(() => {
+    const s = window.__nexusTest.scene.getScene('CableTunnelScene');
+    return s.scene.isActive() && s.phase === 'running' && !s.cameras.main.fadeEffect.isRunning;
+  });
+}
+
+export async function failedTunnel(page) {
+  await page.waitForFunction(() => window.__nexusTest.scene.getScene('CableTunnelScene').phase === 'failed');
+}
