@@ -54,3 +54,7 @@ El usuario decidió explícitamente romper la regla de "nada de assets externos"
 
 **Decisión 018**
 El mini-túnel ofrece una fase de práctica sin derrota antes de empezar. Tras perder permite reintentar directamente la misma conexión o volver al mundo; no hay penalidad ni recompensa por cancelar. Solo superar el recorrido completa la conexión. Esta mejora forma parte del plan aprobado de desarrollo; la dificultad se ajustará después de probar con Luca.
+
+
+**Decisión 019**
+Las ayudas deben ser discretas y aparecer solo tras un período sin interacción: resaltan un paso pendiente visible, sin añadir botones ni explicaciones largas. La opción «Efectos suaves» permite desactivar flashes/sacudidas y mantener estáticas las pistas, siguiendo inicialmente la preferencia del dispositivo. Se guarda de forma independiente y no altera dificultad ni recompensas. Forma parte del plan aprobado de desarrollo.

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { fadeToScene } from '../utils/sceneTransition';
 import { ProgressSystem } from '../systems/ProgressSystem';
+import { EffectsSettings } from '../systems/EffectsSettings';
 import { loadNexusAssets } from '../entities/nexusAssets';
 import { ensureRoundedRectTexture } from '../utils/uiTextures';
 
@@ -62,6 +63,21 @@ export class BootScene extends Phaser.Scene {
         fadeToScene(this, 'WorldScene', [207, 232, 216]);
       });
     }
+
+    const effectsLabel = (): string => `Efectos suaves: ${EffectsSettings.isReduced() ? 'Sí' : 'No'}`;
+    ensureRoundedRectTexture(this, 'effects-toggle', 260, 44, 12);
+    const effectsButton = this.add.image(width / 2, height - 65, 'effects-toggle')
+      .setTint(0xe2ddf0).setInteractive({ useHandCursor: true });
+    const effectsText = this.add.text(width / 2, height - 65, effectsLabel(), {
+      fontFamily: 'sans-serif', fontSize: '18px', color: '#1b1f3b',
+    }).setOrigin(0.5);
+    effectsButton.on('pointerdown', () => {
+      EffectsSettings.setReduced(!EffectsSettings.isReduced());
+      effectsText.setText(effectsLabel());
+    });
+    this.add.text(width / 2, height - 28, 'Sin flashes ni sacudidas al activarlos', {
+      fontFamily: 'sans-serif', fontSize: '14px', color: '#5a5e78',
+    }).setOrigin(0.5);
   }
 
   private buildButton(x: number, y: number, label: string, color: number, onClick: () => void): void {

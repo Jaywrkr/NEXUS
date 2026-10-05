@@ -20,8 +20,8 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test
 ## Comandos
 
 ```bash
-npm run test:unit    # cuatro pruebas de guardado
-npm run test:e2e     # cuatro escenarios en escritorio y cuatro en móvil vertical
+npm run test:unit    # siete pruebas de guardado y preferencias
+npm run test:e2e     # cinco escenarios en escritorio y cinco en móvil vertical
 npm test            # ambas suites
 npm run build       # TypeScript y build de producción; check separado
 ```
@@ -46,7 +46,11 @@ No hay retries automáticos ni pruebas omitidas por defecto.
   cancelar sin desbloquear la lámpara, reintentos consecutivos sin seleccionar
   objetos otra vez y salida por botón/ESC después de perder.
 - Partidas antiguas y confirmación/cancelación de «Nueva partida».
-- Serialización, migración, datos malformados y reinicio sin arrays compartidos.
+- Pistas después de inactividad, cambio de origen a destino y ausencia en puzzles
+  resueltos; opción de efectos suaves, preferencia del sistema, persistencia y
+  desactivación real de flashes/sacudidas en túnel y celebración del mundo.
+- Serialización, migración, datos malformados, reinicio sin arrays compartidos
+  y preferencias independientes del progreso.
 
 Para leer el estado de Phaser, el harness intercepta la respuesta de Vite de
 `src/main.ts` y expone la instancia solo dentro del navegador de pruebas.
@@ -66,7 +70,8 @@ El informe queda en `playwright-report/` y se puede abrir con
 `npx playwright show-report`. En caso de fallo se conserva también una traza:
 `npx playwright show-trace <ruta-al-trace.zip>`.
 Estos directorios están ignorados por Git y se regeneran en cada ejecución.
-La suite comprueba errores JavaScript y respuestas HTTP fallidas.
+La suite comprueba errores JavaScript y respuestas HTTP fallidas. Para verificar
+los efectos, registra las llamadas a las cámaras sin sustituir su comportamiento.
 
 Las pruebas E2E usan el servidor de desarrollo en Chromium. `npm run build`
 comprueba el build de producción, pero estas pruebas no ejecutan ese build ni

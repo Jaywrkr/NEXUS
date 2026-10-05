@@ -100,3 +100,8 @@ El recorrido completo también detectó listeners del mundo que se acumulaban al
 
 ## Práctica y reintento directo del túnel
 La conexión fuente→lámpara abre una fase de práctica con los mismos controles, sin avance ni derrota. «Empezar» inicia el recorrido desde el centro. Al perder se conserva el mundo pausado y aparecen «Reintentar» (reinicia ese túnel sin volver a seleccionar objetos) y «Volver al mundo». ESPACIO empieza/reintenta y ESC sale desde práctica o fallo. Solo ganar guarda la conexión; practicar, perder y salir no la desbloquean. Se reinicia el joystick al comenzar y tras un fallo, y se limpian los atajos al cerrar/reiniciar la escena. Velocidad, curvas y radio mantienen sus valores: el balance sigue pendiente de la prueba con Luca. Se amplían las pruebas E2E del recorrido y se agrega un escenario de práctica/cancelación/reintentos para escritorio y móvil.
+
+## Pistas discretas y efectos suaves
+Tras diez segundos sin interacción, un aro señala un origen pendiente de la zona visible o un destino válido si ya hay origen seleccionado. No aparece inmediatamente ni marca conexiones resueltas; se oculta al interactuar/completar y reinicia la espera al volver del túnel.
+
+«Efectos suaves» en el título desactiva flashes y sacudidas de cámara en túnel y celebración del mundo, y mantiene las pistas estáticas. Por defecto respeta la preferencia del dispositivo; la elección explícita persiste aparte del progreso y sobrevive a «Nueva partida». No cambia dificultad ni recompensas. Se amplían las pruebas con preferencias y un escenario de pistas/efectos en escritorio y móvil; las llamadas de cámara se observan conservando su comportamiento real.

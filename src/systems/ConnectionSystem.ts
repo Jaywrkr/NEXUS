@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import type { SavedConnection } from '../data/gameState';
 import { ConnectableObject } from '../objects/ConnectableObject';
 import { AudioSystem } from './AudioSystem';
+import { EffectsSettings } from './EffectsSettings';
 
 const CABLE_COLOR = 0x5ee7ff;
 const CABLE_COLOR_INVALID = 0xff6b6b;
@@ -27,10 +28,17 @@ export class ConnectionSystem {
   private cableGraphics: Phaser.GameObjects.Graphics;
   private feedbackText: Phaser.GameObjects.Text;
   private audio: AudioSystem;
+  private hintRing: Phaser.GameObjects.Arc;
+  private hintObject: ConnectableObject | null = null;
+  private lastInteractionAt: number;
+
 
   constructor(scene: Phaser.Scene, audio: AudioSystem) {
     this.scene = scene;
     this.audio = audio;
+    this.lastInteractionAt = scene.game.loop.now;
+    this.hintRing = scene.add.circle(0, 0, 38)
+      .setStrokeStyle(3, 0x1b6b3a, 0.65).setDepth(14).setVisible(false);
     this.cableGraphics = scene.add.graphics().setDepth(15);
 
     this.feedbackText = scene.add
@@ -70,11 +78,47 @@ export class ConnectionSystem {
 
   /** Punto de entrada público: tocar el objeto directamente o presionar el botón de interacción hacen lo mismo. */
   interact(object: ConnectableObject): void {
+    this.resetHint();
     this.handleClick(object);
   }
 
   hasSelection(): boolean {
     return this.selected !== null;
+  }
+
+  resetHint(): void {
+    // The scene clock can still be stale in a resume callback.
+    this.lastInteractionAt = this.scene.game.loop.now;
+    this.hintObject = null;
+    this.hintRing.setVisible(false);
+  }
+
+  /** After ten seconds without interaction, suggest one visible unfinished step. */
+  updateHint(): void {
+    if (this.scene.game.loop.now - this.lastInteractionAt < 10_000) {
+      this.hintObject = null;
+      this.hintRing.setVisible(false);
+      return;
+    }
+    const visible = this.scene.cameras.main.worldView;
+    const candidates: ConnectableObject[] = [];
+    for (const rule of this.rules) {
+      if (this.completed.has(JSON.stringify([rule.sourceId, rule.targetId]))) continue;
+      const source = this.objects.find(o => o.id === rule.sourceId);
+      const target = this.objects.find(o => o.id === rule.targetId);
+      if (!source?.canInitiate() || !target || target.isActive) continue;
+      if (this.selected && source !== this.selected) continue;
+      const object = this.selected ? target : source;
+      if (visible.contains(object.x, object.y)) candidates.push(object);
+    }
+    // Prefer the center of the current view, without pointing into another zone.
+    candidates.sort((a, b) => Math.abs(a.x - visible.centerX) - Math.abs(b.x - visible.centerX));
+    this.hintObject = candidates[0] ?? null;
+    this.hintRing.setVisible(this.hintObject !== null);
+    if (!this.hintObject) return;
+    this.hintRing.setPosition(this.hintObject.x, this.hintObject.y);
+    const pulse = EffectsSettings.isReduced() ? 0 : Math.sin(this.scene.time.now / 600);
+    this.hintRing.setScale(1 + pulse * 0.08).setAlpha(0.65 + pulse * 0.12);
   }
 
   private handleClick(object: ConnectableObject): void {
@@ -135,6 +179,7 @@ export class ConnectionSystem {
     const key = JSON.stringify([source.id, target.id]);
     if (this.completed.has(key)) return;
     this.completed.add(key);
+    this.resetHint();
     this.drawCable(source, target, true);
     source.activate();
     target.activate();
