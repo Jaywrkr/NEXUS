@@ -84,3 +84,6 @@ Ronda de pulido para "hacer el juego más profesional": fade in/out entre escena
 
 ## El Nexus pasa a usar imágenes reales (Decisión 017)
 El usuario decidió romper la regla de "solo formas de Phaser" para el personaje, para acercarlo a una hoja de referencia visual más detallada. Se generaron 4 poses (idle, dos de caminata, celebrar) con un generador de imágenes por IA usando prompts preparados en `ART_PROMPTS.md`, se recortaron/optimizaron (de ~8MB a ~700KB en total) y se integraron como sprites en `Nexus.ts`. Como consecuencia, se sacó la personalización (`CustomizeScene` se eliminó): el Nexus ahora tiene un único diseño fijo, ya no hay elección de color/gorra/mochila antes de jugar.
+
+## Museo adaptado a celular
+Botón «Volver al mundo» accesible por toque y clic, conservando ESPACIO como atajo. En vertical las cuatro vitrinas se distribuyen en una cuadrícula 2×2; en horizontal conservan una fila. Las entradas repetidas y los estados vacío, parcial y completo se verifican con Playwright en escritorio y móvil vertical.
