@@ -24,20 +24,20 @@ export class CustomizeScene extends Phaser.Scene {
     screenArt(this);
     const frame=this.add.graphics();
     const pxPreview=mobile?width/2:width*.21;
-    frame.fillStyle(0x87c9bb,.1).fillCircle(pxPreview,mobile?203:232,mobile?105:111);
-    frame.lineStyle(1,0xc9a36b,.3).strokeCircle(pxPreview,mobile?203:232,mobile?113:119);
-    frame.fillStyle(0x243f48,.08).fillEllipse(pxPreview,mobile?268:308,125,15);
-    if(!mobile)frame.lineStyle(1,0xc9a36b,.3).lineBetween(width*.4,105,width*.4,365);
-    this.add.text(width / 2, 48, 'Mi Nexus', { fontFamily: 'Georgia, serif', fontSize: '32px', color: '#34494e' }).setOrigin(0.5);
+    frame.fillStyle(0x27e7da,.13).fillCircle(pxPreview,mobile?203:232,mobile?105:111);
+    frame.lineStyle(1,0x57cdeb,.3).strokeCircle(pxPreview,mobile?203:232,mobile?113:119);
+    frame.fillStyle(0x14234e,.08).fillEllipse(pxPreview,mobile?268:308,125,15);
+    if(!mobile)frame.lineStyle(1,0x57cdeb,.3).lineBetween(width*.4,105,width*.4,365);
+    this.add.text(width / 2, 48, 'Mi Nexus', { fontFamily: ART.display, fontSize: '32px', color: '#ffffff' }).setOrigin(0.5);
     const px = mobile ? width / 2 : width * 0.21;
     const py = mobile ? 265 : 305;
-    this.name = this.add.text(px, py + 22, '', { fontFamily: ART.body, fontSize: '20px', color: '#34494e', align: 'center' }).setOrigin(0.5, 0);
+    this.name = this.add.text(px, py + 22, '', { fontFamily: ART.body, fontSize: '20px', color: '#ffffff', align: 'center' }).setOrigin(0.5, 0);
     this.button(px, py + 76, 180, 'Cambiar nombre', () => {
       const name = window.prompt('¿Cómo se llama tu Nexus? (máximo 16 caracteres)', this.look.name);
       if (name !== null) { this.look.name = name; this.refresh(); }
     });
     this.status = this.add.text(width / 2, height - (mobile ? 225 : 125), 'Elige tu estilo. Puedes cambiarlo cuando quieras.', {
-      fontFamily: ART.body, fontSize: '15px', color: '#59695c', align: 'center', wordWrap: { width: width - 70 },
+      fontFamily: ART.body, fontSize: '15px', color: '#b7ccf2', align: 'center', wordWrap: { width: width - 70 },
     }).setOrigin(0.5);
     this.selected=this.add.graphics();
     const choices = [
@@ -48,7 +48,7 @@ export class CustomizeScene extends Phaser.Scene {
     choices.forEach(({ key, label, options }, row) => {
       const cx = mobile ? width / 2 : width * 0.67;
       const y = mobile ? 425 + row * 115 : 122 + row * 95;
-      this.add.text(cx, y - 38, label, { fontFamily: ART.body, fontSize: '18px', fontStyle: 'bold', color: '#34494e' }).setOrigin(0.5);
+      this.add.text(cx, y - 38, label, { fontFamily: ART.body, fontSize: '18px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5);
       options.forEach((option, index) => {
         const locked = 'reward' in option && !this.look.unlocked.includes(option.reward);
         const x = cx + (index - (options.length - 1) / 2) * 88;
@@ -86,16 +86,16 @@ export class CustomizeScene extends Phaser.Scene {
     this.selected.clear();
     this.buttons.forEach(b => {
       const chosen=this.look[b.key]===b.id;
-      b.image.setTint(chosen?0x8dd4c5:0xe9ddc2);
-      if(chosen)this.selected.lineStyle(2,0x426f68,.85).strokeRoundedRect(b.image.x-42,b.image.y-23,84,46,12);
+      b.image.setTint(chosen?0x4168d8:0x34549b);
+      if(chosen)this.selected.lineStyle(2,0x27e7da,.85).strokeRoundedRect(b.image.x-42,b.image.y-23,84,46,8);
     });
   }
   private button(x: number, y: number, width: number, text: string, action: () => void): Phaser.GameObjects.Image {
     const key = `wardrobe-button-${width}`;
     ensureRoundedRectTexture(this, key, width, 44, 12);
     const primary = text === 'Guardar y volver';
-    const image = this.add.image(x, y, key).setTint(primary ? 0x87c9bb : 0xe9ddc2).setInteractive({ useHandCursor: true });
-    this.add.text(x, y, text, { fontFamily: ART.body, fontSize: width < 100 ? '13px' : '17px', color: '#34494e' }).setOrigin(0.5);
+    const image = this.add.image(x, y, key).setTint(primary ? 0xffe342 : 0x34549b).setInteractive({ useHandCursor: true });
+    this.add.text(x, y, text, { fontFamily: ART.body, fontSize: width < 100 ? '13px' : '17px', color: primary ? '#14234e' : '#ffffff' }).setOrigin(0.5);
     image.on('pointerdown', action);
     return image;
   }

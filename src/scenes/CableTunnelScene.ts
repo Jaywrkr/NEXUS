@@ -16,8 +16,8 @@ const WAVE_FREQUENCY_Y = 0.0034;
 const FOCAL_LENGTH = 260;
 const VIEW_DEPTH = 900;
 const RING_STEP = 90;
-const RING_COLOR_FAR = new Phaser.Display.Color(6, 16, 28); // profundidad del túnel, casi negro
-const RING_COLOR_NEAR = new Phaser.Display.Color(49, 128, 139); // banda más cercana, iluminada por la chispa
+const RING_COLOR_FAR = new Phaser.Display.Color(16, 23, 57); // profundidad del túnel, casi negro
+const RING_COLOR_NEAR = new Phaser.Display.Color(65, 93, 201); // banda más cercana, iluminada por la chispa
 const SHIP_ACCEL_MS = 90;
 const SHIP_SPEED = 220;
 const VANISHING_POINT_Y_RATIO = 0.4;
@@ -90,12 +90,12 @@ export class CableTunnelScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.audio = new AudioSystem();
 
-    this.cameras.main.setBackgroundColor('#0a1f2e');
+    this.cameras.main.setBackgroundColor('#101739');
     this.cameras.main.fadeIn(200, 10, 31, 46);
 
     const hud=this.add.graphics().setDepth(19);
-    hud.fillStyle(0x102e39,.9).fillRoundedRect(20,12,width-40,58,12);
-    hud.lineStyle(1,0xc9a36b,.45).strokeRoundedRect(24,16,width-48,50,9);
+    hud.fillStyle(0x14234e,.9).fillRoundedRect(20,12,width-40,58,12);
+    hud.lineStyle(1,0x57cdeb,.45).strokeRoundedRect(24,16,width-48,50,9);
     this.instructionText = this.add
       .text(width / 2, 20, 'Guía la chispa por el cable — no toques las paredes', {
         fontFamily: ART.body,
@@ -149,10 +149,10 @@ export class CableTunnelScene extends Phaser.Scene {
     const shipAnchorX = width / 2;
     const shipAnchorY = height * VANISHING_POINT_Y_RATIO;
     this.shipGlow = this.add.circle(shipAnchorX, shipAnchorY, 20, 0x5ee7ff, 0.3).setDepth(4);
-    this.ship = this.add.circle(shipAnchorX, shipAnchorY, 11, 0xe9d29e).setStrokeStyle(2,0xffffff,.9).setDepth(5);
+    this.ship = this.add.circle(shipAnchorX, shipAnchorY, 11, 0xffe342).setStrokeStyle(2,0xffffff,.9).setDepth(5);
 
     // Barra de progreso del túnel.
-    this.add.rectangle(width / 2, height - 20, width - 80, 10, 0x14324a).setStrokeStyle(1,0xc9a36b,.5).setDepth(10);
+    this.add.rectangle(width / 2, height - 20, width - 80, 10, 0x14324a).setStrokeStyle(1,0x57cdeb,.5).setDepth(10);
     this.progressBarFill = this.add
       .rectangle(40, height - 20, 1, 10, 0x5ee7ff)
       .setOrigin(0, 0.5)
@@ -321,7 +321,7 @@ export class CableTunnelScene extends Phaser.Scene {
     const baseCenter = new Phaser.Math.Vector2(this.shipX, this.shipY);
 
     this.tunnelGraphics.clear();
-    this.tunnelGraphics.fillStyle(0x0a1f2e, 1);
+    this.tunnelGraphics.fillStyle(0x101739, 1);
     this.tunnelGraphics.fillRect(0, 0, width, height);
 
     // Cada banda tiene una profundidad que disminuye con el progreso (por
@@ -361,7 +361,7 @@ export class CableTunnelScene extends Phaser.Scene {
       this.tunnelGraphics.fillCircle(vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius);
       this.tunnelGraphics.lineStyle(2, 0x3fb8e0, 0.3);
       this.tunnelGraphics.strokeCircle(vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius);
-      this.tunnelGraphics.lineStyle(1,0xc9a36b,.22).strokeCircle(vanishingX+ring.offsetX,vanishingY+ring.offsetY,ring.radius-5);
+      this.tunnelGraphics.lineStyle(1,0x57cdeb,.22).strokeCircle(vanishingX+ring.offsetX,vanishingY+ring.offsetY,ring.radius-5);
       for(let i=0;i<6;i++) {
         const angle=i*Math.PI/3;
         this.tunnelGraphics.fillStyle(0xd7e9d8,.4).fillCircle(vanishingX+ring.offsetX+Math.cos(angle)*ring.radius,vanishingY+ring.offsetY+Math.sin(angle)*ring.radius,1.5);

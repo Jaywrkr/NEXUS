@@ -30,31 +30,31 @@ export class MuseumScene extends Phaser.Scene {
 
     const room = this.add.graphics();
 
-    room.lineStyle(1, 0x60716f, 0.3);
+    room.lineStyle(1, 0x6b96e5, 0.3);
     for (let x = 52; x < width; x += 68) room.lineBetween(x, 140, x, height - 150);
-    room.fillStyle(0x22343c).fillRect(26, height - 160, width - 52, 85);
-    room.lineStyle(2, 0xc49a61, 0.45).lineBetween(27, 139, width - 27, 139);
+    room.fillStyle(0x15234e).fillRect(26, height - 160, width - 52, 85);
+    room.lineStyle(2, 0x57cdeb, 0.45).lineBetween(27, 139, width - 27, 139);
 
     this.add
       .text(width / 2, 40, 'Museo Nexus', {
-        fontFamily: 'Georgia, serif',
+        fontFamily: ART.display,
         fontSize: '28px',
-        color: '#f4f1e8',
+        color: '#ffffff',
       })
       .setOrigin(0.5);
 
     this.memoryText = this.add.text(width / 2, 93, 'Toca un recuerdo para verlo despertar', {
-      fontFamily: ART.body, fontSize: '16px', color: '#c1d0ca',
+      fontFamily: ART.body, fontSize: '16px', color: '#b7ccf2',
     }).setOrigin(0.5);
     const story = this.progress.snapshot().story;
     const discovered = DISCOVERY_IDS.filter(id => story?.discoveries.includes(id)).length;
     const heard = RESIDENTS.filter(r => story?.heard.includes(r.id)).length;
     this.add.text(width / 2, 112, `Sorpresas: ${discovered}/${DISCOVERY_IDS.length} · Habitantes: ${heard}/${RESIDENTS.length}`, {
-      fontFamily: ART.body, fontSize: '14px', color: '#c1d0ca',
+      fontFamily: ART.body, fontSize: '14px', color: '#b7ccf2',
     }).setOrigin(0.5);
     if (this.progress.hasSeenChapter()) {
       ensureRoundedRectTexture(this, 'museum-ending', 110, 42, 12);
-      const ending = this.add.image(width - 70, 40, 'museum-ending').setTint(0xedce97).setInteractive({ useHandCursor: true });
+      const ending = this.add.image(width - 70, 40, 'museum-ending').setTint(0x8ce8ff).setInteractive({ useHandCursor: true });
       this.add.text(width - 70, 40, 'Ver final', { fontFamily: ART.body, fontSize: '16px', color: '#20233a' }).setOrigin(0.5);
       ending.on('pointerdown', () => { if (this.leaving) return; this.leaving = true; fadeToScene(this, 'EndingScene', [32, 35, 58]); });
     }
@@ -93,7 +93,7 @@ export class MuseumScene extends Phaser.Scene {
     ensureRoundedRectTexture(this, 'museum-return-button', 240, 52, 14);
     const returnButton = this.add
       .image(width / 2, height - 80, 'museum-return-button')
-      .setTint(0x87c9bb)
+      .setTint(0xffe342)
       .setInteractive({ useHandCursor: true });
     this.add
       .text(width / 2, height - 80, 'Volver al mundo', {
@@ -103,15 +103,15 @@ export class MuseumScene extends Phaser.Scene {
         color: '#1b1f3b',
       })
       .setOrigin(0.5);
-    returnButton.on('pointerover', () => returnButton.setTint(0xedce97));
-    returnButton.on('pointerout', () => returnButton.setTint(0x87c9bb));
+    returnButton.on('pointerover', () => returnButton.setTint(0x8ce8ff));
+    returnButton.on('pointerout', () => returnButton.setTint(0xffe342));
     returnButton.on('pointerdown', returnToWorld);
 
     this.add
       .text(width / 2, height - 32, 'También puedes volver con ESPACIO', {
         fontFamily: ART.body,
         fontSize: '16px',
-        color: '#c1d0ca',
+        color: '#b7ccf2',
       })
       .setOrigin(0.5);
 
@@ -123,18 +123,18 @@ export class MuseumScene extends Phaser.Scene {
     // Fit eight cabinets without shrinking the souvenirs or their reactions.
     const widthScale = horizontal ? Math.min(1, (this.scale.width - 160) / (DISPLAYED_FRAGMENTS.length - 1) / 138) : 1;
     const cabinet = this.add.graphics({ x, y }).setScale(size * widthScale, size);
-    cabinet.fillStyle(0x071b26,.3).fillRoundedRect(-61,-78,130,178,12);
+    cabinet.fillStyle(0x0b1636,.3).fillRoundedRect(-61,-78,130,178,12);
     cabinet.fillStyle(fragment.color, 0.06).fillTriangle(-24, -90, -64, 72, 64, 72).fillTriangle(24, -90, -64, 72, 64, 72);
-    cabinet.fillStyle(0x172b33).fillRoundedRect(-65, -85, 130, 174, 12);
-    cabinet.lineStyle(2, 0xc49a61, 0.8).strokeRoundedRect(-65, -85, 130, 174, 12);
-    cabinet.fillStyle(0xc49a61).fillRoundedRect(-32, -91, 64, 7, 3);
-    cabinet.fillStyle(0x8e775c).fillRoundedRect(-64, 73, 128, 15, 4);
-    cabinet.fillStyle(0xd2b98e).fillRect(-61, 73, 122, 4);
+    cabinet.fillStyle(0x1f326a).fillRoundedRect(-65, -85, 130, 174, 12);
+    cabinet.lineStyle(2, 0x57cdeb, 0.8).strokeRoundedRect(-65, -85, 130, 174, 12);
+    cabinet.fillStyle(0x57cdeb).fillRoundedRect(-32, -91, 64, 7, 3);
+    cabinet.fillStyle(0x345cdd).fillRoundedRect(-64, 73, 128, 15, 4);
+    cabinet.fillStyle(0x91bfff).fillRect(-61, 73, 122, 4);
     cabinet.lineStyle(2, 0xffefd1, 0.12).lineBetween(-48, -67, -28, -40).lineBetween(-48, -48, -37, -33);
     cabinet.fillStyle(fragment.color, 0.09).fillEllipse(0, 30, 90, 22);
-    ornament(cabinet,0,85,78,0xd2b98e);
-    const glass = this.add.rectangle(x, y, 120 * size * widthScale, 160 * size, 0x759d9b, 0.08).setName(fragment.id);
-    glass.setStrokeStyle(1, 0xc4dfd6, 0.25);
+    ornament(cabinet,0,85,78,0x91bfff);
+    const glass = this.add.rectangle(x, y, 120 * size * widthScale, 160 * size, 0x719ee4, 0.08).setName(fragment.id);
+    glass.setStrokeStyle(1, 0x9cd7ff, 0.25);
 
     if (this.progress.hasFragment(fragment.id)) {
       const souvenir = this.drawSouvenir(x, y, fragment);
@@ -153,7 +153,7 @@ export class MuseumScene extends Phaser.Scene {
         .text(x, y + 100 * size + 2, fragment.label, {
           fontFamily: ART.body,
           fontSize: horizontal ? '12px' : '14px',
-          color: '#f4f1e8',
+          color: '#ffffff',
         })
         .setOrigin(0.5);
     } else {
@@ -161,7 +161,7 @@ export class MuseumScene extends Phaser.Scene {
         .text(x, y, 'Vitrina vacía', {
           fontFamily: ART.body,
           fontSize: horizontal ? '12px' : '14px',
-          color: '#afbdba',
+          color: '#b7ccf2',
         })
         .setOrigin(0.5);
     }
@@ -211,15 +211,15 @@ export class MuseumScene extends Phaser.Scene {
         art.fillRoundedRect(-42, 8, 84, 12, 3);
         for (const post of [-36, -12, 12, 36]) art.lineBetween(post, -18, post, 30);
         art.lineBetween(-40, -12, 40, -12);
-        art.lineStyle(3, 0x87c9bb, 0.8);
+        art.lineStyle(3, 0xffe342, 0.8);
         art.lineBetween(-38, 43, -12, 39);
         art.lineBetween(-12, 39, 12, 43);
         art.lineBetween(12, 43, 38, 39);
         break;
       case 'garden-fragment':
-        art.lineStyle(4, 0xedce97);
+        art.lineStyle(4, 0x8ce8ff);
         art.lineBetween(0, -5, 0, 40);
-        art.fillStyle(0xedce97);
+        art.fillStyle(0x8ce8ff);
         art.fillEllipse(-12, 22, 26, 12);
         art.fillEllipse(12, 10, 26, 12);
         art.fillStyle(fragment.color);

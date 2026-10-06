@@ -41,8 +41,7 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
 - **Efectos suaves**: opción en el título que suprime flashes/sacudidas de cámara y deja las pistas estáticas y suprime el pulso de los recuerdos y el crecimiento animado de las flores. Sigue por defecto `prefers-reduced-motion`; una elección explícita se guarda en `los-nexus-reduced-effects`, independiente del progreso y de «Nueva partida». No cambia dificultad, recompensas ni controles.
 - **Progreso persistente** en `localStorage`: fragmentos, celebración final (y tamaño de la colección completada), conexiones resueltas (incluida la antena parcial) y posición del Nexus. La posición Y se guarda como proporción de la altura para conservar el lugar al rotar. Se guarda cada 500 ms si cambió y al ocultar/salir/pausar el mundo; volver del museo recupera el lugar. Las partidas antiguas siguen funcionando: una celebración anterior sin `completionCount` corresponde a cuatro recuerdos, y completar el quinto permite una nueva celebración, una sola vez. «Nueva partida» borra todo ese progreso.
 - **Pantalla de título** (`BootScene`): "Jugar" si no hay progreso guardado, o "Continuar" + "Nueva partida" si ya hay fragmentos recolectados — las tres van directo a `WorldScene` (el armario se abre con «Mi Nexus»).
-- **Muestra moderna**: `MODERN_VISUAL_PILOT.md` registra la dirección contemporánea aprobada con toques de Fortnite. `modernArt.ts` dibuja portada azul/violeta, plaza con fachadas por planos y vegetación facetada, y texturas planas para HUD/diálogos/controles. La muestra conserva funciones y sprites. Las pantallas y distritos restantes mantienen el arte anterior.
-- **Identidad gráfica**: dirección ilustrada editorial documentada en `ART_DIRECTION.md`. `src/art/interfaceArt.ts` centraliza tipografía, fondos claros/oscuros horneados por tamaño, marcos y emblemas; los botones comparten luz y contorno sin cambiar sus hit areas. Portada con composición independiente por orientación; armario con muestras de color y selección marcada; museo/final usan cobre sobre tinta oscura. Barrio con arquitectura, adoquines, vegetación y sombras de contacto, horneado en siete texturas estáticas por altura reutilizadas al regresar. Túnel con anillos metálicos y HUD del mismo sistema. No hay nuevas funciones, assets descargados ni animaciones obligatorias. El Nexus conserva sprites y poses.
+- **Dirección moderna**: `MODERN_VISUAL_PILOT.md` registra la muestra y `MODERN_ART_DIRECTION.md` su extensión completa. `modernArt.ts` centraliza paleta, superficies planas, portada y los siete distritos con fachadas por planos, vegetación facetada, losas grandes y hitos propios. `interfaceArt.ts` comparte tipografía sin serif, fondos azul/violeta horneados por tamaño, tarjetas oscuras y emblemas. Armario, diario, encargos, museo, final, túnel, HUD y diálogos usan el mismo lenguaje. Los objetos conectables conservan siluetas y estados con materiales azules y luz cian/amarilla. El río conserva su ancho y posición físicos. Los fondos se reutilizan al regresar; no hay nuevas funciones, assets externos ni animaciones obligatorias. Nexus conserva sprites, poses y estilos. `ART_DIRECTION.md` documenta el acabado editorial anterior, sustituido por la dirección moderna.
 - **Pulido visual**: transiciones de fade in/out entre las 5 escenas (`src/utils/sceneTransition.ts`), fondo con parallax en `WorldScene` (nubes + dos capas de colinas con distinto `scrollFactor`), cable de conexión dibujado como curva bezier con una chispa que lo recorre al conectar válido, e indicador `★ n/7` fijo en el HUD del mundo que se actualiza al recolectar cada fragmento.
 - **Realismo**: movimiento del Nexus con aceleración/desaceleración gradual (no velocidad instantánea), sombras de piso en todos los objetos interactivos y decoración estática, viento sutil en el árbol y mariposas cruzando el mundo.
 - **Mini-túnel del cable** (idea de Luca, `CableTunnelScene`): la conexión fuente→lámpara de la plaza, en vez de resolverse al toque, abre un mini-juego con perspectiva tipo Mario Kart — anillos concéntricos que se agrandan al acercarse (efecto vórtex dibujado con `Graphics`, sin assets), la chispa vista desde atrás/abajo, y control libre en 2D (flechas/WASD, las 4 direcciones, o el mismo joystick táctil que en `WorldScene`) para esquivar las paredes del tubo mientras serpentea. Al entrar ofrece práctica sin avanzar ni perder y botón «Empezar». Perder muestra «Reintentar» (reinicia directamente el mismo túnel) y «Volver al mundo»; ganar completa la conexión normalmente. ESPACIO empieza/reintenta y ESC vuelve desde práctica o fallo. La dificultad queda pendiente de validar con Luca. Ver Decisión 016. Por ahora solo esa conexión lo usa — el resto sigue resolviéndose al toque directo.
@@ -62,7 +61,7 @@ Hay una suite automatizada: `npm run test:unit` verifica el guardado y `npm run 
 
 Después de cambios:
 1. `npm run build` (debe terminar sin errores).
-2. `npm test` (18 pruebas unitarias y 42 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
+2. `npm test` (18 pruebas unitarias y 44 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
 3. Revisar las capturas adjuntas en `test-results/` y el informe en `playwright-report/`; los fallos conservan trazas.
 4. La prueba en dispositivo real con Luca sigue siendo necesaria para validar comodidad y dificultad.
 
@@ -84,8 +83,8 @@ src/
     EndingScene.ts           — desenlace y resultados, regreso al barrio/museo
     CableTunnelScene.ts      — mini-túnel dentro del cable (ver Decisión 016), se lanza sobre WorldScene pausada
   art/
-    modernArt.ts             — muestra contemporánea: portada, plaza y materiales planos
-    interfaceArt.ts          — sistema visual anterior: materiales, marcos, emblemas y tipografía
+    modernArt.ts             — dirección contemporánea: portada, siete distritos y materiales planos
+    interfaceArt.ts          — interfaces modernas: fondos, tarjetas, emblemas y tipografía
     neighborhood.ts          — arquitectura, terreno y cielo; texturas estáticas reutilizables
     props.ts                 — juguetes y faroles con materiales y estados
     nexusLook.ts             — paletas de ropa compartidas por poses y adornos procedurales
@@ -174,3 +173,7 @@ El secreto tiene una vitrina propia; no incrementa el contador de recuerdos
 de zona ni el requisito de colección completa. El museo conserva adaptación
 táctil y vertical. Los efectos nuevos respetan la opción de efectos suaves.
 `CONTEXTO.md` refleja el estado de esta rama para continuar con otras IAs.
+
+Las pruebas de integración verifican que el secreto no cuenta como recuerdo
+de zona, no reaparece al cargar y tiene vitrina; el señuelo sigue sin reglas.
+El museo muestra ocho vitrinas: siete de zona y una secreta. Ver `MERGE_ORDER.md`.

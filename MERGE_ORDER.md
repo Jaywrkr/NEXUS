@@ -46,3 +46,10 @@ arte de cada fase. Los recuerdos de zona mantienen su propio contador.
 La comprobación de conflictos corresponde a estos heads y a la base indicada.
 Si llegan otros cambios al destino durante la integración, volver a comprobar
 la cadena contra ese nuevo head.
+
+Validación de la reparación: cada una de las 22 fases compiló. La suite completa
+aprobó 18 pruebas unitarias y 44 escenarios E2E en escritorio y móvil vertical.
+Después del ajuste visual de separación de las ocho vitrinas, volvieron a pasar
+los builds afectados y ocho escenarios de museo, secreto y distritos.
+La simulación verificó 22 merges consecutivos y 231 parejas sin conflictos.
+Se conservan los commits originales; no se usó force push ni se crearon PR.

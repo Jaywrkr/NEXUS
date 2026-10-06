@@ -59,7 +59,7 @@ export class Resident extends Phaser.GameObjects.Container {
       art.fillStyle(0xffe39b).fillRect(25, 17, 7, 10);
     }
     const name = scene.add.text(0, 48, info.name, {
-      fontFamily: ART.body, fontSize: '14px', color: '#34494e', backgroundColor: '#ffefd1', padding: { x: 7, y: 3 },
+      fontFamily: ART.body, fontSize: '14px', color: '#ffffff', backgroundColor: '#14234e', padding: { x: 7, y: 3 },
     }).setOrigin(0.5);
     this.add([shadow, art, name]);
     this.setSize(72, 100).setDepth(9);

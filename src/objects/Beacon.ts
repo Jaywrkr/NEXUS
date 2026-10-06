@@ -24,17 +24,17 @@ export class Beacon extends ConnectableObject {
     super(scene, x, y, id, 'target');
 
     this.glow = scene.add.circle(0, -10, 46, ON_COLOR, 0);
-    const pole = scene.add.rectangle(0, 30, 8, 60, 0x3a3d48);
+    const pole = scene.add.rectangle(0, 30, 8, 60, 0x345c9b);
     this.dish = scene.add
       .ellipse(0, -10, 66, 40, OFF_COLOR)
       .setStrokeStyle(3, 0x1b1f3b, 0.35);
 
     const trim = scene.add.graphics();
-    trim.lineStyle(3, 0x8f806b).lineBetween(0, 10, -26, 52).lineBetween(0, 10, 26, 52).lineBetween(-17, 36, 17, 36);
-    trim.lineStyle(2, 0xffefd1, 0.7).strokeEllipse(0, -13, 49, 23).lineBetween(-23, -13, 23, -13);
-    trim.fillStyle(0xc49a61).fillCircle(0, -13, 6);
-    trim.lineStyle(3, 0x34494e).lineBetween(0, -13, 10, -34);
-    trim.fillStyle(0xc49a61).fillCircle(10, -34, 4);
+    trim.lineStyle(3, 0x4969b2).lineBetween(0, 10, -26, 52).lineBetween(0, 10, 26, 52).lineBetween(-17, 36, 17, 36);
+    trim.lineStyle(2, 0xf4faff, 0.7).strokeEllipse(0, -13, 49, 23).lineBetween(-23, -13, 23, -13);
+    trim.fillStyle(0x67b7fa).fillCircle(0, -13, 6);
+    trim.lineStyle(3, 0x14234e).lineBetween(0, -13, 10, -34);
+    trim.fillStyle(0x67b7fa).fillCircle(10, -34, 4);
     this.add([this.glow, pole, this.dish, trim]);
     this.addShadow(62, 50, 14);
 

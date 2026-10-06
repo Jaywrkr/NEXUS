@@ -183,6 +183,32 @@ Validación: build aprobado y suite completa sin fallos ni omisiones: 18 pruebas
 El build servido cargó portada, armario y mundo en ambos formatos, con edición/guardado de nombre y sin errores JavaScript ni HTTP.
 
 
+## Dirección moderna completa
+La muestra de portada/plaza/HUD se extiende a los siete distritos y todas las
+pantallas. Paseo del agua con tuberías, CUAC FM con antena iluminada, río azul,
+invernadero de vidrio facetado, taller con toldo y camino con banderines vivos.
+Fachadas laterales, sombras por planos, vegetación facetada y losas grandes se
+hornean en las mismas siete texturas reutilizables. Las fuentes de energía,
+lámparas y puertas comparten el acabado de la plaza; el resto de conectables,
+juguetes y faroles reciben metal azul y señales claras de estado.
+
+Armario, diario, encargos, museo, final y túnel adoptan fondos azul/violeta,
+tipografía sin serif, tarjetas oscuras, botones planos y energía cian. Las
+acciones principales usan amarillo con texto oscuro. Contadores de máquinas
+y nombres de habitantes usan paneles oscuros legibles. Se conservan funciones,
+guardado, controles, áreas interactivas, posiciones y geometría del túnel.
+Ningún recurso externo nuevo ni animación obligatoria. La rama continúa sobre
+`codex/estilo-moderno-plaza`; ver `MODERN_ART_DIRECTION.md`.
+
+Validación final: `npm run build` aprobado y `npm test` con 18 pruebas unitarias
+y 42 escenarios E2E aprobados, sin omisiones, en escritorio y móvil vertical.
+Los 12 escenarios de revisión visual/interacción también pasaron antes de la
+suite completa. Capturas revisadas de los siete distritos, armario, diario,
+encargos, museo, final y túnel en ambas orientaciones. Build servido verificado
+con cambio/guardado de nombre largo y entrada al mundo, sin errores JavaScript
+ni HTTP. Evidencia en `/workspace/nexus-modern-complete-evidence/`.
+
+
 ## Más variedad de partículas al conectar
 `ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.
 
@@ -194,3 +220,20 @@ Quinto fragmento (`secret-fragment`) escondido detrás de la casa apagada, al oe
 
 ## Documentación para continuar con otras IAs
 Se crea `CONTEXTO.md`: un único archivo autocontenido (qué es, estado, arquitectura, cómo funciona la conexión, coordenadas, reglas, trampas técnicas, backlog y forma de trabajo) para poder seguir el proyecto en ChatGPT u otra herramienta que no lee `CLAUDE.md` automáticamente. Se actualizan `CLAUDE.md`, `README.md` (la estructura todavía listaba `CustomizeScene`) y `DECISIONS.md` (018: señuelos; 019: fragmentos extra que no cuentan para la colección completa).
+
+
+## Reparación de las 22 ramas para integración secuencial
+Se incorpora la base `6e3e08a`, se propagan merges por toda la cadena y se
+resuelven los cruces conservando el contenido de cada fase. El fragmento
+secreto mantiene vitrina propia y contador independiente; el señuelo conserva
+su aspecto gris y las partículas de conexión respetan los efectos suaves.
+Se actualizan las pruebas de las fases y el contexto para otras IAs. Las ocho
+vitrinas caben sin solaparse en escritorio y mantienen la disposición móvil.
+Ver `MERGE_ORDER.md`: el usuario integra una por una con commits de merge.
+
+Validación de la reparación: cada una de las 22 fases compiló. La suite completa
+aprobó 18 pruebas unitarias y 44 escenarios E2E en escritorio y móvil vertical.
+Después del ajuste visual de separación de las ocho vitrinas, volvieron a pasar
+los builds afectados y ocho escenarios de museo, secreto y distritos.
+La simulación verificó 22 merges consecutivos y 231 parejas sin conflictos.
+Se conservan los commits originales; no se usó force push ni se crearon PR.

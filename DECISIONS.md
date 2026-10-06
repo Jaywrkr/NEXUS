@@ -98,8 +98,16 @@ El usuario solicita una revisión completa del arte y todas las interfaces sin a
 El usuario pide una estética más moderna con toques visuales de Fortnite y autoriza la muestra propuesta de plaza, portada y HUD. Se adopta una ilustración original de formas volumétricas estilizadas, color saturado, energía cian, base azul/violeta y acciones amarillas. Paneles y botones planos, tipografía gruesa y sombras por planos sustituyen el acabado de papel y cobre en la muestra. Se conservan identidad del Nexus, funciones, guardado, controles y áreas de input. La rama se anida sobre `codex/acabado-artistico`; el usuario integra los PR.
 
 
+**Decisión 030**
+Con «sigue», el usuario autoriza extender la dirección moderna aprobada al resto del juego. Los siete distritos comparten losas grandes, fachadas con volumen y vegetación facetada, con hitos propios por barrio. Armario, diario, encargos, museo, final y túnel adoptan azul/violeta, energía cian, texto claro y botones planos. La estética es original; no se incorporan recursos de Fortnite. Se conservan funciones, posiciones, geometría del túnel, identidad del Nexus y guardado. La rama se anida sobre `codex/estilo-moderno-plaza`; PR y merge a cargo del usuario.
+
+
 **Decisión histórica H018 (señuelo)**
 Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica especial: es un objeto registrado en `ConnectionSystem` sin ninguna regla, así que cae en el manejo genérico de conexión inválida. Debe verse sutilmente distinto de los reales (la fuente señuelo es gris y sin brillo animado) para que el puzzle sea de observar, no de adivinar. Primer uso: zona de la antena.
 
 **Decisión histórica H019 (fragmento secreto)**
 Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.
+
+
+**Decisión 031**
+Por petición explícita del usuario se reparan todas las ramas pendientes para integrar de una en una. Se usan merges normales que preservan el historial y los cambios de la base, sin force push. Los PR y merges finales siguen a cargo del usuario; la cadena requiere commits de merge para conservar la ascendencia. El secreto conserva vitrina propia sin contar como recuerdo del capítulo; el señuelo y las partículas también se conservan.
