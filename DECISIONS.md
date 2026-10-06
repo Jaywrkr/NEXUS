@@ -107,3 +107,7 @@ Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica e
 
 **Decisión histórica H019 (fragmento secreto)**
 Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.
+
+
+**Decisión 031**
+Por petición explícita del usuario se reparan todas las ramas pendientes para integrar de una en una. Se usan merges normales que preservan el historial y los cambios de la base, sin force push. Los PR y merges finales siguen a cargo del usuario; la cadena requiere commits de merge para conservar la ascendencia. El secreto conserva vitrina propia sin contar como recuerdo del capítulo; el señuelo y las partículas también se conservan.

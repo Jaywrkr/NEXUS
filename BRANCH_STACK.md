@@ -58,3 +58,11 @@ usuario; las pantallas y distritos restantes mantienen el acabado anterior.
 
 La fila 22 extiende la muestra aprobada a todos los distritos y pantallas.
 Conserva mecánicas, contenidos, guardado y áreas táctiles; el usuario hace PR y merge.
+
+## Reparación de toda la cadena
+A petición del usuario se incorporó la base `6e3e08a` y se propagaron los merges
+hacia las 22 ramas, conservando los commits originales. Se preservaron también
+el señuelo, las partículas de conexión y el secreto con su vitrina independiente.
+Cada fase compila; la simulación verificó 22 merges consecutivos y 231 parejas
+sin conflictos. El destino sigue siendo `claude/los-nexus-game-mvp-cppkef`.
+Ver `MERGE_ORDER.md` para integrar una por una mediante commits de merge.

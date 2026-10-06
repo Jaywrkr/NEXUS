@@ -20,8 +20,8 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test
 ## Comandos
 
 ```bash
-npm run test:unit    # catorce pruebas de guardado, preferencias y objetivos
-npm run test:e2e     # dieciocho escenarios en escritorio y dieciocho en móvil vertical
+npm run test:unit    # 18 pruebas de guardado, preferencias y objetivos
+npm run test:e2e     # 22 escenarios en escritorio y 22 en móvil vertical
 npm test            # ambas suites
 npm run build       # TypeScript y build de producción; check separado
 ```
@@ -115,3 +115,7 @@ los efectos, registra las llamadas a las cámaras sin sustituir su comportamient
 Las pruebas E2E usan el servidor de desarrollo en Chromium. `npm run build`
 comprueba el build de producción, pero estas pruebas no ejecutan ese build ni
 sustituyen una prueba en el teléfono real de Luca.
+
+`upstream-integration.spec.js` verifica que el secreto y el señuelo de la base
+conviven con el capítulo: contador independiente, guardado y secreto que no
+reaparece al cargar. Las pruebas del museo incluyen su octava vitrina.

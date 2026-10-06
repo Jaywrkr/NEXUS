@@ -61,7 +61,7 @@ Hay una suite automatizada: `npm run test:unit` verifica el guardado y `npm run 
 
 Después de cambios:
 1. `npm run build` (debe terminar sin errores).
-2. `npm test` (18 pruebas unitarias y 42 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
+2. `npm test` (18 pruebas unitarias y 44 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
 3. Revisar las capturas adjuntas en `test-results/` y el informe en `playwright-report/`; los fallos conservan trazas.
 4. La prueba en dispositivo real con Luca sigue siendo necesaria para validar comodidad y dificultad.
 
@@ -173,3 +173,7 @@ El secreto tiene una vitrina propia; no incrementa el contador de recuerdos
 de zona ni el requisito de colección completa. El museo conserva adaptación
 táctil y vertical. Los efectos nuevos respetan la opción de efectos suaves.
 `CONTEXTO.md` refleja el estado de esta rama para continuar con otras IAs.
+
+Las pruebas de integración verifican que el secreto no cuenta como recuerdo
+de zona, no reaparece al cargar y tiene vitrina; el señuelo sigue sin reglas.
+El museo muestra ocho vitrinas: siete de zona y una secreta. Ver `MERGE_ORDER.md`.
