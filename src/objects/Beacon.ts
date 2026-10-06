@@ -50,7 +50,7 @@ export class Beacon extends ConnectableObject {
     });
 
     this.setSize(80, 100);
-    this.setInteractive(new Phaser.Geom.Rectangle(-40, -50, 80, 100), Phaser.Geom.Rectangle.Contains);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 80, 100), Phaser.Geom.Rectangle.Contains);
   }
 
   activate(): void {

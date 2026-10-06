@@ -41,7 +41,7 @@ export class EnergySource extends ConnectableObject {
     }
 
     this.setSize(52, 52);
-    this.setInteractive(new Phaser.Geom.Rectangle(-26, -26, 52, 52), Phaser.Geom.Rectangle.Contains);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 52, 52), Phaser.Geom.Rectangle.Contains);
   }
 
   activate(): void {

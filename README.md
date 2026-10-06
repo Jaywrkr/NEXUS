@@ -18,17 +18,21 @@ Documentos de apoyo:
 
 ## Requisitos
 
-- Node.js 18+
+- Node.js 24+ para desarrollo y pruebas (Vite requiere como mínimo 20.19 o 22.12).
 
 ## Uso
 
 ```bash
-npm install
+npm ci
 npm run dev              # servidor de desarrollo
 npm run dev -- --host    # para probar desde el celular (misma red WiFi)
 npm run build            # build de producción
 npm run preview          # previsualizar el build
 ```
+
+## Pruebas
+
+`npm test` ejecuta las pruebas de guardado y el recorrido en Chromium, en escritorio y móvil vertical. Preparación, cobertura y límites en [tests/README.md](tests/README.md). Ejecutar también `npm run build`.
 
 ## Estructura
 

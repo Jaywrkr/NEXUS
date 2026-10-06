@@ -303,20 +303,20 @@ export class WorldScene extends Phaser.Scene {
     this.physics.add.existing(this.bridgeBlocker, true);
     this.bridgeCollider = this.physics.add.collider(this.nexus, this.bridgeBlocker);
 
-    this.events.on('tunnel-requested', (data: { source: ConnectableObject; target: ConnectableObject }) => {
+    const onTunnelRequested = (data: { source: ConnectableObject; target: ConnectableObject }): void => {
       this.scene.launch('CableTunnelScene', data);
       this.scene.pause();
-    });
+    };
 
-    this.events.on(
-      'resume',
-      (_sys: Phaser.Scenes.Systems, data?: { tunnelSuccess: boolean; source: ConnectableObject; target: ConnectableObject }) => {
-        if (!data) return;
-        this.connectionSystem.finishTunnel(data.source, data.target, data.tunnelSuccess);
-      },
-    );
+    const onResume = (
+      _sys: Phaser.Scenes.Systems,
+      data?: { tunnelSuccess: boolean; source: ConnectableObject; target: ConnectableObject },
+    ): void => {
+      if (!data) return;
+      this.connectionSystem.finishTunnel(data.source, data.target, data.tunnelSuccess);
+    };
 
-    this.events.on('connection-made', (targetId: string, sourceId: string) => {
+    const onConnectionMade = (targetId: string, sourceId: string): void => {
       this.progress.saveConnection(sourceId, targetId);
       this.progress.savePosition(this.nexus.x, this.nexus.y / this.scale.height);
       if (targetId === this.lamp.id) {
@@ -349,6 +349,15 @@ export class WorldScene extends Phaser.Scene {
         this.bridgeFragment.reveal();
         this.instructionText.setText('¡El puente se abrió! Cruza y busca el fragmento');
       }
+    };
+
+    this.events.on('tunnel-requested', onTunnelRequested);
+    this.events.on('resume', onResume);
+    this.events.on('connection-made', onConnectionMade);
+    this.events.once('shutdown', () => {
+      this.events.off('tunnel-requested', onTunnelRequested);
+      this.events.off('resume', onResume);
+      this.events.off('connection-made', onConnectionMade);
     });
 
     this.physics.add.overlap(this.nexus, this.secretFragment, () =>
@@ -385,8 +394,8 @@ export class WorldScene extends Phaser.Scene {
 
   /** Quita la barrera física que impedía cruzar la grieta. */
   private removeBridgeBlocker(): void {
-    this.bridgeCollider.destroy();
-    this.bridgeBlocker.destroy();
+    if (this.bridgeCollider.world) this.bridgeCollider.destroy();
+    if (this.bridgeBlocker.scene) this.bridgeBlocker.destroy();
   }
 
   /** Enciende la ventana de la casa cuando la lámpara se conecta. */

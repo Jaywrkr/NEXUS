@@ -37,7 +37,7 @@ export class Bridge extends ConnectableObject {
     });
 
     this.setSize(44, 80);
-    this.setInteractive(new Phaser.Geom.Rectangle(-22, -50, 44, 80), Phaser.Geom.Rectangle.Contains);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, -10, 44, 80), Phaser.Geom.Rectangle.Contains);
   }
 
   activate(): void {

@@ -34,7 +34,7 @@ export class Lamp extends ConnectableObject {
     });
 
     this.setSize(64, 130);
-    this.setInteractive(new Phaser.Geom.Rectangle(-32, -65, 64, 130), Phaser.Geom.Rectangle.Contains);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 64, 130), Phaser.Geom.Rectangle.Contains);
   }
 
   canInitiate(): boolean {

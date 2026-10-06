@@ -42,10 +42,13 @@ npm run dev -- --host   # para probar desde el celular en la misma red WiFi
 npm run build     # build de producción — SIEMPRE correr esto después de cualquier cambio
 ```
 
-Hay pruebas de guardado en `tests/gameState.test.mjs`: ejecutar `node --test tests/gameState.test.mjs` con Node 24 (TypeScript nativo). Para verificar también el juego:
+Hay una suite automatizada: `npm run test:unit` verifica el guardado y `npm run test:e2e` prueba el recorrido en Chromium para escritorio y móvil vertical. `npm test` ejecuta ambas. Usar Node 24+ y preparar Chromium con `npx playwright install chromium`, o configurar `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH` si ya está instalado. Ver `tests/README.md` para cobertura, fixtures y limitaciones.
+
+Después de cambios:
 1. `npm run build` (debe terminar sin errores).
-2. Levantar el dev server y usar Playwright (`chromium` en `/opt/pw-browsers/chromium`, paquete Playwright en `/opt/node22/lib/node_modules/playwright`) para simular clics/teclado, tomar screenshots, y leerlos con la herramienta de lectura de imágenes.
-3. Revisar consola por errores (`page.on('pageerror', ...)`).
+2. `npm test` (4 pruebas unitarias y 6 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
+3. Revisar las capturas adjuntas en `test-results/` y el informe en `playwright-report/`; los fallos conservan trazas.
+4. La prueba en dispositivo real con Luca sigue siendo necesaria para validar comodidad y dificultad.
 
 Ver la sección "Bugs reales encontrados" más abajo antes de asumir que algo raro en una prueba es un bug del juego — varias veces resultó ser imprecisión del script de prueba (el Nexus no estaba lo bastante cerca en el eje Y, por ejemplo), no un problema real.
 
@@ -98,6 +101,10 @@ Ver `DECISIONS.md` para la lista completa. Las más importantes:
 6. **Cuidado al probar con Playwright**: mover al Nexus solo en un eje (por ejemplo solo `ArrowRight`) y luego hacer clic en el botón de interacción puede fallar si el objetivo está a más de 90px en el otro eje (el radio de interacción es circular, no solo horizontal). Varias veces esto se confundió con un bug real cuando en realidad era el script de prueba. Siempre mover en diagonal (mantener dos teclas) para acercarse de verdad, o usar clics directos con coordenadas ya validadas en este documento/commits anteriores.
 7. **Patrón para mini-juegos que se abren "sobre" `WorldScene`** (como `CableTunnelScene`): `this.scene.launch('OtraEscena', data)` + `this.scene.pause()` desde `WorldScene`, y al terminar la escena hija hace `this.scene.stop()` + `this.scene.resume('WorldScene', resultado)`. `WorldScene` escucha su propio evento `'resume'` (`this.events.on('resume', (sys, data) => ...)`) para recibir el resultado. Pausar la escena para el input/física del Nexus automáticamente sin código extra.
 8. **PNGs generados por IA suelen venir con mucho margen transparente/halo y en una resolución enorme** (las 4 imágenes del Nexus llegaron en 1024×1536, ~2MB cada una — 8MB en total, demasiado para cargar bien en celular). Antes de usarlos: recortar al bounding box del contenido visible (umbral de alpha, no 0 exacto, para no cortar el halo de brillo intencional) + un padding chico, y reescalar a una altura razonable (se usó 480px). Con Pillow: `alpha.point(lambda a: 255 if a > 40 else 0).getbbox()`. Esto bajó el total a ~700KB sin perder calidad visible. También: todas las poses deben quedar recortadas con el mismo criterio para que los pies terminen a la misma distancia del borde inferior — si no, el personaje "salta" verticalmente al cambiar de sprite (idle↔caminar↔festejar) porque cada imagen tiene su propio contenido a distinta altura dentro del lienzo.
+
+9. **Áreas interactivas de `Container`**: Phaser suma `displayOriginX/Y` (la mitad del tamaño) antes de comprobar el hit area. No pasar directamente rectángulos con coordenadas de dibujo centradas en cero: desplaza el área hacia arriba/izquierda. Para un objeto de 52×52 con área local centrada, usar `Rectangle(0, 0, 52, 52)`. Las pruebas del recorrido encontraron que tocar el centro del interruptor del puente no funcionaba por esta diferencia; se corrigieron las áreas de los seis objetos conectables.
+
+10. **Listeners de escena al volver del museo**: los eventos propios de `WorldScene` deben desregistrarse en shutdown. Si se vuelven a registrar en cada create sin limpieza, una conexión dispara callbacks duplicados y el puente puede intentar destruir dos veces su collider. La retirada de la barrera también es idempotente para partidas antiguas con puente ya restaurado.
 
 ## Coordenadas de referencia del mundo (para pruebas o debug futuro)
 
