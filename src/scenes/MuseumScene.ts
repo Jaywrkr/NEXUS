@@ -119,7 +119,10 @@ export class MuseumScene extends Phaser.Scene {
   }
 
   private buildVitrina(x: number, y: number, fragment: Souvenir, size: number): void {
-    const cabinet = this.add.graphics({ x, y }).setScale(size);
+    const horizontal = this.scale.width > this.scale.height;
+    // Fit eight cabinets without shrinking the souvenirs or their reactions.
+    const widthScale = horizontal ? Math.min(1, (this.scale.width - 160) / (DISPLAYED_FRAGMENTS.length - 1) / 138) : 1;
+    const cabinet = this.add.graphics({ x, y }).setScale(size * widthScale, size);
     cabinet.fillStyle(0x071b26,.3).fillRoundedRect(-61,-78,130,178,12);
     cabinet.fillStyle(fragment.color, 0.06).fillTriangle(-24, -90, -64, 72, 64, 72).fillTriangle(24, -90, -64, 72, 64, 72);
     cabinet.fillStyle(0x172b33).fillRoundedRect(-65, -85, 130, 174, 12);
@@ -130,7 +133,7 @@ export class MuseumScene extends Phaser.Scene {
     cabinet.lineStyle(2, 0xffefd1, 0.12).lineBetween(-48, -67, -28, -40).lineBetween(-48, -48, -37, -33);
     cabinet.fillStyle(fragment.color, 0.09).fillEllipse(0, 30, 90, 22);
     ornament(cabinet,0,85,78,0xd2b98e);
-    const glass = this.add.rectangle(x, y, 120 * size, 160 * size, 0x759d9b, 0.08).setName(fragment.id);
+    const glass = this.add.rectangle(x, y, 120 * size * widthScale, 160 * size, 0x759d9b, 0.08).setName(fragment.id);
     glass.setStrokeStyle(1, 0xc4dfd6, 0.25);
 
     if (this.progress.hasFragment(fragment.id)) {
@@ -149,7 +152,7 @@ export class MuseumScene extends Phaser.Scene {
       this.add
         .text(x, y + 100 * size + 2, fragment.label, {
           fontFamily: ART.body,
-          fontSize: '14px',
+          fontSize: horizontal ? '12px' : '14px',
           color: '#f4f1e8',
         })
         .setOrigin(0.5);
@@ -157,7 +160,7 @@ export class MuseumScene extends Phaser.Scene {
       this.add
         .text(x, y, 'Vitrina vacía', {
           fontFamily: ART.body,
-          fontSize: '14px',
+          fontSize: horizontal ? '12px' : '14px',
           color: '#afbdba',
         })
         .setOrigin(0.5);
