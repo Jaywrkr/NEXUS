@@ -6,20 +6,21 @@ const exhibits = [
   ['beacon-fragment', 'Señal de la antena', '¡Dos cables, una señal!'],
   ['bridge-fragment', 'Puente de madera', '¡Ya podemos cruzar!'],
   ['garden-fragment', 'Flor del jardín', '¡El jardín volvió a florecer!'],
+  ['workshop-fragment', 'Pato del taller', '¡Cuac! Ahora soy tu supervisor.'],
 ];
 
 async function openMuseum(page, ids, reduced) {
   // Seed collection states, then exercise the real museum's click/touch inputs.
-  await page.evaluate(({ ids, reduced }) => {
+  await page.evaluate(({ ids, reduced, total }) => {
     localStorage.setItem('los-nexus-progress', JSON.stringify({
-      fragmentsCollected: ids, seenCompletion: ids.length === 5, connections: [], position: null,
+      fragmentsCollected: ids, seenCompletion: ids.length === total, connections: [], position: null,
     }));
     localStorage.setItem('los-nexus-reduced-effects', String(reduced));
     const game = window.__nexusTest;
     game.scene.stop('MuseumScene');
     game.scene.stop('BootScene');
     game.scene.start('MuseumScene');
-  }, { ids, reduced });
+  }, { ids, reduced, total: exhibits.length });
   await ready(page, 'MuseumScene');
 }
 
@@ -38,12 +39,12 @@ async function museumState(page) {
 for (const reduced of [false, true]) {
   test(`museum souvenirs respond repeatedly with ${reduced ? 'reduced' : 'normal'} effects`, async ({ page }, testInfo) => {
     await openMuseum(page, [], reduced);
-    expect((await museumState(page)).empty).toBe(5);
+    expect((await museumState(page)).empty).toBe(6);
     expect((await museumState(page)).exhibits).toEqual([]);
     await checkpoint(page, testInfo, 'museum-empty');
 
     await openMuseum(page, [exhibits[0][0]], reduced);
-    expect((await museumState(page)).empty).toBe(4);
+    expect((await museumState(page)).empty).toBe(5);
     expect((await museumState(page)).exhibits.map(o => o.id)).toEqual([exhibits[0][0]]);
     await checkpoint(page, testInfo, 'museum-one-souvenir');
 
@@ -58,9 +59,9 @@ for (const reduced of [false, true]) {
       // A second tap during the reaction must remain responsive and reset cleanly.
       await tap(page, target.x, target.y);
       expect((await museumState(page)).texts).toContain(memory);
-      if (reduced) expect((await museumState(page)).scales).toEqual([1, 1, 1, 1, 1]);
+      if (reduced) expect((await museumState(page)).scales).toEqual([1, 1, 1, 1, 1, 1]);
       else await expect.poll(async () => Math.max(...(await museumState(page)).scales)).toBeGreaterThan(1);
-      await expect.poll(async () => (await museumState(page)).scales).toEqual([1, 1, 1, 1, 1]);
+      await expect.poll(async () => (await museumState(page)).scales).toEqual([1, 1, 1, 1, 1, 1]);
     }
     expect(await saved(page)).toEqual(before);
     await checkpoint(page, testInfo, 'museum-distinct-souvenirs');
