@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { RESIDENTS } from '../data/chapter';
 import { ART } from '../art/interfaceArt';
 import { RadioReceiver } from '../objects/RadioReceiver';
 import type { ConnectionRule } from '../systems/ConnectionSystem';
@@ -36,7 +37,7 @@ export class ReturnCircuits {
         restoreAvailable: gardenReady, blockedMessage: 'Las flores necesitan agua y música de CUAC FM.' },
     ];
     this.notes = scene.add.text(3500, y - 135 * v, '♫  ♪  ♫', { fontFamily: ART.body, fontSize: '30px', color: '#9d367c' }).setOrigin(0.5).setDepth(3);
-    this.bulletinText = scene.add.text(1060, y - 145 * v, '', { fontFamily: ART.body, fontSize: '15px', color: '#4a3c63', align: 'center', wordWrap: { width: 190 } }).setOrigin(0.5).setDepth(3);
+    this.bulletinText = scene.add.text(1060, y - 145 * v, '', { fontFamily: ART.body, fontSize: '15px', color: '#4a3c63', align: 'center', wordWrap: { width: 190 }, backgroundColor: '#edf1ed', padding: { x: 6, y: 4 } }).setOrigin(0.5).setDepth(5);
     this.bandText = scene.add.text(3650, y - 150 * v, '', { fontFamily: ART.body, fontSize: '15px', color: '#4a3c63', align: 'center', wordWrap: { width: 190 } }).setOrigin(0.5).setDepth(3);
     this.refresh();
   }
@@ -48,7 +49,7 @@ export class ReturnCircuits {
   }
 
   taskNear(x: number): Task | undefined {
-    if (this.channel() === 'news' && this.plazaReady() && !this.bulletin.isActive && Math.abs(x - this.bulletin.x) < 450)
+    if (this.channel() === 'news' && this.plazaReady() && !this.bulletin.isActive && (Math.abs(x - this.bulletin.x) < 450 || Math.abs(x - RESIDENTS.find(r => r.id === 'miga')!.x) < 180))
       return { id: 'plaza-bulletin', objective: 'Miga necesita publicar las noticias', clues: [
         'La noticia ya llegó al barrio, pero nadie puede leerla.', 'La lámpara encendida puede llevar la señal al cartel.', 'Lámpara → cartel de Miga.',
       ] };
