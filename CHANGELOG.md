@@ -140,3 +140,6 @@ Validación: build y 13 pruebas unitarias aprobadas; 28 escenarios E2E aprobaron
 
 ## Encargos con misterio y pistas graduadas
 Los habitantes describen problemas en lugar de dictar todos los cables. El objetivo sigue los preparativos, entradas parciales y recompensas antiguas, conservando la explicación del primer cable. «Pista» ofrece tres niveles a petición: observación, orientación y solución; no pausa el movimiento, repite el último nivel y vuelve al primero al cambiar la tarea. Las pistas automáticas siguen disponibles. Se prueba graduación, movimiento, cambio de tarea, recarga y textos en escritorio y móvil; se repite el recorrido completo y la visita a habitantes.
+
+## CUAC FM: una señal, dos decisiones
+Una central entre la fuente y la antena ofrece música al jardín o noticias a la plaza. La antena completa habilita ambas; un solo receptor permanece encendido. Conectar el otro cambia la elección y se puede volver al anterior. El sistema añade grupos exclusivos y callbacks de activación para restaurar y cambiar la elección sin afectar circuitos permanentes. El guardado sustituye únicamente los cables de la fuente de radio. No entrega recuerdos ni bloquea el final. Se verifican cambios repetidos, duplicados, restauración del último destino válido y conservación de preparativos, además del taller y las rutas de faroles.
