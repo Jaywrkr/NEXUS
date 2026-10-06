@@ -97,4 +97,4 @@ Ver `DECISIONS.md`.
 
 ## Nota de estado
 
-Este documento es la visión original del proyecto y se mantiene sin cambios como referencia. El proyecto avanzó más allá del MVP 0.0 (más zonas, personalización con formas además de color, adaptación real a celular). Para el estado actual, ver `CLAUDE.md`.
+Este documento es la visión original del proyecto y se mantiene sin cambios como referencia. El proyecto avanzó más allá del MVP 0.0 (más zonas, personalización con formas además de color, adaptación real a celular). Para el estado actual, ver `CONTEXTO.md` (o `CLAUDE.md`).
