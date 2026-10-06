@@ -26,6 +26,7 @@ El usuario hace los PR y merges. No hay ramas paralelas independientes.
 | 18 | `codex/personalizacion-nexus` | `codex/identidad-visual` | Armario, nombre, chaquetas, accesorios y cable |
 | 19 | `codex/historias-del-barrio` | `codex/personalizacion-nexus` | Tres historias, seis desenlaces y estilos desbloqueables |
 | 20 | `codex/acabado-artistico` | `codex/historias-del-barrio` | Dirección de arte y acabado de las ocho escenas; sin funciones nuevas |
+| 21 | `codex/estilo-moderno-plaza` | `codex/acabado-artistico` | Muestra moderna: portada, plaza y HUD con color y volumen estilizados |
 
 Al iniciar este bloque se verificaron los siete primeros heads publicados y
 la base original en `05a5e52`. Las seis fases nuevas se ejecutan en este orden;
@@ -49,3 +50,7 @@ todo el bloque; los PR y merges siguen a cargo del usuario.
 La fila 20 aplica únicamente el acabado visual de interfaces y escenarios.
 Continúa desde la rama de historias, con su propio commit y push; el usuario
 sigue gestionando los PR y merges. Ver `ART_DIRECTION.md`.
+
+La fila 21 publica la muestra moderna de portada, plaza y HUD. Está probada
+en ambas orientaciones y conserva el flujo de juego. PR y merge a cargo del
+usuario; las pantallas y distritos restantes mantienen el acabado anterior.

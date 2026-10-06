@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
-import { ART } from '../art/interfaceArt';
-import { ensureRoundedRectTexture } from '../utils/uiTextures';
+import { MODERN as ART } from '../art/modernArt';
+import { ensureFlatTexture as ensureRoundedRectTexture } from '../art/modernArt';
 
 /**
  * Botón fijo en pantalla para interactuar con el objeto conectable más
@@ -15,7 +15,7 @@ export class InteractButton {
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensureRoundedRectTexture(scene, 'interact-button', 190, 56, 16);
     this.bg = scene.add
-      .image(x, y, 'interact-button').setTint(0x243f48)
+      .image(x, y, 'interact-button').setTint(0x14234e)
       .setScrollFactor(0)
       .setDepth(60)
       .setVisible(false)
@@ -25,7 +25,7 @@ export class InteractButton {
       .text(x, y, 'Tocar', {
         fontFamily: ART.body,
         fontSize: '20px',
-        color: '#f4f1e8',
+        color: '#ffffff',
       })
       .setOrigin(0.5)
       .setScrollFactor(0)

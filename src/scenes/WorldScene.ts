@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { ART } from '../art/interfaceArt';
+import { MODERN as ART } from '../art/modernArt';
 import { sideResidentLine } from '../data/sideStories';
 import { drawNeighborhood, drawSky } from '../art/neighborhood';
 import { Nexus } from '../entities/Nexus';
@@ -29,7 +29,7 @@ import { VirtualJoystick } from '../ui/VirtualJoystick';
 import { InteractButton } from '../ui/InteractButton';
 import type { ConnectableObject } from '../objects/ConnectableObject';
 import { fadeToScene } from '../utils/sceneTransition';
-import { ensureRoundedRectTexture } from '../utils/uiTextures';
+import { ensureFlatTexture as ensureRoundedRectTexture } from '../art/modernArt';
 
 const HUD_PILL_TEXTURE = 'hud-pill-bg';
 
@@ -141,14 +141,14 @@ export class WorldScene extends Phaser.Scene {
     ensureRoundedRectTexture(this, HUD_PILL_TEXTURE, 100, 36, 18);
 
     this.add.graphics().setDepth(19).setScrollFactor(0)
-      .fillStyle(0x243f48, 0.97).fillRoundedRect(110, 14, this.scale.width - 220, 66, 16)
-      .lineStyle(1, 0xcab98d, 0.6).strokeRoundedRect(114, 18, this.scale.width - 228, 58, 12);
+      .fillStyle(0x14234e, 0.97).fillRoundedRect(110, 14, this.scale.width - 220, 66, 16)
+      .lineStyle(1, 0x57cdeb, 0.6).strokeRoundedRect(114, 18, this.scale.width - 228, 58, 12);
 
     this.instructionText = this.add
       .text(this.scale.width / 2, 24, '', {
         fontFamily: ART.body,
         fontSize: '16px',
-        color: '#ffefd1',
+        color: '#ffffff',
         wordWrap: { width: this.scale.width - 220, useAdvancedWrap: true },
       })
       .setOrigin(0.5, 0)
@@ -159,7 +159,7 @@ export class WorldScene extends Phaser.Scene {
     this.add
       .image(this.scale.width - 16 - 42, 16 + 18, HUD_PILL_TEXTURE)
       .setDisplaySize(84, 36)
-      .setTint(0xf6e8ca)
+      .setTint(0x14234e)
       .setAlpha(0.95)
       .setDepth(19)
       .setScrollFactor(0);
@@ -169,7 +169,7 @@ export class WorldScene extends Phaser.Scene {
         fontFamily: ART.body,
         fontSize: '18px',
         fontStyle: 'bold',
-        color: '#8a6d1f',
+        color: '#ffe342',
       })
       .setOrigin(1, 0.5)
       .setDepth(20)
@@ -178,7 +178,7 @@ export class WorldScene extends Phaser.Scene {
     const mutePill = this.add
       .image(16 + 42, 16 + 18, HUD_PILL_TEXTURE)
       .setDisplaySize(84, 36)
-      .setTint(0xf6e8ca)
+      .setTint(0x14234e)
       .setAlpha(0.95)
       .setDepth(19)
       .setScrollFactor(0)
@@ -188,7 +188,7 @@ export class WorldScene extends Phaser.Scene {
       .text(16 + 42, 16 + 18, this.muteButtonLabel(), {
         fontFamily: ART.body,
         fontSize: '18px',
-        color: '#1b1f3b',
+        color: '#ffffff',
       })
       .setOrigin(0.5)
       .setDepth(20)
@@ -202,14 +202,14 @@ export class WorldScene extends Phaser.Scene {
     });
 
     const wardrobe = this.add.image(65, height - 185, HUD_PILL_TEXTURE).setDisplaySize(106, 36)
-      .setTint(0xffefd1).setDepth(50).setScrollFactor(0).setInteractive({ useHandCursor: true });
-    this.add.text(65, height - 185, 'Mi Nexus', { fontFamily: ART.body, fontSize: '14px', color: '#34494e' })
+      .setTint(0x14234e).setDepth(50).setScrollFactor(0).setInteractive({ useHandCursor: true });
+    this.add.text(65, height - 185, 'Mi Nexus', { fontFamily: ART.body, fontSize: '14px', color: '#ffffff' })
       .setOrigin(0.5).setDepth(51).setScrollFactor(0);
     wardrobe.on('pointerdown', () => { if (this.leavingWorld) return; this.leavingWorld = true; this.scene.start('CustomizeScene', { returnScene: 'WorldScene' }); });
 
     const journal = this.add.image(65, height - 230, HUD_PILL_TEXTURE).setDisplaySize(106, 36)
-      .setTint(0xffefd1).setDepth(50).setScrollFactor(0).setInteractive({ useHandCursor: true });
-    this.add.text(65, height - 230, 'Diario', { fontFamily: ART.body, fontSize: '14px', color: '#34494e' })
+      .setTint(0x14234e).setDepth(50).setScrollFactor(0).setInteractive({ useHandCursor: true });
+    this.add.text(65, height - 230, 'Diario', { fontFamily: ART.body, fontSize: '14px', color: '#ffffff' })
       .setOrigin(0.5).setDepth(51).setScrollFactor(0);
     journal.on('pointerdown', () => { if (this.leavingWorld) return; this.leavingWorld = true; this.scene.start('JournalScene'); });
 
@@ -281,7 +281,7 @@ export class WorldScene extends Phaser.Scene {
     this.instructionText.setText(this.getStatusMessage());
     this.storyCard = new StoryCard(this);
     const hint = this.add.image(this.scale.width - 62, height - 86, HUD_PILL_TEXTURE)
-      .setDisplaySize(92, 44).setTint(0xedce97).setDepth(50).setScrollFactor(0)
+      .setDisplaySize(92, 44).setTint(0xffe342).setDepth(50).setScrollFactor(0)
       .setInteractive({ useHandCursor: true });
     this.add.text(hint.x, hint.y, 'Pista', { fontFamily: ART.body, fontSize: '18px', color: '#20233a' })
       .setOrigin(0.5).setDepth(51).setScrollFactor(0);
@@ -879,7 +879,7 @@ export class WorldScene extends Phaser.Scene {
     this.add.ellipse(2200, midY + 178 * vScale, 40, 12, 0x000000, 0.15).setDepth(1);
 
     // Ventana apagada
-    this.houseWindow = this.add.rectangle(214, midY + 30 * vScale - 56, 22, 28, 0x4b6160).setDepth(3);
+    this.houseWindow = this.add.rectangle(214, midY + 30 * vScale - 56, 22, 28, 0x90dcff).setDepth(3);
     this.radioBanner = this.add.text(280, midY - 165 * vScale, 'CUAC FM · Fiesta en preparación', {
       fontFamily: ART.body, fontSize: '16px', color: '#365137',
     }).setOrigin(0.5).setDepth(4).setVisible(false);
@@ -891,11 +891,11 @@ export class WorldScene extends Phaser.Scene {
     }
 
     // Árbol sin hojas (mundo apagado)
-    this.add.rectangle(940, midY - 10 * vScale, 12, 60, 0x6b4a30).setDepth(3);
-    this.treeCrown = this.add.circle(940, midY - 60 * vScale, 40, 0x8b8f8a).setDepth(3);
+    this.add.rectangle(940, midY - 10 * vScale, 12, 60, 0x565591).setDepth(3);
+    this.treeCrown = this.add.circle(940, midY - 60 * vScale, 40, 0x6375a9).setDepth(3);
 
     const foliage = this.add.graphics({ x: 940, y: midY - 60 * vScale }).setDepth(3);
-    foliage.fillStyle(0xffefd1, 0.23).fillEllipse(-14, -18, 34, 18).fillCircle(18, -10, 9);
+    foliage.fillStyle(0x14234e, 0.23).fillEllipse(-14, -18, 34, 18).fillCircle(18, -10, 9);
     foliage.lineStyle(2, 0x34494e, 0.2).lineBetween(-14, 20, 0, 30).lineBetween(14, 10, 0, 30);
 
     // Torre de la estación de la antena (decoración, no interactiva)

@@ -30,6 +30,16 @@ export class Lamp extends ConnectableObject {
     trim.fillStyle(0xc49a61).fillCircle(0,-65,3);
     trim.lineStyle(2,0xc49a61).lineBetween(-14,-54,-9,-61).lineBetween(-9,-61,9,-61).lineBetween(9,-61,14,-54);
     this.bulb.setFillStyle(0x81978b).setStrokeStyle(4, 0xc49a61);
+    if(id==='lamp') {
+      base.setFillStyle(0x243871).setStrokeStyle(2,0x86c8ff);
+      this.pole.setFillStyle(0x345c9b);
+      this.bulb.setFillStyle(0x7199bf).setStrokeStyle(4,0x1e336b);
+      trim.clear().fillStyle(0x243871).fillRoundedRect(-19,39,38,7,2);
+      trim.fillStyle(0x14234e).fillTriangle(-25,-55,0,-71,25,-55);
+      trim.fillStyle(0x5168c7).fillTriangle(-25,-55,0,-71,0,-55);
+      trim.lineStyle(2,0x8be8ff,.8).lineBetween(-3,-19,-3,37);
+      trim.lineStyle(2,0xe4f9ff,.8).beginPath().arc(-3,-43,12,Math.PI,Math.PI*1.6).strokePath();
+    }
     this.add([base, this.pole, this.glow, this.bulb, trim]);
     this.addShadow(52, 34, 10);
 

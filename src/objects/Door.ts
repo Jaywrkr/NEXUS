@@ -30,6 +30,15 @@ export class Door extends ConnectableObject {
     this.detail = scene.add.graphics();
     this.detail.lineStyle(2, 0xc0d0b0).strokeRoundedRect(-18, -37, 36, 33, 4).strokeRoundedRect(-18, 8, 36, 29, 4);
     this.detail.fillStyle(0xffefd1, 0.35).fillRect(-17, -35, 3, 27);
+    if(id==='door') {
+      this.frame.setFillStyle(0x496ed0).setStrokeStyle(3,0x14234e);
+      this.panel.setFillStyle(0x5779e1).setStrokeStyle(2,0x98beff);
+      this.detail.clear().lineStyle(2,0x9bc6ff).strokeRoundedRect(-17,-36,34,30,3);
+      this.detail.fillStyle(0x27e7da,.8).fillRoundedRect(-15,-34,30,26,2);
+      this.detail.fillStyle(0xffffff,.3).fillTriangle(-15,-34,15,-34,-15,-13);
+      this.detail.lineStyle(2,0x344bb0).lineBetween(-17,15,17,15).lineBetween(-17,25,17,25);
+      this.knob.setFillStyle(0xffe342);
+    }
     this.add([this.glow, this.frame, this.doorway, this.panel, this.detail, this.knob]);
     this.addShadow(54, 54, 12);
 

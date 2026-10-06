@@ -27,7 +27,15 @@ export class EnergySource extends ConnectableObject {
       detail.fillStyle(0x243f48).fillCircle(Math.cos(a)*26,Math.sin(a)*26,1);
     }
     detail.fillStyle(0x80d5c8).fillCircle(-9, 20, 2).fillCircle(0, 20, 2).fillCircle(9, 20, 2);
-    this.core.setStrokeStyle(1, 0xc49a61);
+    if(id==='energy-source') {
+      base.setFillStyle(0x345cdd).setStrokeStyle(2,0x14234e);
+      detail.clear().fillStyle(0x14234e).fillRoundedRect(-22,21,44,9,3);
+      detail.lineStyle(5,0x25356a).strokeCircle(0,0,26);
+      detail.lineStyle(2,0x27e7da).strokeCircle(0,0,26);
+      detail.fillStyle(0x94fff0).fillCircle(-10,20,2).fillCircle(0,20,2).fillCircle(10,20,2);
+      this.glow.setFillStyle(0x27e7da);
+    }
+    this.core.setStrokeStyle(1,id==='energy-source'?0xfff4a1:0xc49a61);
     this.add([this.glow, base, detail, this.core]);
     this.addShadow(30, 36, 10);
 

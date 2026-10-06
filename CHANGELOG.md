@@ -176,6 +176,13 @@ Validación: build de producción y suite completa aprobados: 18 pruebas unitari
 El build servido también cargó portada, armario y mundo, permitió editar/guardar un nombre ancho de 16 caracteres y no produjo errores JavaScript ni HTTP en ambos formatos.
 
 
+## Muestra moderna de portada, plaza y HUD
+Dirección contemporánea aprobada con toques visuales de Fortnite: portada azul/violeta con iluminación cian, título y acciones de tipografía gruesa inclinada, acción principal amarilla y botones secundarios azules. Se retira papel, ornamentos y biseles en la muestra. Plaza con fachadas laterales, techos por planos, vidrio luminoso, árbol facetado, losas grandes y luces de camino; fuente de energía, lámpara y puerta con materiales tecnológicos. HUD, diálogo, joystick y proximidad comparten paneles planos y colores nuevos. Contraste oscuro sobre amarillo en las acciones principales. Se conservan funciones, áreas interactivas, posiciones y guardado. Portada y plaza siguen usando texturas horneadas y caché. Los demás distritos y pantallas mantienen su arte anterior; ver `MODERN_VISUAL_PILOT.md`.
+
+Validación: build aprobado y suite completa sin fallos ni omisiones: 18 pruebas unitarias y 42 escenarios E2E en escritorio y móvil vertical. Capturas revisadas de la nueva portada, plaza y controles en ambas orientaciones; siguen funcionando diálogo, conexiones, túnel, armario y restauración del progreso.
+El build servido cargó portada, armario y mundo en ambos formatos, con edición/guardado de nombre y sin errores JavaScript ni HTTP.
+
+
 ## Más variedad de partículas al conectar
 `ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.
 

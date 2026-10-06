@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
-import { ART, typography } from '../art/interfaceArt';
+import { MODERN as ART, ensureFlatTexture } from '../art/modernArt';
 import { nexusPortrait } from '../art/nexusLook';
 import { drawTitleArt } from '../art/neighborhood';
 import { fadeToScene } from '../utils/sceneTransition';
 import { ProgressSystem } from '../systems/ProgressSystem';
 import { EffectsSettings } from '../systems/EffectsSettings';
 import { NEXUS_ASSET_KEYS, loadNexusAssets } from '../entities/nexusAssets';
-import { ensureRoundedRectTexture } from '../utils/uiTextures';
+const ensureRoundedRectTexture = ensureFlatTexture;
 import { CHAPTER_TITLE } from '../data/chapter';
 
 const BUTTON_WIDTH = 220;
@@ -36,16 +36,16 @@ export class BootScene extends Phaser.Scene {
     nexusPortrait(this, portrait ? width / 2 : width * .25,
       portrait ? height / 2 - 168 : height * 0.78, portrait ? 170 : 225, NEXUS_ASSET_KEYS.idle);
     this.add.text(menuX, height / 2 - 18, 'Conecta · descubre · celebra', {
-      fontFamily: ART.body, fontSize: '14px', color: '#8a7351',
+      fontFamily: ART.body, fontSize: '14px', color: '#8ce8ff',
     }).setOrigin(0.5);
-    this.cameras.main.fadeIn(300, 244, 241, 232);
+    this.cameras.main.fadeIn(300, 25, 44, 103);
 
     this.add
       .text(menuX, height / 2 - 104, 'Los Nexus', {
-        fontFamily: 'Georgia, serif',
+        fontFamily: ART.display,
         fontSize: '54px',
-        fontStyle: 'bold',
-        color: '#243f48',
+        fontStyle: 'bold italic',
+        color: '#ffffff',
       })
       .setOrigin(0.5)
       .setShadow(0, 3, 'rgba(27, 31, 59, 0.25)', 6, false, true);
@@ -54,47 +54,47 @@ export class BootScene extends Phaser.Scene {
       .text(menuX, height / 2 - 50, `Capítulo 1 · ${CHAPTER_TITLE}`, {
         fontFamily: ART.body,
         fontSize: '18px',
-        color: '#59695c',
+        color: '#bdd3ff',
       })
       .setOrigin(0.5);
 
     const firstButtonY = hasProgress ? height / 2 + 20 : height / 2 + 40;
 
     if (hasProgress) {
-      this.buildButton(menuX, firstButtonY, 'Continuar', 0x87c9bb, () => {
+      this.buildButton(menuX, firstButtonY, 'Continuar', 0xffe342, () => {
         fadeToScene(this, 'WorldScene', [207, 232, 216]);
       });
-      this.buildButton(menuX, firstButtonY + BUTTON_HEIGHT + 18, 'Nueva partida', 0xedd5a5, () => {
+      this.buildButton(menuX, firstButtonY + BUTTON_HEIGHT + 18, 'Nueva partida', 0x425cbe, () => {
         const confirmed = window.confirm('¿Seguro que quieres borrar tu progreso y empezar de nuevo?');
         if (!confirmed) return;
         progress.resetProgress();
         fadeToScene(this, 'WorldScene', [207, 232, 216]);
       });
     } else {
-      this.buildButton(menuX, firstButtonY, 'Jugar', 0xedd5a5, () => {
+      this.buildButton(menuX, firstButtonY, 'Jugar', 0xffe342, () => {
         fadeToScene(this, 'WorldScene', [207, 232, 216]);
       });
     }
 
-    this.buildButton(menuX, height / 2 + 143, 'Mi Nexus', 0xe9ddc2, () => {
+    this.buildButton(menuX, height / 2 + 143, 'Mi Nexus', 0x425cbe, () => {
       this.scene.start('CustomizeScene', { returnScene: 'BootScene' });
     });
 
     const effectsLabel = (): string => `Efectos suaves: ${EffectsSettings.isReduced() ? 'Sí' : 'No'}`;
     ensureRoundedRectTexture(this, 'effects-toggle', 260, 44, 12);
     const effectsButton = this.add.image(width / 2, height - 65, 'effects-toggle')
-      .setTint(0xe8ddc5).setInteractive({ useHandCursor: true });
+      .setTint(0x293b85).setInteractive({ useHandCursor: true });
     const effectsText = this.add.text(width / 2, height - 65, effectsLabel(), {
-      fontFamily: ART.body, fontSize: '18px', color: '#243f48',
+      fontFamily: ART.body, fontSize: '18px', color: '#e3edff',
     }).setOrigin(0.5);
     effectsButton.on('pointerdown', () => {
       EffectsSettings.setReduced(!EffectsSettings.isReduced());
       effectsText.setText(effectsLabel());
     });
     this.add.text(width / 2, height - 28, 'Sin flashes ni sacudidas al activarlos', {
-      fontFamily: ART.body, fontSize: '14px', color: '#59695c',
+      fontFamily: ART.body, fontSize: '14px', color: '#bdd3ff',
     }).setOrigin(0.5);
-    typography(this);
+
   }
 
   private buildButton(x: number, y: number, label: string, color: number, onClick: () => void): void {
@@ -107,8 +107,8 @@ export class BootScene extends Phaser.Scene {
       .text(x, y, label, {
         fontFamily: ART.body,
         fontSize: '20px',
-        fontStyle: 'bold',
-        color: '#243f48',
+        fontStyle: 'bold italic',
+        color: color === 0xffe342 ? '#14234e' : '#ffffff',
       })
       .setOrigin(0.5);
 
