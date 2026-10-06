@@ -3,6 +3,7 @@ import type { SavedConnection } from '../data/gameState';
 import { ConnectableObject } from '../objects/ConnectableObject';
 import { AudioSystem } from './AudioSystem';
 import { EffectsSettings } from './EffectsSettings';
+import { connectionSurprise } from '../data/chapter';
 
 const CABLE_COLOR = 0x5ee7ff;
 const CABLE_COLOR_INVALID = 0xff6b6b;
@@ -42,10 +43,12 @@ export class ConnectionSystem {
     this.cableGraphics = scene.add.graphics().setDepth(15);
 
     this.feedbackText = scene.add
-      .text(scene.scale.width / 2, scene.scale.height - 24, '', {
+      .text(scene.scale.width / 2, scene.scale.height - 132, '', {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#1b1f3b',
+        wordWrap: { width: Math.min(480, scene.scale.width - 48), useAdvancedWrap: true },
+        align: 'center',
       })
       .setOrigin(0.5)
       .setDepth(20)
@@ -145,7 +148,9 @@ export class ConnectionSystem {
 
     if (!rule) {
       this.drawCable(source, target, false);
-      this.showFeedback('Esa conexión no encaja, prueba otra', '#8a4b1f');
+      const surprise = connectionSurprise(source.id, target.id);
+      this.showFeedback(surprise ? '¡Una conexión inesperada!' : 'Esa conexión no encaja, prueba otra', '#8a4b1f');
+      if (surprise) this.scene.events.emit('connection-surprise', surprise);
       this.audio.playError();
       return;
     }

@@ -16,6 +16,7 @@ El bloque de aventura aprobado está en `CHAPTER_ONE.md`; orden de ramas en `BRA
 
 El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias rondas. Desde entonces el proyecto avanzó bastante más allá de ese alcance inicial, con aprobación explícita del usuario en cada paso. Estado real hoy:
 
+- **Consecuencias y secretos**: el agua de la fuente hace brotar flores en la plaza y la antena publica CUAC FM en la casa. Tres parejas inválidas muestran bromas específicas; se guardan como descubrimientos únicos sin resolver puzzles. Volver a Miga tras reparar la fuente descubre otra frase.
 - **Capítulo 1 — La ciudad al revés**: Miga, Bombo, Vera, Don Paso y Alcalde Goteo dan encargos breves para preparar una fiesta. Las frases aparecen al acercarse por primera vez o tocar al habitante, se cierran al tocar el recuadro y no pausan el movimiento. Se guardan las visitas; el objetivo considera conexiones parciales y recuerdos antiguos.
 - **5 zonas jugables** en un mundo de scroll horizontal de 3750px de ancho (no una sola pantalla):
   1. **La plaza**: fuente → lámpara → puerta (puzzle secuencial de 3 pasos).
@@ -52,7 +53,7 @@ Hay una suite automatizada: `npm run test:unit` verifica el guardado y `npm run 
 
 Después de cambios:
 1. `npm run build` (debe terminar sin errores).
-2. `npm test` (11 pruebas unitarias y 18 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
+2. `npm test` (12 pruebas unitarias y 20 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
 3. Revisar las capturas adjuntas en `test-results/` y el informe en `playwright-report/`; los fallos conservan trazas.
 4. La prueba en dispositivo real con Luca sigue siendo necesaria para validar comodidad y dificultad.
 

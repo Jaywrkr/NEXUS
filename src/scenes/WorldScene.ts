@@ -9,7 +9,7 @@ import { Bridge } from '../objects/Bridge';
 import { Sprinkler } from '../objects/Sprinkler';
 import { FlowerBed } from '../objects/FlowerBed';
 import { COLLECTION } from '../data/collection';
-import { RESIDENTS, chapterObjective, residentLine } from '../data/chapter';
+import { RESIDENTS, chapterObjective, residentLine, type ResidentInfo, type CONNECTION_SURPRISES } from '../data/chapter';
 import { Resident } from '../objects/Resident';
 import { StoryCard } from '../ui/StoryCard';
 import { Fragment } from '../objects/Fragment';
@@ -73,6 +73,8 @@ export class WorldScene extends Phaser.Scene {
   private connectables: ConnectableObject[] = [];
   private residents: Resident[] = [];
   private storyCard!: StoryCard;
+  private plazaFlowers!: Phaser.GameObjects.Graphics;
+  private radioBanner!: Phaser.GameObjects.Text;
 
   constructor() {
     super('WorldScene');
@@ -242,10 +244,19 @@ export class WorldScene extends Phaser.Scene {
     }
 
     this.storyCard = new StoryCard(this);
-    this.residents = RESIDENTS.map(info => new Resident(this, info, height / 2 + info.offsetY * vScale, () => {
-      this.progress.markResidentHeard(info.id);
-      this.storyCard.show(info.name, residentLine(info, this.progress.snapshot()));
-    }));
+    this.residents = RESIDENTS.map(info => new Resident(this, info, height / 2 + info.offsetY * vScale, () => this.speakResident(info)));
+    this.applyChapterConsequences();
+    const onSurprise = (surprise: typeof CONNECTION_SURPRISES[number]): void => {
+      this.progress.markDiscovery(surprise.id);
+      this.storyCard.show(surprise.speaker, surprise.line);
+      if (surprise.id === 'singing-door' && !EffectsSettings.isReduced()) {
+        this.tweens.killTweensOf(this.door);
+        this.door.setAngle(0);
+        this.tweens.add({ targets: this.door, angle: -5, duration: 120, yoyo: true, repeat: 1 });
+      }
+    };
+    this.events.on('connection-surprise', onSurprise);
+    this.events.once('shutdown', () => this.events.off('connection-surprise', onSurprise));
     if (!this.progress.hasHeardResident('intro')) {
       this.progress.markResidentHeard('intro');
       this.storyCard.show('Miga · La ciudad al revés', 'El manual lo escribió un pato. Hay que preparar una fiesta. Empieza por la luz de la plaza.');
@@ -272,6 +283,17 @@ export class WorldScene extends Phaser.Scene {
     if (doneCount === ALL_FRAGMENT_IDS.length) return 'Ya restauraste todo el lugar';
     if (doneCount === 0) return 'Los Nexus — conecta la fuente con la lámpara';
     return chapterObjective(this.progress.snapshot());
+  }
+
+  private speakResident(info: ResidentInfo): void {
+    this.progress.markResidentHeard(info.id);
+    if (info.id === 'miga' && this.fountain.isActive) this.progress.markDiscovery('house-garden');
+    this.storyCard.show(info.name, residentLine(info, this.progress.snapshot()));
+  }
+
+  private applyChapterConsequences(): void {
+    this.plazaFlowers.setVisible(this.fountain.isActive);
+    this.radioBanner.setVisible(this.beacon.isFullyActive);
   }
 
   private setupConnections(height: number, vScale: number): void {
@@ -411,6 +433,7 @@ export class WorldScene extends Phaser.Scene {
         this.instructionText.setText('¡El jardín floreció! Acércate al fragmento');
       }
       this.instructionText.setText(chapterObjective(this.progress.snapshot()));
+      this.applyChapterConsequences();
     };
 
     this.events.on('tunnel-requested', onTunnelRequested);
@@ -790,6 +813,15 @@ export class WorldScene extends Phaser.Scene {
 
     // Ventana apagada
     this.houseWindow = this.add.rectangle(280, midY - 60 * vScale, 30, 30, 0x2a2d36).setDepth(3);
+    this.radioBanner = this.add.text(280, midY - 165 * vScale, 'CUAC FM · Fiesta en preparación', {
+      fontFamily: 'sans-serif', fontSize: '16px', color: '#365137',
+    }).setOrigin(0.5).setDepth(4).setVisible(false);
+    this.plazaFlowers = this.add.graphics({ x: 1050, y: midY + 40 * vScale }).setDepth(3).setVisible(false);
+    for (const x of [-24, 0, 24]) {
+      this.plazaFlowers.lineStyle(3, 0x4a7c3a).lineBetween(x, 0, x, 18);
+      this.plazaFlowers.fillStyle(0xffb86c).fillCircle(x, 0, 8);
+      this.plazaFlowers.fillStyle(0xffe066).fillCircle(x, 0, 3);
+    }
 
     // Árbol sin hojas (mundo apagado)
     this.add.rectangle(940, midY - 10 * vScale, 12, 60, 0x6b4a30).setDepth(2);

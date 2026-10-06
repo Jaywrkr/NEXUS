@@ -31,6 +31,13 @@ export class ProgressSystem {
     return this.state.story?.heard.includes(id) ?? false;
   }
 
+  markDiscovery(id: string): void {
+    this.state.story ??= { heard: [], discoveries: [], chapterSeen: false };
+    if (this.state.story.discoveries.includes(id)) return;
+    this.state.story.discoveries.push(id);
+    saveGameState(this.state);
+  }
+
   getConnections(): SavedConnection[] {
     return this.state.connections.map((connection) => ({ ...connection }));
   }
