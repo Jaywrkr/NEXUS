@@ -3,6 +3,9 @@ import { ConnectableObject } from './ConnectableObject';
 import { EffectsSettings } from '../systems/EffectsSettings';
 
 export class FlowerBed extends ConnectableObject {
+  protected override get sketchKind(): string { return 'flowers'; }
+  protected override get sketchHeight(): number { return 154; }
+  protected override get sketchBottom(): number { return 52; }
   private soil: Phaser.GameObjects.Rectangle;
   private buds: Phaser.GameObjects.Arc[] = [];
   private flowers: Phaser.GameObjects.Graphics;

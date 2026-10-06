@@ -7,6 +7,9 @@ const PANEL_COLOR = 0x6b4a35;
 const DOORWAY_LIGHT = 0xffe38a;
 
 export class Door extends ConnectableObject {
+  protected override get sketchKind(): string { return 'door'; }
+  protected override get sketchHeight(): number { return 148; }
+  protected override get sketchBottom(): number { return 54; }
   private illustration?: Phaser.GameObjects.Image;
   private panel: Phaser.GameObjects.Rectangle;
   private frame: Phaser.GameObjects.Rectangle;

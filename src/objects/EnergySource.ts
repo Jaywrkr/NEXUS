@@ -6,6 +6,9 @@ import { ConnectableObject } from './ConnectableObject';
 export type EnergySourceVariant = 'active' | 'dim';
 
 export class EnergySource extends ConnectableObject {
+  protected override get sketchKind(): string { return 'generator'; }
+  protected override get sketchHeight(): number { return 98; }
+  protected override get sketchBottom(): number { return 32; }
   private core: Phaser.GameObjects.Star;
   private glow: Phaser.GameObjects.Arc;
 
@@ -45,6 +48,7 @@ export class EnergySource extends ConnectableObject {
     });
 
     if (variant === 'dim') {
+      this.setName('dim-source');
       this.core.setFillStyle(0x9aa0ad).setStrokeStyle(1, 0x65758e);
       this.glow.setVisible(false);
       base.setFillStyle(0x65758e);

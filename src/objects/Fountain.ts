@@ -5,6 +5,9 @@ const OFF_COLOR = 0x9aa0a8;
 const ON_COLOR = 0x4fb8e0;
 
 export class Fountain extends ConnectableObject {
+  protected override get sketchKind(): string { return 'fountain'; }
+  protected override get sketchHeight(): number { return 148; }
+  protected override get sketchBottom(): number { return 56; }
   private basin: Phaser.GameObjects.Arc;
   private water: Phaser.GameObjects.Arc;
   private glow: Phaser.GameObjects.Arc;

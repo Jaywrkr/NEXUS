@@ -15,6 +15,10 @@ const REQUIRED_CONNECTIONS = 2;
  * conectar, solo que esta vez el objetivo pide más de un cable.
  */
 export class Beacon extends ConnectableObject {
+  protected override get sketchKind(): string { return 'beacon'; }
+  protected override get sketchHeight(): number { return 144; }
+  protected override get sketchBottom(): number { return 62; }
+  protected override get sketchCount(): string { return `${this.connections}/2`; }
   private dish: Phaser.GameObjects.Ellipse;
   private glow: Phaser.GameObjects.Arc;
   private indicators: Phaser.GameObjects.Arc[] = [];

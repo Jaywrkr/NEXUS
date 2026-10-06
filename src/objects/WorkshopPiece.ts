@@ -7,6 +7,7 @@ type Kind = 'motor' | 'duck' | 'bell' | 'parade';
 
 /** The parade joins two distinct completed branches of the toy circuit. */
 export class WorkshopPiece extends ConnectableObject {
+  protected override get sketchKind(): string { return this.kind; }
   private kind: Kind;
   private inputs = 0;
   private art: Phaser.GameObjects.Graphics;

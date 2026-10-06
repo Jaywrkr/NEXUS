@@ -1,6 +1,6 @@
 import { gridFrames, loadSketchAccessories } from '../art/sketchAtlas';
 import Phaser from 'phaser';
-import { loadPlazaAssets } from '../art/plazaAssets';
+import { loadPlazaAssets, createPlazaFrames } from '../art/plazaAssets';
 import { MODERN as ART, ensureFlatTexture } from '../art/modernArt';
 import { nexusPortrait } from '../art/nexusLook';
 import { drawTitleArt } from '../art/neighborhood';
@@ -29,6 +29,7 @@ export class BootScene extends Phaser.Scene {
   create(): void {
     createNexusFrames(this);
     gridFrames(this, 'sketch-extras', 4, 4);
+    createPlazaFrames(this);
     const { width, height } = this.scale;
     const progress = new ProgressSystem();
     const hasProgress = progress.hasProgress();

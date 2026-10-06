@@ -18,7 +18,7 @@ export function applyNexusPose(image: Phaser.GameObjects.Image, pose: string, lo
         for (let x = 0; x < source.width; x++) {
           const i = (y * source.width + x) * 4;
           const [r, g, b, a] = pixels.data.subarray(i, i + 4);
-          if (a >= 30 && g > r * 1.1 && r > b * 1.5 && x > source.width * .6) {
+          if (a >= 30 && g > 100 && r > 75 && b < g * .6 && g >= r * .9 && x > source.width * .7) {
             const cable = CABLES.find(c => c.id === look.cable)!;
             const shade = (r + g) / 380;
             pixels.data[i] = Math.min(255, (cable.color >> 16) * shade);

@@ -3,6 +3,9 @@ import { ConnectableObject } from './ConnectableObject';
 
 /** Receives energy, then becomes the source for the garden's watering cable. */
 export class Sprinkler extends ConnectableObject {
+  protected override get sketchKind(): string { return 'sprinkler'; }
+  protected override get sketchHeight(): number { return 128; }
+  protected override get sketchBottom(): number { return 43; }
   private nozzle: Phaser.GameObjects.Arc;
   private water: Phaser.GameObjects.Graphics;
 
