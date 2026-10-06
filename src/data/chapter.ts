@@ -20,6 +20,9 @@ export const RESIDENTS = [
   { id: 'pipa', name: 'Pipa', x: 4610, offsetY: 130, color: 0xc7a0ef, fragment: 'workshop-fragment', target: 'toy-parade',
     request: 'Motor al pato y a la campana. Luego júntalos en el desfile. El pato insiste en supervisar.',
     restored: '¡El desfile funciona! El pato pidió vacaciones antes de su primer día.' },
+  { id: 'lucio', name: 'Lucio', x: 5510, offsetY: 170, color: 0x9be37a, fragment: 'lantern-fragment', target: 'lantern-last',
+    request: 'Puedes llevar la luz por arriba o por los faroles curiosos de abajo. Nos vemos en la fiesta.',
+    restored: '¡Tenemos camino! El farol tímido solo cuenta chistes si te desvías a verlo.' },
 ];
 
 export type ResidentInfo = typeof RESIDENTS[number];
@@ -62,5 +65,8 @@ export function chapterObjective(state: GameState): string {
     if (!hasChapterConnection(state, 'toy-duck') || !hasChapterConnection(state, 'toy-bell')) return 'Conecta el motor con el pato y con la campana';
     return 'Lleva el pato y la campana al desfile: faltan sus dos cables';
   }
-  return 'El barrio está listo. Explora y recupera los recuerdos';
+  if (!done('lantern-fragment', 'lantern-last')) return 'Lleva la luz a la salida: ruta directa o faroles curiosos';
+  if (!hasChapterConnection(state, 'party-stage')) return 'Conecta la luz de salida con el escenario de la fiesta';
+  if (!hasChapterConnection(state, 'party-confetti')) return 'Último cable: escenario → confeti';
+  return '¡La fiesta está en marcha! Explora y recupera los recuerdos';
 }

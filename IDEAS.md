@@ -27,8 +27,8 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 - Dominio propio.
 
 ## Ideas de contenido (mecánica, siempre reutilizando "conectar")
-- Faroles encadenados: parte posterior del plan aprobado, encendiendo el camino
-  mediante conexiones sucesivas.
+- Añadir más capítulos después de probar la duración y comprensión del primero
+  con Luca; no ampliar el mundo solo para aumentar el número de zonas.
 
 ## Mini-túnel del cable (idea de Luca, prototipo en fuente→lámpara de la plaza)
 - Probarlo con Luca de verdad antes de decidir si se aplica a más conexiones —

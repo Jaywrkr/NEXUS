@@ -23,7 +23,7 @@ test('continue a completed four-zone save into the garden and restore each water
     localStorage.setItem('los-nexus-reduced-effects', 'false');
   }, oldCollection);
   await continueGame(page);
-  expect(await world(page, 'return s.fragmentHud.text;')).toBe('★ 4/6');
+  expect(await world(page, 'return s.fragmentHud.text;')).toBe('★ 4/7');
   expect(await world(page, 'return s.instructionText.text;')).toContain('aspersor');
   expect(await world(page, 'return s.bridge.isActive && !s.sprinkler.isActive && !s.flowerBed.isActive && !s.gardenFragment.visible;')).toBe(true);
 
@@ -87,7 +87,7 @@ test('continue a completed four-zone save into the garden and restore each water
   await checkpoint(page, testInfo, 'museum-five-souvenirs');
   await returnToWorld(page);
   await continueGame(page);
-  expect(await world(page, 'return s.fragmentHud.text;')).toBe('★ 5/6');
+  expect(await world(page, 'return s.fragmentHud.text;')).toBe('★ 5/7');
   expect(await world(page, 'return s.flowerBed.isActive && !s.gardenFragment.visible;')).toBe(true);
   expect(await page.evaluate(() => window.__effectCalls.flash)).toBe(0);
 });

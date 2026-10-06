@@ -6,6 +6,7 @@ export const COLLECTION = [
   { id: 'bridge-fragment', label: 'Puente de madera', memory: '¡Ya podemos cruzar!', color: 0xcfa574 },
   { id: 'garden-fragment', label: 'Flor del jardín', memory: '¡El jardín volvió a florecer!', color: 0xffb86c },
   { id: 'workshop-fragment', label: 'Pato del taller', memory: '¡Cuac! Ahora soy tu supervisor.', color: 0xffe066 },
+  { id: 'lantern-fragment', label: 'Luz del camino', memory: '¡La luz encontró su camino!', color: 0x9be37a },
 ];
 
 export type Souvenir = typeof COLLECTION[number];
