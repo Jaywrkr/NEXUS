@@ -8,7 +8,7 @@ Juego web 2D hecho con **Phaser 3 (v4 instalado) + TypeScript + Vite**, construi
 
 **Mecánica única:** el jugador controla al Nexus y **conecta** objetos del escenario entre sí con un cable de energía (clic/toque en origen, luego en destino). Esa es la única acción de juego — nada de combate, inventario o economía. Ver `DECISIONS.md` para el registro completo de decisiones y por qué.
 
-El bloque de aventura aprobado está en `CHAPTER_ONE.md`; orden de ramas en `BRANCH_STACK.md`.
+El capítulo está en `CHAPTER_ONE.md`; ampliación actual en `ADVENTURE_EXPANSION.md`; orden de ramas en `BRANCH_STACK.md`.
 
 ## Estado actual (no es solo el MVP 0.0 original)
 
@@ -31,6 +31,7 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
 - **Adaptación real a móvil vertical**: la resolución interna del juego cambia (960×540 landscape ↔ 540×960 portrait) según orientación + tipo de puntero, para llenar la pantalla en vez de dejar barras negras. Ver `src/config/gameConfig.ts`.
 - **Sonido**: tonos generados por código (Web Audio, sin archivos de audio) para conectar/error/recolectar, con botón de mute/unmute (🔊/🔇, esquina superior izquierda de `WorldScene`) que persiste en `localStorage`.
 - **Animaciones del Nexus**: idle, caminar, conectar (implícito en el cable), celebrar (salto + chispas al recoger fragmentos).
+- **Pistas a petición**: «Pista» ofrece tres niveles según el preparativo pendiente; se reinicia al cambiar de tarea y no pausa el movimiento. Los encargos describen problemas; solo la enseñanza del primer cable da instrucciones directas.
 - **Ayudas visuales**: tras diez segundos sin interacción, un aro discreto señala un origen pendiente de la zona visible; si hay origen seleccionado, señala un destino válido visible. Desaparece al interactuar o completar y no marca puzzles resueltos. Al volver del túnel se reinicia la espera.
 - **Efectos suaves**: opción en el título que suprime flashes/sacudidas de cámara y deja las pistas estáticas y suprime el pulso de los recuerdos y el crecimiento animado de las flores. Sigue por defecto `prefers-reduced-motion`; una elección explícita se guarda en `los-nexus-reduced-effects`, independiente del progreso y de «Nueva partida». No cambia dificultad, recompensas ni controles.
 - **Progreso persistente** en `localStorage`: fragmentos, celebración final (y tamaño de la colección completada), conexiones resueltas (incluida la antena parcial) y posición del Nexus. La posición Y se guarda como proporción de la altura para conservar el lugar al rotar. Se guarda cada 500 ms si cambió y al ocultar/salir/pausar el mundo; volver del museo recupera el lugar. Las partidas antiguas siguen funcionando: una celebración anterior sin `completionCount` corresponde a cuatro recuerdos, y completar el quinto permite una nueva celebración, una sola vez. «Nueva partida» borra todo ese progreso.
@@ -54,7 +55,7 @@ Hay una suite automatizada: `npm run test:unit` verifica el guardado y `npm run 
 
 Después de cambios:
 1. `npm run build` (debe terminar sin errores).
-2. `npm test` (13 pruebas unitarias y 30 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
+2. `npm test` (13 pruebas unitarias y 32 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
 3. Revisar las capturas adjuntas en `test-results/` y el informe en `playwright-report/`; los fallos conservan trazas.
 4. La prueba en dispositivo real con Luca sigue siendo necesaria para validar comodidad y dificultad.
 

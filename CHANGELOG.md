@@ -138,6 +138,9 @@ El último cable abre un desenlace original con resultados, el Nexus celebrando 
 
 Validación: build y 13 pruebas unitarias aprobadas; 28 escenarios E2E aprobaron en la ejecución general y los dos recorridos caminados aprobaron al repetirlos con el piloto corregido. Ruta guiada completa: 95,5 s en escritorio y 111,1 s en móvil; soluciones conocidas, sin pausas de lectura, sin equivaler a una primera partida humana.
 
+## Encargos con misterio y pistas graduadas
+Los habitantes describen problemas en lugar de dictar todos los cables. El objetivo sigue los preparativos, entradas parciales y recompensas antiguas, conservando la explicación del primer cable. «Pista» ofrece tres niveles a petición: observación, orientación y solución; no pausa el movimiento, repite el último nivel y vuelve al primero al cambiar la tarea. Las pistas automáticas siguen disponibles. Se prueba graduación, movimiento, cambio de tarea, recarga y textos en escritorio y móvil; se repite el recorrido completo y la visita a habitantes.
+
 
 ## Más variedad de partículas al conectar
 `ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.

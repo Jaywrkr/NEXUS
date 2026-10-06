@@ -19,6 +19,9 @@ El usuario hace los PR y merges. No hay ramas paralelas independientes.
 | 11 | `codex/capitulo-taller` | `codex/capitulo-consecuencias` | Taller de juguetes |
 | 12 | `codex/capitulo-faroles` | `codex/capitulo-taller` | Rutas y reto final |
 | 13 | `codex/capitulo-desenlace` | `codex/capitulo-faroles` | Desenlace, exploración y validación |
+| 14 | `codex/encargos-misterio` | `codex/capitulo-desenlace` | Problemas y pistas graduadas |
+| 15 | `codex/decisiones-radio` | `codex/encargos-misterio` | Elección reversible de señal |
+| 16 | `codex/consecuencias-regreso` | `codex/decisiones-radio` | Encargos y consecuencias entre lugares |
 
 Al iniciar este bloque se verificaron los siete primeros heads publicados y
 la base original en `05a5e52`. Las seis fases nuevas se ejecutan en este orden;
@@ -28,3 +31,6 @@ Las seis fases del capítulo se publicaron durante este bloque. La fase 6 reúne
 la validación completa, el desenlace y el protocolo `PLAYTEST_CHAPTER_ONE.md`.
 Cada rama conserva el estado jugable correspondiente a su fase; la última
 incluye toda la cadena.
+
+El siguiente bloque de tres fases está definido en `ADVENTURE_EXPANSION.md`.
+Las filas 15–16 se publicarán al completar su implementación y validación.

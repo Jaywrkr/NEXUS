@@ -9,7 +9,7 @@ import { Bridge } from '../objects/Bridge';
 import { Sprinkler } from '../objects/Sprinkler';
 import { FlowerBed } from '../objects/FlowerBed';
 import { COLLECTION } from '../data/collection';
-import { RESIDENTS, chapterObjective, residentLine, type ResidentInfo, type CONNECTION_SURPRISES } from '../data/chapter';
+import { RESIDENTS, chapterObjective, chapterTask, residentLine, type ResidentInfo, type CONNECTION_SURPRISES } from '../data/chapter';
 import { Resident } from '../objects/Resident';
 import { StoryCard } from '../ui/StoryCard';
 import { WorkshopZone } from '../zones/WorkshopZone';
@@ -79,6 +79,8 @@ export class WorldScene extends Phaser.Scene {
   private radioBanner!: Phaser.GameObjects.Text;
   private workshop!: WorkshopZone;
   private lanterns!: LanternZone;
+  private hintTask = '';
+  private hintLevel = 0;
   private leavingChapter = false;
   private leavingWorld = false;
 
@@ -87,6 +89,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   create(): void {
+    this.hintTask = '';
+    this.hintLevel = 0;
     this.leavingChapter = false;
     this.leavingWorld = false;
     const { height } = this.scale;
@@ -249,13 +253,19 @@ export class WorldScene extends Phaser.Scene {
     }
 
     this.instructionText.setText(this.getStatusMessage());
-    if (!plazaDone && this.lamp.isActive) {
-      this.instructionText.setText(this.door.isActive
-        ? '¡La puerta se abrió! Acércate al fragmento'
-        : 'La lámpara está encendida — conéctala con la puerta');
-    }
-
     this.storyCard = new StoryCard(this);
+    const hint = this.add.image(this.scale.width - 62, height - 86, HUD_PILL_TEXTURE)
+      .setDisplaySize(92, 44).setTint(0xffe066).setDepth(50).setScrollFactor(0)
+      .setInteractive({ useHandCursor: true });
+    this.add.text(hint.x, hint.y, 'Pista', { fontFamily: 'sans-serif', fontSize: '18px', color: '#20233a' })
+      .setOrigin(0.5).setDepth(51).setScrollFactor(0);
+    hint.on('pointerdown', () => {
+      const task = chapterTask(this.progress.snapshot());
+      if (task.id !== this.hintTask) { this.hintTask = task.id; this.hintLevel = 0; }
+      const level = Math.min(this.hintLevel++, task.clues.length - 1);
+      this.storyCard.show(`Pista ${level + 1}/${task.clues.length}`, task.clues[level]);
+      this.connectionSystem.resetHint();
+    });
     this.residents = RESIDENTS.map(info => new Resident(this, info, height / 2 + info.offsetY * vScale, () => this.speakResident(info)));
     this.applyChapterConsequences();
     const onSurprise = (surprise: typeof CONNECTION_SURPRISES[number]): void => {
@@ -291,10 +301,6 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private getStatusMessage(): string {
-    const doneCount = ALL_FRAGMENT_IDS.filter(id => this.progress.hasFragment(id)).length;
-
-    if (doneCount === ALL_FRAGMENT_IDS.length) return chapterObjective(this.progress.snapshot());
-    if (doneCount === 0) return 'Los Nexus — conecta la fuente con la lámpara';
     return chapterObjective(this.progress.snapshot());
   }
 
