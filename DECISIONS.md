@@ -66,3 +66,7 @@ Los recuerdos del museo representan cada zona con una forma propia y una pequeñ
 
 **Decisión 021**
 La quinta zona del plan aprobado es un jardín al otro lado del puente, con energía → aspersor → flores. Mantiene la única acción de conectar y no añade otro mini-juego ni botones. Completar el riego transforma el lugar y entrega una flor para el museo. La colección actual se define en un lugar compartido; la celebración guardada incluye su tamaño para permitir continuar una partida terminada antes de añadir zonas sin perder progreso ni repetir la celebración al recargar.
+
+
+**Decisión 022**
+El usuario autoriza ejecutar de forma autónoma seis fases anidadas para crear un primer capítulo: diseño, habitantes/objetivos, humor/consecuencias, taller, faroles/reto final y desenlace/exploración. La historia y las reacciones son breves y originales, sin bloquear los controles ni añadir otra acción de puzzle. La duración se valida jugando; no se fabrica con esperas. Cada fase se prueba, se publica en su rama y deja PR/merge al usuario.

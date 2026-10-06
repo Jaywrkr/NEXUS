@@ -117,3 +117,6 @@ El mundo se amplía de 2950 a 3750 px, conservando las coordenadas de las cuatro
 La colección compartida por mundo y museo incluye una flor interactiva; el HUD y el estado cuentan cinco lugares. El museo vertical tiene tres filas y centra la quinta vitrina, conservando el botón de regreso. Los mensajes del mundo ajustan sus líneas al espacio entre los controles del HUD.
 
 El guardado añade un `completionCount` opcional: una celebración de una partida antigua equivale a la colección original de cuatro recuerdos. Completar la colección de cinco permite celebrar otra vez, sin repetirla al recargar. No se borran fragmentos, conexiones ni posición. Se amplía el recorrido E2E a cinco zonas y se añade un escenario del jardín con partida antigua, movimiento real, pares inválidos, botón de proximidad, restauración intermedia y completa, y premio/celebración, en escritorio y móvil vertical. Las capturas incluyen jardín seco, regado y museo de cinco recuerdos.
+
+## Diseño del primer capítulo
+Se define «La ciudad al revés»: habitantes originales, preparativos relacionados, taller ramificado, dos rutas de faroles y final por conexiones. Se conserva el MVP histórico y se documenta el orden de las seis nuevas ramas anidadas. La duración de 20–30 minutos es un objetivo pendiente de una primera partida humana, no una medida del E2E acelerado.
