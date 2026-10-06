@@ -17,16 +17,17 @@ El bloque de aventura aprobado está en `CHAPTER_ONE.md`; orden de ramas en `BRA
 El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias rondas. Desde entonces el proyecto avanzó bastante más allá de ese alcance inicial, con aprobación explícita del usuario en cada paso. Estado real hoy:
 
 - **Consecuencias y secretos**: el agua de la fuente hace brotar flores en la plaza y la antena publica CUAC FM en la casa. Tres parejas inválidas muestran bromas específicas; se guardan como descubrimientos únicos sin resolver puzzles. Volver a Miga tras reparar la fuente descubre otra frase.
-- **Capítulo 1 — La ciudad al revés**: Miga, Bombo, Vera, Don Paso y Alcalde Goteo dan encargos breves para preparar una fiesta. Las frases aparecen al acercarse por primera vez o tocar al habitante, se cierran al tocar el recuadro y no pausan el movimiento. Se guardan las visitas; el objetivo considera conexiones parciales y recuerdos antiguos.
+- **Desenlace y exploración**: el cable escenario→confeti cierra el capítulo con una pantalla de resultados y créditos. Permite seguir explorando o visitar el museo; «Ver final» en el museo permite releerlo. `story.chapterSeen` evita repetir la celebración al continuar. Los habitantes tienen epílogos, y álbum/habitantes/sorpresas son objetivos opcionales. Validación y protocolo de duración en `PLAYTEST_CHAPTER_ONE.md`.
+- **Capítulo 1 — La ciudad al revés**: Miga, Bombo, Vera, Don Paso, Alcalde Goteo, Pipa y Lucio dan encargos breves para preparar una fiesta. Las frases aparecen al acercarse por primera vez o tocar al habitante, se cierran al tocar el recuadro y no pausan el movimiento. Se guardan las visitas; el objetivo considera conexiones parciales y recuerdos antiguos.
 - **7 zonas jugables** en un mundo de scroll horizontal de 6100px de ancho (no una sola pantalla):
-  1. **La plaza**: fuente → lámpara → puerta (puzzle secuencial de 3 pasos).
+  1. **La plaza**: fuente → lámpara → puerta (dos cables y el mini-túnel del primero).
   2. **La fuente de agua**: fuente → fuente de agua (puzzle de un solo paso).
   3. **La antena**: dos fuentes → una antena (necesita **dos** conexiones simultáneas).
   4. **El puente**: un interruptor revela un puente sobre una grieta que **físicamente bloquea el paso** hasta conectarlo (única zona con barrera real de colisión).
   5. **El jardín**: fuente de energía → aspersor → flores. El aspersor solo puede iniciar el segundo cable una vez encendido; las flores transforman el parterre y revelan un quinto fragmento, al otro lado del puente.
-- **Personaje con sprites reales** (Decisión 017): el Nexus ya no se dibuja con formas de Phaser — son 4 imágenes PNG generadas por IA (idle, dos de caminata, celebrar) en `public/assets/nexus/`, cargadas por `loadNexusAssets()` desde `BootScene.preload()`. Sin personalización por ahora (se sacó `CustomizeScene`, ver más abajo) — el diseño es fijo: orejas tipo conejo con puntas de color, cabeza clara con cara negra y ojos ovalados amarillos, hoodie turquesa, mochila con cable de energía colgando. Los prompts usados están en `ART_PROMPTS.md` por si hay que generar más poses o variantes.
   6. **El taller**: energía → motor; motor → pato y campana; ambos → desfile. Dos ramas en cualquier orden y reunión de dos entradas distintas.
   7. **Los faroles**: luz por una ruta directa o curiosa hacia la misma salida. La curiosa descubre al farol tímido. Salida → escenario → confeti necesita todos los preparativos anteriores, sin exigir recoger los recuerdos.
+- **Personaje con sprites reales** (Decisión 017): el Nexus ya no se dibuja con formas de Phaser — son 4 imágenes PNG generadas por IA (idle, dos de caminata, celebrar) en `public/assets/nexus/`, cargadas por `loadNexusAssets()` desde `BootScene.preload()`. Sin personalización por ahora (se sacó `CustomizeScene`, ver más abajo) — el diseño es fijo: orejas tipo conejo con puntas de color, cabeza clara con cara negra y ojos ovalados amarillos, hoodie turquesa, mochila con cable de energía colgando. Los prompts usados están en `ART_PROMPTS.md` por si hay que generar más poses o variantes.
 - **Museo** con 7 vitrinas (dos columnas y cuatro filas en vertical, ilustraciones compactas y última centrada; una fila en horizontal), recuerdos distintos por zona (luz, gota, antena, puente, flor, pato y farol) que reaccionan al toque con un mensaje y un pulso breve, botón táctil «Volver al mundo» y atajo ESPACIO para regresar, mensaje de "Colección completa" y celebración especial (flash + chispas en las 7 zonas) la primera vez que se completa la colección actual. Mundo y museo comparten la lista `src/data/collection.ts`.
 - **Controles duales**: teclado/mouse en desktop, joystick virtual táctil + **botón de interacción** (aparece al acercarse a un objeto conectable, evita tener que acertar el toque exacto sobre algo pequeño).
 - **Adaptación real a móvil vertical**: la resolución interna del juego cambia (960×540 landscape ↔ 540×960 portrait) según orientación + tipo de puntero, para llenar la pantalla en vez de dejar barras negras. Ver `src/config/gameConfig.ts`.
@@ -36,7 +37,7 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
 - **Efectos suaves**: opción en el título que suprime flashes/sacudidas de cámara y deja las pistas estáticas y suprime el pulso de los recuerdos y el crecimiento animado de las flores. Sigue por defecto `prefers-reduced-motion`; una elección explícita se guarda en `los-nexus-reduced-effects`, independiente del progreso y de «Nueva partida». No cambia dificultad, recompensas ni controles.
 - **Progreso persistente** en `localStorage`: fragmentos, celebración final (y tamaño de la colección completada), conexiones resueltas (incluida la antena parcial) y posición del Nexus. La posición Y se guarda como proporción de la altura para conservar el lugar al rotar. Se guarda cada 500 ms si cambió y al ocultar/salir/pausar el mundo; volver del museo recupera el lugar. Las partidas antiguas siguen funcionando: una celebración anterior sin `completionCount` corresponde a cuatro recuerdos, y completar el quinto permite una nueva celebración, una sola vez. «Nueva partida» borra todo ese progreso.
 - **Pantalla de título** (`BootScene`): "Jugar" si no hay progreso guardado, o "Continuar" + "Nueva partida" si ya hay fragmentos recolectados — las tres van directo a `WorldScene` (no hay pantalla de personalización).
-- **Pulido visual**: transiciones de fade in/out entre las 4 escenas (`src/utils/sceneTransition.ts`), fondo con parallax en `WorldScene` (nubes + dos capas de colinas con distinto `scrollFactor`), cable de conexión dibujado como curva bezier con una chispa que lo recorre al conectar válido, e indicador `★ n/7` fijo en el HUD del mundo que se actualiza al recolectar cada fragmento.
+- **Pulido visual**: transiciones de fade in/out entre las 5 escenas (`src/utils/sceneTransition.ts`), fondo con parallax en `WorldScene` (nubes + dos capas de colinas con distinto `scrollFactor`), cable de conexión dibujado como curva bezier con una chispa que lo recorre al conectar válido, e indicador `★ n/7` fijo en el HUD del mundo que se actualiza al recolectar cada fragmento.
 - **Realismo**: movimiento del Nexus con aceleración/desaceleración gradual (no velocidad instantánea), sombras de piso en todos los objetos interactivos y decoración estática, viento sutil en el árbol y mariposas cruzando el mundo.
 - **Mini-túnel del cable** (idea de Luca, `CableTunnelScene`): la conexión fuente→lámpara de la plaza, en vez de resolverse al toque, abre un mini-juego con perspectiva tipo Mario Kart — anillos concéntricos que se agrandan al acercarse (efecto vórtex dibujado con `Graphics`, sin assets), la chispa vista desde atrás/abajo, y control libre en 2D (flechas/WASD, las 4 direcciones, o el mismo joystick táctil que en `WorldScene`) para esquivar las paredes del tubo mientras serpentea. Al entrar ofrece práctica sin avanzar ni perder y botón «Empezar». Perder muestra «Reintentar» (reinicia directamente el mismo túnel) y «Volver al mundo»; ganar completa la conexión normalmente. ESPACIO empieza/reintenta y ESC vuelve desde práctica o fallo. La dificultad queda pendiente de validar con Luca. Ver Decisión 016. Por ahora solo esa conexión lo usa — el resto sigue resolviéndose al toque directo.
 
@@ -55,7 +56,7 @@ Hay una suite automatizada: `npm run test:unit` verifica el guardado y `npm run 
 
 Después de cambios:
 1. `npm run build` (debe terminar sin errores).
-2. `npm test` (13 pruebas unitarias y 26 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
+2. `npm test` (13 pruebas unitarias y 30 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
 3. Revisar las capturas adjuntas en `test-results/` y el informe en `playwright-report/`; los fallos conservan trazas.
 4. La prueba en dispositivo real con Luca sigue siendo necesaria para validar comodidad y dificultad.
 
@@ -71,6 +72,7 @@ src/
     BootScene.ts             — pantalla de título: "Jugar"/"Continuar" según haya progreso guardado, precarga los sprites del Nexus
     WorldScene.ts            — el mundo completo, las 7 zonas, cámara, joystick, botón de interacción
     MuseumScene.ts           — vitrinas de fragmentos
+    EndingScene.ts           — desenlace y resultados, regreso al barrio/museo
     CableTunnelScene.ts      — mini-túnel dentro del cable (ver Decisión 016), se lanza sobre WorldScene pausada
   entities/
     Nexus.ts                 — el personaje jugable (sprite real + movimiento + celebrar, ver Decisión 017)
@@ -82,14 +84,17 @@ src/
   objects/
     ConnectableObject.ts     — clase base abstracta de todo lo conectable
     EnergySource.ts, Lamp.ts, Door.ts, Fountain.ts, Beacon.ts, Bridge.ts, Sprinkler.ts, FlowerBed.ts, Fragment.ts
+  zones/
+    WorkshopZone.ts, LanternZone.ts — circuitos modulares de las zonas nuevas
   ui/
     VirtualJoystick.ts       — joystick táctil
+    StoryCard.ts             — frases que no bloquean los controles
     InteractButton.ts        — botón fijo de interacción por proximidad (¡NO usar Container, ver abajo!)
   data/
     collection.ts            — recuerdos y tamaño de la colección actual
     gameState.ts             — shape del estado guardado + carga/guardado con merge seguro
   utils/
-    sceneTransition.ts       — fadeToScene(): fade out + scene.start(), usado por las 4 escenas
+    sceneTransition.ts       — fadeToScene(): fade out + scene.start(), usado por las 5 escenas
   styles/main.css
 ```
 

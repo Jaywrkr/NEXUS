@@ -35,7 +35,8 @@ for (const route of ['direct', 'curious']) {
     await page.reload(); await ready(page, 'BootScene'); await start(page, 'Continuar');
     expect(await world(page, 'return s.lanterns.stage.isActive && !s.lanterns.confetti.isActive;')).toBe(true);
     await connect(page, 'party-stage', 'party-confetti');
-    expect(await world(page, 'return s.lanterns.confetti.isActive;')).toBe(true);
+    await ready(page, 'EndingScene');
+    expect((await saved(page)).story.chapterSeen).toBe(true);
     // The story can finish before collecting every museum reward.
     expect((await saved(page)).fragmentsCollected).not.toContain('beacon-fragment');
     await checkpoint(page, testInfo, 'party-circuit');

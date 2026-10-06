@@ -38,6 +38,14 @@ export class ProgressSystem {
     saveGameState(this.state);
   }
 
+  hasSeenChapter(): boolean { return this.state.story?.chapterSeen ?? false; }
+
+  markChapterSeen(): void {
+    this.state.story ??= { heard: [], discoveries: [], chapterSeen: false };
+    this.state.story.chapterSeen = true;
+    saveGameState(this.state);
+  }
+
   getConnections(): SavedConnection[] {
     return this.state.connections.map((connection) => ({ ...connection }));
   }

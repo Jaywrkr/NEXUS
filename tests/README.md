@@ -21,7 +21,7 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test
 
 ```bash
 npm run test:unit    # trece pruebas de guardado, preferencias y objetivos
-npm run test:e2e     # trece escenarios en escritorio y trece en móvil vertical
+npm run test:e2e     # quince escenarios en escritorio y quince en móvil vertical
 npm test            # ambas suites
 npm run build       # TypeScript y build de producción; check separado
 ```
@@ -33,11 +33,18 @@ No hay retries automáticos ni pruebas omitidas por defecto.
 
 ## Cobertura
 
+- Capítulo completo caminando con flechas o joystick: sin fixtures de posición,
+  entradas DOM de flechas/gestos sincronizadas con los fotogramas, túnel real,
+  siete recompensas y final. Adjunta una duración guiada, que no
+  equivale a una primera partida humana (`PLAYTEST_CHAPTER_ONE.md`).
+- Desenlace, exploración posterior, museo y repetición del final, efectos suaves,
+  continuación sin repetir la celebración y reinicio de historia/descubrimientos.
+
 - Faroles: ambas rutas, salida común, sorpresa opcional, restauración parcial,
   escenario bloqueado por preparativos y álbum independiente del circuito final.
 
 - Taller: ramas en ambos órdenes, entrada duplicada, estado parcial restaurado,
-  premio solo tras reunir pato y campana, y museo de seis recuerdos.
+  premio solo tras reunir pato y campana, y su recuerdo en el museo.
 
 - Humor y consecuencias: bromas repetidas sin recompensa, flores compartidas
   con la plaza, anuncio de la antena y recuperación de descubrimientos.

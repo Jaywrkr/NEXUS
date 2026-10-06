@@ -1,6 +1,7 @@
 import type { GameState } from './gameState';
 
 export const CHAPTER_TITLE = 'La ciudad al revés';
+export const DISCOVERY_IDS = ['singing-door', 'no-refunds', 'salad-decree', 'house-garden', 'shy-lantern'];
 export const RESIDENTS = [
   { id: 'miga', name: 'Miga', x: 1020, offsetY: 120, color: 0x5ee7ff, fragment: 'plaza-fragment', target: 'door',
     request: 'El manual lo escribió un pato. Empecemos por dar luz a la plaza.',
@@ -35,6 +36,18 @@ export function hasChapterConnection(state: GameState, target: string): boolean 
 }
 
 export function residentLine(resident: ResidentInfo, state: GameState): string {
+  if (state.story?.chapterSeen) {
+    const epilogues: Record<string, string> = {
+      miga: 'La fiesta salió bien. El manual del pato ahora sostiene una mesa que cojeaba.',
+      bombo: 'Mi nuevo éxito se llama Plin Plon. Dura hasta que alguien cierre el grifo.',
+      vera: 'Comunicado oficial: el confeti no sirve para empanar tostadas.',
+      'don-paso': 'He dejado pasar a todos. Mi autobiografía tendrá muchas páginas en blanco.',
+      goteo: 'Las flores votaron. He perdido contra una regadera. Acepto el resultado.',
+      pipa: 'El pato supervisa la campana. La campana supervisa al pato. Yo descanso.',
+      lucio: 'La fiesta sigue. Puedes ver el final otra vez o buscar nuestras cinco sorpresas.',
+    };
+    return epilogues[resident.id] ?? resident.restored;
+  }
   if (resident.id === 'miga' && (state.fragmentsCollected.includes('fountain-fragment') || hasChapterConnection(state, 'fountain')))
     return 'Bombo compartió el agua con la plaza. La casa pidió un jardín. No tiene manos para firmar.';
   return state.fragmentsCollected.includes(resident.fragment) || hasChapterConnection(state, resident.target)
