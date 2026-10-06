@@ -78,3 +78,10 @@ Se desarrolla el primer bloque de la ampliación propuesta: encargos con misteri
 
 **Decisión 024**
 Los dos encargos de regreso forman parte del bloque de consecuencias aprobado. La emisión habilita resolverlos, pero el resultado de un proyecto terminado permanece al cambiar de canal. Se distingue disponibilidad inicial de restauración de un cable guardado. Los encargos amplían las sorpresas de cinco a siete sin añadir recuerdos obligatorios ni impedir el desenlace. Las pistas locales reutilizan «Pista» y mantienen la graduación en tres niveles.
+
+
+**Decisión histórica H018 (señuelo)**
+Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica especial: es un objeto registrado en `ConnectionSystem` sin ninguna regla, así que cae en el manejo genérico de conexión inválida. Debe verse sutilmente distinto de los reales (la fuente señuelo es gris y sin brillo animado) para que el puzzle sea de observar, no de adivinar. Primer uso: zona de la antena.
+
+**Decisión histórica H019 (fragmento secreto)**
+Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.
