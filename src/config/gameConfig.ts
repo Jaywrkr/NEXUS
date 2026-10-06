@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { CustomizeScene } from '../scenes/CustomizeScene';
 import { BootScene } from '../scenes/BootScene';
 import { WorldScene } from '../scenes/WorldScene';
 import { MuseumScene } from '../scenes/MuseumScene';
@@ -31,5 +32,5 @@ export const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: false,
     },
   },
-  scene: [BootScene, WorldScene, MuseumScene, CableTunnelScene, EndingScene],
+  scene: [BootScene, CustomizeScene, WorldScene, MuseumScene, CableTunnelScene, EndingScene],
 };

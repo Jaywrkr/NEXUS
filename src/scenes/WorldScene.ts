@@ -199,6 +199,12 @@ export class WorldScene extends Phaser.Scene {
       this.muteButton.setText(this.muteButtonLabel());
     });
 
+    const wardrobe = this.add.image(65, height - 185, HUD_PILL_TEXTURE).setDisplaySize(106, 36)
+      .setTint(0xffefd1).setDepth(50).setScrollFactor(0).setInteractive({ useHandCursor: true });
+    this.add.text(65, height - 185, 'Mi Nexus', { fontFamily: 'sans-serif', fontSize: '14px', color: '#34494e' })
+      .setOrigin(0.5).setDepth(51).setScrollFactor(0);
+    wardrobe.on('pointerdown', () => { if (this.leavingWorld) return; this.leavingWorld = true; this.scene.start('CustomizeScene', { returnScene: 'WorldScene' }); });
+
     const plazaDone = this.progress.hasFragment(PLAZA_FRAGMENT_ID);
     const fountainDone = this.progress.hasFragment(FOUNTAIN_FRAGMENT_ID);
     const beaconDone = this.progress.hasFragment(BEACON_FRAGMENT_ID);

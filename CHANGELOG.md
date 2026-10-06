@@ -158,6 +158,9 @@ La primera validación detectó un fallo del piloto de reintentos del túnel en 
 
 Validación final: build de producción y `npm test` aprobados. 14 pruebas unitarias y 38 escenarios E2E, sin omisiones, en escritorio y móvil vertical. Capturas revisadas de portada, siete zonas, museo y final. El build servido también cargó portada y mundo sin errores JavaScript en ambos formatos.
 
+## Armario del Nexus
+«Mi Nexus» permite cambiar nombre, cuatro colores iniciales de chaqueta/mochila, tres accesorios y cuatro colores del cable (48 combinaciones de estilo). Se abre desde portada y mundo, permite guardar o cancelar y conserva la posición al regresar. Portada, caminata, celebración y final usan la misma apariencia. La cara y las orejas conservan su diseño. Los estilos se guardan aparte de la aventura; «Nueva partida» no borra el aspecto ni las recompensas cosméticas. Se reservan chaqueta ámbar, insignia de pato y corona para tres historias secundarias. Build, 16 pruebas unitarias y cuatro escenarios de armario/diálogos en ambos formatos aprobados; la suite completa se ejecuta al cerrar el bloque de contenido.
+
 
 ## Más variedad de partículas al conectar
 `ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.

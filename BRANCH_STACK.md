@@ -23,6 +23,7 @@ El usuario hace los PR y merges. No hay ramas paralelas independientes.
 | 15 | `codex/decisiones-radio` | `codex/encargos-misterio` | Elección reversible de señal |
 | 16 | `codex/consecuencias-regreso` | `codex/decisiones-radio` | Encargos y consecuencias entre lugares |
 | 17 | `codex/identidad-visual` | `codex/consecuencias-regreso` | Barrio ilustrado, objetos y pantallas |
+| 18 | `codex/personalizacion-nexus` | `codex/identidad-visual` | Armario, nombre, chaquetas, accesorios y cable |
 
 Al iniciar este bloque se verificaron los siete primeros heads publicados y
 la base original en `05a5e52`. Las seis fases nuevas se ejecutan en este orden;

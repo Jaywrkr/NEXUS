@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { loadAppearance } from '../data/appearance';
+import { applyNexusPose, drawAccessory } from '../art/nexusLook';
 import { NEXUS_ASSET_KEYS } from './nexusAssets';
 
 const SPEED = 220;
@@ -24,6 +26,7 @@ export class Nexus extends Phaser.GameObjects.Container {
   private velX = 0;
   private velY = 0;
   private celebrating = false;
+  private look = loadAppearance();
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y);
@@ -33,9 +36,15 @@ export class Nexus extends Phaser.GameObjects.Container {
     const shadow = scene.add.ellipse(0, GROUND_Y, 40, 12, 0x000000, 0.2);
 
     this.sprite = scene.add.image(0, GROUND_Y, NEXUS_ASSET_KEYS.idle).setOrigin(0.5, 1);
+    applyNexusPose(this.sprite, NEXUS_ASSET_KEYS.idle, this.look);
     this.applySpriteScale();
-
-    this.visual.add([shadow, this.sprite]);
+    const accessory = scene.add.graphics();
+    drawAccessory(accessory, this.look);
+    this.visual.add([shadow, this.sprite, accessory]);
+    if (this.look.name !== 'Nexus') this.add(scene.add.text(0, -100, this.look.name, {
+      fontFamily: 'sans-serif', fontSize: '12px', color: '#34494e', backgroundColor: '#ffefd1', padding: { x: 5, y: 2 },
+      wordWrap: { width: 120 }, align: 'center',
+    }).setOrigin(0.5, 1));
     this.add(this.visual);
 
     scene.add.existing(this);
@@ -83,15 +92,15 @@ export class Nexus extends Phaser.GameObjects.Container {
       const frame = Math.floor(this.walkTime / WALK_FRAME_MS) % 2 === 0 ? 0 : 1;
       if (frame !== this.walkFrame) {
         this.walkFrame = frame;
-        this.sprite.setTexture(frame === 0 ? NEXUS_ASSET_KEYS.walk1 : NEXUS_ASSET_KEYS.walk2);
+        applyNexusPose(this.sprite, frame === 0 ? NEXUS_ASSET_KEYS.walk1 : NEXUS_ASSET_KEYS.walk2, this.look);
         this.applySpriteScale();
       }
     } else {
       this.walkTime = 0;
       this.visual.setY(0);
       this.visual.scaleY = 1;
-      if (this.sprite.texture.key !== NEXUS_ASSET_KEYS.idle) {
-        this.sprite.setTexture(NEXUS_ASSET_KEYS.idle);
+      if (!this.sprite.texture.key.startsWith(NEXUS_ASSET_KEYS.idle)) {
+        applyNexusPose(this.sprite, NEXUS_ASSET_KEYS.idle, this.look);
         this.applySpriteScale();
       }
     }
@@ -110,7 +119,7 @@ export class Nexus extends Phaser.GameObjects.Container {
   playIdle(): void {
     this.walkTime = 0;
     this.visual.setY(0);
-    this.sprite.setTexture(NEXUS_ASSET_KEYS.idle);
+    applyNexusPose(this.sprite, NEXUS_ASSET_KEYS.idle, this.look);
     this.applySpriteScale();
   }
 
@@ -122,7 +131,7 @@ export class Nexus extends Phaser.GameObjects.Container {
     this.body.setVelocity(0, 0);
     this.celebrating = true;
 
-    this.sprite.setTexture(NEXUS_ASSET_KEYS.celebrate);
+    applyNexusPose(this.sprite, NEXUS_ASSET_KEYS.celebrate, this.look);
     this.applySpriteScale();
 
     this.scene.tweens.add({
