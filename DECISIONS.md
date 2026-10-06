@@ -74,3 +74,10 @@ El usuario autoriza ejecutar de forma autónoma seis fases anidadas para crear u
 
 **Decisión 023**
 Se desarrolla el primer bloque de la ampliación propuesta: encargos con misterio, decisiones reversibles y consecuencias entre lugares. El primer cable conserva una enseñanza explícita. El botón opcional «Pista» revela ayuda en tres niveles sin detener el movimiento, ampliando la ayuda automática de la Decisión 019. Cambiar una elección se hace conectando otro destino, conserva los preparativos y no penaliza. No se atribuye duración humana a un recorrido automático. Cada fase se publica en una rama anidada y el usuario integra los PR.
+
+
+**Decisión histórica H018 (señuelo)**
+Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica especial: es un objeto registrado en `ConnectionSystem` sin ninguna regla, así que cae en el manejo genérico de conexión inválida. Debe verse sutilmente distinto de los reales (la fuente señuelo es gris y sin brillo animado) para que el puzzle sea de observar, no de adivinar. Primer uso: zona de la antena.
+
+**Decisión histórica H019 (fragmento secreto)**
+Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.
