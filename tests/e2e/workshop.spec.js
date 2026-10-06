@@ -27,7 +27,7 @@ test('workshop branches merge in either order and preserve a single parade input
   expect(await world(page, 'return s.workshop.parade.isActive && s.workshop.fragment.visible;')).toBe(true);
   await checkpoint(page, testInfo, 'workshop-complete');
   await collect(page, 'workshop.fragment', 'workshop-fragment');
-  expect((await saved(page)).completionCount).toBe(6);
+  expect((await saved(page)).completionCount).toBe(5);
   await checkpoint(page, testInfo, 'museum-six');
   await returnToWorld(page);
   expect(await world(page, 'return s.workshop.parade.isActive && !s.workshop.fragment.visible;')).toBe(true);

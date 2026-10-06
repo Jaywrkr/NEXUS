@@ -7,6 +7,7 @@ const exhibits = [
   ['bridge-fragment', 'Puente de madera', '¡Ya podemos cruzar!'],
   ['garden-fragment', 'Flor del jardín', '¡El jardín volvió a florecer!'],
   ['workshop-fragment', 'Pato del taller', '¡Cuac! Ahora soy tu supervisor.'],
+  ['lantern-fragment', 'Luz del camino', '¡La luz encontró su camino!'],
   ['secret-fragment', 'Fragmento secreto', '¡Explorar también conecta!'],
 ];
 
@@ -51,6 +52,8 @@ for (const reduced of [false, true]) {
 
     await openMuseum(page, exhibits.map(e => e[0]), reduced);
     const before = await saved(page);
+    const baseScale = page.viewportSize().height > page.viewportSize().width ? 0.75 : 1;
+    const resting = exhibits.map(() => baseScale);
     expect((await museumState(page)).empty).toBe(0);
     for (const [id, label, memory] of exhibits) {
       const state = await museumState(page);
@@ -60,9 +63,9 @@ for (const reduced of [false, true]) {
       // A second tap during the reaction must remain responsive and reset cleanly.
       await tap(page, target.x, target.y);
       expect((await museumState(page)).texts).toContain(memory);
-      if (reduced) expect((await museumState(page)).scales).toEqual(exhibits.map(() => 1));
-      else await expect.poll(async () => Math.max(...(await museumState(page)).scales)).toBeGreaterThan(1);
-      await expect.poll(async () => (await museumState(page)).scales).toEqual(exhibits.map(() => 1));
+      if (reduced) expect((await museumState(page)).scales).toEqual(resting);
+      else await expect.poll(async () => Math.max(...(await museumState(page)).scales)).toBeGreaterThan(baseScale);
+      await expect.poll(async () => (await museumState(page)).scales).toEqual(resting);
     }
     expect(await saved(page)).toEqual(before);
     await checkpoint(page, testInfo, 'museum-distinct-souvenirs');

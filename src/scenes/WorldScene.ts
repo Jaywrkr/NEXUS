@@ -13,6 +13,7 @@ import { RESIDENTS, chapterObjective, residentLine, type ResidentInfo, type CONN
 import { Resident } from '../objects/Resident';
 import { StoryCard } from '../ui/StoryCard';
 import { WorkshopZone } from '../zones/WorkshopZone';
+import { LanternZone } from '../zones/LanternZone';
 import { Fragment } from '../objects/Fragment';
 import { ConnectionSystem } from '../systems/ConnectionSystem';
 import { ProgressSystem } from '../systems/ProgressSystem';
@@ -35,7 +36,7 @@ const BRIDGE_FRAGMENT_ID = 'bridge-fragment';
 const GARDEN_FRAGMENT_ID = 'garden-fragment';
 const SECRET_FRAGMENT_ID = 'secret-fragment';
 const ALL_FRAGMENT_IDS = COLLECTION.map(item => item.id);
-const WORLD_WIDTH = 4750;
+const WORLD_WIDTH = 6100;
 const GAP_X = 2610;
 const GAP_WIDTH = 100;
 
@@ -77,6 +78,7 @@ export class WorldScene extends Phaser.Scene {
   private plazaFlowers!: Phaser.GameObjects.Graphics;
   private radioBanner!: Phaser.GameObjects.Text;
   private workshop!: WorkshopZone;
+  private lanterns!: LanternZone;
 
   constructor() {
     super('WorldScene');
@@ -209,9 +211,11 @@ export class WorldScene extends Phaser.Scene {
       this.flowerBed.activate();
     }
     if (this.progress.hasFragment('workshop-fragment')) this.workshop.restoreCollected();
+    if (this.progress.hasFragment('lantern-fragment')) this.lanterns.restoreCollected();
 
     this.connectionSystem.restoreConnections(this.progress.getConnections());
     this.workshop.refresh(this.progress.hasFragment('workshop-fragment'));
+    this.lanterns.refresh(this.progress.hasFragment('lantern-fragment'));
     if (this.lamp.isActive) this.lightHouseWindow(false);
     if (this.door.isActive && !plazaDone) {
       this.plazaFragment.reveal();
@@ -337,6 +341,8 @@ export class WorldScene extends Phaser.Scene {
     this.flowerBed = new FlowerBed(this, 3500, midY + 40 * vScale);
     this.gardenFragment = new Fragment(this, 3500, midY - 85 * vScale);
     this.workshop = new WorkshopZone(this, height, vScale);
+    this.lanterns = new LanternZone(this, height, vScale, () => this.door.isActive && this.fountain.isActive
+      && this.beacon.isFullyActive && this.bridge.isActive && this.flowerBed.isActive && this.workshop.parade.isActive);
     for (const [object, label] of [[gardenSource, 'Energía'], [this.sprinkler, 'Aspersor'], [this.flowerBed, 'Flores']] as const) {
       this.add.text(object.x, object.y + 65, label, {
         fontFamily: 'sans-serif', fontSize: '16px', color: '#365137',
@@ -359,6 +365,7 @@ export class WorldScene extends Phaser.Scene {
       this.sprinkler,
       this.flowerBed,
       ...this.workshop.connectables,
+      ...this.lanterns.connectables,
     ];
 
     this.connectables.forEach((obj) => obj.setDepth(11));
@@ -379,6 +386,7 @@ export class WorldScene extends Phaser.Scene {
     this.connectionSystem.addRule({ sourceId: gardenSource.id, targetId: this.sprinkler.id });
     this.connectionSystem.addRule({ sourceId: this.sprinkler.id, targetId: this.flowerBed.id });
     this.workshop.rules.forEach(rule => this.connectionSystem.addRule(rule));
+    this.lanterns.rules.forEach(rule => this.connectionSystem.addRule(rule));
 
     this.bridgeBlocker = this.add.zone(GAP_X, midY, GAP_WIDTH - 20, height);
     this.physics.add.existing(this.bridgeBlocker, true);
@@ -442,6 +450,12 @@ export class WorldScene extends Phaser.Scene {
       this.instructionText.setText(chapterObjective(this.progress.snapshot()));
       this.applyChapterConsequences();
       this.workshop.refresh(this.progress.hasFragment('workshop-fragment'));
+      this.lanterns.refresh(this.progress.hasFragment('lantern-fragment'));
+      if (targetId === 'lantern-last' && sourceId === 'lantern-side-b') {
+        this.progress.markDiscovery('shy-lantern');
+        this.storyCard.show('El farol tímido', '¿Por qué cruzó el cable el camino? Porque alguien lo conectó. Perdón.');
+      }
+      if (targetId === 'party-confetti') this.storyCard.show('Miga', '¡La fiesta funciona! El pato exige aparecer en los créditos.');
     };
 
     this.events.on('tunnel-requested', onTunnelRequested);
@@ -473,6 +487,9 @@ export class WorldScene extends Phaser.Scene {
     );
     this.physics.add.overlap(this.nexus, this.workshop.fragment, () =>
       this.collectFragment(this.workshop.fragment, 'workshop-fragment'),
+    );
+    this.physics.add.overlap(this.nexus, this.lanterns.fragment, () =>
+      this.collectFragment(this.lanterns.fragment, 'lantern-fragment'),
     );
   }
 
@@ -604,6 +621,7 @@ export class WorldScene extends Phaser.Scene {
       { x: 2820, y: midY - 40 * vScale },
       { x: 3500, y: midY + 40 * vScale },
       { x: 4490, y: midY + 20 * vScale },
+      { x: 5410, y: midY },
     ];
 
     spots.forEach((spot, index) => {

@@ -39,14 +39,15 @@ export class MuseumScene extends Phaser.Scene {
     const spacing = Math.min(220, (width - 160) / (DISPLAYED_FRAGMENTS.length - 1));
     const startX = width / 2 - (spacing * (DISPLAYED_FRAGMENTS.length - 1)) / 2;
     const rows = Math.ceil(DISPLAYED_FRAGMENTS.length / 2);
-    const firstRowY = 210;
+    const compact = portrait && rows > 3;
+    const firstRowY = compact ? 190 : 210;
     const lastRowY = height - 290;
 
     DISPLAYED_FRAGMENTS.forEach((fragment, index) => {
       const lastSingle = DISPLAYED_FRAGMENTS.length % 2 === 1 && index === DISPLAYED_FRAGMENTS.length - 1;
       const x = portrait ? (lastSingle ? width / 2 : width * (index % 2 === 0 ? 0.28 : 0.72)) : startX + index * spacing;
       const y = portrait ? firstRowY + Math.floor(index / 2) * (lastRowY - firstRowY) / Math.max(1, rows - 1) : height / 2;
-      this.buildVitrina(x, y, fragment);
+      this.buildVitrina(x, y, fragment, compact ? 0.75 : 1);
     });
 
     const allCollected = COLLECTION.every((f) => this.progress.hasFragment(f.id));
@@ -95,27 +96,31 @@ export class MuseumScene extends Phaser.Scene {
     this.input.keyboard!.once('keydown-SPACE', returnToWorld);
   }
 
-  private buildVitrina(x: number, y: number, fragment: Souvenir): void {
-    this.add.rectangle(x, y + 80, 100, 20, 0x3a3d55);
-    const glass = this.add.rectangle(x, y, 120, 160, 0x4a4e75, 0.3);
+  private buildVitrina(x: number, y: number, fragment: Souvenir, size: number): void {
+    const horizontal = this.scale.width > this.scale.height;
+    // Fit eight cabinets without shrinking the souvenirs or their reactions.
+    const widthScale = horizontal ? Math.min(1, (this.scale.width - 160) / (DISPLAYED_FRAGMENTS.length - 1) / 138) : 1;
+    this.add.rectangle(x, y + 80 * size, 100 * size, 20 * size, 0x3a3d55);
+    const glass = this.add.rectangle(x, y, 120 * size * widthScale, 160 * size, 0x4a4e75, 0.3).setName(fragment.id);
     glass.setStrokeStyle(2, 0x8a8dc0, 0.6);
 
     if (this.progress.hasFragment(fragment.id)) {
       const souvenir = this.drawSouvenir(x, y, fragment);
+      souvenir.setScale(size);
       glass.setName(fragment.id).setInteractive({ useHandCursor: true });
       glass.on('pointerdown', () => {
         this.memoryText.setText(fragment.memory).setColor(`#${fragment.color.toString(16).padStart(6, '0')}`);
         this.tweens.killTweensOf(souvenir);
-        souvenir.setScale(1);
+        souvenir.setScale(size);
         if (!EffectsSettings.isReduced()) {
-          this.tweens.add({ targets: souvenir, scaleX: 1.18, scaleY: 1.18, duration: 220, yoyo: true });
+          this.tweens.add({ targets: souvenir, scaleX: size * 1.18, scaleY: size * 1.18, duration: 220, yoyo: true });
         }
       });
 
       this.add
-        .text(x, y + 100, fragment.label, {
+        .text(x, y + 100 * size + 2, fragment.label, {
           fontFamily: 'sans-serif',
-          fontSize: '14px',
+          fontSize: horizontal ? '12px' : '14px',
           color: '#f4f1e8',
         })
         .setOrigin(0.5);
@@ -198,6 +203,11 @@ export class MuseumScene extends Phaser.Scene {
         art.fillStyle(0xffb86c).fillTriangle(30, -22, 46, -14, 29, -8);
         art.fillStyle(0x20233a).fillCircle(20, -23, 3);
         art.fillStyle(0xc7a0ef).fillCircle(-20, 33, 8).fillCircle(20, 33, 8);
+        break;
+      case 'lantern-fragment':
+        art.fillRoundedRect(-23, -32, 46, 48, 8);
+        art.lineBetween(0, 16, 0, 38).lineBetween(-24, 38, 24, 38);
+        art.fillStyle(0xfff8c9).fillRoundedRect(-12, -22, 24, 27, 4);
         break;
     }
     return art;

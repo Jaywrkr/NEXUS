@@ -21,7 +21,7 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test
 
 ```bash
 npm run test:unit    # trece pruebas de guardado, preferencias y objetivos
-npm run test:e2e     # once escenarios en escritorio y once en móvil vertical
+npm run test:e2e     # trece escenarios en escritorio y trece en móvil vertical
 npm test            # ambas suites
 npm run build       # TypeScript y build de producción; check separado
 ```
@@ -33,6 +33,9 @@ No hay retries automáticos ni pruebas omitidas por defecto.
 
 ## Cobertura
 
+- Faroles: ambas rutas, salida común, sorpresa opcional, restauración parcial,
+  escenario bloqueado por preparativos y álbum independiente del circuito final.
+
 - Taller: ramas en ambos órdenes, entrada duplicada, estado parcial restaurado,
   premio solo tras reunir pato y campana, y museo de seis recuerdos.
 
@@ -41,11 +44,11 @@ No hay retries automáticos ni pruebas omitidas por defecto.
 - Introducción y habitantes: controles activos durante una frase, diálogo al
   acercarse o tocar, reparación del lugar, cierre y visitas guardadas.
 
-- Recorrido de las seis zonas: conexión inválida, perder y ganar el túnel,
+- Recorrido de las siete zonas: conexión inválida, perder y ganar el túnel,
   abrir la puerta, restaurar la fuente, conectar dos fuentes distintas a la
   antena, comprobar la colisión del puente cerrado y cruzarlo al abrirlo,
   activar el aspersor y conectar el agua con las flores.
-- Recogida de los seis fragmentos mediante overlaps reales, museo parcial y
+- Recogida de los siete fragmentos mediante overlaps reales, museo parcial y
   completo, distribución móvil, salida táctil/clic/ESPACIO, celebración guardada
   y recuperación de la colección al recargar.
 - Jardín accesible por movimiento de teclado/joystick desde una partida antigua

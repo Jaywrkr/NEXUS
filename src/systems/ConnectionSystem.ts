@@ -13,6 +13,9 @@ export interface ConnectionRule {
   targetId: string;
   /** Si es true, antes de completarse hay que superar el mini-túnel del cable (ver CableTunnelScene). */
   useTunnel?: boolean;
+  available?: () => boolean;
+  showHint?: () => boolean;
+  blockedMessage?: string;
 }
 
 /**
@@ -68,6 +71,7 @@ export class ConnectionSystem {
   /** Replay only registered rules, in puzzle order, without tunnel, sound or rewards. */
   restoreConnections(connections: SavedConnection[]): void {
     for (const rule of this.rules) {
+      if (rule.available && !rule.available()) continue;
       if (!connections.some((c) => c.sourceId === rule.sourceId && c.targetId === rule.targetId)) continue;
       const source = this.objects.find((object) => object.id === rule.sourceId);
       const target = this.objects.find((object) => object.id === rule.targetId);
@@ -106,6 +110,7 @@ export class ConnectionSystem {
     const visible = this.scene.cameras.main.worldView;
     const candidates: ConnectableObject[] = [];
     for (const rule of this.rules) {
+      if ((rule.available && !rule.available()) || (rule.showHint && !rule.showHint())) continue;
       if (this.completed.has(JSON.stringify([rule.sourceId, rule.targetId]))) continue;
       const source = this.objects.find(o => o.id === rule.sourceId);
       const target = this.objects.find(o => o.id === rule.targetId);
@@ -157,6 +162,11 @@ export class ConnectionSystem {
 
     if (this.completed.has(JSON.stringify([source.id, target.id]))) {
       this.showFeedback('Esa conexión ya está lista', '#1b6b3a');
+      return;
+    }
+
+    if (rule.available && !rule.available()) {
+      this.showFeedback(rule.blockedMessage ?? 'Todavía falta un preparativo', '#8a4b1f');
       return;
     }
 
