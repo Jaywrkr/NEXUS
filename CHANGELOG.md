@@ -149,6 +149,15 @@ La emisión musical hace aparecer notas en el jardín restaurado y Goteo descubr
 
 Validación final del bloque: build de producción y `npm test` aprobados; 14 pruebas unitarias y 36 escenarios E2E, sin omisiones. Capturas revisadas en escritorio y móvil. La duración de primera partida y la comprensión con Luca siguen pendientes de prueba humana.
 
+## Identidad gráfica del barrio
+Las siete zonas pasan de bloques planos a un barrio ilustrado: tejados, ventanas, adoquines, macetas, invernadero, taller con toldo y banderines de fiesta. El cielo vuelve a verse, con gradación de color, sol y dos capas de colinas. La grieta tiene orillas y corriente visible; el puente conserva su bloqueo y despliegue con un tablero de madera. Fuentes, lámpara, puerta, fuente de agua, antena, aspersor, flores, radio, juguetes y faroles reciben detalles de material y luz. Cada habitante tiene accesorios de su oficio. La portada presenta al Nexus; museo y final comparten marcos de cobre, y diálogo/interacción usan paneles redondeados.
+
+El arte de cada zona se convierte en una textura reutilizable para evitar miles de formas vivas en cada fotograma. La nueva prueba visual recorre las siete zonas en ambos formatos, captura portada y museo, conecta objetos con input real y comprueba que volver del museo reutiliza las texturas y permite seguir conectando. Se conservan coordenadas, recompensas y partidas. Las capturas documentan la composición; no son comparaciones automáticas de píxeles.
+
+La primera validación detectó un fallo del piloto de reintentos del túnel en móvil: los viajes de protocolo espaciaban demasiado la corrección y el piloto perdía. Se comparte el conductor de entradas DOM por fotograma que ya usaba el recorrido completo; una derrota ahora falla explícitamente en vez de esperar a que vuelva el mundo. No cambia la física ni la dificultad. El barrio pausado se oculta mientras lo cubre el túnel opaco y vuelve a mostrarse al ganar, cancelar o regresar tras perder, evitando renderizar dos escenarios.
+
+Validación final: build de producción y `npm test` aprobados. 14 pruebas unitarias y 38 escenarios E2E, sin omisiones, en escritorio y móvil vertical. Capturas revisadas de portada, siete zonas, museo y final. El build servido también cargó portada y mundo sin errores JavaScript en ambos formatos.
+
 
 ## Más variedad de partículas al conectar
 `ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.

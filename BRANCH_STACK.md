@@ -22,6 +22,7 @@ El usuario hace los PR y merges. No hay ramas paralelas independientes.
 | 14 | `codex/encargos-misterio` | `codex/capitulo-desenlace` | Problemas y pistas graduadas |
 | 15 | `codex/decisiones-radio` | `codex/encargos-misterio` | Elección reversible de señal |
 | 16 | `codex/consecuencias-regreso` | `codex/decisiones-radio` | Encargos y consecuencias entre lugares |
+| 17 | `codex/identidad-visual` | `codex/consecuencias-regreso` | Barrio ilustrado, objetos y pantallas |
 
 Al iniciar este bloque se verificaron los siete primeros heads publicados y
 la base original en `05a5e52`. Las seis fases nuevas se ejecutan en este orden;
@@ -34,3 +35,6 @@ incluye toda la cadena.
 
 El siguiente bloque de tres fases está definido en `ADVENTURE_EXPANSION.md`.
 Las filas 14–16 están implementadas, probadas y publicadas, en ese orden.
+
+La fila 17 responde a la petición de mejorar los gráficos y continúa la misma cadena.
+La rama gráfica está probada y publicada; el usuario sigue gestionando los PR y merges.

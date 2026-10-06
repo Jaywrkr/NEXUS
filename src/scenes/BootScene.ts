@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
+import { drawTitleArt } from '../art/neighborhood';
 import { fadeToScene } from '../utils/sceneTransition';
 import { ProgressSystem } from '../systems/ProgressSystem';
 import { EffectsSettings } from '../systems/EffectsSettings';
-import { loadNexusAssets } from '../entities/nexusAssets';
+import { NEXUS_ASSET_KEYS, loadNexusAssets } from '../entities/nexusAssets';
 import { ensureRoundedRectTexture } from '../utils/uiTextures';
 import { CHAPTER_TITLE } from '../data/chapter';
 
@@ -27,11 +28,19 @@ export class BootScene extends Phaser.Scene {
     ensureRoundedRectTexture(this, BUTTON_TEXTURE, BUTTON_WIDTH, BUTTON_HEIGHT, 14);
 
     this.cameras.main.setBackgroundColor('#f4f1e8');
+    drawTitleArt(this, width, height);
+    const portrait = height > width;
+    const hero = this.add.image(portrait ? width / 2 : width / 2 - 305,
+      portrait ? height / 2 - 168 : height * 0.78, NEXUS_ASSET_KEYS.idle).setOrigin(0.5, 1);
+    hero.setScale((portrait ? 170 : 175) / hero.height);
+    this.add.text(width / 2, height / 2 - 18, 'Conecta · descubre · celebra', {
+      fontFamily: 'sans-serif', fontSize: '14px', color: '#8a7351',
+    }).setOrigin(0.5);
     this.cameras.main.fadeIn(300, 244, 241, 232);
 
     this.add
       .text(width / 2, height / 2 - 104, 'Los Nexus', {
-        fontFamily: 'sans-serif',
+        fontFamily: 'Georgia, serif',
         fontSize: '52px',
         fontStyle: 'bold',
         color: '#1b1f3b',
@@ -43,7 +52,7 @@ export class BootScene extends Phaser.Scene {
       .text(width / 2, height / 2 - 50, `Capítulo 1 · ${CHAPTER_TITLE}`, {
         fontFamily: 'sans-serif',
         fontSize: '18px',
-        color: '#5a5e78',
+        color: '#59695c',
       })
       .setOrigin(0.5);
 
@@ -77,7 +86,7 @@ export class BootScene extends Phaser.Scene {
       effectsText.setText(effectsLabel());
     });
     this.add.text(width / 2, height - 28, 'Sin flashes ni sacudidas al activarlos', {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#5a5e78',
+      fontFamily: 'sans-serif', fontSize: '14px', color: '#59695c',
     }).setOrigin(0.5);
   }
 

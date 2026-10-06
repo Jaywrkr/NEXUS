@@ -19,7 +19,14 @@ export class Lamp extends ConnectableObject {
       .circle(0, -40, 20, OFF_COLOR)
       .setStrokeStyle(3, 0x1b1f3b, 0.4);
 
-    this.add([base, this.pole, this.glow, this.bulb]);
+    base.setFillStyle(0x506964).setStrokeStyle(2, 0x34494e);
+    this.pole.setFillStyle(0x58746e);
+    const trim = scene.add.graphics();
+    trim.lineStyle(2, 0xc49a61).lineBetween(-3, -18, -3, 38);
+    trim.fillStyle(0xc49a61).fillRoundedRect(-12, 35, 24, 8, 3).fillRoundedRect(-14, -23, 28, 6, 3);
+    trim.lineStyle(2, 0xffefd1, 0.6).beginPath().arc(-3, -43, 12, Math.PI, Math.PI * 1.6).strokePath();
+    this.bulb.setFillStyle(0x81978b).setStrokeStyle(4, 0xc49a61);
+    this.add([base, this.pole, this.glow, this.bulb, trim]);
     this.addShadow(52, 34, 10);
 
     // Pulso tenue mientras está apagada, para que se note que es interactiva.

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { drawNeighborhood, drawSky } from '../art/neighborhood';
 import { Nexus } from '../entities/Nexus';
 import { EnergySource } from '../objects/EnergySource';
 import { Lamp } from '../objects/Lamp';
@@ -61,8 +62,8 @@ export class WorldScene extends Phaser.Scene {
   private sprinkler!: Sprinkler;
   private flowerBed!: FlowerBed;
   private gardenFragment!: Fragment;
-  private gardenGround!: Phaser.GameObjects.Rectangle;
-  private bridgeDeck!: Phaser.GameObjects.Rectangle;
+  private gardenGround!: Phaser.GameObjects.Image;
+  private bridgeDeck!: Phaser.GameObjects.Image;
   private bridgeBlocker!: Phaser.GameObjects.Zone;
   private bridgeCollider!: Phaser.Physics.Arcade.Collider;
   private instructionText!: Phaser.GameObjects.Text;
@@ -70,7 +71,7 @@ export class WorldScene extends Phaser.Scene {
   private muteButton!: Phaser.GameObjects.Text;
   private houseWindow!: Phaser.GameObjects.Rectangle;
   private treeCrown!: Phaser.GameObjects.Arc;
-  private plazaGround!: Phaser.GameObjects.Rectangle;
+  private plazaGround!: Phaser.GameObjects.Image;
   private lamp!: Lamp;
   private joystick!: VirtualJoystick;
   private audio!: AudioSystem;
@@ -114,6 +115,7 @@ export class WorldScene extends Phaser.Scene {
     this.buildParallaxBackground(width, height, vScale);
     this.buildStaticZone(width, height, vScale);
     this.buildAmbientLife(width, height, vScale);
+    drawNeighborhood(this, height);
 
     this.nexus = new Nexus(this, 480, height / 2 + 100 * vScale);
     this.nexus.setDepth(10);
@@ -136,17 +138,21 @@ export class WorldScene extends Phaser.Scene {
 
     ensureRoundedRectTexture(this, HUD_PILL_TEXTURE, 100, 36, 18);
 
+    this.add.graphics().setDepth(19).setScrollFactor(0)
+      .fillStyle(0x34494e, 0.94).fillRoundedRect(110, 14, this.scale.width - 220, 58, 16)
+      .lineStyle(1, 0xcab98d, 0.6).strokeRoundedRect(114, 18, this.scale.width - 228, 50, 12);
+
     this.instructionText = this.add
       .text(this.scale.width / 2, 24, '', {
         fontFamily: 'sans-serif',
         fontSize: '18px',
-        color: '#1b1f3b',
+        color: '#ffefd1',
         wordWrap: { width: this.scale.width - 220, useAdvancedWrap: true },
       })
       .setOrigin(0.5, 0)
       .setDepth(20)
       .setScrollFactor(0)
-      .setShadow(0, 2, 'rgba(255,255,255,0.6)', 3, false, true);
+      .setShadow(0, 1, 'rgba(0,0,0,0.3)', 2, false, true);
 
     this.add
       .image(this.scale.width - 16 - 42, 16 + 18, HUD_PILL_TEXTURE)
@@ -243,7 +249,7 @@ export class WorldScene extends Phaser.Scene {
       this.bridgeFragment.reveal();
     }
     if (this.flowerBed.isActive) {
-      this.gardenGround.setFillStyle(0xd4edb6);
+      this.gardenGround.setTint(0xd4edb6);
       if (!gardenDone) this.gardenFragment.reveal();
     }
 
@@ -433,6 +439,8 @@ export class WorldScene extends Phaser.Scene {
     this.bridgeCollider = this.physics.add.collider(this.nexus, this.bridgeBlocker);
 
     const onTunnelRequested = (data: { source: ConnectableObject; target: ConnectableObject }): void => {
+      // A paused scene still renders. The tunnel is opaque, so skip its hidden backdrop.
+      this.scene.setVisible(false);
       this.scene.launch('CableTunnelScene', data);
       this.scene.pause();
     };
@@ -441,6 +449,7 @@ export class WorldScene extends Phaser.Scene {
       _sys: Phaser.Scenes.Systems,
       data?: { tunnelSuccess: boolean; source: ConnectableObject; target: ConnectableObject },
     ): void => {
+      this.scene.setVisible(true);
       this.connectionSystem.resetHint();
       if (!data) return;
       this.connectionSystem.finishTunnel(data.source, data.target, data.tunnelSuccess);
@@ -483,7 +492,7 @@ export class WorldScene extends Phaser.Scene {
         this.instructionText.setText('¡Hay agua! Conecta el aspersor con las flores');
       }
       if (targetId === this.flowerBed.id) {
-        this.gardenGround.setFillStyle(0xd4edb6);
+        this.gardenGround.setTint(0xd4edb6);
         this.gardenFragment.reveal();
         this.instructionText.setText('¡El jardín floreció! Acércate al fragmento');
       }
@@ -583,7 +592,7 @@ export class WorldScene extends Phaser.Scene {
 
     if (!animate) {
       this.treeCrown.setFillStyle(leafColor);
-      this.plazaGround.setFillStyle(plazaColor);
+      this.plazaGround.setTint(plazaColor);
       return;
     }
 
@@ -598,7 +607,7 @@ export class WorldScene extends Phaser.Scene {
     this.tweens.add({
       targets: this.plazaGround,
       duration: 500,
-      onUpdate: () => this.plazaGround.setFillStyle(plazaColor),
+      onUpdate: () => this.plazaGround.setTint(plazaColor),
     });
 
     this.spawnLeafSparkles();
@@ -761,37 +770,13 @@ export class WorldScene extends Phaser.Scene {
     return AudioSystem.isMuted() ? '🔇' : '🔊';
   }
 
-  private buildParallaxBackground(width: number, height: number, vScale: number): void {
-    const margin = 500;
-    const midY = height / 2;
-
-    this.add
-      .rectangle(this.scale.width / 2, this.scale.height / 2, this.scale.width, this.scale.height, 0xe8f4ea)
-      .setDepth(-30)
-      .setScrollFactor(0);
-
-    // Nubes lejanas
-    for (let x = -margin; x < width + margin; x += 340) {
-      const y = midY - 200 * vScale + Math.sin(x * 0.01) * 30 * vScale;
-      const cloud = this.add.ellipse(x, y, 90, 34, 0xffffff, 0.6).setDepth(-20);
-      cloud.setScrollFactor(0.15);
-    }
-
-    // Colinas lejanas
-    for (let x = -margin; x < width + margin; x += 260) {
-      const hill = this.add.circle(x, height + 40 * vScale, 160 * vScale, 0xb7ddc0).setDepth(-11);
-      hill.setScrollFactor(0.35);
-    }
-
-    // Colinas cercanas, un poco más oscuras y bajas
-    for (let x = -margin; x < width + margin; x += 220) {
-      const hill = this.add.circle(x + 110, height + 20 * vScale, 130 * vScale, 0x9ecfab).setDepth(-10);
-      hill.setScrollFactor(0.55);
-    }
+  private buildParallaxBackground(width: number, height: number, _vScale: number): void {
+    drawSky(this, width, height);
   }
 
   /** Detalles ambientales con movimiento propio, para que el mundo no se sienta estático. */
   private buildAmbientLife(_width: number, height: number, vScale: number): void {
+    if (EffectsSettings.isReduced()) return;
     // Viento sutil en la copa del árbol.
     this.tweens.add({
       targets: this.treeCrown,
@@ -838,42 +823,37 @@ export class WorldScene extends Phaser.Scene {
   private buildStaticZone(width: number, height: number, vScale: number): void {
     const midY = height / 2;
 
-    // Suelo
-    this.add.rectangle(width / 2, midY, width, height, 0xcfe8d8).setDepth(0);
+    // Leave the sky visible above the grassy horizon.
+    this.add.rectangle(width / 2, midY + height / 4 - 48 * vScale, width, height / 2 + 96 * vScale, 0xb6c7a0).setDepth(0);
 
-    // Plaza (zona más clara)
-    this.plazaGround = this.add
-      .rectangle(650, midY + 60 * vScale, 500, 260 * vScale, 0xe4dcc3)
-      .setDepth(1);
-
-    // Segunda zona: explanada de la fuente
-    this.add.rectangle(1480, midY + 40 * vScale, 460, 260 * vScale, 0xdce7ea).setDepth(1);
-
-    // Tercera zona: explanada de la antena
-    this.add.rectangle(2200, midY, 460, 320 * vScale, 0xe2ddf0).setDepth(1);
-
-    // Cuarta zona: la isla al otro lado del puente
-    this.add.rectangle(2820, midY, 340, 300 * vScale, 0xdcefd8).setDepth(1);
-
-    // Quinta zona: el jardín seco, que se vuelve verde al regar las flores.
-    this.gardenGround = this.add.rectangle(3370, midY + 30 * vScale, 650, 300 * vScale, 0xe6ddbb).setDepth(1);
-    this.add.text(3370, midY - 160 * vScale, 'El jardín', {
-      fontFamily: 'sans-serif', fontSize: '24px', color: '#365137',
-    }).setOrigin(0.5).setDepth(2);
+    // Translucent rounded terrain patches retain the repair colors below the paving.
+    ensureRoundedRectTexture(this, 'plaza-ground', 500, 260 * vScale, 36);
+    this.plazaGround = this.add.image(650, midY + 60 * vScale, 'plaza-ground')
+      .setTint(0xe4dcc3).setAlpha(0.65).setDepth(1);
+    ensureRoundedRectTexture(this, 'garden-ground', 650, 300 * vScale, 36);
+    this.gardenGround = this.add.image(3370, midY + 30 * vScale, 'garden-ground')
+      .setTint(0xe6ddbb).setAlpha(0.65).setDepth(1);
     for (const x of [3100, 3200, 3300, 3400, 3500, 3600]) {
       this.add.rectangle(x, midY + 165 * vScale, 8, 30, 0x9c7851).setDepth(2);
     }
     this.add.rectangle(3350, midY + 155 * vScale, 520, 6, 0x9c7851).setDepth(2);
 
-    // Camino que conecta las zonas
-    this.add.rectangle(width / 2, height - 40 * vScale, width, 80 * vScale, 0xb9ac8a).setDepth(1);
-
-    // Grieta que corta el camino, y el puente (oculto hasta conectar el interruptor)
-    this.add.rectangle(GAP_X, midY, GAP_WIDTH, height, 0x1b2a3a).setDepth(2);
-    this.bridgeDeck = this.add
-      .rectangle(GAP_X, midY, GAP_WIDTH - 10, 26 * vScale, 0x8a5a3a)
-      .setDepth(3)
-      .setScale(0, 1);
+    // The bank illustration leaves the physical gap visible. The planks animate as one image.
+    const bridgeKey = `wooden-bridge-${height}`;
+    if (!this.textures.exists(bridgeKey)) {
+      const planks = this.make.graphics({ x: 0, y: 0 });
+      const deckH = 38 * vScale;
+      planks.fillStyle(0x34494e, 0.3).fillRoundedRect(0, 6, GAP_WIDTH, deckH + 8, 4);
+      planks.fillStyle(0x9c7252).fillRoundedRect(0, 0, GAP_WIDTH, deckH, 4);
+      for (let x = 3; x < GAP_WIDTH; x += 12) {
+        planks.fillStyle(0xc49a6b).fillRoundedRect(x, 2, 9, deckH - 4, 2);
+        planks.lineStyle(1, 0xe5c79a, 0.8).lineBetween(x + 2, 5, x + 2, deckH - 5);
+      }
+      planks.lineStyle(4, 0x725941).lineBetween(0, 4, GAP_WIDTH, 4).lineBetween(0, deckH - 3, GAP_WIDTH, deckH - 3);
+      planks.generateTexture(bridgeKey, GAP_WIDTH, deckH + 14);
+      planks.destroy();
+    }
+    this.bridgeDeck = this.add.image(GAP_X, midY, bridgeKey).setDepth(3).setScale(0, 1);
 
     // Flor decorativa en la isla nueva
     this.add.rectangle(2870, midY + 30 * vScale, 4, 20 * vScale, 0x4a7c3a).setDepth(2);
@@ -884,12 +864,8 @@ export class WorldScene extends Phaser.Scene {
     this.add.ellipse(940, midY + 22 * vScale, 60, 14, 0x000000, 0.15).setDepth(1);
     this.add.ellipse(2200, midY + 178 * vScale, 40, 12, 0x000000, 0.15).setDepth(1);
 
-    // Casa apagada (silueta simple, sin luz encendida todavía)
-    this.add.rectangle(280, midY - 40 * vScale, 160, 140, 0x4a4e5c).setDepth(2);
-    this.add.triangle(280, midY - 130 * vScale, -90, 20, 90, 20, 0, -60, 0x3a3d48).setDepth(2);
-
     // Ventana apagada
-    this.houseWindow = this.add.rectangle(280, midY - 60 * vScale, 30, 30, 0x2a2d36).setDepth(3);
+    this.houseWindow = this.add.rectangle(214, midY + 30 * vScale - 56, 22, 28, 0x4b6160).setDepth(3);
     this.radioBanner = this.add.text(280, midY - 165 * vScale, 'CUAC FM · Fiesta en preparación', {
       fontFamily: 'sans-serif', fontSize: '16px', color: '#365137',
     }).setOrigin(0.5).setDepth(4).setVisible(false);
@@ -901,16 +877,20 @@ export class WorldScene extends Phaser.Scene {
     }
 
     // Árbol sin hojas (mundo apagado)
-    this.add.rectangle(940, midY - 10 * vScale, 12, 60, 0x6b4a30).setDepth(2);
-    this.treeCrown = this.add.circle(940, midY - 60 * vScale, 40, 0x8b8f8a).setDepth(2);
+    this.add.rectangle(940, midY - 10 * vScale, 12, 60, 0x6b4a30).setDepth(3);
+    this.treeCrown = this.add.circle(940, midY - 60 * vScale, 40, 0x8b8f8a).setDepth(3);
+
+    const foliage = this.add.graphics({ x: 940, y: midY - 60 * vScale }).setDepth(3);
+    foliage.fillStyle(0xffefd1, 0.23).fillEllipse(-14, -18, 34, 18).fillCircle(18, -10, 9);
+    foliage.lineStyle(2, 0x34494e, 0.2).lineBetween(-14, 20, 0, 30).lineBetween(14, 10, 0, 30);
 
     // Torre de la estación de la antena (decoración, no interactiva)
     this.add.rectangle(2200, midY + 130 * vScale, 14, 220, 0x5a5f6b).setDepth(2);
     this.add.circle(2200, midY + 20 * vScale, 10, 0x3a3d48).setDepth(2);
 
     // Bordes visuales del límite del mundo
-    const border = this.add.graphics().setDepth(30);
-    border.lineStyle(4, 0x1b1f3b, 0.3);
+    const border = this.add.graphics().setDepth(3);
+    border.lineStyle(2, 0x34494e, 0.15);
     border.strokeRect(2, 2, width - 4, height - 4);
   }
 }

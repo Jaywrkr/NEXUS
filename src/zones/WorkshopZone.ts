@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ensureRoundedRectTexture } from '../utils/uiTextures';
 import { EnergySource } from '../objects/EnergySource';
 import { WorkshopPiece } from '../objects/WorkshopPiece';
 import { Fragment } from '../objects/Fragment';
@@ -17,12 +18,12 @@ export class WorkshopZone {
     { sourceId: 'toy-duck', targetId: 'toy-parade' },
     { sourceId: 'toy-bell', targetId: 'toy-parade' },
   ];
-  private ground: Phaser.GameObjects.Rectangle;
+  private ground: Phaser.GameObjects.Image;
 
   constructor(scene: Phaser.Scene, height: number, v: number) {
     const y = height / 2;
-    this.ground = scene.add.rectangle(4250, y + 30 * v, 700, 320 * v, 0xdedbe7).setDepth(1);
-    scene.add.text(4250, y - 165 * v, 'Taller de Pipa', { fontFamily: 'sans-serif', fontSize: '24px', color: '#4a3c63' }).setOrigin(0.5).setDepth(2);
+    ensureRoundedRectTexture(scene, 'workshop-ground', 700, 320 * v, 40);
+    this.ground = scene.add.image(4250, y + 30 * v, 'workshop-ground').setTint(0xdedbe7).setAlpha(0.4).setDepth(1);
     const source = new EnergySource(scene, 3950, y - 40 * v, 'toy-source');
     this.motor = new WorkshopPiece(scene, 4110, y, 'motor', 'Motor');
     this.duck = new WorkshopPiece(scene, 4290, y - 75 * v, 'duck', 'Pato supervisor');
@@ -39,7 +40,7 @@ export class WorkshopZone {
 
   refresh(collected: boolean): void {
     if (!this.parade.isActive) return;
-    this.ground.setFillStyle(0xe9d4f5);
+    this.ground.setTint(0xe9d4f5);
     if (!collected && !this.fragment.visible) this.fragment.reveal();
   }
 }

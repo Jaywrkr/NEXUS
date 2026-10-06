@@ -33,6 +33,8 @@ No hay retries automáticos ni pruebas omitidas por defecto.
 
 ## Cobertura
 
+- Recorrido visual: portada, siete zonas y museo; conexiones con clic/toque antes y después de volver del museo, reutilización de texturas y capturas de ambos formatos. No usa una comparación de píxeles ni afirma validar rendimiento en un teléfono real.
+
 - Encargos de regreso: requisitos de emisión, movimiento entre lugares, diálogo y pistas locales, dos desenlaces opcionales, resultados permanentes al cambiar de canal, recarga y reinicio.
 
 - Radio reversible: antena parcial bloqueada, cambio repetido, destino único, recarga y elección válida más reciente en un guardado con cables incompatibles.
@@ -40,7 +42,7 @@ No hay retries automáticos ni pruebas omitidas por defecto.
 - Pistas a petición: graduación hasta la solución, movimiento libre, cambio de tarea y recarga.
 
 - Capítulo completo caminando con flechas o joystick: sin fixtures de posición,
-  entradas DOM de flechas/gestos sincronizadas con los fotogramas, túnel real,
+  entradas DOM de flechas/gestos sincronizadas con los fotogramas (conductor compartido en `steering.js`, también para reintentos), túnel real,
   siete recompensas y final. Adjunta una duración guiada, que no
   equivale a una primera partida humana (`PLAYTEST_CHAPTER_ONE.md`).
 - Desenlace, exploración posterior, museo y repetición del final, efectos suaves,

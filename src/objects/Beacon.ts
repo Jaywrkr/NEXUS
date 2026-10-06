@@ -29,7 +29,13 @@ export class Beacon extends ConnectableObject {
       .ellipse(0, -10, 66, 40, OFF_COLOR)
       .setStrokeStyle(3, 0x1b1f3b, 0.35);
 
-    this.add([this.glow, pole, this.dish]);
+    const trim = scene.add.graphics();
+    trim.lineStyle(3, 0x8f806b).lineBetween(0, 10, -26, 52).lineBetween(0, 10, 26, 52).lineBetween(-17, 36, 17, 36);
+    trim.lineStyle(2, 0xffefd1, 0.7).strokeEllipse(0, -13, 49, 23).lineBetween(-23, -13, 23, -13);
+    trim.fillStyle(0xc49a61).fillCircle(0, -13, 6);
+    trim.lineStyle(3, 0x34494e).lineBetween(0, -13, 10, -34);
+    trim.fillStyle(0xc49a61).fillCircle(10, -34, 4);
+    this.add([this.glow, pole, this.dish, trim]);
     this.addShadow(62, 50, 14);
 
     for (let i = 0; i < REQUIRED_CONNECTIONS; i += 1) {

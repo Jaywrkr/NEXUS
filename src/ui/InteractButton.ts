@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ensureRoundedRectTexture } from '../utils/uiTextures';
 
 /**
  * Botón fijo en pantalla para interactuar con el objeto conectable más
@@ -6,14 +7,14 @@ import Phaser from 'phaser';
  * preciso sobre un objeto pequeño, basta con acercarse y presionar aquí.
  */
 export class InteractButton {
-  private bg: Phaser.GameObjects.Rectangle;
+  private bg: Phaser.GameObjects.Image;
   private label: Phaser.GameObjects.Text;
   private onPressCallback: (() => void) | null = null;
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
+    ensureRoundedRectTexture(scene, 'interact-button', 190, 56, 16);
     this.bg = scene.add
-      .rectangle(x, y, 190, 56, 0x1b1f3b, 0.88)
-      .setStrokeStyle(3, 0x5ee7ff, 0.9)
+      .image(x, y, 'interact-button').setTint(0x34494e)
       .setScrollFactor(0)
       .setDepth(60)
       .setVisible(false)

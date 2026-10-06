@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ensureRoundedRectTexture } from '../utils/uiTextures';
 import { EnergySource } from '../objects/EnergySource';
 import { LanternPiece } from '../objects/LanternPiece';
 import { Fragment } from '../objects/Fragment';
@@ -15,12 +16,12 @@ export class LanternZone {
   readonly fragment: Fragment;
   readonly connectables;
   readonly rules: ConnectionRule[];
-  private ground: Phaser.GameObjects.Rectangle;
+  private ground: Phaser.GameObjects.Image;
 
   constructor(scene: Phaser.Scene, height: number, v: number, prepared: () => boolean) {
     const y = height / 2;
-    this.ground = scene.add.rectangle(5330, y + 30 * v, 930, 360 * v, 0xd7e4e8).setDepth(1);
-    scene.add.text(5270, y - 180 * v, 'El camino de Lucio', { fontFamily: 'sans-serif', fontSize: '24px', color: '#3d5964' }).setOrigin(0.5).setDepth(2);
+    ensureRoundedRectTexture(scene, 'lantern-ground', 930, 360 * v, 40);
+    this.ground = scene.add.image(5330, y + 30 * v, 'lantern-ground').setTint(0xd7e4e8).setAlpha(0.4).setDepth(1);
     const source = new EnergySource(scene, 4870, y - 40 * v, 'lantern-source');
     this.first = new LanternPiece(scene, 5030, y, 'lantern-first', 'Inicio', 0xffe066);
     this.middle = new LanternPiece(scene, 5210, y - 75 * v, 'lantern-middle', 'Directo', 0x5ee7ff);
@@ -44,7 +45,7 @@ export class LanternZone {
   restoreCollected(): void { this.first.activate(); this.last.activate(); }
   refresh(collected: boolean): void {
     if (!this.last.isActive) return;
-    this.ground.setFillStyle(0xf1e8be);
+    this.ground.setTint(0xf1e8be);
     if (!collected && !this.fragment.visible) this.fragment.reveal();
   }
 }

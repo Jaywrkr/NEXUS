@@ -9,6 +9,7 @@ export class Door extends ConnectableObject {
   private frame: Phaser.GameObjects.Rectangle;
   private doorway: Phaser.GameObjects.Rectangle;
   private glow: Phaser.GameObjects.Rectangle;
+  private detail: Phaser.GameObjects.Graphics;
   private knob: Phaser.GameObjects.Arc;
 
   constructor(scene: Phaser.Scene, x: number, y: number, id = 'door') {
@@ -24,7 +25,12 @@ export class Door extends ConnectableObject {
       .setStrokeStyle(2, 0x3a2418, 0.6);
     this.knob = scene.add.circle(16, 4, 3, 0xffe066);
 
-    this.add([this.glow, this.frame, this.doorway, this.panel, this.knob]);
+    this.frame.setFillStyle(0xc5ac85).setStrokeStyle(3, 0x8e7354);
+    this.panel.setFillStyle(0x799c90).setStrokeStyle(3, 0x426760);
+    this.detail = scene.add.graphics();
+    this.detail.lineStyle(2, 0xc0d0b0).strokeRoundedRect(-18, -37, 36, 33, 4).strokeRoundedRect(-18, 8, 36, 29, 4);
+    this.detail.fillStyle(0xffefd1, 0.35).fillRect(-17, -35, 3, 27);
+    this.add([this.glow, this.frame, this.doorway, this.panel, this.detail, this.knob]);
     this.addShadow(54, 54, 12);
 
     // Pulso tenue mientras está cerrada, para que se note que es interactiva.
@@ -46,7 +52,7 @@ export class Door extends ConnectableObject {
     this.active_ = true;
 
     this.scene.tweens.add({
-      targets: [this.panel, this.knob],
+      targets: [this.panel, this.detail, this.knob],
       scaleX: 0.12,
       duration: 400,
       ease: 'Sine.easeIn',
