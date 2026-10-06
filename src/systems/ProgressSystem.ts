@@ -1,5 +1,5 @@
-import type { GameState, SavedConnection, SavedPosition } from '../data/gameState';
-import { clearGameState, loadGameState, saveGameState } from '../data/gameState';
+import type { GameState, SavedConnection, SavedPosition } from '../data/gameState.ts';
+import { clearGameState, loadGameState, saveGameState } from '../data/gameState.ts';
 
 /**
  * Punto único de acceso al progreso guardado (localStorage):
@@ -54,6 +54,20 @@ export class ProgressSystem {
     if (replaceSource) this.state.connections = this.state.connections.filter(c => c.sourceId !== sourceId);
     if (this.state.connections.some((c) => c.sourceId === sourceId && c.targetId === targetId)) return;
     this.state.connections.push({ sourceId, targetId });
+    saveGameState(this.state);
+  }
+
+  /** Replace only destinations in this group, preserving other branches of the source. */
+  saveExclusiveConnection(sourceId: string, targetId: string, targets: string[]): void {
+    this.state.connections = this.state.connections.filter(c => c.sourceId !== sourceId || !targets.includes(c.targetId));
+    this.saveConnection(sourceId, targetId);
+  }
+
+  /** Replay one optional story without erasing the neighborhood or earned endings/styles. */
+  restartStory(id: string): void {
+    if (!['mail', 'toys', 'flowers'].includes(id)) return;
+    const prefix = `side-${id}-`;
+    this.state.connections = this.state.connections.filter(c => !c.sourceId.startsWith(prefix) && !c.targetId.startsWith(prefix));
     saveGameState(this.state);
   }
 

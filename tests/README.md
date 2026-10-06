@@ -33,6 +33,9 @@ No hay retries automáticos ni pruebas omitidas por defecto.
 
 ## Cobertura
 
+- Armario: nombre, paletas en caminar/celebrar, colores de cable, bloqueo de recompensas, cancelar, recarga y conservación del progreso.
+- Tres historias: requisitos, conexiones inválidas, avance parcial, señales distintas, las seis variantes, repetición sin borrar barrio ni álbum, restauración y tres recompensas de apariencia.
+
 - Recorrido visual: portada, siete zonas y museo; conexiones con clic/toque antes y después de volver del museo, reutilización de texturas y capturas de ambos formatos. No usa una comparación de píxeles ni afirma validar rendimiento en un teléfono real.
 
 - Encargos de regreso: requisitos de emisión, movimiento entre lugares, diálogo y pistas locales, dos desenlaces opcionales, resultados permanentes al cambiar de canal, recarga y reinicio.

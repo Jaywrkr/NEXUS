@@ -24,6 +24,7 @@ El usuario hace los PR y merges. No hay ramas paralelas independientes.
 | 16 | `codex/consecuencias-regreso` | `codex/decisiones-radio` | Encargos y consecuencias entre lugares |
 | 17 | `codex/identidad-visual` | `codex/consecuencias-regreso` | Barrio ilustrado, objetos y pantallas |
 | 18 | `codex/personalizacion-nexus` | `codex/identidad-visual` | Armario, nombre, chaquetas, accesorios y cable |
+| 19 | `codex/historias-del-barrio` | `codex/personalizacion-nexus` | Tres historias, seis desenlaces y estilos desbloqueables |
 
 Al iniciar este bloque se verificaron los siete primeros heads publicados y
 la base original en `05a5e52`. Las seis fases nuevas se ejecutan en este orden;
@@ -39,3 +40,7 @@ Las filas 14–16 están implementadas, probadas y publicadas, en ese orden.
 
 La fila 17 responde a la petición de mejorar los gráficos y continúa la misma cadena.
 La rama gráfica está probada y publicada; el usuario sigue gestionando los PR y merges.
+
+Las filas 18–19 amplían la cadena con personalización e historias secundarias.
+Ambas están probadas y publicadas, con commit y push propios. La última incluye
+todo el bloque; los PR y merges siguen a cargo del usuario.

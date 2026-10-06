@@ -84,3 +84,7 @@ El usuario pide mejorar los gráficos. El barrio adopta una ilustración origina
 
 **Decisión 026**
 El usuario solicita más duración, contenido y personalización. Se autoriza un armario con nombre, colores de chaqueta/mochila, accesorios y cable, conservando la identidad y las cuatro poses del Nexus. La ropa usa paletas calculadas en ejecución sobre los sprites existentes; los adornos son Graphics. La apariencia y los estilos ganados persisten separados del progreso y sobreviven a «Nueva partida». Tres historias secundarias con reglas propias y decisiones otorgarán los estilos especiales, sin monedas ni esperas. Cada bloque tiene rama anidada, commit y push; PR y merge siguen a cargo del usuario.
+
+
+**Decisión 027**
+Las historias secundarias son opcionales y se abren al restaurar su lugar. Cada pasada acepta una sola propuesta; repetir permite explorar el otro desenlace sin borrar los finales vistos, la apariencia ganada ni los cables del barrio. Las metas de dos entradas necesitan señales distintas. Cambiar una propuesta guardada solo sustituye los destinos de su grupo, conservando las otras ramas del origen. Los tres encargos aportan 16 conexiones por pasada y seis desenlaces, sin afirmar una duración humana a partir de las pruebas automatizadas.

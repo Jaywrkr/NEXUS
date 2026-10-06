@@ -12,6 +12,13 @@ test('wardrobe persists names, outfit poses and cable colors without changing pr
   await titleButton(page, 'Mi Nexus'); await ready(page, 'CustomizeScene');
   page.once('dialog', d => d.accept('Luca Rayo'));
   await choice(page, 'Cambiar nombre');
+  const spacing=await page.evaluate(()=>{
+    const scene=window.__nexusTest.scene.getScene('CustomizeScene');
+    const labels=['Cambiar nombre','Chaqueta'];
+    return labels.map(label=>{const text=scene.children.list.find(o=>o.type==='Text'&&o.text===label);const b=text.getBounds();return{left:b.left,right:b.right,top:b.top,bottom:b.bottom};});
+  });
+  const [rename,jacket]=spacing;
+  expect(rename.bottom<=jacket.top || jacket.bottom<=rename.top || rename.right<=jacket.left || jacket.right<=rename.left).toBe(true);
   await choice(page, 'Coral'); await choice(page, 'Lazo'); await choice(page, 'Rosa');
   await choice(page, 'Ámbar 🔒');
   expect(await page.evaluate(() => window.__nexusTest.scene.getScene('CustomizeScene').look.outfit)).toBe('coral');
