@@ -66,3 +66,16 @@ el señuelo, las partículas de conexión y el secreto con su vitrina independie
 Cada fase compila; la simulación verificó 22 merges consecutivos y 231 parejas
 sin conflictos. El destino sigue siendo `claude/los-nexus-game-mvp-cppkef`.
 Ver `MERGE_ORDER.md` para integrar una por una mediante commits de merge.
+
+## Nuevo bloque: muestra de la plaza (base integrada)
+Las 22 fases anteriores ya están integradas por el usuario. Este bloque parte
+del commit `27fe834` de `claude/los-nexus-game-mvp-cppkef`.
+
+| Orden | Rama | Base | Contenido |
+| --- | --- | --- | --- |
+| 1 | `codex/plaza-primeros-pasos` | `claude/los-nexus-game-mvp-cppkef` | Enseñanza persistente en seis pasos; Miga cerca del inicio |
+| 2 | `codex/plaza-arte-ilustrado` | `codex/plaza-primeros-pasos` | Escenario y sprites originales de la muestra |
+| 3 | `codex/plaza-entorno-vivo` | `codex/plaza-arte-ilustrado` | Fauna, vegetación y reacciones con inercia; validación del bloque |
+
+Integrar en ese orden mediante commits de merge, sin squash ni rebase para
+preservar la ascendencia. No se crean PR ni se integran ramas por cuenta del agente.

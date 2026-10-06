@@ -103,6 +103,8 @@ export class ConnectionSystem {
     this.handleClick(object);
   }
 
+  get selectedSourceId(): string | null { return this.selected?.id ?? null; }
+
   hasSelection(): boolean {
     return this.selected !== null;
   }

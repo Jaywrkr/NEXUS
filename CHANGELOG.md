@@ -237,3 +237,8 @@ Después del ajuste visual de separación de las ocho vitrinas, volvieron a pasa
 los builds afectados y ocho escenarios de museo, secreto y distritos.
 La simulación verificó 22 merges consecutivos y 231 parejas sin conflictos.
 Se conservan los commits originales; no se usó force push ni se crearon PR.
+
+## Muestra de la plaza — primeros pasos
+- Guía permanente de seis pasos, señal inmediata del siguiente objetivo y controles de movimiento visibles.
+- Miga está cerca del punto de inicio, no al final de la plaza.
+- La guía retoma una lámpara conectada al continuar y respeta partidas antiguas y exploración libre.
