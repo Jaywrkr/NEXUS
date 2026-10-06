@@ -10,6 +10,8 @@ Juego web 2D hecho con **Phaser 3 (v4 instalado) + TypeScript + Vite**, construi
 
 **Mecánica única:** el jugador controla al Nexus y **conecta** objetos del escenario entre sí con un cable de energía (clic/toque en origen, luego en destino). Esa es la única acción de juego — nada de combate, inventario o economía. Ver `DECISIONS.md` para el registro completo de decisiones y por qué.
 
+El bloque de aventura aprobado está en `CHAPTER_ONE.md`; orden de ramas en `BRANCH_STACK.md`.
+
 ## Estado actual (no es solo el MVP 0.0 original)
 
 El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias rondas. Desde entonces el proyecto avanzó bastante más allá de ese alcance inicial, con aprobación explícita del usuario en cada paso. Estado real hoy:
