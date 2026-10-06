@@ -220,3 +220,20 @@ Quinto fragmento (`secret-fragment`) escondido detrás de la casa apagada, al oe
 
 ## Documentación para continuar con otras IAs
 Se crea `CONTEXTO.md`: un único archivo autocontenido (qué es, estado, arquitectura, cómo funciona la conexión, coordenadas, reglas, trampas técnicas, backlog y forma de trabajo) para poder seguir el proyecto en ChatGPT u otra herramienta que no lee `CLAUDE.md` automáticamente. Se actualizan `CLAUDE.md`, `README.md` (la estructura todavía listaba `CustomizeScene`) y `DECISIONS.md` (018: señuelos; 019: fragmentos extra que no cuentan para la colección completa).
+
+
+## Reparación de las 22 ramas para integración secuencial
+Se incorpora la base `6e3e08a`, se propagan merges por toda la cadena y se
+resuelven los cruces conservando el contenido de cada fase. El fragmento
+secreto mantiene vitrina propia y contador independiente; el señuelo conserva
+su aspecto gris y las partículas de conexión respetan los efectos suaves.
+Se actualizan las pruebas de las fases y el contexto para otras IAs. Las ocho
+vitrinas caben sin solaparse en escritorio y mantienen la disposición móvil.
+Ver `MERGE_ORDER.md`: el usuario integra una por una con commits de merge.
+
+Validación de la reparación: cada una de las 22 fases compiló. La suite completa
+aprobó 18 pruebas unitarias y 44 escenarios E2E en escritorio y móvil vertical.
+Después del ajuste visual de separación de las ocho vitrinas, volvieron a pasar
+los builds afectados y ocho escenarios de museo, secreto y distritos.
+La simulación verificó 22 merges consecutivos y 231 parejas sin conflictos.
+Se conservan los commits originales; no se usó force push ni se crearon PR.
