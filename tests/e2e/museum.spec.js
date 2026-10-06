@@ -8,6 +8,7 @@ const exhibits = [
   ['garden-fragment', 'Flor del jardín', '¡El jardín volvió a florecer!'],
   ['workshop-fragment', 'Pato del taller', '¡Cuac! Ahora soy tu supervisor.'],
   ['lantern-fragment', 'Luz del camino', '¡La luz encontró su camino!'],
+  ['secret-fragment', 'Fragmento secreto', '¡Explorar también conecta!'],
 ];
 
 async function openMuseum(page, ids, reduced) {
@@ -40,12 +41,12 @@ async function museumState(page) {
 for (const reduced of [false, true]) {
   test(`museum souvenirs respond repeatedly with ${reduced ? 'reduced' : 'normal'} effects`, async ({ page }, testInfo) => {
     await openMuseum(page, [], reduced);
-    expect((await museumState(page)).empty).toBe(7);
+    expect((await museumState(page)).empty).toBe(8);
     expect((await museumState(page)).exhibits).toEqual([]);
     await checkpoint(page, testInfo, 'museum-empty');
 
     await openMuseum(page, [exhibits[0][0]], reduced);
-    expect((await museumState(page)).empty).toBe(6);
+    expect((await museumState(page)).empty).toBe(7);
     expect((await museumState(page)).exhibits.map(o => o.id)).toEqual([exhibits[0][0]]);
     await checkpoint(page, testInfo, 'museum-one-souvenir');
 
