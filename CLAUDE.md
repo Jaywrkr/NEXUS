@@ -31,6 +31,7 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
 - **Adaptación real a móvil vertical**: la resolución interna del juego cambia (960×540 landscape ↔ 540×960 portrait) según orientación + tipo de puntero, para llenar la pantalla en vez de dejar barras negras. Ver `src/config/gameConfig.ts`.
 - **Sonido**: tonos generados por código (Web Audio, sin archivos de audio) para conectar/error/recolectar, con botón de mute/unmute (🔊/🔇, esquina superior izquierda de `WorldScene`) que persiste en `localStorage`.
 - **Animaciones del Nexus**: idle, caminar, conectar (implícito en el cable), celebrar (salto + chispas al recoger fragmentos).
+- **Encargos de regreso**: música de CUAC FM + jardín restaurado habilita aspersor→escenario de flores; noticias + plaza restaurada habilita lámpara→cartel de Miga. Ambos son opcionales, dan una sorpresa y una reacción local, sin añadir recuerdos. Los proyectos terminados permanecen resueltos al cambiar de emisión; `restoreAvailable` conserva esa diferencia entre requisito inicial y restauración. «Pista» prioriza un encargo de regreso disponible y cercano.
 - **Radio reversible**: después de completar la antena, CUAC FM permite elegir música al jardín o noticias a la plaza. Conectar el otro receptor sustituye el destino y apaga el anterior; no afecta preparativos ni recuerdos. `ConnectionRule.exclusiveGroup` mantiene una sola elección activa; el guardado sustituye los cables de esa fuente dedicada.
 - **Pistas a petición**: «Pista» ofrece tres niveles según el preparativo pendiente; se reinicia al cambiar de tarea y no pausa el movimiento. Los encargos describen problemas; solo la enseñanza del primer cable da instrucciones directas.
 - **Ayudas visuales**: tras diez segundos sin interacción, un aro discreto señala un origen pendiente de la zona visible; si hay origen seleccionado, señala un destino válido visible. Desaparece al interactuar o completar y no marca puzzles resueltos. Al volver del túnel se reinicia la espera.
@@ -56,7 +57,7 @@ Hay una suite automatizada: `npm run test:unit` verifica el guardado y `npm run 
 
 Después de cambios:
 1. `npm run build` (debe terminar sin errores).
-2. `npm test` (14 pruebas unitarias y 34 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
+2. `npm test` (14 pruebas unitarias y 36 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
 3. Revisar las capturas adjuntas en `test-results/` y el informe en `playwright-report/`; los fallos conservan trazas.
 4. La prueba en dispositivo real con Luca sigue siendo necesaria para validar comodidad y dificultad.
 
@@ -85,7 +86,7 @@ src/
     ConnectableObject.ts     — clase base abstracta de todo lo conectable
     EnergySource.ts, Lamp.ts, Door.ts, Fountain.ts, Beacon.ts, Bridge.ts, Sprinkler.ts, FlowerBed.ts, Fragment.ts
   zones/
-    WorkshopZone.ts, LanternZone.ts, RadioStation.ts — circuitos modulares de las zonas nuevas
+    WorkshopZone.ts, LanternZone.ts, RadioStation.ts, ReturnCircuits.ts — circuitos modulares de las zonas nuevas
   ui/
     VirtualJoystick.ts       — joystick táctil
     StoryCard.ts             — frases que no bloquean los controles

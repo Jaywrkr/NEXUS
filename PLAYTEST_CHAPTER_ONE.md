@@ -4,11 +4,13 @@
 
 La aventura contiene siete lugares, siete habitantes, dos rutas de faroles,
 dieciocho conexiones principales por la ruta directa (diecinueve por la curiosa),
-siete recuerdos y cinco sorpresas opcionales. El taller admite ambos órdenes de
+siete recuerdos y siete sorpresas opcionales (cinco originales y dos encargos nuevos). El taller admite ambos órdenes de
 sus ramas. El desenlace requiere resolver los preparativos; completar el álbum
 es independiente. Se puede volver al barrio después del final.
 
 ## Referencias de duración
+
+Estas mediciones corresponden a `5da8899`, antes del bloque de decisiones.
 
 | Recorrido | Medida | Interpretación |
 | --- | --- | --- |
@@ -36,7 +38,7 @@ una comparación directa de cuánto creció la duración.
 3. Preguntar al final qué personaje recuerda, qué reacción le hizo gracia y qué
    quería hacer cuando dejó de seguir la tarea principal.
 4. Comprobar si descubre el orden alternativo del taller y el desvío de faroles;
-   dejar que elija. No es obligatorio encontrar las cinco sorpresas.
+   dejar que elija. No es obligatorio encontrar las siete sorpresas.
 5. Probar continuar a mitad del taller o camino, girar el móvil y volver después
    del final. Confirmar comodidad de texto, precisión táctil y efectos suaves.
 
@@ -44,7 +46,7 @@ Si la primera partida resulta corta, el siguiente paso es añadir decisiones y
 situaciones interesantes donde Luca mostró curiosidad. Si se atasca, aclarar
 ese punto antes de ampliar. El tiempo por sí solo no es un criterio de calidad.
 
-## Alcance de las pruebas automáticas
+## Alcance de las pruebas automáticas del cierre original (`5da8899`)
 
 Validación del 6 de octubre de 2026: build aprobado y 13 pruebas unitarias aprobadas.
 La ejecución general aprobó 28 escenarios; los dos recorridos caminados se
@@ -58,3 +60,17 @@ final, álbum, efectos y la ruta completa caminada. Build de producción aparte.
 Las capturas y trazas quedan en el informe de Playwright, sin versionar imágenes
 ni añadir accesos de prueba al juego distribuido. Chromium simulado no sustituye
 la prueba de comodidad ni la primera partida de Luca.
+
+## Ampliación de decisiones y regresos
+El bloque posterior añade pistas a petición, una elección reversible de radio y
+dos proyectos opcionales en la plaza y el jardín. Hay siete sorpresas posibles;
+la ruta principal conserva sus dieciocho cables y siete recuerdos. Registrar
+aparte si Luca prueba ambas emisiones, vuelve a los habitantes y resuelve los
+encargos sin que se le indique el cable. Los tiempos anteriores son referencias
+de sus versiones y condiciones originales, no mediciones de toda la ampliación.
+
+Validación del bloque ampliado: build y `npm test` aprobados, con 14 pruebas
+unitarias y 36 escenarios E2E, sin casos omitidos. La ruta principal guiada
+midió 95,4 s en escritorio y 108,2 s en móvil; no incluye lecturas ni los encargos
+opcionales. Estos se verificaron en escenarios separados con partidas preparadas,
+por lo que no existe todavía una medición completa de primera partida humana.

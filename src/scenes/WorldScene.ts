@@ -13,6 +13,7 @@ import { RESIDENTS, chapterObjective, chapterTask, residentLine, type ResidentIn
 import { Resident } from '../objects/Resident';
 import { StoryCard } from '../ui/StoryCard';
 import { WorkshopZone } from '../zones/WorkshopZone';
+import { ReturnCircuits } from '../zones/ReturnCircuits';
 import { RadioStation } from '../zones/RadioStation';
 import { RADIO_SOURCE_ID } from '../data/radio';
 import { LanternZone } from '../zones/LanternZone';
@@ -80,6 +81,7 @@ export class WorldScene extends Phaser.Scene {
   private workshop!: WorkshopZone;
   private lanterns!: LanternZone;
   private radio!: RadioStation;
+  private returnCircuits!: ReturnCircuits;
   private hintTask = '';
   private hintLevel = 0;
   private leavingChapter = false;
@@ -262,7 +264,7 @@ export class WorldScene extends Phaser.Scene {
     this.add.text(hint.x, hint.y, 'Pista', { fontFamily: 'sans-serif', fontSize: '18px', color: '#20233a' })
       .setOrigin(0.5).setDepth(51).setScrollFactor(0);
     hint.on('pointerdown', () => {
-      const task = chapterTask(this.progress.snapshot());
+      const task = this.returnCircuits.taskNear(this.nexus.x) ?? chapterTask(this.progress.snapshot());
       if (task.id !== this.hintTask) { this.hintTask = task.id; this.hintLevel = 0; }
       const level = Math.min(this.hintLevel++, task.clues.length - 1);
       this.storyCard.show(`Pista ${level + 1}/${task.clues.length}`, task.clues[level]);
@@ -309,7 +311,7 @@ export class WorldScene extends Phaser.Scene {
   private speakResident(info: ResidentInfo): void {
     this.progress.markResidentHeard(info.id);
     if (info.id === 'miga' && this.fountain.isActive) this.progress.markDiscovery('house-garden');
-    this.storyCard.show(info.name, residentLine(info, this.progress.snapshot()));
+    this.storyCard.show(info.name, this.returnCircuits.residentLine(info.id) ?? residentLine(info, this.progress.snapshot()));
   }
 
   private finishChapter(): void {
@@ -327,6 +329,10 @@ export class WorldScene extends Phaser.Scene {
   private applyChapterConsequences(): void {
     this.plazaFlowers.setVisible(this.fountain.isActive);
     this.radioBanner.setVisible(this.beacon.isFullyActive);
+    this.radioBanner.setText(this.radio.channel === 'news' ? 'CUAC FM · ¡Noticias de Miga!' : 'CUAC FM · Fiesta en preparación');
+    this.returnCircuits.refresh();
+    if (this.returnCircuits.bulletin.isActive) this.progress.markDiscovery('plaza-bulletin');
+    if (this.returnCircuits.band.isActive) this.progress.markDiscovery('garden-concert');
   }
 
   private setupConnections(height: number, vScale: number): void {
@@ -361,6 +367,8 @@ export class WorldScene extends Phaser.Scene {
     this.flowerBed = new FlowerBed(this, 3500, midY + 40 * vScale);
     this.gardenFragment = new Fragment(this, 3500, midY - 85 * vScale);
     this.radio = new RadioStation(this, height, vScale, () => this.beacon.isFullyActive);
+    this.returnCircuits = new ReturnCircuits(this, height, vScale, () => this.radio.channel,
+      () => this.door.isActive && this.lamp.isActive, () => this.flowerBed.isActive && this.sprinkler.isActive);
     this.workshop = new WorkshopZone(this, height, vScale);
     this.lanterns = new LanternZone(this, height, vScale, () => this.door.isActive && this.fountain.isActive
       && this.beacon.isFullyActive && this.bridge.isActive && this.flowerBed.isActive && this.workshop.parade.isActive);
@@ -384,6 +392,7 @@ export class WorldScene extends Phaser.Scene {
       gardenSource,
       this.sprinkler,
       this.flowerBed,
+      ...this.returnCircuits.connectables,
       ...this.radio.connectables,
       ...this.workshop.connectables,
       ...this.lanterns.connectables,
@@ -409,6 +418,7 @@ export class WorldScene extends Phaser.Scene {
     this.radio.rules.forEach(rule => this.connectionSystem.addRule(rule));
     this.workshop.rules.forEach(rule => this.connectionSystem.addRule(rule));
     this.lanterns.rules.forEach(rule => this.connectionSystem.addRule(rule));
+    this.returnCircuits.rules.forEach(rule => this.connectionSystem.addRule(rule));
 
     this.bridgeBlocker = this.add.zone(GAP_X, midY, GAP_WIDTH - 20, height);
     this.physics.add.existing(this.bridgeBlocker, true);
@@ -473,14 +483,16 @@ export class WorldScene extends Phaser.Scene {
       this.applyChapterConsequences();
       this.radio.refresh();
       if (sourceId === RADIO_SOURCE_ID) this.storyCard.show('CUAC FM', this.radio.channel === 'music'
-        ? 'El jardín recibe música. Conecta el otro receptor para probar las noticias.'
-        : 'La plaza recibe noticias. Conecta el otro receptor para probar la música.');
+        ? 'El jardín recibe música. Sus flores quieren dar un concierto. Visita a Goteo cuando hayan florecido.'
+        : 'La plaza recibe noticias. Miga tiene un anuncio absurdo que quiere publicar. Vuelve a verla.');
       this.workshop.refresh(this.progress.hasFragment('workshop-fragment'));
       this.lanterns.refresh(this.progress.hasFragment('lantern-fragment'));
       if (targetId === 'lantern-last' && sourceId === 'lantern-side-b') {
         this.progress.markDiscovery('shy-lantern');
         this.storyCard.show('El farol tímido', '¿Por qué cruzó el cable el camino? Porque alguien lo conectó. Perdón.');
       }
+      if (targetId === 'plaza-bulletin') this.storyCard.show('Miga', 'Publicado: prohibido prohibir tostadas. Nadie sabe quién empezó esta discusión.');
+      if (targetId === 'garden-band') this.storyCard.show('Las flores', '¡Primer concierto! Gira mundial: este parterre. El aspersor pide salir en la portada.');
       if (targetId === 'party-confetti') this.finishChapter();
     };
 

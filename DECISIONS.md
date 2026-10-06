@@ -74,3 +74,7 @@ El usuario autoriza ejecutar de forma autónoma seis fases anidadas para crear u
 
 **Decisión 023**
 Se desarrolla el primer bloque de la ampliación propuesta: encargos con misterio, decisiones reversibles y consecuencias entre lugares. El primer cable conserva una enseñanza explícita. El botón opcional «Pista» revela ayuda en tres niveles sin detener el movimiento, ampliando la ayuda automática de la Decisión 019. Cambiar una elección se hace conectando otro destino, conserva los preparativos y no penaliza. No se atribuye duración humana a un recorrido automático. Cada fase se publica en una rama anidada y el usuario integra los PR.
+
+
+**Decisión 024**
+Los dos encargos de regreso forman parte del bloque de consecuencias aprobado. La emisión habilita resolverlos, pero el resultado de un proyecto terminado permanece al cambiar de canal. Se distingue disponibilidad inicial de restauración de un cable guardado. Los encargos amplían las sorpresas de cinco a siete sin añadir recuerdos obligatorios ni impedir el desenlace. Las pistas locales reutilizan «Pista» y mantienen la graduación en tres niveles.

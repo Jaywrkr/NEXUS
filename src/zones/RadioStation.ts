@@ -19,7 +19,7 @@ export class RadioStation {
     this.news = new RadioReceiver(scene, 1840, y + 75 * v, RADIO_TARGETS.news, 'Noticias a la plaza', 0xffe066);
     this.connectables = [source, this.music, this.news];
     scene.add.text(1760, y - 170 * v, 'CUAC FM · una señal', { fontFamily: 'sans-serif', fontSize: '18px', color: '#4a3c63' }).setOrigin(0.5).setDepth(2);
-    this.status = scene.add.text(1770, y + 155 * v, '', { fontFamily: 'sans-serif', fontSize: '14px', color: '#20233a', align: 'center', wordWrap: { width: 260 } }).setOrigin(0.5).setDepth(9);
+    this.status = scene.add.text(1680, y - 105 * v, '', { fontFamily: 'sans-serif', fontSize: '14px', color: '#20233a', align: 'center', wordWrap: { width: 160 } }).setOrigin(0.5).setDepth(9);
     this.rules = [this.music, this.news].map(receiver => ({
       sourceId: source.id, targetId: receiver.id, exclusiveGroup: 'radio-emission', available,
       blockedMessage: 'La antena necesita sus dos señales antes de emitir.',
@@ -32,8 +32,8 @@ export class RadioStation {
   get channel(): RadioChannel | null { return this.music.isActive ? 'music' : this.news.isActive ? 'news' : null; }
 
   refresh(): void {
-    this.status.setText(this.channel === 'music' ? 'Emisión: música al jardín. Puedes cambiar el destino.'
-      : this.channel === 'news' ? 'Emisión: noticias a la plaza. Puedes cambiar el destino.'
-      : 'Elige un destino. Puedes cambiarlo con otro cable.');
+    this.status.setText(this.channel === 'music' ? 'Emisión: música.\nCambia con otro cable.'
+      : this.channel === 'news' ? 'Emisión: noticias.\nCambia con otro cable.'
+      : 'Elige un destino.\nPuedes cambiarlo.');
   }
 }
