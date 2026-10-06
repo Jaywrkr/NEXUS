@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { PLAZA } from '../art/plazaAssets';
 import { MODERN as ART } from '../art/modernArt';
 import { sideResidentLine } from '../data/sideStories';
 import { drawNeighborhood, drawSky } from '../art/neighborhood';
@@ -122,7 +123,7 @@ export class WorldScene extends Phaser.Scene {
     this.buildAmbientLife(width, height, vScale);
     drawNeighborhood(this, height);
 
-    this.nexus = new Nexus(this, 480, height / 2 + 100 * vScale);
+    this.nexus = new Nexus(this, 550, height / 2 + 100 * vScale);
     this.nexus.setDepth(10);
     this.cameras.main.startFollow(this.nexus, true, 0.12, 0.12);
 
@@ -135,7 +136,7 @@ export class WorldScene extends Phaser.Scene {
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as typeof this.wasd;
     this.joystick = new VirtualJoystick(this, 90, height - 90);
 
-    this.interactButton = new InteractButton(this, this.scale.width / 2, this.scale.height - 40);
+    this.interactButton = new InteractButton(this, height > this.scale.width ? this.scale.width / 2 : this.scale.width - 120, this.scale.height - 40);
     this.interactButton.onPress(() => {
       const target = this.findNearestConnectable();
       if (target) this.connectionSystem.interact(target);
@@ -366,10 +367,10 @@ export class WorldScene extends Phaser.Scene {
     const midY = height / 2;
 
     // Zona 1: la plaza (fuente → lámpara → puerta)
-    const source = new EnergySource(this, 480, midY - 40 * vScale);
-    this.lamp = new Lamp(this, 680, midY - 20 * vScale);
-    this.door = new Door(this, 820, midY + 60 * vScale);
-    this.plazaFragment = new Fragment(this, 820, midY - 10 * vScale);
+    const source = new EnergySource(this, 480, midY + 65 * vScale);
+    this.lamp = new Lamp(this, 680, midY + 70 * vScale);
+    this.door = new Door(this, 980, midY + 35 * vScale);
+    this.plazaFragment = new Fragment(this, 980, midY + 90 * vScale);
     this.secretFragment = new Fragment(this, 140, midY + 60 * vScale);
     this.secretFragment.setDepth(12);
     if (!this.progress.hasFragment(SECRET_FRAGMENT_ID)) this.secretFragment.reveal();
@@ -431,6 +432,12 @@ export class WorldScene extends Phaser.Scene {
     ];
 
     this.connectables.forEach((obj) => obj.setDepth(11));
+    for (const [object, label] of [[source, 'GENERADOR'], [this.lamp, 'LÁMPARA'], [this.door, 'PUERTA']] as const) {
+      this.add.text(object.x, object.y + 66, label, {
+        fontFamily: ART.body, fontSize: '11px', fontStyle: 'bold', color: '#ffffff',
+        backgroundColor: '#152b47', padding: { x: 7, y: 4 }, letterSpacing: 1,
+      }).setOrigin(.5).setDepth(12);
+    }
     this.plazaFragment.setDepth(12);
     this.fountainFragment.setDepth(12);
     this.beaconFragment.setDepth(12);
@@ -891,7 +898,8 @@ export class WorldScene extends Phaser.Scene {
     this.houseWindow = this.add.rectangle(214, midY + 30 * vScale - 56, 22, 28, 0x90dcff).setDepth(3);
     this.radioBanner = this.add.text(280, midY - 165 * vScale, 'CUAC FM · Fiesta en preparación', {
       fontFamily: ART.body, fontSize: '16px', color: '#365137',
-    }).setOrigin(0.5).setDepth(4).setVisible(false);
+    }).setOrigin(0.5).setDepth(5).setVisible(false);
+    if (this.textures.exists(PLAZA.background)) this.houseWindow.setVisible(false);
     this.plazaFlowers = this.add.graphics({ x: 1050, y: midY + 40 * vScale }).setDepth(3).setVisible(false);
     for (const x of [-24, 0, 24]) {
       this.plazaFlowers.lineStyle(3, 0x4a7c3a).lineBetween(x, 0, x, 18);

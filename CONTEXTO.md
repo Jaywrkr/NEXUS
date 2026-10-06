@@ -185,3 +185,8 @@ el destino está fuera de pantalla). No hay campos nuevos de guardado ni bloqueo
 Miga está en x=350, midY+70·v, cerca del inicio. El usuario autorizó ampliar
 los assets originales al escenario, objetos y fauna de esta muestra de la plaza.
 Las zonas restantes conservan el arte anterior hasta que el usuario la pruebe.
+`BootScene` precarga `art/plazaAssets.ts`: fondo WebP y dos atlas transparentes
+3×2 (celdas de 512). Solo se sustituye la plaza x=0..1160; los cuerpos de
+input y progreso siguen separados del arte. Fuente (480,midY+65·v), lámpara
+(680,midY+70·v), puerta (980,midY+35·v), recuerdo (980,midY+90·v).
+Estas coordenadas sustituyen las referencias históricas de la primera zona.
