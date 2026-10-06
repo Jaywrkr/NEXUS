@@ -51,12 +51,13 @@ export class ProgressSystem {
     return [...this.state.fragmentsCollected];
   }
 
-  hasSeenCompletion(): boolean {
-    return this.state.seenCompletion;
+  hasSeenCompletion(collectionSize: number): boolean {
+    return this.state.seenCompletion && (this.state.completionCount ?? 4) >= collectionSize;
   }
 
-  markCompletionSeen(): void {
+  markCompletionSeen(collectionSize: number): void {
     this.state.seenCompletion = true;
+    this.state.completionCount = collectionSize;
     saveGameState(this.state);
   }
 

@@ -5,6 +5,7 @@ const exhibits = [
   ['fountain-fragment', 'Gota de la fuente', '¡El agua volvió a fluir!'],
   ['beacon-fragment', 'Señal de la antena', '¡Dos cables, una señal!'],
   ['bridge-fragment', 'Puente de madera', '¡Ya podemos cruzar!'],
+  ['garden-fragment', 'Flor del jardín', '¡El jardín volvió a florecer!'],
   ['secret-fragment', 'Fragmento secreto', '¡Explorar también conecta!'],
 ];
 
@@ -12,7 +13,7 @@ async function openMuseum(page, ids, reduced) {
   // Seed collection states, then exercise the real museum's click/touch inputs.
   await page.evaluate(({ ids, reduced }) => {
     localStorage.setItem('los-nexus-progress', JSON.stringify({
-      fragmentsCollected: ids, seenCompletion: ids.length === 4, connections: [], position: null,
+      fragmentsCollected: ids, seenCompletion: ids.length === 5, connections: [], position: null,
     }));
     localStorage.setItem('los-nexus-reduced-effects', String(reduced));
     const game = window.__nexusTest;

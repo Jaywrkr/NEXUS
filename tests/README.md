@@ -20,8 +20,8 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test
 ## Comandos
 
 ```bash
-npm run test:unit    # siete pruebas de guardado y preferencias
-npm run test:e2e     # siete escenarios en escritorio y siete en móvil vertical
+npm run test:unit    # ocho pruebas de guardado y preferencias
+npm run test:e2e     # ocho escenarios en escritorio y ocho en móvil vertical
 npm test            # ambas suites
 npm run build       # TypeScript y build de producción; check separado
 ```
@@ -33,12 +33,18 @@ No hay retries automáticos ni pruebas omitidas por defecto.
 
 ## Cobertura
 
-- Recorrido de las cuatro zonas: conexión inválida, perder y ganar el túnel,
+- Recorrido de las cinco zonas: conexión inválida, perder y ganar el túnel,
   abrir la puerta, restaurar la fuente, conectar dos fuentes distintas a la
-  antena, comprobar la colisión del puente cerrado y cruzarlo al abrirlo.
-- Recogida de los cuatro fragmentos mediante overlaps reales, museo parcial y
+  antena, comprobar la colisión del puente cerrado y cruzarlo al abrirlo,
+  activar el aspersor y conectar el agua con las flores.
+- Recogida de los cinco fragmentos mediante overlaps reales, museo parcial y
   completo, distribución móvil, salida táctil/clic/ESPACIO, celebración guardada
   y recuperación de la colección al recargar.
+- Jardín accesible por movimiento de teclado/joystick desde una partida antigua
+  de cuatro zonas terminada, pareja inválida e inicio bloqueado sin energía,
+  ambos pasos por botón de proximidad, restauración parcial y previa a recoger,
+  pista del aspersor pendiente, conexión repetida y celebración de la nueva
+  colección una sola vez.
 - Continuar antes del primer fragmento, antena parcial, fuentes duplicadas,
   movimiento de teclado/joystick y recuperación de posición. En móvil también
   se gira a horizontal y se comprueba que la posición vertical relativa se conserva.
@@ -53,7 +59,8 @@ No hay retries automáticos ni pruebas omitidas por defecto.
   respuestas a toques repetidos, pulso normal y ausencia de movimiento con efectos
   suaves; observar recuerdos no modifica la colección guardada.
 - Serialización, migración, datos malformados, reinicio sin arrays compartidos
-  y preferencias independientes del progreso.
+  y preferencias independientes del progreso; tamaño de colección completada
+  válido, ausente en partidas antiguas o malformado.
 
 Para leer el estado de Phaser, el harness intercepta la respuesta de Vite de
 `src/main.ts` y expone la instancia solo dentro del navegador de pruebas.

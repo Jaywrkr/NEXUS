@@ -111,6 +111,13 @@ Cada vitrina obtenida muestra un recuerdo propio: luz de la plaza, gota de la fu
 
 La comprobación de reintento del túnel compara el avance tras reiniciar con el punto de derrota, en lugar de un límite fijo de 200: el navegador sigue simulando mientras procesa entradas, y esa cifra producía fallos de tiempo aunque el reinicio funcionara.
 
+## Quinta zona: el jardín
+El mundo se amplía de 2950 a 3750 px, conservando las coordenadas de las cuatro zonas anteriores. Después del puente aparece un jardín seco: conectar energía al aspersor permite conectar el aspersor a las flores; el suelo se vuelve verde y se revela el quinto fragmento. El aspersor apagado no puede iniciar cables y un cable directo de energía a las flores es inválido. Ambos pasos admiten clic/toque y el botón de proximidad, se guardan y se restauran, con pistas para el siguiente paso pendiente.
+
+La colección compartida por mundo y museo incluye una flor interactiva; el HUD y el estado cuentan cinco lugares. El museo vertical tiene tres filas y centra la quinta vitrina, conservando el botón de regreso. Los mensajes del mundo ajustan sus líneas al espacio entre los controles del HUD.
+
+El guardado añade un `completionCount` opcional: una celebración de una partida antigua equivale a la colección original de cuatro recuerdos. Completar la colección de cinco permite celebrar otra vez, sin repetirla al recargar. No se borran fragmentos, conexiones ni posición. Se amplía el recorrido E2E a cinco zonas y se añade un escenario del jardín con partida antigua, movimiento real, pares inválidos, botón de proximidad, restauración intermedia y completa, y premio/celebración, en escritorio y móvil vertical. Las capturas incluyen jardín seco, regado y museo de cinco recuerdos.
+
 
 ## Más variedad de partículas al conectar
 `ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.

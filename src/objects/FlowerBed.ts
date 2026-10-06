@@ -1,0 +1,44 @@
+import Phaser from 'phaser';
+import { ConnectableObject } from './ConnectableObject';
+import { EffectsSettings } from '../systems/EffectsSettings';
+
+export class FlowerBed extends ConnectableObject {
+  private soil: Phaser.GameObjects.Rectangle;
+  private buds: Phaser.GameObjects.Arc[] = [];
+  private flowers: Phaser.GameObjects.Graphics;
+
+  constructor(scene: Phaser.Scene, x: number, y: number) {
+    super(scene, x, y, 'garden-bed', 'target');
+    this.soil = scene.add.rectangle(0, 20, 110, 52, 0x9e896b).setStrokeStyle(3, 0x725e43);
+    this.flowers = scene.add.graphics().setVisible(false);
+    this.add(this.soil);
+    for (const [index, dx] of [-32, 0, 32].entries()) {
+      const stem = scene.add.rectangle(dx, 0, 4, 30, 0x628454);
+      const bud = scene.add.circle(dx, -18, 6, 0x8b957a);
+      this.buds.push(bud);
+      this.add([stem, bud]);
+      this.flowers.fillStyle([0xffb86c, 0xff9ff3, 0xffe066][index]);
+      for (let petal = 0; petal < 5; petal++) {
+        const angle = petal * Math.PI * 2 / 5;
+        this.flowers.fillCircle(dx + Math.cos(angle) * 10, -18 + Math.sin(angle) * 10, 7);
+      }
+      this.flowers.fillStyle(0xfff8c9);
+      this.flowers.fillCircle(dx, -18, 6);
+    }
+    this.add(this.flowers);
+    this.addShadow(48, 116, 14);
+    this.setSize(124, 100);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 124, 100), Phaser.Geom.Rectangle.Contains);
+  }
+
+  activate(): void {
+    if (this.active_) return;
+    this.active_ = true;
+    this.soil.setFillStyle(0x6ca765);
+    this.buds.forEach(bud => bud.setVisible(false));
+    this.flowers.setVisible(true);
+    if (!EffectsSettings.isReduced()) {
+      this.scene.tweens.add({ targets: this.flowers, scale: { from: 0.7, to: 1 }, duration: 400, ease: 'Sine.easeOut' });
+    }
+  }
+}

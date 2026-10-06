@@ -14,6 +14,8 @@ export interface SavedPosition {
 export interface GameState {
   fragmentsCollected: string[];
   seenCompletion: boolean;
+  /** Missing in old saves, where the completed collection contained four items. */
+  completionCount?: number;
   connections: SavedConnection[];
   position: SavedPosition | null;
 }
@@ -34,6 +36,8 @@ export function loadGameState(): GameState {
         ? [...new Set<string>(parsed.fragmentsCollected.filter((id: unknown) => typeof id === 'string'))]
         : [],
       seenCompletion: parsed.seenCompletion === true,
+      ...(Number.isSafeInteger(parsed.completionCount) && parsed.completionCount >= 0
+        ? { completionCount: parsed.completionCount } : {}),
       connections: Array.isArray(parsed.connections)
         ? parsed.connections.filter((connection: unknown): connection is SavedConnection => {
             if (!connection || typeof connection !== 'object') return false;

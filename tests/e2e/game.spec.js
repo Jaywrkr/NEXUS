@@ -1,6 +1,6 @@
 import { test, expect, ready, world, start, connect, saved, collect, returnToWorld, checkpoint, winTunnel, titleButton, tunnelButton, runningTunnel, failedTunnel, tap, clickObject } from './helpers.js';
 
-const fragmentIds = ['plaza-fragment', 'fountain-fragment', 'beacon-fragment', 'bridge-fragment'];
+const fragmentIds = ['plaza-fragment', 'fountain-fragment', 'beacon-fragment', 'bridge-fragment', 'garden-fragment'];
 
 async function reloadAndContinue(page) {
   await page.reload();
@@ -24,7 +24,7 @@ async function museumLayout(page) {
   return layout.labels.map(label => label.text);
 }
 
-test('complete all four zones, lose and win the tunnel, and revisit the museum', async ({ page, isMobile }, testInfo) => {
+test('complete all five zones, lose and win the tunnel, and revisit the museum', async ({ page, isMobile }, testInfo) => {
   await start(page);
   // Wrong pairs do not unlock objects or create saved connections.
   await connect(page, 'energy-source', 'door');
@@ -83,17 +83,27 @@ test('complete all four zones, lose and win the tunnel, and revisit the museum',
   await page.keyboard.up('ArrowRight');
   await page.waitForTimeout(400);
   await collect(page, 'bridgeFragment', fragmentIds[3]);
+  expect(await museumLayout(page)).not.toContain('¡Colección completa!');
+  expect((await saved(page)).seenCompletion).toBe(false);
+  await returnToWorld(page);
+  await connect(page, 'garden-source', 'garden-sprinkler');
+  expect(await world(page, 'return s.sprinkler.isActive && !s.flowerBed.isActive && !s.gardenFragment.visible;')).toBe(true);
+  await connect(page, 'garden-sprinkler', 'garden-bed');
+  expect(await world(page, 'return s.flowerBed.isActive && s.gardenFragment.visible;')).toBe(true);
+  await checkpoint(page, testInfo, 'garden-flowering');
+  await collect(page, 'gardenFragment', fragmentIds[4]);
   expect((await museumLayout(page))).toContain('¡Colección completa!');
   expect((await saved(page)).fragmentsCollected).toEqual(fragmentIds);
-  expect((await saved(page)).connections).toHaveLength(6);
+  expect((await saved(page)).connections).toHaveLength(8);
   expect((await saved(page)).seenCompletion).toBe(true);
+  expect((await saved(page)).completionCount).toBe(5);
   expect(await page.evaluate(() => window.__effectCalls.flash)).toBeGreaterThan(0);
   expect(await page.evaluate(() => window.__effectCalls.shake)).toBeGreaterThan(0);
   await checkpoint(page, testInfo, 'museum-complete');
   await returnToWorld(page);
   await reloadAndContinue(page);
-  expect(await world(page, 'return s.lamp.isActive && s.door.isActive && s.fountain.isActive && s.beacon.isFullyActive && s.bridge.isActive;')).toBe(true);
-  expect(await world(page, 'return [s.plazaFragment,s.fountainFragment,s.beaconFragment,s.bridgeFragment].every(f=>!f.visible);')).toBe(true);
+  expect(await world(page, 'return s.lamp.isActive && s.door.isActive && s.fountain.isActive && s.beacon.isFullyActive && s.bridge.isActive && s.sprinkler.isActive && s.flowerBed.isActive;')).toBe(true);
+  expect(await world(page, 'return [s.plazaFragment,s.fountainFragment,s.beaconFragment,s.bridgeFragment,s.gardenFragment].every(f=>!f.visible);')).toBe(true);
   await checkpoint(page, testInfo, 'world-restored');
 });
 
@@ -270,11 +280,11 @@ test('hints wait for inactivity and soft effects persist without changing reward
   expect(await page.evaluate(() => window.__effectCalls)).toEqual({ flash: 0, shake: 0 });
   expect(await world(page, 'return s.connectionSystem.hintRing.visible;')).toBe(false);
 
-  // Restore three collected zones and finish the last to exercise world celebration.
+  // Restore four collected zones and finish the bridge to exercise world celebration.
   await world(page, 's.scene.stop();');
   await page.waitForFunction(() => !window.__nexusTest.scene.isActive('WorldScene'));
   await page.evaluate(() => localStorage.setItem('los-nexus-progress', JSON.stringify({
-    fragmentsCollected: ['plaza-fragment', 'fountain-fragment', 'beacon-fragment'],
+    fragmentsCollected: ['plaza-fragment', 'fountain-fragment', 'beacon-fragment', 'garden-fragment'],
     connections: [], position: { x: 2530, yRatio: 0.8 }, seenCompletion: false,
   })));
   await reloadAndContinue(page);
