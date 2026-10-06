@@ -41,12 +41,12 @@ async function museumState(page) {
 for (const reduced of [false, true]) {
   test(`museum souvenirs respond repeatedly with ${reduced ? 'reduced' : 'normal'} effects`, async ({ page }, testInfo) => {
     await openMuseum(page, [], reduced);
-    expect((await museumState(page)).empty).toBe(8);
+    expect((await museumState(page)).empty).toBe(exhibits.length);
     expect((await museumState(page)).exhibits).toEqual([]);
     await checkpoint(page, testInfo, 'museum-empty');
 
     await openMuseum(page, [exhibits[0][0]], reduced);
-    expect((await museumState(page)).empty).toBe(7);
+    expect((await museumState(page)).empty).toBe(exhibits.length - 1);
     expect((await museumState(page)).exhibits.map(o => o.id)).toEqual([exhibits[0][0]]);
     await checkpoint(page, testInfo, 'museum-one-souvenir');
 
