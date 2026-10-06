@@ -25,7 +25,7 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
   5. **El jardín**: fuente de energía → aspersor → flores. El aspersor solo puede iniciar el segundo cable una vez encendido; las flores transforman el parterre y revelan un quinto fragmento, al otro lado del puente.
   6. **El taller**: energía → motor; motor → pato y campana; ambos → desfile. Dos ramas en cualquier orden y reunión de dos entradas distintas.
   7. **Los faroles**: luz por una ruta directa o curiosa hacia la misma salida. La curiosa descubre al farol tímido. Salida → escenario → confeti necesita todos los preparativos anteriores, sin exigir recoger los recuerdos.
-- **Personaje con sprites reales** (Decisión 017): el Nexus ya no se dibuja con formas de Phaser — son 4 imágenes PNG generadas por IA (idle, dos de caminata, celebrar) en `public/assets/nexus/`, cargadas por `loadNexusAssets()` desde `BootScene.preload()`. Sin personalización por ahora (se sacó `CustomizeScene`, ver más abajo) — el diseño es fijo: orejas tipo conejo con puntas de color, cabeza clara con cara negra y ojos ovalados amarillos, hoodie turquesa, mochila con cable de energía colgando. Los prompts usados están en `ART_PROMPTS.md` por si hay que generar más poses o variantes.
+- **Personaje con sprites reales** (Decisión 017): el Nexus ya no se dibuja con formas de Phaser — son 4 imágenes PNG generadas por IA (idle, dos de caminata, celebrar) en `public/assets/nexus/`, cargadas por `loadNexusAssets()` desde `BootScene.preload()`. Personalización en `CustomizeScene`: nombre, paletas de ropa/mochila, accesorios y color del cable; sus preferencias y desbloqueos viven en `los-nexus-appearance` separados de la aventura. El diseño base se conserva: orejas tipo conejo con puntas de color, cabeza clara con cara negra y ojos ovalados amarillos, hoodie turquesa, mochila con cable de energía colgando. Los prompts usados están en `ART_PROMPTS.md` por si hay que generar más poses o variantes.
 - **Museo** con 7 vitrinas (dos columnas y cuatro filas en vertical, ilustraciones compactas y última centrada; una fila en horizontal), recuerdos distintos por zona (luz, gota, antena, puente, flor, pato y farol) que reaccionan al toque con un mensaje y un pulso breve, botón táctil «Volver al mundo» y atajo ESPACIO para regresar, mensaje de "Colección completa" y celebración especial (flash + chispas en las 7 zonas) la primera vez que se completa la colección actual. Mundo y museo comparten la lista `src/data/collection.ts`.
 - **Controles duales**: teclado/mouse en desktop, joystick virtual táctil + **botón de interacción** (aparece al acercarse a un objeto conectable, evita tener que acertar el toque exacto sobre algo pequeño).
 - **Adaptación real a móvil vertical**: la resolución interna del juego cambia (960×540 landscape ↔ 540×960 portrait) según orientación + tipo de puntero, para llenar la pantalla en vez de dejar barras negras. Ver `src/config/gameConfig.ts`.
@@ -58,7 +58,7 @@ Hay una suite automatizada: `npm run test:unit` verifica el guardado y `npm run 
 
 Después de cambios:
 1. `npm run build` (debe terminar sin errores).
-2. `npm test` (14 pruebas unitarias y 38 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
+2. `npm test` (16 pruebas unitarias y 40 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
 3. Revisar las capturas adjuntas en `test-results/` y el informe en `playwright-report/`; los fallos conservan trazas.
 4. La prueba en dispositivo real con Luca sigue siendo necesaria para validar comodidad y dificultad.
 
@@ -71,6 +71,7 @@ src/
   main.ts                    — entrada, crea el Phaser.Game, recarga si cambia orientación
   config/gameConfig.ts       — resolución dinámica según orientación/puntero
   scenes/
+    CustomizeScene.ts        — armario, preview, guardar/cancelar y nombre
     BootScene.ts             — pantalla de título: "Jugar"/"Continuar" según haya progreso guardado, precarga los sprites del Nexus
     WorldScene.ts            — el mundo completo, las 7 zonas, cámara, joystick, botón de interacción
     MuseumScene.ts           — vitrinas de fragmentos
@@ -79,6 +80,7 @@ src/
   art/
     neighborhood.ts          — arquitectura, terreno y cielo; texturas estáticas reutilizables
     props.ts                 — juguetes y faroles con materiales y estados
+    nexusLook.ts             — paletas de ropa compartidas por poses y adornos procedurales
   entities/
     Nexus.ts                 — el personaje jugable (sprite real + movimiento + celebrar, ver Decisión 017)
     nexusAssets.ts           — claves y loader de los PNG del Nexus (public/assets/nexus/)

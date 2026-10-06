@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { nexusPortrait } from '../art/nexusLook';
 import { ProgressSystem } from '../systems/ProgressSystem';
 import { CHAPTER_TITLE, DISCOVERY_IDS, RESIDENTS } from '../data/chapter';
 import { COLLECTION } from '../data/collection';
@@ -39,8 +40,7 @@ export class EndingScene extends Phaser.Scene {
     this.add.text(width / 2, 242, `Recuerdos: ${memories}/${COLLECTION.length} · Sorpresas: ${discoveries}/${DISCOVERY_IDS.length}\nHabitantes: ${heard}/${RESIDENTS.length} · Cables: ${state.connections.length}`, {
       fontFamily: 'sans-serif', fontSize: '17px', color: '#9be37a', align: 'center',
     }).setOrigin(0.5, 0);
-    const nexus = this.add.image(width / 2, portrait ? height * 0.66 : height - 135, NEXUS_ASSET_KEYS.celebrate).setOrigin(0.5, 1);
-    nexus.setScale((portrait ? 170 : 100) / nexus.height);
+    nexusPortrait(this, width / 2, portrait ? height * 0.66 : height - 135, portrait ? 170 : 100, NEXUS_ASSET_KEYS.celebrate);
     this.add.text(width / 2, portrait ? height - 230 : height - 115, 'Todavía puedes explorar y descubrir bromas.', {
       fontFamily: 'sans-serif', fontSize: '16px', color: '#c9cbe0',
     }).setOrigin(0.5);

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { nexusPortrait } from '../art/nexusLook';
 import { drawTitleArt } from '../art/neighborhood';
 import { fadeToScene } from '../utils/sceneTransition';
 import { ProgressSystem } from '../systems/ProgressSystem';
@@ -30,9 +31,8 @@ export class BootScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#f4f1e8');
     drawTitleArt(this, width, height);
     const portrait = height > width;
-    const hero = this.add.image(portrait ? width / 2 : width / 2 - 305,
-      portrait ? height / 2 - 168 : height * 0.78, NEXUS_ASSET_KEYS.idle).setOrigin(0.5, 1);
-    hero.setScale((portrait ? 170 : 175) / hero.height);
+    nexusPortrait(this, portrait ? width / 2 : width / 2 - 305,
+      portrait ? height / 2 - 168 : height * 0.78, portrait ? 170 : 175, NEXUS_ASSET_KEYS.idle);
     this.add.text(width / 2, height / 2 - 18, 'Conecta · descubre · celebra', {
       fontFamily: 'sans-serif', fontSize: '14px', color: '#8a7351',
     }).setOrigin(0.5);
@@ -73,6 +73,10 @@ export class BootScene extends Phaser.Scene {
         fadeToScene(this, 'WorldScene', [207, 232, 216]);
       });
     }
+
+    this.buildButton(width / 2, height / 2 + 143, 'Mi Nexus', 0xe9ddc2, () => {
+      this.scene.start('CustomizeScene', { returnScene: 'BootScene' });
+    });
 
     const effectsLabel = (): string => `Efectos suaves: ${EffectsSettings.isReduced() ? 'Sí' : 'No'}`;
     ensureRoundedRectTexture(this, 'effects-toggle', 260, 44, 12);

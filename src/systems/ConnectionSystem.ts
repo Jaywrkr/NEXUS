@@ -1,12 +1,13 @@
 import Phaser from 'phaser';
+import { cableColor } from '../data/appearance';
 import type { SavedConnection } from '../data/gameState';
 import { ConnectableObject } from '../objects/ConnectableObject';
 import { AudioSystem } from './AudioSystem';
 import { EffectsSettings } from './EffectsSettings';
 import { connectionSurprise } from '../data/chapter';
 
-const CABLE_COLOR = 0x5ee7ff;
-const CABLE_COLOR_INVALID = 0xff6b6b;
+
+const INVALID_COLOR = 0xff6b6b;
 
 export interface ConnectionRule {
   sourceId: string;
@@ -40,6 +41,7 @@ export class ConnectionSystem {
   private hintRing: Phaser.GameObjects.Arc;
   private hintObject: ConnectableObject | null = null;
   private lastInteractionAt: number;
+  private color = cableColor();
 
 
   constructor(scene: Phaser.Scene, audio: AudioSystem) {
@@ -233,7 +235,7 @@ export class ConnectionSystem {
     for (let i = 0; i < sparkCount; i += 1) {
       const angle = (i / sparkCount) * Math.PI * 2 + Math.random() * 0.3;
       const distance = 30 + Math.random() * 20;
-      const spark = this.scene.add.circle(at.x, at.y, 3 + Math.random() * 2, CABLE_COLOR).setDepth(16);
+      const spark = this.scene.add.circle(at.x, at.y, 3 + Math.random() * 2, this.color).setDepth(16);
 
       this.scene.tweens.add({
         targets: spark,
@@ -251,7 +253,7 @@ export class ConnectionSystem {
   private drawCable(from: ConnectableObject, to: ConnectableObject, valid: boolean): void {
     const start = from.getPlugPoint();
     const end = to.getPlugPoint();
-    const color = valid ? CABLE_COLOR : CABLE_COLOR_INVALID;
+    const color = valid ? this.color : INVALID_COLOR;
 
     const midX = (start.x + end.x) / 2;
     const midY = Math.min(start.y, end.y) - 40;
