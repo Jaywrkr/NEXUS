@@ -1,11 +1,13 @@
 import Phaser from 'phaser';
 import { ConnectableObject } from './ConnectableObject';
 
+export type EnergySourceVariant = 'active' | 'dim';
+
 export class EnergySource extends ConnectableObject {
   private core: Phaser.GameObjects.Star;
   private glow: Phaser.GameObjects.Arc;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, id = 'energy-source') {
+  constructor(scene: Phaser.Scene, x: number, y: number, id = 'energy-source', variant: EnergySourceVariant = 'active') {
     super(scene, x, y, id, 'source');
 
     const base = scene.add.rectangle(0, 18, 30, 20, 0x555b6e);
@@ -15,14 +17,14 @@ export class EnergySource extends ConnectableObject {
     this.add([this.glow, base, this.core]);
     this.addShadow(30, 36, 10);
 
-    scene.tweens.add({
+    if (variant === 'active') scene.tweens.add({
       targets: this.core,
       angle: 360,
       duration: 6000,
       repeat: -1,
     });
 
-    scene.tweens.add({
+    if (variant === 'active') scene.tweens.add({
       targets: this.glow,
       alpha: { from: 0.15, to: 0.4 },
       scale: { from: 0.9, to: 1.1 },
@@ -31,6 +33,12 @@ export class EnergySource extends ConnectableObject {
       repeat: -1,
       ease: 'Sine.easeInOut',
     });
+
+    if (variant === 'dim') {
+      this.core.setFillStyle(0x9aa0ad).setStrokeStyle(1, 0x65758e);
+      this.glow.setVisible(false);
+      base.setFillStyle(0x65758e);
+    }
 
     this.setSize(52, 52);
     this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 52, 52), Phaser.Geom.Rectangle.Contains);
