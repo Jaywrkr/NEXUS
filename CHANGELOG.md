@@ -137,3 +137,16 @@ Séptima zona en un mundo de 6100 px. La luz puede viajar por tres cables direct
 El último cable abre un desenlace original con resultados, el Nexus celebrando y créditos de Luca. Permite volver al barrio o al museo, desde donde se puede releer el final. Se guarda `story.chapterSeen`: continuar recupera la fiesta sin repetir la celebración, y nueva partida borra historia y sorpresas junto con el progreso. Los siete habitantes tienen epílogos. El álbum cuenta las cinco sorpresas y las visitas; ninguna bloquea el final. Se unifican guardas de salida para evitar transiciones simultáneas al tocar varios destinos. Se añade una ruta E2E que camina todo el capítulo con controles reales, sin modificar posiciones ni saltarse puzzles, y un protocolo de primera partida con Luca. La duración humana de 20–30 min sigue siendo un objetivo por validar.
 
 Validación: build y 13 pruebas unitarias aprobadas; 28 escenarios E2E aprobaron en la ejecución general y los dos recorridos caminados aprobaron al repetirlos con el piloto corregido. Ruta guiada completa: 95,5 s en escritorio y 111,1 s en móvil; soluciones conocidas, sin pausas de lectura, sin equivaler a una primera partida humana.
+
+
+## Más variedad de partículas al conectar
+`ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.
+
+## Fuente señuelo en la antena
+`EnergySource` ahora acepta un `variant` ('active' | 'dim'); la variante 'dim' no tiene brillo animado ni rotación. Se agregó una tercera fuente (`beacon-source-fake`, variante 'dim') en la zona de la antena, entre las dos fuentes reales y la antena, sin ninguna regla de conexión asociada — cualquier intento de conectarla da el mensaje genérico de "no encaja". No requirió tocar `ConnectionSystem`: el comportamiento de señuelo sale gratis del manejo existente de conexiones inválidas, solo hacía falta un objeto de más para que el jugador tuviera que observar antes de conectar.
+
+## Fragmento secreto
+Quinto fragmento (`secret-fragment`) escondido detrás de la casa apagada, al oeste del punto de partida — visible desde el arranque (no depende de ninguna conexión), premia a quien explore para atrás en vez de ir directo a la derecha. No cuenta para el contador `★ n/4` del HUD ni para "¡Colección completa!" (esos siguen atados solo a los 4 fragmentos de zona), pero sí tiene su propia vitrina en el Museo. `MuseumScene` ahora separa `FRAGMENTS` (los 4 que definen la colección completa) de `SECRET_FRAGMENT` (se muestra igual, no afecta ese chequeo).
+
+## Documentación para continuar con otras IAs
+Se crea `CONTEXTO.md`: un único archivo autocontenido (qué es, estado, arquitectura, cómo funciona la conexión, coordenadas, reglas, trampas técnicas, backlog y forma de trabajo) para poder seguir el proyecto en ChatGPT u otra herramienta que no lee `CLAUDE.md` automáticamente. Se actualizan `CLAUDE.md`, `README.md` (la estructura todavía listaba `CustomizeScene`) y `DECISIONS.md` (018: señuelos; 019: fragmentos extra que no cuentan para la colección completa).
