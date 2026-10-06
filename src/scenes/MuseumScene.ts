@@ -97,8 +97,11 @@ export class MuseumScene extends Phaser.Scene {
   }
 
   private buildVitrina(x: number, y: number, fragment: Souvenir, size: number): void {
+    const horizontal = this.scale.width > this.scale.height;
+    // Fit eight cabinets without shrinking the souvenirs or their reactions.
+    const widthScale = horizontal ? Math.min(1, (this.scale.width - 160) / (DISPLAYED_FRAGMENTS.length - 1) / 138) : 1;
     this.add.rectangle(x, y + 80 * size, 100 * size, 20 * size, 0x3a3d55);
-    const glass = this.add.rectangle(x, y, 120 * size, 160 * size, 0x4a4e75, 0.3).setName(fragment.id);
+    const glass = this.add.rectangle(x, y, 120 * size * widthScale, 160 * size, 0x4a4e75, 0.3).setName(fragment.id);
     glass.setStrokeStyle(2, 0x8a8dc0, 0.6);
 
     if (this.progress.hasFragment(fragment.id)) {
@@ -117,7 +120,7 @@ export class MuseumScene extends Phaser.Scene {
       this.add
         .text(x, y + 100 * size + 2, fragment.label, {
           fontFamily: 'sans-serif',
-          fontSize: '14px',
+          fontSize: horizontal ? '12px' : '14px',
           color: '#f4f1e8',
         })
         .setOrigin(0.5);
