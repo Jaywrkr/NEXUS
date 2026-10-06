@@ -2,19 +2,23 @@ import Phaser from 'phaser';
 import { ProgressSystem } from '../systems/ProgressSystem';
 import { fadeToScene } from '../utils/sceneTransition';
 import { ensureRoundedRectTexture } from '../utils/uiTextures';
+import { EffectsSettings } from '../systems/EffectsSettings';
 
 const FRAGMENTS = [
-  { id: 'plaza-fragment', label: 'Fragmento de la plaza' },
-  { id: 'fountain-fragment', label: 'Fragmento de la fuente' },
-  { id: 'beacon-fragment', label: 'Fragmento de la antena' },
-  { id: 'bridge-fragment', label: 'Fragmento del puente' },
+  { id: 'plaza-fragment', label: 'Luz de la plaza', memory: '¡La plaza se iluminó!', color: 0xffe066 },
+  { id: 'fountain-fragment', label: 'Gota de la fuente', memory: '¡El agua volvió a fluir!', color: 0x5ee7ff },
+  { id: 'beacon-fragment', label: 'Señal de la antena', memory: '¡Dos cables, una señal!', color: 0xff9ff3 },
+  { id: 'bridge-fragment', label: 'Puente de madera', memory: '¡Ya podemos cruzar!', color: 0xcfa574 },
 ];
+
+type Souvenir = typeof FRAGMENTS[number];
 
 const SECRET_FRAGMENT = { id: 'secret-fragment', label: 'Fragmento secreto', memory: '¡Explorar también conecta!', color: 0xb6a0ff };
 const DISPLAYED_FRAGMENTS = [...FRAGMENTS, SECRET_FRAGMENT];
 
 export class MuseumScene extends Phaser.Scene {
   private progress!: ProgressSystem;
+  private memoryText!: Phaser.GameObjects.Text;
 
   constructor() {
     super('MuseumScene');
@@ -36,6 +40,10 @@ export class MuseumScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
+    this.memoryText = this.add.text(width / 2, 85, 'Toca un recuerdo para verlo despertar', {
+      fontFamily: 'sans-serif', fontSize: '16px', color: '#c9cbe0',
+    }).setOrigin(0.5);
+
     const spacing = Math.min(220, (width - 140) / (DISPLAYED_FRAGMENTS.length - 1));
     const startX = width / 2 - (spacing * (DISPLAYED_FRAGMENTS.length - 1)) / 2;
 
@@ -44,7 +52,7 @@ export class MuseumScene extends Phaser.Scene {
     DISPLAYED_FRAGMENTS.forEach((fragment, index) => {
       const x = portrait ? width * (index % 2 === 0 ? 0.28 : 0.72) : startX + index * spacing;
       const y = portrait ? firstRowY + Math.floor(index / 2) * (lastRowY - firstRowY) / Math.max(1, rows - 1) : height / 2;
-      this.buildVitrina(x, y, fragment.id, fragment.label);
+      this.buildVitrina(x, y, fragment);
     });
 
     const allCollected = FRAGMENTS.every((f) => this.progress.hasFragment(f.id));
@@ -93,22 +101,25 @@ export class MuseumScene extends Phaser.Scene {
     this.input.keyboard!.once('keydown-SPACE', returnToWorld);
   }
 
-  private buildVitrina(x: number, y: number, fragmentId: string, label: string): void {
+  private buildVitrina(x: number, y: number, fragment: Souvenir): void {
     this.add.rectangle(x, y + 80, 100, 20, 0x3a3d55);
     const glass = this.add.rectangle(x, y, 120, 160, 0x4a4e75, 0.3);
     glass.setStrokeStyle(2, 0x8a8dc0, 0.6);
 
-    if (this.progress.hasFragment(fragmentId)) {
-      const shard = this.add.star(x, y, 5, 10, 20, 0xff9ff3);
-      this.tweens.add({
-        targets: shard,
-        angle: 360,
-        duration: 5000,
-        repeat: -1,
+    if (this.progress.hasFragment(fragment.id)) {
+      const souvenir = this.drawSouvenir(x, y, fragment);
+      glass.setName(fragment.id).setInteractive({ useHandCursor: true });
+      glass.on('pointerdown', () => {
+        this.memoryText.setText(fragment.memory).setColor(`#${fragment.color.toString(16).padStart(6, '0')}`);
+        this.tweens.killTweensOf(souvenir);
+        souvenir.setScale(1);
+        if (!EffectsSettings.isReduced()) {
+          this.tweens.add({ targets: souvenir, scaleX: 1.18, scaleY: 1.18, duration: 220, yoyo: true });
+        }
       });
 
       this.add
-        .text(x, y + 100, label, {
+        .text(x, y + 100, fragment.label, {
           fontFamily: 'sans-serif',
           fontSize: '14px',
           color: '#f4f1e8',
@@ -123,5 +134,58 @@ export class MuseumScene extends Phaser.Scene {
         })
         .setOrigin(0.5);
     }
+  }
+
+  private drawSouvenir(x: number, y: number, fragment: Souvenir): Phaser.GameObjects.Graphics {
+    const art = this.add.graphics({ x, y }).setName(`souvenir-${fragment.id}`);
+    art.lineStyle(4, fragment.color, 1);
+    art.fillStyle(fragment.color, 1);
+    if (fragment.id === 'secret-fragment') {
+      art.fillTriangle(0, -35, -26, 0, 26, 0).fillTriangle(-26, 0, 26, 0, 0, 35);
+      art.lineStyle(3, 0xffffff, .8).lineBetween(-7, -12, 0, -22);
+      return art;
+    }
+    switch (fragment.id) {
+      case 'plaza-fragment':
+        art.fillRoundedRect(-18, -30, 36, 44, 8);
+        art.lineBetween(0, 14, 0, 35);
+        art.lineBetween(-22, 35, 22, 35);
+        art.lineBetween(-31, -17, -40, -17);
+        art.lineBetween(31, -17, 40, -17);
+        art.lineBetween(0, -42, 0, -50);
+        art.fillStyle(0xfff8c9, 1);
+        art.fillRoundedRect(-9, -22, 18, 28, 5);
+        break;
+      case 'fountain-fragment':
+        art.fillTriangle(0, -40, -23, -2, 23, -2);
+        art.fillCircle(0, 0, 23);
+        art.lineStyle(3, 0xe5fbff, 1);
+        art.lineBetween(-9, -8, -13, 4);
+        art.lineStyle(3, fragment.color, 0.7);
+        art.strokeEllipse(0, 35, 74, 12);
+        break;
+      case 'beacon-fragment':
+        art.lineBetween(0, -22, -19, 36);
+        art.lineBetween(0, -22, 19, 36);
+        art.lineBetween(-11, 12, 11, 12);
+        art.fillCircle(0, -25, 7);
+        art.beginPath();
+        art.arc(0, -25, 20, -0.8, 0.8);
+        art.strokePath();
+        art.beginPath();
+        art.arc(0, -25, 20, Math.PI - 0.8, Math.PI + 0.8);
+        art.strokePath();
+        break;
+      case 'bridge-fragment':
+        art.fillRoundedRect(-42, 8, 84, 12, 3);
+        for (const post of [-36, -12, 12, 36]) art.lineBetween(post, -18, post, 30);
+        art.lineBetween(-40, -12, 40, -12);
+        art.lineStyle(3, 0x5ee7ff, 0.8);
+        art.lineBetween(-38, 43, -12, 39);
+        art.lineBetween(-12, 39, 12, 43);
+        art.lineBetween(12, 43, 38, 39);
+        break;
+    }
+    return art;
   }
 }

@@ -21,7 +21,7 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test
 
 ```bash
 npm run test:unit    # siete pruebas de guardado y preferencias
-npm run test:e2e     # cinco escenarios en escritorio y cinco en móvil vertical
+npm run test:e2e     # siete escenarios en escritorio y siete en móvil vertical
 npm test            # ambas suites
 npm run build       # TypeScript y build de producción; check separado
 ```
@@ -49,6 +49,9 @@ No hay retries automáticos ni pruebas omitidas por defecto.
 - Pistas después de inactividad, cambio de origen a destino y ausencia en puzzles
   resueltos; opción de efectos suaves, preferencia del sistema, persistencia y
   desactivación real de flashes/sacudidas en túnel y celebración del mundo.
+- Recuerdos del museo distintos por zona: vitrinas vacías/parciales/completas,
+  respuestas a toques repetidos, pulso normal y ausencia de movimiento con efectos
+  suaves; observar recuerdos no modifica la colección guardada.
 - Serialización, migración, datos malformados, reinicio sin arrays compartidos
   y preferencias independientes del progreso.
 
