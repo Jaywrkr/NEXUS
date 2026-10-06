@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { screenArt, ornament, ART } from '../art/interfaceArt';
+import { screenArt, ART } from '../art/interfaceArt';
 import { ProgressSystem } from '../systems/ProgressSystem';
 import { fadeToScene } from '../utils/sceneTransition';
 import { ensureRoundedRectTexture } from '../utils/uiTextures';
@@ -122,19 +122,8 @@ export class MuseumScene extends Phaser.Scene {
     const horizontal = this.scale.width > this.scale.height;
     // Fit eight cabinets without shrinking the souvenirs or their reactions.
     const widthScale = horizontal ? Math.min(1, (this.scale.width - 160) / (DISPLAYED_FRAGMENTS.length - 1) / 138) : 1;
-    const cabinet = this.add.graphics({ x, y }).setScale(size * widthScale, size);
-    cabinet.fillStyle(0x0b1636,.3).fillRoundedRect(-61,-78,130,178,12);
-    cabinet.fillStyle(fragment.color, 0.06).fillTriangle(-24, -90, -64, 72, 64, 72).fillTriangle(24, -90, -64, 72, 64, 72);
-    cabinet.fillStyle(0x1f326a).fillRoundedRect(-65, -85, 130, 174, 12);
-    cabinet.lineStyle(2, 0x57cdeb, 0.8).strokeRoundedRect(-65, -85, 130, 174, 12);
-    cabinet.fillStyle(0x57cdeb).fillRoundedRect(-32, -91, 64, 7, 3);
-    cabinet.fillStyle(0x345cdd).fillRoundedRect(-64, 73, 128, 15, 4);
-    cabinet.fillStyle(0x91bfff).fillRect(-61, 73, 122, 4);
-    cabinet.lineStyle(2, 0xffefd1, 0.12).lineBetween(-48, -67, -28, -40).lineBetween(-48, -48, -37, -33);
-    cabinet.fillStyle(fragment.color, 0.09).fillEllipse(0, 30, 90, 22);
-    ornament(cabinet,0,85,78,0x91bfff);
-    const glass = this.add.rectangle(x, y, 120 * size * widthScale, 160 * size, 0x719ee4, 0.08).setName(fragment.id);
-    glass.setStrokeStyle(1, 0x9cd7ff, 0.25);
+    this.add.image(x, y, 'sketch-extras', 10).setDisplaySize(148 * size * widthScale, 184 * size);
+    const glass = this.add.rectangle(x, y, 120 * size * widthScale, 160 * size, 0xf2ead9, 0).setName(fragment.id);
 
     if (this.progress.hasFragment(fragment.id)) {
       const souvenir = this.drawSouvenir(x, y, fragment);
@@ -167,81 +156,12 @@ export class MuseumScene extends Phaser.Scene {
     }
   }
 
-  private drawSouvenir(x: number, y: number, fragment: Souvenir): Phaser.GameObjects.Graphics {
-    const art = this.add.graphics({ x, y }).setName(`souvenir-${fragment.id}`);
-    art.lineStyle(4, fragment.color, 1);
-    art.fillStyle(fragment.color, 1);
-    if (fragment.id === 'secret-fragment') {
-      art.fillTriangle(0, -35, -26, 0, 26, 0).fillTriangle(-26, 0, 26, 0, 0, 35);
-      art.lineStyle(3, 0xffffff, .8).lineBetween(-7, -12, 0, -22);
-      return art;
-    }
-    switch (fragment.id) {
-      case 'plaza-fragment':
-        art.fillRoundedRect(-18, -30, 36, 44, 8);
-        art.lineBetween(0, 14, 0, 35);
-        art.lineBetween(-22, 35, 22, 35);
-        art.lineBetween(-31, -17, -40, -17);
-        art.lineBetween(31, -17, 40, -17);
-        art.lineBetween(0, -42, 0, -50);
-        art.fillStyle(0xfff8c9, 1);
-        art.fillRoundedRect(-9, -22, 18, 28, 5);
-        break;
-      case 'fountain-fragment':
-        art.fillTriangle(0, -40, -23, -2, 23, -2);
-        art.fillCircle(0, 0, 23);
-        art.lineStyle(3, 0xe5fbff, 1);
-        art.lineBetween(-9, -8, -13, 4);
-        art.lineStyle(3, fragment.color, 0.7);
-        art.strokeEllipse(0, 35, 74, 12);
-        break;
-      case 'beacon-fragment':
-        art.lineBetween(0, -22, -19, 36);
-        art.lineBetween(0, -22, 19, 36);
-        art.lineBetween(-11, 12, 11, 12);
-        art.fillCircle(0, -25, 7);
-        art.beginPath();
-        art.arc(0, -25, 20, -0.8, 0.8);
-        art.strokePath();
-        art.beginPath();
-        art.arc(0, -25, 20, Math.PI - 0.8, Math.PI + 0.8);
-        art.strokePath();
-        break;
-      case 'bridge-fragment':
-        art.fillRoundedRect(-42, 8, 84, 12, 3);
-        for (const post of [-36, -12, 12, 36]) art.lineBetween(post, -18, post, 30);
-        art.lineBetween(-40, -12, 40, -12);
-        art.lineStyle(3, 0xffe342, 0.8);
-        art.lineBetween(-38, 43, -12, 39);
-        art.lineBetween(-12, 39, 12, 43);
-        art.lineBetween(12, 43, 38, 39);
-        break;
-      case 'garden-fragment':
-        art.lineStyle(4, 0x8ce8ff);
-        art.lineBetween(0, -5, 0, 40);
-        art.fillStyle(0x8ce8ff);
-        art.fillEllipse(-12, 22, 26, 12);
-        art.fillEllipse(12, 10, 26, 12);
-        art.fillStyle(fragment.color);
-        for (let petal = 0; petal < 5; petal++) {
-          const angle = petal * Math.PI * 2 / 5;
-          art.fillCircle(Math.cos(angle) * 17, -18 + Math.sin(angle) * 17, 12);
-        }
-        art.fillStyle(0xfff8c9);
-        art.fillCircle(0, -18, 10);
-        break;
-      case 'workshop-fragment':
-        art.fillEllipse(-5, 5, 64, 40).fillCircle(16, -18, 20);
-        art.fillStyle(0xffb86c).fillTriangle(30, -22, 46, -14, 29, -8);
-        art.fillStyle(0x20233a).fillCircle(20, -23, 3);
-        art.fillStyle(0xc7a0ef).fillCircle(-20, 33, 8).fillCircle(20, 33, 8);
-        break;
-      case 'lantern-fragment':
-        art.fillRoundedRect(-23, -32, 46, 48, 8);
-        art.lineBetween(0, 16, 0, 38).lineBetween(-24, 38, 24, 38);
-        art.fillStyle(0xfff8c9).fillRoundedRect(-12, -22, 24, 27, 4);
-        break;
-    }
-    return art;
+  private drawSouvenir(x: number, y: number, fragment: Souvenir): Phaser.GameObjects.Container {
+    const frames: Record<string, number> = { 'plaza-fragment': 1, 'fountain-fragment': 3,
+      'beacon-fragment': 4, 'bridge-fragment': 5, 'garden-fragment': 7,
+      'workshop-fragment': 9, 'lantern-fragment': 12 };
+    const image = this.add.image(0, 0, ['secret-fragment', 'bridge-fragment'].includes(fragment.id) ? 'sketch-extras' : 'sketch-props-on',
+      fragment.id === 'secret-fragment' ? 9 : fragment.id === 'bridge-fragment' ? 11 : frames[fragment.id]).setDisplaySize(86, 86);
+    return this.add.container(x, y, [image]).setName(`souvenir-${fragment.id}`);
   }
 }

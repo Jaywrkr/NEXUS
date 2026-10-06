@@ -830,11 +830,10 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private spawnButterfly(baseX: number, baseY: number): void {
-    const color = Phaser.Math.RND.pick([0xff9ff3, 0xffe066, 0x9be37a]);
-    const butterfly = this.add.ellipse(baseX, baseY, 10, 7, color).setDepth(9);
+    const butterfly = this.add.image(baseX, baseY, 'sketch-residents', 7).setDisplaySize(36, 36).setDepth(9);
     const wingFlutter = this.tweens.add({
       targets: butterfly,
-      scaleX: { from: 1, to: 0.4 },
+      scaleX: { from: butterfly.scaleX, to: butterfly.scaleX * .4 },
       duration: 180,
       yoyo: true,
       repeat: -1,
@@ -873,21 +872,21 @@ export class WorldScene extends Phaser.Scene {
     this.add.rectangle(3350, midY + 155 * vScale, 520, 6, 0x9c7851).setDepth(2);
 
     // The bank illustration leaves the physical gap visible. The planks animate as one image.
-    const bridgeKey = `wooden-bridge-${height}`;
+    const bridgeKey = `pencil-bridge-${height}`;
     if (!this.textures.exists(bridgeKey)) {
-      const planks = this.make.graphics({ x: 0, y: 0 });
-      const deckH = 38 * vScale;
-      planks.fillStyle(0x14234e, 0.3).fillRoundedRect(0, 6, GAP_WIDTH, deckH + 8, 4);
-      planks.fillStyle(0x34549b).fillRoundedRect(0, 0, GAP_WIDTH, deckH, 4);
-      for (let x = 3; x < GAP_WIDTH; x += 12) {
-        planks.fillStyle(0x8bb6f6).fillRoundedRect(x, 2, 9, deckH - 4, 2);
-        planks.lineStyle(1, 0xe5c79a, 0.8).lineBetween(x + 2, 5, x + 2, deckH - 5);
-      }
-      planks.lineStyle(4, 0x725941).lineBetween(0, 4, GAP_WIDTH, 4).lineBetween(0, deckH - 3, GAP_WIDTH, deckH - 3);
-      planks.generateTexture(bridgeKey, GAP_WIDTH, deckH + 14);
-      planks.destroy();
+      const tex = this.textures.createCanvas(bridgeKey, GAP_WIDTH, 74 * vScale)!;
+      const source = this.textures.get('sketch-extras'), f = source.get('11');
+      tex.getContext().drawImage(source.getSourceImage() as HTMLImageElement,
+        f.cutX, f.cutY, f.cutWidth, f.cutHeight, 0, 0, GAP_WIDTH, 74 * vScale);
+      tex.refresh();
     }
-    this.bridgeDeck = this.add.image(GAP_X, midY, bridgeKey).setDepth(3).setScale(0, 1);
+    const ravine = this.add.graphics().setDepth(4.5);
+    ravine.fillStyle(0x53584f, .65).fillRect(GAP_X - GAP_WIDTH / 2, midY - 96 * vScale, GAP_WIDTH, height);
+    for (let y = midY - 90 * vScale; y < height; y += 13) {
+      ravine.lineStyle(1, 0x434942, .55).lineBetween(GAP_X - 45, y + 9, GAP_X + 43, y - 5);
+      ravine.lineStyle(1, 0x6f9f9a, .5).lineBetween(GAP_X - 24, y, GAP_X + 25, y - 4);
+    }
+    this.bridgeDeck = this.add.image(GAP_X, midY, bridgeKey).setDepth(5).setScale(0, 1);
 
     // Flor decorativa en la isla nueva
     this.add.rectangle(2870, midY + 30 * vScale, 4, 20 * vScale, 0x4a7c3a).setDepth(2);

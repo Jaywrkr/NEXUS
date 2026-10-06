@@ -3,6 +3,7 @@ import { lanternArt } from '../art/props';
 import { ConnectableObject } from './ConnectableObject';
 
 export class LanternPiece extends ConnectableObject {
+  protected override get sketchKind(): string { return this.kind; }
   private art: Phaser.GameObjects.Graphics;
   private color: number;
   private kind: 'lantern' | 'stage' | 'confetti';

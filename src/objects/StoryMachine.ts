@@ -6,6 +6,7 @@ import { workshopArt, lanternArt } from '../art/props';
 
 /** Named signal credits keep two variants of the same proposal from counting twice. */
 export class StoryMachine extends ConnectableObject {
+  protected override get sketchKind(): string { return ({ power: 'generator', wheel: 'motor', brake: 'bridge', flower: 'flowers' } as Record<string, string>)[this.node.kind] ?? (this.node.kind === 'filter' && this.id.includes('translator') ? 'translator' : this.node.kind === 'mail' && this.id.endsWith('finish') ? 'mailbox' : this.node.kind); }
   private art: Phaser.GameObjects.Graphics;
   private credits = new Set<string>();
   private counter?: Phaser.GameObjects.Text;

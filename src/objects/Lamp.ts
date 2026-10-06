@@ -7,6 +7,9 @@ const OFF_COLOR = 0x6b7280;
 const ON_COLOR = 0xffe066;
 
 export class Lamp extends ConnectableObject {
+  protected override get sketchKind(): string { return 'lamp'; }
+  protected override get sketchHeight(): number { return 158; }
+  protected override get sketchBottom(): number { return 47; }
   private bulb: Phaser.GameObjects.Arc;
   private glow: Phaser.GameObjects.Arc;
   private pole: Phaser.GameObjects.Rectangle;

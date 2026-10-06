@@ -8,7 +8,7 @@ const FRAGMENT_COLOR = 0xff9ff3;
  */
 export class Fragment extends Phaser.GameObjects.Container {
   private collected = false;
-  private shard: Phaser.GameObjects.Star;
+  private shard: Phaser.GameObjects.Image;
   private glow: Phaser.GameObjects.Arc;
   private baseY: number;
 
@@ -17,9 +17,7 @@ export class Fragment extends Phaser.GameObjects.Container {
     this.baseY = y;
 
     this.glow = scene.add.circle(0, 0, 24, FRAGMENT_COLOR, 0.25);
-    this.shard = scene.add
-      .star(0, 0, 5, 8, 18, FRAGMENT_COLOR)
-      .setStrokeStyle(2, 0xffffff, 0.8);
+    this.shard = scene.add.image(0, 0, 'sketch-extras', 9).setDisplaySize(42, 42);
 
     this.add([this.glow, this.shard]);
     this.setSize(40, 40);
@@ -30,7 +28,8 @@ export class Fragment extends Phaser.GameObjects.Container {
 
     scene.tweens.add({
       targets: this.shard,
-      angle: 360,
+      angle: { from: -6, to: 6 },
+      yoyo: true,
       duration: 4000,
       repeat: -1,
     });

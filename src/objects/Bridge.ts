@@ -10,6 +10,9 @@ const ON_COLOR = 0xffe066;
  * que WorldScene despeje el camino (destruye la barrera física).
  */
 export class Bridge extends ConnectableObject {
+  protected override get sketchKind(): string { return 'bridge'; }
+  protected override get sketchHeight(): number { return 98; }
+  protected override get sketchBottom(): number { return 38; }
   private post: Phaser.GameObjects.Rectangle;
   private handle: Phaser.GameObjects.Rectangle;
   private knob: Phaser.GameObjects.Arc;
