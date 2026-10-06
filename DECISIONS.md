@@ -92,3 +92,10 @@ Las historias secundarias son opcionales y se abren al restaurar su lugar. Cada 
 
 **Decisión 028**
 El usuario solicita una revisión completa del arte y todas las interfaces sin añadir funcionalidades. Se aplica una dirección ilustrada común a las ocho escenas: tinta azul petróleo, papel cálido, cobre, vegetación y energía turquesa. Se mejora composición, tipografía, luz, materiales y legibilidad de estados conservando mecánicas, contenido, guardado, áreas de input y controles. Fondos y materiales se hornean y reutilizan; no se incorporan assets remotos ni animaciones obligatorias. Se mantienen sprites e identidad del Nexus. La rama continúa desde `codex/historias-del-barrio`, con commit y push; PR y merge a cargo del usuario.
+
+
+**Decisión histórica H018 (señuelo)**
+Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica especial: es un objeto registrado en `ConnectionSystem` sin ninguna regla, así que cae en el manejo genérico de conexión inválida. Debe verse sutilmente distinto de los reales (la fuente señuelo es gris y sin brillo animado) para que el puzzle sea de observar, no de adivinar. Primer uso: zona de la antena.
+
+**Decisión histórica H019 (fragmento secreto)**
+Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.
