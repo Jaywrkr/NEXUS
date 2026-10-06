@@ -11,8 +11,8 @@ const DISPLAY_HEIGHT = 120;
 
 /**
  * El Nexus: personaje jugable dibujado con sprites reales (ver Decisión
- * 017), no con formas de Phaser. Las 4 imágenes (idle, dos de caminata,
- * celebrar) están en public/assets/nexus/ y se cargan vía
+ * 033). Las cuatro poses a lápiz están en public/assets/sketch/
+ * y se cargan vía
  * loadNexusAssets() desde BootScene.preload().
  */
 export class Nexus extends Phaser.GameObjects.Container {
@@ -38,8 +38,7 @@ export class Nexus extends Phaser.GameObjects.Container {
     this.sprite = scene.add.image(0, GROUND_Y, NEXUS_ASSET_KEYS.idle).setOrigin(0.5, 1);
     applyNexusPose(this.sprite, NEXUS_ASSET_KEYS.idle, this.look);
     this.applySpriteScale();
-    const accessory = scene.add.graphics();
-    drawAccessory(accessory, this.look);
+    const accessory = drawAccessory(scene, this.look);
     this.visual.add([shadow, this.sprite, accessory]);
     if (this.look.name !== 'Nexus') this.add(scene.add.text(0, -100, this.look.name, {
       fontFamily: 'sans-serif', fontSize: '12px', color: '#34494e', backgroundColor: '#ffefd1', padding: { x: 5, y: 2 },
