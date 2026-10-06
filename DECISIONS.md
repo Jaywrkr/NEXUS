@@ -50,3 +50,10 @@ Idea de Luca: algunas conexiones pueden abrir un mini-juego "dentro" del cable (
 
 **Decisión 017**
 El usuario decidió explícitamente romper la regla de "nada de assets externos" (parte de la Decisión original de solo usar formas de Phaser) para acercar el visual del Nexus al nivel de detalle de una hoja de referencia de personaje que compartió (proporciones, paleta, expresión, mochila/cable, orejas con puntas de color). Las imágenes se generan afuera (otra herramienta de IA, o dibujo) usando los prompts de `ART_PROMPTS.md`, y se integran como sprites en `public/assets/nexus/` (ver ese README para el detalle técnico). Hasta que los archivos reales existan, `Nexus.ts` sigue dibujando el personaje con formas — el cambio de renderizado se hace recién cuando lleguen las imágenes. La personalización (colores/gorra/mochila) habrá que resolverla con capas separadas por prenda + tint, no con un único PNG a todo color, para no perder esa funcionalidad ya existente.
+
+
+**Decisión 018**
+Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica especial: es un objeto registrado en `ConnectionSystem` sin ninguna regla, así que cae en el manejo genérico de conexión inválida. Debe verse sutilmente distinto de los reales (la fuente señuelo es gris y sin brillo animado) para que el puzzle sea de observar, no de adivinar. Primer uso: zona de la antena.
+
+**Decisión 019**
+Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.
