@@ -88,3 +88,10 @@ El usuario solicita más duración, contenido y personalización. Se autoriza un
 
 **Decisión 027**
 Las historias secundarias son opcionales y se abren al restaurar su lugar. Cada pasada acepta una sola propuesta; repetir permite explorar el otro desenlace sin borrar los finales vistos, la apariencia ganada ni los cables del barrio. Las metas de dos entradas necesitan señales distintas. Cambiar una propuesta guardada solo sustituye los destinos de su grupo, conservando las otras ramas del origen. Los tres encargos aportan 16 conexiones por pasada y seis desenlaces, sin afirmar una duración humana a partir de las pruebas automatizadas.
+
+
+**Decisión histórica H018 (señuelo)**
+Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica especial: es un objeto registrado en `ConnectionSystem` sin ninguna regla, así que cae en el manejo genérico de conexión inválida. Debe verse sutilmente distinto de los reales (la fuente señuelo es gris y sin brillo animado) para que el puzzle sea de observar, no de adivinar. Primer uso: zona de la antena.
+
+**Decisión histórica H019 (fragmento secreto)**
+Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.
