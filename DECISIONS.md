@@ -70,3 +70,10 @@ La quinta zona del plan aprobado es un jardín al otro lado del puente, con ener
 
 **Decisión 022**
 El usuario autoriza ejecutar de forma autónoma seis fases anidadas para crear un primer capítulo: diseño, habitantes/objetivos, humor/consecuencias, taller, faroles/reto final y desenlace/exploración. La historia y las reacciones son breves y originales, sin bloquear los controles ni añadir otra acción de puzzle. La duración se valida jugando; no se fabrica con esperas. Cada fase se prueba, se publica en su rama y deja PR/merge al usuario.
+
+
+**Decisión histórica H018 (señuelo)**
+Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica especial: es un objeto registrado en `ConnectionSystem` sin ninguna regla, así que cae en el manejo genérico de conexión inválida. Debe verse sutilmente distinto de los reales (la fuente señuelo es gris y sin brillo animado) para que el puzzle sea de observar, no de adivinar. Primer uso: zona de la antena.
+
+**Decisión histórica H019 (fragmento secreto)**
+Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.

@@ -132,3 +132,16 @@ Sexta zona en un mundo de 4750 px. Un motor despierta al pato supervisor y a la 
 
 ## Dos rutas de faroles y circuito de la fiesta
 Séptima zona en un mundo de 6100 px. La luz puede viajar por tres cables directos o cuatro por los faroles curiosos; ambas rutas llegan a la misma salida y la curiosa guarda la broma del farol tímido. Los pasos y el escenario se restauran. La salida puede alimentar el escenario solo cuando plaza, fuente, antena, puente, jardín y desfile están resueltos; el siguiente cable activa el confeti. El álbum es independiente: no hace falta recoger todos sus premios para resolver el circuito final. Las pistas dejan de sugerir rutas alternativas al haber alcanzado la salida. El museo compacto presenta siete piezas y texto de 14 px en móvil, sin paginación ni botones extra. Se prueban ambas rutas, partida parcial, final bloqueado, desbloqueo por la antena y museo en ambos modos de efectos.
+
+
+## Más variedad de partículas al conectar
+`ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.
+
+## Fuente señuelo en la antena
+`EnergySource` ahora acepta un `variant` ('active' | 'dim'); la variante 'dim' no tiene brillo animado ni rotación. Se agregó una tercera fuente (`beacon-source-fake`, variante 'dim') en la zona de la antena, entre las dos fuentes reales y la antena, sin ninguna regla de conexión asociada — cualquier intento de conectarla da el mensaje genérico de "no encaja". No requirió tocar `ConnectionSystem`: el comportamiento de señuelo sale gratis del manejo existente de conexiones inválidas, solo hacía falta un objeto de más para que el jugador tuviera que observar antes de conectar.
+
+## Fragmento secreto
+Quinto fragmento (`secret-fragment`) escondido detrás de la casa apagada, al oeste del punto de partida — visible desde el arranque (no depende de ninguna conexión), premia a quien explore para atrás en vez de ir directo a la derecha. No cuenta para el contador `★ n/4` del HUD ni para "¡Colección completa!" (esos siguen atados solo a los 4 fragmentos de zona), pero sí tiene su propia vitrina en el Museo. `MuseumScene` ahora separa `FRAGMENTS` (los 4 que definen la colección completa) de `SECRET_FRAGMENT` (se muestra igual, no afecta ese chequeo).
+
+## Documentación para continuar con otras IAs
+Se crea `CONTEXTO.md`: un único archivo autocontenido (qué es, estado, arquitectura, cómo funciona la conexión, coordenadas, reglas, trampas técnicas, backlog y forma de trabajo) para poder seguir el proyecto en ChatGPT u otra herramienta que no lee `CLAUDE.md` automáticamente. Se actualizan `CLAUDE.md`, `README.md` (la estructura todavía listaba `CustomizeScene`) y `DECISIONS.md` (018: señuelos; 019: fragmentos extra que no cuentan para la colección completa).
