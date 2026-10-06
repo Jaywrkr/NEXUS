@@ -16,7 +16,7 @@ async function museumLayout(page) {
       labels: s.children.list.filter(o => o.type === 'Text').map(o => ({ text: o.text, left: o.getBounds().left, right: o.getBounds().right })),
     };
   });
-  expect(layout.rows).toBe(page.viewportSize().height > page.viewportSize().width ? 3 : 1);
+  expect(layout.rows).toBe(page.viewportSize().height > page.viewportSize().width ? 4 : 1);
   for (const label of layout.labels) {
     expect(label.left, label.text).toBeGreaterThanOrEqual(0);
     expect(label.right, label.text).toBeLessThanOrEqual(page.viewportSize().width);
