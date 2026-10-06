@@ -1,3 +1,5 @@
+# Contexto para continuar esta fase de Nexus
+
 # Los Nexus — Guía rápida para Claude
 
 Este archivo existe para que una sesión nueva de Claude Code entienda el proyecto en segundos, sin tener que releer todo el historial de conversación. Léelo primero.

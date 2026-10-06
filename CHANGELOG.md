@@ -143,3 +143,16 @@ Los habitantes describen problemas en lugar de dictar todos los cables. El objet
 
 ## CUAC FM: una señal, dos decisiones
 Una central entre la fuente y la antena ofrece música al jardín o noticias a la plaza. La antena completa habilita ambas; un solo receptor permanece encendido. Conectar el otro cambia la elección y se puede volver al anterior. El sistema añade grupos exclusivos y callbacks de activación para restaurar y cambiar la elección sin afectar circuitos permanentes. El guardado sustituye únicamente los cables de la fuente de radio. No entrega recuerdos ni bloquea el final. Se verifican cambios repetidos, duplicados, restauración del último destino válido y conservación de preparativos, además del taller y las rutas de faroles.
+
+
+## Más variedad de partículas al conectar
+`ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.
+
+## Fuente señuelo en la antena
+`EnergySource` ahora acepta un `variant` ('active' | 'dim'); la variante 'dim' no tiene brillo animado ni rotación. Se agregó una tercera fuente (`beacon-source-fake`, variante 'dim') en la zona de la antena, entre las dos fuentes reales y la antena, sin ninguna regla de conexión asociada — cualquier intento de conectarla da el mensaje genérico de "no encaja". No requirió tocar `ConnectionSystem`: el comportamiento de señuelo sale gratis del manejo existente de conexiones inválidas, solo hacía falta un objeto de más para que el jugador tuviera que observar antes de conectar.
+
+## Fragmento secreto
+Quinto fragmento (`secret-fragment`) escondido detrás de la casa apagada, al oeste del punto de partida — visible desde el arranque (no depende de ninguna conexión), premia a quien explore para atrás en vez de ir directo a la derecha. No cuenta para el contador `★ n/4` del HUD ni para "¡Colección completa!" (esos siguen atados solo a los 4 fragmentos de zona), pero sí tiene su propia vitrina en el Museo. `MuseumScene` ahora separa `FRAGMENTS` (los 4 que definen la colección completa) de `SECRET_FRAGMENT` (se muestra igual, no afecta ese chequeo).
+
+## Documentación para continuar con otras IAs
+Se crea `CONTEXTO.md`: un único archivo autocontenido (qué es, estado, arquitectura, cómo funciona la conexión, coordenadas, reglas, trampas técnicas, backlog y forma de trabajo) para poder seguir el proyecto en ChatGPT u otra herramienta que no lee `CLAUDE.md` automáticamente. Se actualizan `CLAUDE.md`, `README.md` (la estructura todavía listaba `CustomizeScene`) y `DECISIONS.md` (018: señuelos; 019: fragmentos extra que no cuentan para la colección completa).
