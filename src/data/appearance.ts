@@ -23,7 +23,7 @@ export function normalizeAppearance(raw: unknown): Appearance {
   return {
     name: typeof p.name === 'string' ? Array.from(p.name.replace(/[\u0000-\u001f\u007f]/g, '').trim()).slice(0, 16).join('') || 'Nexus' : 'Nexus',
     outfit: allowed(OUTFITS, p.outfit, 'turquoise'), accessory: allowed(ACCESSORIES, p.accessory, 'none'),
-    cable: allowed(CABLES, p.cable, 'cyan'), unlocked,
+    cable: allowed(CABLES, p.cable, 'lime'), unlocked,
   };
 }
 export function loadAppearance(): Appearance {

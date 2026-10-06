@@ -1,3 +1,4 @@
+import { gridFrames, loadSketchAccessories } from '../art/sketchAtlas';
 import Phaser from 'phaser';
 import { loadPlazaAssets } from '../art/plazaAssets';
 import { MODERN as ART, ensureFlatTexture } from '../art/modernArt';
@@ -6,7 +7,7 @@ import { drawTitleArt } from '../art/neighborhood';
 import { fadeToScene } from '../utils/sceneTransition';
 import { ProgressSystem } from '../systems/ProgressSystem';
 import { EffectsSettings } from '../systems/EffectsSettings';
-import { NEXUS_ASSET_KEYS, loadNexusAssets } from '../entities/nexusAssets';
+import { NEXUS_ASSET_KEYS, loadNexusAssets, createNexusFrames } from '../entities/nexusAssets';
 const ensureRoundedRectTexture = ensureFlatTexture;
 import { CHAPTER_TITLE } from '../data/chapter';
 
@@ -21,10 +22,13 @@ export class BootScene extends Phaser.Scene {
 
   preload(): void {
     loadNexusAssets(this);
+    loadSketchAccessories(this);
     loadPlazaAssets(this);
   }
 
   create(): void {
+    createNexusFrames(this);
+    gridFrames(this, 'sketch-extras', 4, 4);
     const { width, height } = this.scale;
     const progress = new ProgressSystem();
     const hasProgress = progress.hasProgress();

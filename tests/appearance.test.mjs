@@ -4,7 +4,7 @@ import { normalizeAppearance, loadAppearance, saveAppearance, unlockAppearance }
 
 test('appearance validates damaged saves, unicode names and locked choices', () => {
   assert.deepEqual(normalizeAppearance({ name: '\n ', outfit: 'unknown', accessory: 'crown', cable: 'fake', unlocked: ['fake'] }),
-    { name: 'Nexus', outfit: 'turquoise', accessory: 'none', cable: 'cyan', unlocked: [] });
+    { name: 'Nexus', outfit: 'turquoise', accessory: 'none', cable: 'lime', unlocked: [] });
   const p = normalizeAppearance({ name: '🐰'.repeat(20), outfit: 'amber', accessory: 'duck', cable: 'pink', unlocked: ['mail', 'toys', 'mail'] });
   assert.equal(Array.from(p.name).length, 16);
   assert.equal(p.outfit, 'amber'); assert.equal(p.accessory, 'duck');
