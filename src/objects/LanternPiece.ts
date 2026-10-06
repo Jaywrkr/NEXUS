@@ -12,7 +12,7 @@ export class LanternPiece extends ConnectableObject {
     this.color = color; this.kind = kind;
     this.art = scene.add.graphics(); this.add(this.art);
     this.addShadow(48, 70, 12);
-    this.add(scene.add.text(0, 67, label, { fontFamily: 'sans-serif', fontSize: '14px', color: '#20233a' }).setOrigin(0.5));
+    this.add(scene.add.text(0, 67, label, { fontFamily: '"Patrick Hand", cursive', fontSize: '14px', color: '#20233a' }).setOrigin(0.5));
     this.draw();
     this.setSize(80, 112);
     this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 80, 112), Phaser.Geom.Rectangle.Contains);

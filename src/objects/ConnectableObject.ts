@@ -20,7 +20,7 @@ export abstract class ConnectableObject extends Phaser.GameObjects.Container {
     const [key, frame] = sketchTexture(this.sketchKind, this.active_);
     if (!this.sketchImage) {
       this.sketchImage = this.scene.add.image(0, this.sketchBottom, key, frame).setOrigin(.5, 1);
-      this.sketchImage.setDisplaySize(this.sketchHeight, this.sketchHeight);
+      this.sketchImage.setScale(this.sketchHeight / this.sketchImage.height);
       this.sketchStatus = this.scene.add.text(this.sketchHeight * .28, this.sketchBottom - 12, '', {
         fontFamily: '"Patrick Hand", cursive', fontSize: '15px', color: '#34332e',
         backgroundColor: '#f2ead9', padding: { x: 4, y: 1 },
@@ -33,6 +33,7 @@ export abstract class ConnectableObject extends Phaser.GameObjects.Container {
         (child as unknown as Phaser.GameObjects.Components.Visible).setVisible(false);
     }
     this.sketchImage.setTexture(key, frame);
+    this.sketchImage.setScale(this.sketchHeight / this.sketchImage.height);
     this.sketchStatus!.setText(this.sketchCount ?? (this.name === 'dim-source' ? '×' : this.active_ ? '✓' : this.role === 'source' ? '↗' : '○'));
     // A grounded non-functional source stays visibly inert.
     this.sketchImage.setTint(this.name === 'dim-source' ? 0xa8aaa0 : 0xffffff);

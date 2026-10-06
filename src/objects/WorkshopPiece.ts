@@ -19,9 +19,9 @@ export class WorkshopPiece extends ConnectableObject {
     this.art = scene.add.graphics();
     this.add(this.art);
     this.addShadow(48, 88, 12);
-    this.add(scene.add.text(0, 68, label, { fontFamily: 'sans-serif', fontSize: '14px', color: '#20233a' }).setOrigin(0.5));
+    this.add(scene.add.text(0, 68, label, { fontFamily: '"Patrick Hand", cursive', fontSize: '14px', color: '#20233a' }).setOrigin(0.5));
     if (kind === 'parade') {
-      this.counter = scene.add.text(0, 32, '0/2', { fontFamily: 'sans-serif', fontSize: '16px', color: '#20233a' }).setOrigin(0.5);
+      this.counter = scene.add.text(0, 32, '0/2', { fontFamily: '"Patrick Hand", cursive', fontSize: '16px', color: '#20233a' }).setOrigin(0.5);
       this.add(this.counter);
     }
     this.draw();

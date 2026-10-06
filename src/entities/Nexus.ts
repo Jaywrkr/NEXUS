@@ -41,7 +41,7 @@ export class Nexus extends Phaser.GameObjects.Container {
     const accessory = drawAccessory(scene, this.look);
     this.visual.add([shadow, this.sprite, accessory]);
     if (this.look.name !== 'Nexus') this.add(scene.add.text(0, -100, this.look.name, {
-      fontFamily: 'sans-serif', fontSize: '12px', color: '#34494e', backgroundColor: '#ffefd1', padding: { x: 5, y: 2 },
+      fontFamily: '"Patrick Hand", cursive', fontSize: '12px', color: '#34494e', backgroundColor: '#ffefd1', padding: { x: 5, y: 2 },
       wordWrap: { width: 120 }, align: 'center',
     }).setOrigin(0.5, 1));
     this.add(this.visual);

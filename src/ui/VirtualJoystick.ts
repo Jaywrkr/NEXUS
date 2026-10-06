@@ -1,3 +1,4 @@
+import { pencilDiscTexture, pencilCircle, pencilLine } from '../art/modernArt';
 import Phaser from 'phaser';
 
 const BASE_RADIUS = 46;
@@ -12,7 +13,7 @@ const TOUCH_ZONE_RADIUS = 70;
 export class VirtualJoystick {
   private centerX: number;
   private centerY: number;
-  private knob: Phaser.GameObjects.Arc;
+  private knob: Phaser.GameObjects.Image;
   private pointerId: number | null = null;
   private vector = new Phaser.Math.Vector2(0, 0);
 
@@ -20,22 +21,16 @@ export class VirtualJoystick {
     this.centerX = x;
     this.centerY = y;
 
-    scene.add
-      .circle(x, y, BASE_RADIUS, 0x14234e, 0.65).setStrokeStyle(2, 0x8ae7ff, 0.6)
-      .setScrollFactor(0)
-      .setDepth(50);
-
-    const trim=scene.add.graphics().setDepth(50).setScrollFactor(0);
-    trim.lineStyle(1,0x27e7da,.65).strokeCircle(x,y,BASE_RADIUS-6);
-    for(let i=0;i<4;i++) {
-      const a=i*Math.PI/2;
-      trim.lineStyle(2,0x8ae7ff,.65).lineBetween(x+Math.cos(a)*34,y+Math.sin(a)*34,x+Math.cos(a)*39,y+Math.sin(a)*39);
+    pencilDiscTexture(scene, 'pencil-joystick-base', BASE_RADIUS);
+    pencilDiscTexture(scene, 'pencil-joystick-knob', KNOB_RADIUS);
+    scene.add.image(x, y, 'pencil-joystick-base').setTint(0xf2ead9).setAlpha(.94).setScrollFactor(0).setDepth(50);
+    const trim = scene.add.graphics().setDepth(50).setScrollFactor(0);
+    pencilCircle(trim, x, y, BASE_RADIUS - 6, 0x638f8b, .45);
+    for (let i = 0; i < 4; i++) {
+      const a = i * Math.PI / 2;
+      pencilLine(trim, x + Math.cos(a) * 34, y + Math.sin(a) * 34, x + Math.cos(a) * 39, y + Math.sin(a) * 39);
     }
-
-    this.knob = scene.add
-      .circle(x, y, KNOB_RADIUS, 0x8ae7ff, 0.95).setStrokeStyle(2, 0x233c88, 0.5)
-      .setScrollFactor(0)
-      .setDepth(51);
+    this.knob = scene.add.image(x, y, 'pencil-joystick-knob').setTint(0xa7c2b5).setScrollFactor(0).setDepth(51);
 
     const touchZone = scene.add
       .circle(x, y, TOUCH_ZONE_RADIUS, 0x000000, 0)

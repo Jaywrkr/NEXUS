@@ -28,7 +28,7 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
   5. **El jardín**: fuente de energía → aspersor → flores. El aspersor solo puede iniciar el segundo cable una vez encendido; las flores transforman el parterre y revelan un quinto fragmento, al otro lado del puente.
   6. **El taller**: energía → motor; motor → pato y campana; ambos → desfile. Dos ramas en cualquier orden y reunión de dos entradas distintas.
   7. **Los faroles**: luz por una ruta directa o curiosa hacia la misma salida. La curiosa descubre al farol tímido. Salida → escenario → confeti necesita todos los preparativos anteriores, sin exigir recoger los recuerdos.
-- **Personaje con sprites reales** (Decisión 017): el Nexus ya no se dibuja con formas de Phaser — son 4 imágenes PNG generadas por IA (idle, dos de caminata, celebrar) en `public/assets/nexus/`, cargadas por `loadNexusAssets()` desde `BootScene.preload()`. Personalización en `CustomizeScene`: nombre, paletas de ropa/mochila, accesorios y color del cable; sus preferencias y desbloqueos viven en `los-nexus-appearance` separados de la aventura. El diseño base se conserva: orejas tipo conejo con puntas de color, cabeza clara con cara negra y ojos ovalados amarillos, hoodie turquesa, mochila con cable de energía colgando. Los prompts usados están en `ART_PROMPTS.md` por si hay que generar más poses o variantes.
+- **Personaje con sprites reales** (Decisión 017): el Nexus ya no se dibuja con formas de Phaser — son cuatro poses de lápiz en `public/assets/sketch/nexus.webp` (idle, dos pasos alternos, celebrar), cargadas por `loadNexusAssets()` y extraídas en `BootScene.create()`. Personalización en `CustomizeScene`: nombre, paletas de ropa/mochila, accesorios y color del cable; sus preferencias y desbloqueos viven en `los-nexus-appearance` separados de la aventura. El diseño base se conserva: orejas tipo conejo con puntas de color, cabeza clara con cara negra y ojos ovalados amarillos, hoodie turquesa, mochila con cable de energía colgando. Los prompts usados están en `ART_PROMPTS.md` por si hay que generar más poses o variantes.
 - **Museo** con 7 vitrinas (dos columnas y cuatro filas en vertical, ilustraciones compactas y última centrada; una fila en horizontal), recuerdos distintos por zona (luz, gota, antena, puente, flor, pato y farol) que reaccionan al toque con un mensaje y un pulso breve, botón táctil «Volver al mundo» y atajo ESPACIO para regresar, mensaje de "Colección completa" y celebración especial (flash + chispas en las 7 zonas) la primera vez que se completa la colección actual. Mundo y museo comparten la lista `src/data/collection.ts`.
 - **Controles duales**: teclado/mouse en desktop, joystick virtual táctil + **botón de interacción** (aparece al acercarse a un objeto conectable, evita tener que acertar el toque exacto sobre algo pequeño).
 - **Adaptación real a móvil vertical**: la resolución interna del juego cambia (960×540 landscape ↔ 540×960 portrait) según orientación + tipo de puntero, para llenar la pantalla en vez de dejar barras negras. Ver `src/config/gameConfig.ts`.
@@ -90,7 +90,7 @@ src/
     nexusLook.ts             — paletas de ropa compartidas por poses y adornos procedurales
   entities/
     Nexus.ts                 — el personaje jugable (sprite real + movimiento + celebrar, ver Decisión 017)
-    nexusAssets.ts           — claves y loader de los PNG del Nexus (public/assets/nexus/)
+    nexusAssets.ts           — claves y cuadros del atlas a lápiz (public/assets/sketch/nexus.webp)
   systems/
     ConnectionSystem.ts      — la mecánica de conectar (seleccionar origen → destino, reglas, cable)
     ProgressSystem.ts        — wrapper de localStorage (fragmentos, seenCompletion)
@@ -118,7 +118,7 @@ src/
 
 Ver `DECISIONS.md` para la lista completa. Las más importantes:
 - **Toda mecánica nueva debe reutilizar la acción de conectar** (Decisión 008). La antena (doble conexión) y el puente (bloqueo físico) son ejemplos de cómo variar el ritmo sin salirse de esto.
-- El Nexus usa sprites PNG reales (Decisión 017). El usuario autorizó extender los assets originales al escenario, objetos, Miga y fauna de la muestra de la plaza (Decisión 032, `public/assets/plaza/`). Las demás zonas conservan formas de Phaser hasta revisar esa muestra. No ampliar automáticamente el arte de todos los barrios.
+- La dirección vigente es **cuaderno a lápiz** (Decisión 033, `SKETCH_ART_DIRECTION.md`). El usuario autorizó expresamente sustituir todos los personajes, accesorios, barrios, objetos e interfaces con la referencia aportada. Los WebP están en `public/assets/sketch/`; la muestra 032 y el acabado moderno quedaron sustituidos. No introducir mecánicas nuevas al cambiar el arte.
 - No agregar combate, inventario complejo, economía, multijugador, login (Decisión 006).
 - No ampliar el alcance sin que el usuario lo pida explícitamente.
 
@@ -131,7 +131,7 @@ Ver `DECISIONS.md` para la lista completa. Las más importantes:
 5. **`window.matchMedia('(orientation: portrait) and (pointer: coarse)')`** es la forma de distinguir un celular real en vertical de una ventana de escritorio angosta (que tiene `pointer: fine`). No uses solo el ancho de la ventana para esa detección.
 6. **Cuidado al probar con Playwright**: mover al Nexus solo en un eje (por ejemplo solo `ArrowRight`) y luego hacer clic en el botón de interacción puede fallar si el objetivo está a más de 90px en el otro eje (el radio de interacción es circular, no solo horizontal). Varias veces esto se confundió con un bug real cuando en realidad era el script de prueba. Siempre mover en diagonal (mantener dos teclas) para acercarse de verdad, o usar clics directos con coordenadas ya validadas en este documento/commits anteriores.
 7. **Patrón para mini-juegos que se abren "sobre" `WorldScene`** (como `CableTunnelScene`): `this.scene.launch('OtraEscena', data)` + `this.scene.pause()` desde `WorldScene`, y al terminar la escena hija hace `this.scene.stop()` + `this.scene.resume('WorldScene', resultado)`. `WorldScene` escucha su propio evento `'resume'` (`this.events.on('resume', (sys, data) => ...)`) para recibir el resultado. Pausar la escena para el input/física del Nexus automáticamente sin código extra.
-8. **PNGs generados por IA suelen venir con mucho margen transparente/halo y en una resolución enorme** (las 4 imágenes del Nexus llegaron en 1024×1536, ~2MB cada una — 8MB en total, demasiado para cargar bien en celular). Antes de usarlos: recortar al bounding box del contenido visible (umbral de alpha, no 0 exacto, para no cortar el halo de brillo intencional) + un padding chico, y reescalar a una altura razonable (se usó 480px). Con Pillow: `alpha.point(lambda a: 255 if a > 40 else 0).getbbox()`. Esto bajó el total a ~700KB sin perder calidad visible. También: todas las poses deben quedar recortadas con el mismo criterio para que los pies terminen a la misma distancia del borde inferior — si no, el personaje "salta" verticalmente al cambiar de sprite (idle↔caminar↔festejar) porque cada imagen tiene su propio contenido a distinta altura dentro del lienzo.
+8. **Registro de los atlas de ilustración**: conservar alfa y márgenes transparentes. `gridFrames` registra los límites de cada silueta mediante metadatos de cuadro, sin modificar el archivo fuente; las parejas apagado/encendido usan los límites comunes de ambas para que no cambie el tamaño de la máquina al activar el agua o la luz. Escalar por la altura del cuadro conserva proporciones; las poses del Nexus usan sus cuatro celdas registradas. La conversión a WebP de sprites es sin pérdida.
 
 9. **Áreas interactivas de `Container`**: Phaser suma `displayOriginX/Y` (la mitad del tamaño) antes de comprobar el hit area. No pasar directamente rectángulos con coordenadas de dibujo centradas en cero: desplaza el área hacia arriba/izquierda. Para un objeto de 52×52 con área local centrada, usar `Rectangle(0, 0, 52, 52)`. Las pruebas del recorrido encontraron que tocar el centro del interruptor del puente no funcionaba por esta diferencia; se corrigieron las áreas de los seis objetos conectables.
 
@@ -198,3 +198,11 @@ mantiene plantas/aves quietas y cables visibles. El inicio ahora es x=550,
 midY+100·v; el botón de interacción conserva el centro en móvil y se sitúa
 abajo a la derecha en escritorio. La profundidad se ordena por los pies solo
 para Nexus y los tres objetos de la plaza. El resto del mundo conserva su arte.
+
+## Dirección de arte vigente — bosquejo completo
+
+El usuario pidió en esta fase extender su referencia de lápiz a **todo** el juego.
+Ver `SKETCH_ART_DIRECTION.md`, `SKETCH_PLAYTEST.md` y Decisión 033.
+Fuentes locales; sprites con alfa; ocho fondos de alta resolución; todas las UI
+en papel y grafito. Las funciones y los guardados se conservan. Tres ramas nuevas
+anidadas después de `codex/plaza-entorno-vivo`; el usuario sigue haciendo PR y merge.

@@ -14,7 +14,8 @@ export function applyNexusPose(image: Phaser.GameObjects.Image, pose: string, lo
       const pixels = ctx.getImageData(0, 0, source.width, source.height);
       const color = OUTFITS.find(o => o.id === look.outfit)!.color;
       const red = color >> 16, green = color >> 8 & 255, blue = color & 255;
-      for (let y = Math.floor(source.height * 0.52); y < source.height; y++) {
+      // Raised celebration sleeves sit above the torso; blue ear pigment stays blue.
+      for (let y = Math.floor(source.height * 0.20); y < source.height; y++) {
         for (let x = 0; x < source.width; x++) {
           const i = (y * source.width + x) * 4;
           const [r, g, b, a] = pixels.data.subarray(i, i + 4);
@@ -27,7 +28,7 @@ export function applyNexusPose(image: Phaser.GameObjects.Image, pose: string, lo
             continue;
           }
           if (look.outfit === 'turquoise') continue;
-          if (a < 30 || g < 35 || b < 35 || g < r * 1.3 || b < r * 1.3 || Math.abs(g - b) > 90) continue;
+          if (a < 30 || g < 35 || b < 35 || g < b || g < r * 1.3 || b < r * 1.3 || Math.abs(g - b) > 90) continue;
           const shade = (g + b) / 2 / 170;
           pixels.data[i] = Math.min(255, red * shade);
           pixels.data[i + 1] = Math.min(255, green * shade);
@@ -45,10 +46,10 @@ export function drawAccessory(scene: Phaser.Scene, look: Appearance): Phaser.Gam
   const frames: Record<string, number> = { bow: 0, antenna: 1, duck: 2, crown: 3 };
   const image = scene.add.image(0, 0, 'sketch-extras', frames[look.accessory] ?? 0);
   image.setVisible(look.accessory !== 'none');
-  if (look.accessory === 'bow') image.setPosition(0, -27).setDisplaySize(24, 24);
-  if (look.accessory === 'antenna') image.setPosition(0, -77).setDisplaySize(28, 28);
-  if (look.accessory === 'duck') image.setPosition(17, 0).setDisplaySize(18, 18);
-  if (look.accessory === 'crown') image.setPosition(0, -68).setDisplaySize(40, 40);
+  if (look.accessory === 'bow') image.setPosition(0, -27).setScale(18 / image.height);
+  if (look.accessory === 'antenna') image.setPosition(0, -77).setScale(28 / image.height);
+  if (look.accessory === 'duck') image.setPosition(17, 0).setScale(16 / image.height);
+  if (look.accessory === 'crown') image.setPosition(0, -68).setScale(38 / image.width);
   return image;
 }
 export function nexusPortrait(scene: Phaser.Scene, x: number, y: number, height: number, pose: string, look = loadAppearance()): Phaser.GameObjects.Container {

@@ -54,7 +54,7 @@ export class ConnectionSystem {
 
     this.feedbackText = scene.add
       .text(scene.scale.width / 2, scene.scale.height - 132, '', {
-        fontFamily: 'sans-serif',
+        fontFamily: '"Patrick Hand", cursive',
         fontSize: '18px',
         color: '#1b1f3b',
         wordWrap: { width: Math.min(480, scene.scale.width - 48), useAdvancedWrap: true },
@@ -293,7 +293,9 @@ export class ConnectionSystem {
     );
 
     this.cableGraphics.clear();
-    this.cableGraphics.lineStyle(4, color, 0.9);
+    this.cableGraphics.lineStyle(6, 0x34332e, .55);
+    curve.draw(this.cableGraphics, 32);
+    this.cableGraphics.lineStyle(3, color, 0.9);
     curve.draw(this.cableGraphics, 32);
 
     if (!valid) {
@@ -306,7 +308,7 @@ export class ConnectionSystem {
 
   /** Chispa de energía que recorre el cable una vez, para reforzar la conexión válida. */
   private spawnEnergyPulse(curve: Phaser.Curves.QuadraticBezier, color: number): void {
-    const pulse = this.scene.add.circle(0, 0, 6, color).setDepth(16);
+    const pulse = this.scene.add.image(0, 0, 'sketch-extras', 9).setDisplaySize(20, 20).setTint(color).setDepth(16);
     const point = curve.getPoint(0);
     pulse.setPosition(point.x, point.y);
 

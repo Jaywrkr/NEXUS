@@ -1,3 +1,25 @@
+## Cadena pendiente actual — plaza y bosquejo
+
+Al iniciar este cambio, la integración seguía en `27fe834`; las 22 ramas anteriores
+ya estaban integradas. Las tres ramas de muestra de la plaza siguen siendo la base
+publicada del nuevo bloque. Las tres siguientes extienden esa cadena, sin ramas
+paralelas ni PR/merge automáticos.
+
+| Orden | Rama | Base pendiente |
+| --- | --- | --- |
+| 1 | `codex/plaza-primeros-pasos` | `claude/los-nexus-game-mvp-cppkef` |
+| 2 | `codex/plaza-arte-ilustrado` | `codex/plaza-primeros-pasos` |
+| 3 | `codex/plaza-entorno-vivo` | `codex/plaza-arte-ilustrado` |
+| 4 | `codex/bosquejo-nexus` | `codex/plaza-entorno-vivo` |
+| 5 | `codex/bosquejo-mundo` | `codex/bosquejo-nexus` |
+| 6 | `codex/bosquejo-interfaces` | `codex/bosquejo-mundo` |
+
+El usuario abre los PR y hace los merges en orden. Si ya integró una base, el PR
+siguiente debe apuntar al destino de integración real. El aspecto completo de
+bosquejo está en el último head; las fases anteriores cambian personaje y mundo.
+
+---
+
 # Orden de integración del capítulo
 
 Las ramas forman una cadena. Cada PR debe apuntar a la base indicada mientras

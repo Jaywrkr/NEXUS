@@ -17,8 +17,8 @@ export class StoryMachine extends ConnectableObject {
     this.node=node; this.emits=emits;
     this.active_=source;
     this.art=scene.add.graphics(); this.add(this.art); this.addShadow(43,78,12);
-    this.add(scene.add.text(0,58,node.label,{fontFamily:ART.body,fontSize:'14px',color:'#ffffff',align:'center',wordWrap:{width:130}}).setOrigin(0.5,0));
-    if (node.required===2) { this.counter=scene.add.text(0,37,'0/2',{fontFamily:ART.body,fontSize:'14px',color:'#ffffff',backgroundColor:'#14234e'}).setOrigin(0.5); this.add(this.counter); }
+    this.add(scene.add.text(0,58,node.label,{fontFamily:ART.body,fontSize:'14px',color:'#34332e',align:'center',wordWrap:{width:130}}).setOrigin(0.5,0));
+    if (node.required===2) { this.counter=scene.add.text(0,37,'0/2',{fontFamily:ART.body,fontSize:'14px',color:'#34332e',backgroundColor:'#f2ead9'}).setOrigin(0.5); this.add(this.counter); }
     this.draw(); this.setSize(96,106).setDepth(11).setInteractive(new Phaser.Geom.Rectangle(0,0,96,106),Phaser.Geom.Rectangle.Contains);
   }
   canInitiate(): boolean { return this.emits&&this.active_; }

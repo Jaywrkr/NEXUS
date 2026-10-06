@@ -114,3 +114,19 @@ Por petición explícita del usuario se reparan todas las ramas pendientes para 
 
 **Decisión 032 — Primera experiencia y muestra de arte**
 Tras probar el juego, el usuario pide mejorar la claridad inicial y sustituir el aspecto rudimentario. Se autoriza una muestra de la plaza antes de renovar el resto del mundo. Seis instrucciones persistentes enseñan acercarse a Miga, elegir origen y destino, conectar la lámpara con la puerta y recoger el recuerdo; se derivan del guardado y la selección real. No bloquean explorar ni repiten progreso antiguo. Miga se sitúa cerca del inicio. El túnel mantiene su práctica después de elegir el primer destino. Se autoriza expresamente arte ilustrado y sprites originales para escenario, objetos, Miga y fauna, ampliando la excepción de la Decisión 017. La mecánica sigue siendo conectar. Ramas anidadas con commit/push; el usuario hace PR y merge y revisa la muestra antes de extenderla.
+
+
+## 033 — La referencia de lápiz define todo el arte (2026-10-06)
+
+El usuario sustituye expresamente la dirección anterior y pide extender su hoja
+Nexus a todos los personajes, accesorios, objetos, barrios e interfaces. Se autoriza
+la generación y carga de ilustraciones originales para todo el juego. La cara de
+grafito, ojos ovalados amarillos, antenas naranja/azul, sudadera turquesa con **2**,
+pañuelo naranja, mochila marfil y cable lima definen el protagonista. Se conserva
+el trazo irregular y el pigmento de lápiz. Papel y Patrick Hand local sustituyen
+menús oscuros y tipografía industrial. No se añaden funciones. Las poses, ropa,
+adornos y estados de máquinas se adaptan al mismo lenguaje visual; los colores
+seleccionados y desbloqueos siguen guardados. Las preferencias antiguas del cable
+se respetan; el nuevo color predeterminado es lima. Los fondos independientes evitan ampliar
+celdas pequeñas y se encuadran sin deformarlas. Las tres ramas son descendientes
+de la cadena pendiente de la plaza; el usuario hace PR y merge.

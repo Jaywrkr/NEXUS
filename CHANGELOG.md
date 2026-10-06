@@ -257,3 +257,14 @@ Se conservan los commits originales; no se usó force push ni se crearon PR.
 - Nuevo inicio x=550 para que el generador no tape al Nexus; interacción de escritorio situada al lado derecho para no solapar la enseñanza.
 - La visita y las pistas del cartel de Miga se ajustaron a su posición nueva y se propagaron a las tres ramas.
 - Validación: build en las tres fases, 19 unitarias correctas; regresión de 48 casos con dos visitas de prueba corregidas y revisión final de 10/10 casos relacionados. Dos casos de regreso verificados además en la primera rama. Detalle en `PLAZA_PLAYTEST.md`.
+
+
+## Bosquejo completo — referencia del usuario
+
+Renovación de las cuatro poses del Nexus, siete habitantes, aves, plantas,
+maquinaria, estados, adornos, puente, vitrinas y recuerdos. Ocho paisajes de
+1672×941 sustituyen el fondo de prueba y el resto de barrios. Todos los menús,
+mensajes, botones, joystick y túnel pasan a papel cálido y grafito, con fuente
+manuscrita local. Se retiraron los antiguos PNG del Nexus y WebP de la plaza.
+La ropa y el cable se recolorean conservando textura; las partidas y reglas siguen
+compatibles. Ver `SKETCH_ART_DIRECTION.md` y `SKETCH_PLAYTEST.md`.

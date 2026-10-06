@@ -1,3 +1,4 @@
+import { pencilCard, pencilLine } from '../art/modernArt';
 import Phaser from 'phaser';
 import type { PlazaStep } from '../data/plazaGuide';
 import { EffectsSettings } from '../systems/EffectsSettings';
@@ -16,14 +17,14 @@ export class PlazaGuide {
     const x = mobile ? 16 : (scene.scale.width - width) / 2;
     const y = mobile ? 195 : scene.scale.height - 118;
     this.panel = scene.add.graphics().setDepth(45).setScrollFactor(0);
-    this.panel.fillStyle(0x12223f, 0.96).fillRoundedRect(x, y, width, 88, 12);
-    this.panel.fillStyle(0xffd76b).fillRoundedRect(x, y, 5, 88, 2);
+    pencilCard(this.panel, x, y, width, 88);
+    pencilLine(this.panel, x + 6, y + 5, x + 6, y + 83, 0xc48646, .8);
     this.text = scene.add.text(x + 18, y + 10, '', {
-      fontFamily: 'Arial', fontSize: '14px', color: '#f6f5ee', lineSpacing: 4,
+      fontFamily: '"Patrick Hand", cursive', fontSize: '16px', color: '#34332e', lineSpacing: 4,
       wordWrap: { width: width - 36 },
     }).setDepth(46).setScrollFactor(0);
     this.marker = scene.add.text(0, 0, '▼', {
-      fontFamily: 'Arial', fontSize: '26px', color: '#ffdd72', stroke: '#152945', strokeThickness: 4,
+      fontFamily: '"Patrick Hand", cursive', fontSize: '26px', color: '#e6bd65', stroke: '#454239', strokeThickness: 4,
     }).setOrigin(.5, 1).setDepth(18);
   }
   update(step: PlazaStep | null, target?: { x: number; y: number }): void {

@@ -15,12 +15,12 @@ export class StoryCard {
     const width = Math.min(scene.scale.width - 32, 640);
     const x = (scene.scale.width - width) / 2;
     ensureRoundedRectTexture(scene, 'story-card', 640, 100, 16);
-    this.panel = scene.add.image(x, 86, 'story-card').setDisplaySize(width, 100).setTint(0x14234e).setAlpha(0.99)
+    this.panel = scene.add.image(x, 86, 'story-card').setDisplaySize(width, 100).setTint(0xf2ead9).setAlpha(0.99)
       .setOrigin(0).setDepth(42).setScrollFactor(0).setInteractive();
-    this.speaker = scene.add.text(x + 20, 96, '', { fontFamily: ART.body, fontSize: '16px', fontStyle: 'bold', color: '#57ecff' })
+    this.speaker = scene.add.text(x + 20, 96, '', { fontFamily: ART.body, fontSize: '16px', fontStyle: 'bold', color: '#557b73' })
       .setDepth(43).setScrollFactor(0);
     this.message = scene.add.text(x + 20, 120, '', {
-      fontFamily: ART.body, fontSize: '16px', color: '#ffffff', wordWrap: { width: width - 40, useAdvancedWrap: true },
+      fontFamily: ART.body, fontSize: '16px', color: '#34332e', wordWrap: { width: width - 40, useAdvancedWrap: true },
     }).setDepth(43).setScrollFactor(0);
     this.panel.on('pointerdown', () => this.hide());
     this.hide();

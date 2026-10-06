@@ -1,3 +1,4 @@
+import { pencilCircle, pencilLine, pencilCard, paperTexture } from '../art/modernArt';
 import Phaser from 'phaser';
 import { ART } from '../art/interfaceArt';
 import { ConnectableObject } from '../objects/ConnectableObject';
@@ -16,8 +17,8 @@ const WAVE_FREQUENCY_Y = 0.0034;
 const FOCAL_LENGTH = 260;
 const VIEW_DEPTH = 900;
 const RING_STEP = 90;
-const RING_COLOR_FAR = new Phaser.Display.Color(16, 23, 57); // profundidad del túnel, casi negro
-const RING_COLOR_NEAR = new Phaser.Display.Color(65, 93, 201); // banda más cercana, iluminada por la chispa
+const RING_COLOR_FAR = new Phaser.Display.Color(202, 194, 172); // profundidad del túnel, casi negro
+const RING_COLOR_NEAR = new Phaser.Display.Color(224, 219, 198); // banda más cercana, iluminada por la chispa
 const SHIP_ACCEL_MS = 90;
 const SHIP_SPEED = 220;
 const VANISHING_POINT_Y_RATIO = 0.4;
@@ -47,7 +48,7 @@ export class CableTunnelScene extends Phaser.Scene {
   private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
   private joystick!: VirtualJoystick;
   private tunnelGraphics!: Phaser.GameObjects.Graphics;
-  private ship!: Phaser.GameObjects.Arc;
+  private ship!: Phaser.GameObjects.Image;
   private shipGlow!: Phaser.GameObjects.Arc;
   private progressBarFill!: Phaser.GameObjects.Rectangle;
   private starGraphics!: Phaser.GameObjects.Graphics;
@@ -90,17 +91,16 @@ export class CableTunnelScene extends Phaser.Scene {
     const { width, height } = this.scale;
     this.audio = new AudioSystem();
 
-    this.cameras.main.setBackgroundColor('#101739');
-    this.cameras.main.fadeIn(200, 10, 31, 46);
+    this.cameras.main.setBackgroundColor('#e9dfca');
+    this.cameras.main.fadeIn(200, 238, 229, 210);
 
     const hud=this.add.graphics().setDepth(19);
-    hud.fillStyle(0x14234e,.9).fillRoundedRect(20,12,width-40,58,12);
-    hud.lineStyle(1,0x57cdeb,.45).strokeRoundedRect(24,16,width-48,50,9);
+    pencilCard(hud, 20, 12, width - 40, 58);
     this.instructionText = this.add
       .text(width / 2, 20, 'Guía la chispa por el cable — no toques las paredes', {
         fontFamily: ART.body,
         fontSize: '16px',
-        color: '#d8f4ff',
+        color: '#655f50',
         align: 'center',
         wordWrap: { width: width - 40 },
       })
@@ -121,23 +121,8 @@ export class CableTunnelScene extends Phaser.Scene {
       depthOffset: Math.random() * VIEW_DEPTH,
     }));
 
-    // Viñeta radial (generada una sola vez en un canvas) para oscurecer las
-    // esquinas y dar sensación de profundidad/lente en vez de un rectángulo
-    // parejo — el detalle que más se nota como "más realista".
-    if (!this.textures.exists('tunnel-vignette')) {
-      const canvasTex = this.textures.createCanvas('tunnel-vignette', width, height);
-      const ctx = canvasTex!.getContext();
-      const cx = width / 2;
-      const cy = height * VANISHING_POINT_Y_RATIO;
-      const radius = Math.max(width, height) * 0.75;
-      const gradient = ctx.createRadialGradient(cx, cy, radius * 0.25, cx, cy, radius);
-      gradient.addColorStop(0, 'rgba(0,0,0,0)');
-      gradient.addColorStop(1, 'rgba(0,0,0,0.75)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, width, height);
-      canvasTex!.refresh();
-    }
-    this.add.image(width / 2, height / 2, 'tunnel-vignette').setDepth(6).setScrollFactor(0);
+    paperTexture(this, 'pencil-tunnel-grain', width, height);
+    this.add.image(width / 2, height / 2, 'pencil-tunnel-grain').setAlpha(.16).setDepth(6).setScrollFactor(0);
 
     // El barco arranca exactamente en el centro real del tubo (en progreso 0),
     // pero a partir de ahí su posición es propia — si el tubo se curva y no
@@ -148,13 +133,13 @@ export class CableTunnelScene extends Phaser.Scene {
 
     const shipAnchorX = width / 2;
     const shipAnchorY = height * VANISHING_POINT_Y_RATIO;
-    this.shipGlow = this.add.circle(shipAnchorX, shipAnchorY, 20, 0x5ee7ff, 0.3).setDepth(4);
-    this.ship = this.add.circle(shipAnchorX, shipAnchorY, 11, 0xffe342).setStrokeStyle(2,0xffffff,.9).setDepth(5);
+    this.shipGlow = this.add.circle(shipAnchorX, shipAnchorY, 20, 0x7ca99e, 0.3).setDepth(4);
+    this.ship = this.add.image(shipAnchorX, shipAnchorY, 'sketch-extras', 9).setDisplaySize(34, 34).setDepth(5);
 
     // Barra de progreso del túnel.
-    this.add.rectangle(width / 2, height - 20, width - 80, 10, 0x14324a).setStrokeStyle(1,0x57cdeb,.5).setDepth(10);
+    this.add.rectangle(width / 2, height - 20, width - 80, 10, 0xc8bea7).setStrokeStyle(1,0x748c7b,.5).setDepth(10);
     this.progressBarFill = this.add
-      .rectangle(40, height - 20, 1, 10, 0x5ee7ff)
+      .rectangle(40, height - 20, 1, 10, 0x7ca99e)
       .setOrigin(0, 0.5)
       .setDepth(11);
 
@@ -186,15 +171,15 @@ export class CableTunnelScene extends Phaser.Scene {
       : 'Practica con las flechas, WASD o el joystick');
     const message = this.add.text(width / 2, height - 235,
       failed ? 'Tu progreso está a salvo' : 'Aquí puedes probar sin perder', {
-        fontFamily: ART.body, fontSize: '18px', color: '#d8f4ff',
+        fontFamily: ART.body, fontSize: '18px', color: '#655f50',
         align: 'center', wordWrap: { width: width - 40 },
       }).setOrigin(0.5).setDepth(70);
     this.menuObjects.push(message);
-    this.buildMenuButton(height - 155, failed ? 'Reintentar' : 'Empezar', 0x5ee7ff, () => {
+    this.buildMenuButton(height - 155, failed ? 'Reintentar' : 'Empezar', 0x7ca99e, () => {
       if (failed) this.retry();
       else this.startRun();
     });
-    this.buildMenuButton(height - 90, 'Volver al mundo', 0xb9d4e0, () => this.leaveTunnel());
+    this.buildMenuButton(height - 90, 'Volver al mundo', 0xcbbfa7, () => this.leaveTunnel());
   }
 
   private buildMenuButton(y: number, label: string, color: number, onPress: () => void): void {
@@ -202,7 +187,7 @@ export class CableTunnelScene extends Phaser.Scene {
     const button = this.add.image(this.scale.width / 2, y, 'tunnel-menu-button')
       .setTint(color).setDepth(70).setInteractive({ useHandCursor: true });
     const text = this.add.text(this.scale.width / 2, y, label, {
-      fontFamily: ART.body, fontSize: '20px', fontStyle: 'bold', color: '#1b1f3b',
+      fontFamily: ART.body, fontSize: '20px', fontStyle: 'bold', color: '#34332e',
     }).setOrigin(0.5).setDepth(71);
     button.on('pointerover', () => button.setTint(0x9be37a));
     button.on('pointerout', () => button.setTint(color));
@@ -321,7 +306,7 @@ export class CableTunnelScene extends Phaser.Scene {
     const baseCenter = new Phaser.Math.Vector2(this.shipX, this.shipY);
 
     this.tunnelGraphics.clear();
-    this.tunnelGraphics.fillStyle(0x101739, 1);
+    this.tunnelGraphics.fillStyle(0xe9dfca, 1);
     this.tunnelGraphics.fillRect(0, 0, width, height);
 
     // Cada banda tiene una profundidad que disminuye con el progreso (por
@@ -359,12 +344,13 @@ export class CableTunnelScene extends Phaser.Scene {
     rings.forEach((ring) => {
       this.tunnelGraphics.fillStyle(ring.color, 1);
       this.tunnelGraphics.fillCircle(vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius);
-      this.tunnelGraphics.lineStyle(2, 0x3fb8e0, 0.3);
-      this.tunnelGraphics.strokeCircle(vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius);
-      this.tunnelGraphics.lineStyle(1,0x57cdeb,.22).strokeCircle(vanishingX+ring.offsetX,vanishingY+ring.offsetY,ring.radius-5);
-      for(let i=0;i<6;i++) {
-        const angle=i*Math.PI/3;
-        this.tunnelGraphics.fillStyle(0xd7e9d8,.4).fillCircle(vanishingX+ring.offsetX+Math.cos(angle)*ring.radius,vanishingY+ring.offsetY+Math.sin(angle)*ring.radius,1.5);
+      pencilCircle(this.tunnelGraphics, vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius, 0x638f8b, .6);
+      pencilCircle(this.tunnelGraphics, vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius - 4, 0x34332e, .18);
+      for (let i = 0; i < 18; i++) {
+        const angle = i * Math.PI / 9;
+        const x = vanishingX + ring.offsetX + Math.cos(angle) * ring.radius;
+        const y = vanishingY + ring.offsetY + Math.sin(angle) * ring.radius;
+        pencilLine(this.tunnelGraphics, x, y, x + 4, y - 5, 0x34332e, .18);
       }
     });
 
@@ -379,14 +365,14 @@ export class CableTunnelScene extends Phaser.Scene {
     const deviation = Math.sqrt(wallOffsetX * wallOffsetX + wallOffsetY * wallOffsetY);
     const dangerT = Phaser.Math.Clamp((deviation / TUBE_RADIUS - DANGER_RATIO) / (1 - DANGER_RATIO), 0, 1);
     const wallColor = Phaser.Display.Color.Interpolate.ColorWithColor(
-      new Phaser.Display.Color(94, 231, 255),
-      new Phaser.Display.Color(255, 90, 90),
+      new Phaser.Display.Color(91, 133, 118),
+      new Phaser.Display.Color(188, 87, 50),
       1,
       dangerT,
     );
     const pulse = 0.6 + 0.4 * Math.sin(this.elapsed * (0.004 + dangerT * 0.012));
     this.tunnelGraphics.lineStyle(3 + dangerT * 2, Phaser.Display.Color.GetColor(wallColor.r, wallColor.g, wallColor.b), 0.6 + pulse * 0.3);
-    this.tunnelGraphics.strokeCircle(vanishingX + wallOffsetX, vanishingY + wallOffsetY, TUBE_RADIUS);
+    pencilCircle(this.tunnelGraphics, vanishingX + wallOffsetX, vanishingY + wallOffsetY, TUBE_RADIUS, Phaser.Display.Color.GetColor(wallColor.r, wallColor.g, wallColor.b), .9);
     if (this.phase === 'running' && dangerT > 0.5 && !this.shakeCooldown && !EffectsSettings.isReduced()) {
       this.cameras.main.shake(120, 0.002 * dangerT);
       this.shakeCooldown = true;
@@ -414,7 +400,7 @@ export class CableTunnelScene extends Phaser.Scene {
       const bx = vanishingX + (centerB.x - baseCenter.x) * scaleB + Math.cos(spark.angle) * rB;
       const by = vanishingY + (centerB.y - baseCenter.y) * scaleB + Math.sin(spark.angle) * rB;
       const alpha = Phaser.Math.Clamp(scaleA * 0.9, 0, 0.85);
-      this.sparkGraphics.lineStyle(1.5, 0xbfeeff, alpha);
+      this.sparkGraphics.lineStyle(1.5, 0x638f8b, alpha);
       this.sparkGraphics.lineBetween(ax, ay, bx, by);
     });
 
@@ -426,7 +412,7 @@ export class CableTunnelScene extends Phaser.Scene {
       const t = i / TRAIL_LENGTH;
       const relX = (point.x - this.shipX) * 0.5;
       const relY = (point.y - this.shipY) * 0.5;
-      this.starGraphics.fillStyle(0x5ee7ff, t * 0.35);
+      this.starGraphics.fillStyle(0x7ca99e, t * 0.35);
       this.starGraphics.fillCircle(vanishingX + relX, vanishingY + relY, 4 + t * 4);
     });
 
