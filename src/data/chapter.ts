@@ -3,7 +3,7 @@ import type { GameState } from './gameState';
 export const CHAPTER_TITLE = 'La ciudad al revés';
 export const DISCOVERY_IDS = ['singing-door', 'no-refunds', 'salad-decree', 'house-garden', 'shy-lantern', 'plaza-bulletin', 'garden-concert'];
 export const RESIDENTS = [
-  { id: 'miga', name: 'Miga', x: 1020, offsetY: 120, color: 0x5ee7ff, fragment: 'plaza-fragment', target: 'door',
+  { id: 'miga', name: 'Miga', x: 350, offsetY: 70, color: 0x5ee7ff, fragment: 'plaza-fragment', target: 'door',
     request: 'El manual lo escribió un pato. Empecemos por dar luz a la plaza.',
     restored: 'Una puerta que abre. Casi revolucionario. Bombo necesita agua para la fiesta.' },
   { id: 'bombo', name: 'Bombo', x: 1570, offsetY: 140, color: 0x5ee7ff, fragment: 'fountain-fragment', target: 'fountain',

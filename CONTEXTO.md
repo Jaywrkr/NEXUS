@@ -177,3 +177,11 @@ táctil y vertical. Los efectos nuevos respetan la opción de efectos suaves.
 Las pruebas de integración verifican que el secreto no cuenta como recuerdo
 de zona, no reaparece al cargar y tiene vitrina; el señuelo sigue sin reglas.
 El museo muestra ocho vitrinas: siete de zona y una secreta. Ver `MERGE_ORDER.md`.
+
+## Muestra de la plaza en curso (Decisión 032)
+`plazaGuide.ts` deriva seis pasos del progreso real y del origen seleccionado;
+`PlazaGuide` muestra instrucción persistente y flecha (también en el borde si
+el destino está fuera de pantalla). No hay campos nuevos de guardado ni bloqueos.
+Miga está en x=350, midY+70·v, cerca del inicio. El usuario autorizó ampliar
+los assets originales al escenario, objetos y fauna de esta muestra de la plaza.
+Las zonas restantes conservan el arte anterior hasta que el usuario la pruebe.

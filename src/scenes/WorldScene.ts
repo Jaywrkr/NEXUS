@@ -14,6 +14,8 @@ import { FlowerBed } from '../objects/FlowerBed';
 import { COLLECTION } from '../data/collection';
 import { RESIDENTS, chapterObjective, chapterTask, residentLine, type ResidentInfo, type CONNECTION_SURPRISES } from '../data/chapter';
 import { Resident } from '../objects/Resident';
+import { plazaStep } from '../data/plazaGuide';
+import { PlazaGuide } from '../ui/PlazaGuide';
 import { StoryCard } from '../ui/StoryCard';
 import { WorkshopZone } from '../zones/WorkshopZone';
 import { ReturnCircuits } from '../zones/ReturnCircuits';
@@ -81,6 +83,7 @@ export class WorldScene extends Phaser.Scene {
   private connectables: ConnectableObject[] = [];
   private residents: Resident[] = [];
   private storyCard!: StoryCard;
+  private plazaGuide!: PlazaGuide;
   private plazaFlowers!: Phaser.GameObjects.Graphics;
   private radioBanner!: Phaser.GameObjects.Text;
   private workshop!: WorkshopZone;
@@ -280,6 +283,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.instructionText.setText(this.getStatusMessage());
     this.storyCard = new StoryCard(this);
+    this.plazaGuide = new PlazaGuide(this);
     const hint = this.add.image(this.scale.width - 62, height - 86, HUD_PILL_TEXTURE)
       .setDisplaySize(92, 44).setTint(0xffe342).setDepth(50).setScrollFactor(0)
       .setInteractive({ useHandCursor: true });
@@ -743,6 +747,11 @@ export class WorldScene extends Phaser.Scene {
     this.nexus.move(dx, dy, delta);
     this.updateInteractButton();
     this.connectionSystem.updateHint();
+    const step = plazaStep(this.progress.snapshot(), this.connectionSystem.selectedSourceId);
+    const target = step?.target === 'miga' ? this.residents.find(r => r.id === 'miga')
+      : step?.target === 'fragment' ? this.plazaFragment : this.connectables.find(o => o.id === step?.target);
+    this.plazaGuide.update(step, target);
+    if (!this.leavingWorld && !this.leavingChapter) this.instructionText.setText(step ? 'PRIMER ENCARGO · DALE LUZ A LA PLAZA' : this.getStatusMessage());
     const nearby = this.residents.find(resident => Phaser.Math.Distance.Between(this.nexus.x, this.nexus.y, resident.x, resident.y) < 120);
     if (nearby && !this.progress.hasHeardResident(nearby.id)) nearby.emit('pointerdown');
   }
