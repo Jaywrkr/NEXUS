@@ -20,8 +20,8 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test
 ## Comandos
 
 ```bash
-npm run test:unit    # once pruebas de guardado, preferencias y objetivos
-npm run test:e2e     # nueve escenarios en escritorio y nueve en móvil vertical
+npm run test:unit    # doce pruebas de guardado, preferencias y objetivos
+npm run test:e2e     # diez escenarios en escritorio y diez en móvil vertical
 npm test            # ambas suites
 npm run build       # TypeScript y build de producción; check separado
 ```
@@ -33,6 +33,8 @@ No hay retries automáticos ni pruebas omitidas por defecto.
 
 ## Cobertura
 
+- Humor y consecuencias: bromas repetidas sin recompensa, flores compartidas
+  con la plaza, anuncio de la antena y recuperación de descubrimientos.
 - Introducción y habitantes: controles activos durante una frase, diálogo al
   acercarse o tocar, reparación del lugar, cierre y visitas guardadas.
 

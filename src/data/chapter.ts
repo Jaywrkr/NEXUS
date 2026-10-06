@@ -27,8 +27,20 @@ export function hasChapterConnection(state: GameState, target: string): boolean 
 }
 
 export function residentLine(resident: ResidentInfo, state: GameState): string {
+  if (resident.id === 'miga' && (state.fragmentsCollected.includes('fountain-fragment') || hasChapterConnection(state, 'fountain')))
+    return 'Bombo compartió el agua con la plaza. La casa pidió un jardín. No tiene manos para firmar.';
   return state.fragmentsCollected.includes(resident.fragment) || hasChapterConnection(state, resident.target)
     ? resident.restored : resident.request;
+}
+
+export const CONNECTION_SURPRISES = [
+  { id: 'singing-door', source: 'energy-source', target: 'door', speaker: 'La puerta', line: '¡DOOO! Quería abrir, pero me salió una nota. Prueba con la lámpara.' },
+  { id: 'no-refunds', source: 'lamp', target: 'energy-source', speaker: 'La fuente', line: 'No aceptamos devoluciones de luz. La puerta está por allí.' },
+  { id: 'salad-decree', source: 'garden-source', target: 'garden-bed', speaker: 'Alcalde Goteo', line: '¡No electrifiques la ensalada! Enciende el aspersor primero.' },
+];
+
+export function connectionSurprise(source: string, target: string) {
+  return CONNECTION_SURPRISES.find(surprise => surprise.source === source && surprise.target === target);
 }
 
 export function chapterObjective(state: GameState): string {
