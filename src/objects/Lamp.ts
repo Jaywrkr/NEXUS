@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { PLAZA, PLAZA_FRAME } from '../art/plazaAssets';
+import { EffectsSettings } from '../systems/EffectsSettings';
 import { ConnectableObject } from './ConnectableObject';
 
 const OFF_COLOR = 0x6b7280;
@@ -42,8 +44,14 @@ export class Lamp extends ConnectableObject {
       ease: 'Sine.easeInOut',
     });
 
-    this.setSize(64, 130);
-    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 64, 130), Phaser.Geom.Rectangle.Contains);
+    if (id === 'lamp' && scene.textures.exists(PLAZA.sprites)) {
+      base.setVisible(false); this.pole.setVisible(false); this.bulb.setVisible(false); trim.setVisible(false);
+      this.add(scene.add.image(0, 47, PLAZA.sprites, PLAZA_FRAME.lamp).setOrigin(.5, 1).setDisplaySize(158, 158));
+      this.bringToTop(this.glow); this.glow.setPosition(0, -67).setRadius(22).setAlpha(0);
+      scene.tweens.killTweensOf(this.glow);
+    }
+    this.setSize(64, 170);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 64, 170), Phaser.Geom.Rectangle.Contains);
   }
 
   canInitiate(): boolean {
@@ -55,6 +63,8 @@ export class Lamp extends ConnectableObject {
     this.active_ = true;
 
     this.bulb.setFillStyle(ON_COLOR);
+    this.scene.tweens.killTweensOf(this.glow);
+    if (EffectsSettings.isReduced()) { this.glow.setAlpha(.55); return; }
 
     this.scene.tweens.add({
       targets: this.glow,

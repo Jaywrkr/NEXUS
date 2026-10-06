@@ -191,7 +191,7 @@ test('legacy saves migrate and new game confirmation preserves or clears progres
   expect(await world(page, 'return s.lamp.isActive || s.bridge.isActive;')).toBe(false);
   expect(await world(page, 'return s.progress.getConnections();')).toEqual([]);
   expect(await world(page, 'return s.progress.getCollectedFragments();')).toEqual([]);
-  expect(await world(page, 'return s.nexus.x;')).toBe(480);
+  expect(await world(page, 'return s.nexus.x;')).toBe(550);
   await checkpoint(page, testInfo, 'new-game');
 });
 

@@ -12,7 +12,8 @@ async function interactNearby(page, id) {
   await world(page, `const o = s.connectables.find(o => o.id === ${JSON.stringify(id)});
     s.nexus.setPosition(o.x, o.y + 55); s.nexus.body.updateFromGameObject();`);
   await expect.poll(() => world(page, 'return s.interactButton.bg.visible;')).toBe(true);
-  await tap(page, page.viewportSize().width / 2, page.viewportSize().height - 40);
+  const interact = await world(page, 'return {x:s.interactButton.bg.x,y:s.interactButton.bg.y};');
+  await tap(page, interact.x, interact.y);
 }
 
 test('continue a completed four-zone save into the garden and restore each watering step', async ({ page, isMobile }, testInfo) => {

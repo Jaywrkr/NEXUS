@@ -1,10 +1,13 @@
 import Phaser from 'phaser';
+import { PLAZA, PLAZA_FRAME } from '../art/plazaAssets';
+import { EffectsSettings } from '../systems/EffectsSettings';
 import { ConnectableObject } from './ConnectableObject';
 
 const PANEL_COLOR = 0x6b4a35;
 const DOORWAY_LIGHT = 0xffe38a;
 
 export class Door extends ConnectableObject {
+  private illustration?: Phaser.GameObjects.Image;
   private panel: Phaser.GameObjects.Rectangle;
   private frame: Phaser.GameObjects.Rectangle;
   private doorway: Phaser.GameObjects.Rectangle;
@@ -46,13 +49,24 @@ export class Door extends ConnectableObject {
       ease: 'Sine.easeInOut',
     });
 
-    this.setSize(60, 100);
-    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 60, 100), Phaser.Geom.Rectangle.Contains);
+    if (id === 'door' && scene.textures.exists(PLAZA.sprites)) {
+      for (const object of [this.glow, this.frame, this.doorway, this.panel, this.detail, this.knob]) object.setVisible(false);
+      this.illustration = scene.add.image(0, 54, PLAZA.sprites, PLAZA_FRAME.door).setOrigin(.5, 1).setDisplaySize(148, 148);
+      this.add(this.illustration);
+      scene.tweens.killTweensOf(this.glow);
+    }
+    this.setSize(116, 150);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 116, 150), Phaser.Geom.Rectangle.Contains);
   }
 
   activate(): void {
     if (this.active_) return;
     this.active_ = true;
+    if (this.illustration) {
+      this.illustration.setTexture(PLAZA.states, PLAZA_FRAME.door);
+      if (!EffectsSettings.isReduced()) this.scene.tweens.add({ targets: this.illustration, alpha: { from: .5, to: 1 }, duration: 300 });
+      return;
+    }
 
     this.scene.tweens.add({
       targets: [this.panel, this.detail, this.knob],

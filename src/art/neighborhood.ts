@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { PLAZA } from './plazaAssets';
 import { modernDistrict, modernTitle, MODERN } from './modernArt';
 
 /** Static art is baked per district; seven culled images, with no decorative input. */
@@ -7,6 +8,13 @@ export function drawNeighborhood(scene:Phaser.Scene,height:number):void {
   const starts=[0,1160,1840,2410,3020,3860,4790,6100];
   const names=['PLAZA DE MIGA','PASEO DEL AGUA','CUAC FM','DON PASO','EL JARDÍN','TALLER DE PIPA','CAMINO DE LUCIO'];
   for(let zone=0;zone<7;zone++){
+    if (zone === 0 && scene.textures.exists(PLAZA.background)) {
+      scene.add.image(0, 0, PLAZA.background).setOrigin(0).setDisplaySize(1160, height).setDepth(4);
+      // Feather the transition into the next district without covering any gameplay.
+      const edge = scene.add.graphics().setDepth(4.1);
+      for (let x = 1100; x < 1160; x += 4) edge.fillStyle(0x66ada6, (x - 1100) / 60 * .8).fillRect(x, 0, 4, height);
+      continue;
+    }
     const left=starts[zone],width=starts[zone+1]-left,key=`neighborhood-${height}-${zone}`;
     const plaqueX=zone===0?264:zone===3?445:width/2,back=mid-112*v;
     if(!scene.textures.exists(key)){

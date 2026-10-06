@@ -242,3 +242,9 @@ Se conservan los commits originales; no se usó force push ni se crearon PR.
 - Guía permanente de seis pasos, señal inmediata del siguiente objetivo y controles de movimiento visibles.
 - Miga está cerca del punto de inicio, no al final de la plaza.
 - La guía retoma una lámpara conectada al continuar y respeta partidas antiguas y exploración libre.
+
+## Muestra de la plaza — arte ilustrado
+- Escenario original con pavimento, fachadas, vegetación y sombras pintadas.
+- Generador, lámpara, puerta cerrada/abierta y Miga tienen sprites propios con volumen y materiales.
+- Posiciones de la plaza ajustadas al suelo de la ilustración; nombres de los tres objetos para identificarlos al aprender.
+- Tres WebP locales, 1,18 MB en total; atlas de 512×512 por celda. Fauna y vegetación listas para animación.

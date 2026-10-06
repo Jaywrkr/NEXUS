@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { PLAZA, PLAZA_FRAME } from '../art/plazaAssets';
 import { ART } from '../art/interfaceArt';
 import type { ResidentInfo } from '../data/chapter';
 
@@ -62,6 +63,11 @@ export class Resident extends Phaser.GameObjects.Container {
       fontFamily: ART.body, fontSize: '14px', color: '#ffffff', backgroundColor: '#14234e', padding: { x: 7, y: 3 },
     }).setOrigin(0.5);
     this.add([shadow, art, name]);
+    if (info.id === 'miga' && scene.textures.exists(PLAZA.sprites)) {
+      art.setVisible(false);
+      const portrait = scene.add.image(0, 36, PLAZA.sprites, PLAZA_FRAME.miga).setOrigin(.5, 1).setDisplaySize(128, 128);
+      this.addAt(portrait, 2);
+    }
     this.setSize(72, 100).setDepth(9);
     scene.add.existing(this);
     this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 72, 100), Phaser.Geom.Rectangle.Contains);

@@ -25,7 +25,7 @@ test('first plaza teaches movement, origin, destination and reward in order', as
   await page.reload(); await ready(page, 'BootScene'); await start(page, 'Continuar');
   await expect.poll(lesson).toContain('4/6');
   // Follow the character with real movement; on a phone the door starts offscreen.
-  await walkTo(page, 740, await world(page,'return s.scale.height*.75;'));
+  await walkTo(page, 830, await world(page,'return s.scale.height*.75;'));
   await expect.poll(() => world(page,'return Math.abs(s.cameras.main.midPoint.x-Math.max(s.scale.width/2,s.nexus.x));')).toBeLessThan(1);
   await clickObject(page, 'lamp'); await expect.poll(lesson).toContain('5/6');
   await clickObject(page, 'door'); await expect.poll(lesson).toContain('6/6');

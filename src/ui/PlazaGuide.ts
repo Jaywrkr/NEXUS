@@ -41,7 +41,7 @@ export class PlazaGuide {
       const offLeft = target.x < view.left + 24, offRight = target.x > view.right - 24;
       this.marker.setText(offLeft ? '◀' : offRight ? '▶' : '▼');
       this.marker.setPosition(Phaser.Math.Clamp(target.x, view.left + 24, view.right - 24),
-        target.y - 78 + (EffectsSettings.isReduced() ? 0 : Math.sin(this.scene.time.now / 260) * 4));
+        target.y - (step.target === 'lamp' ? 128 : step.target === 'fragment' ? 45 : 105) + (EffectsSettings.isReduced() ? 0 : Math.sin(this.scene.time.now / 260) * 4));
     }
   }
 }
