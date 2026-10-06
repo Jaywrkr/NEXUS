@@ -77,12 +77,16 @@ export class WorldScene extends Phaser.Scene {
   private radioBanner!: Phaser.GameObjects.Text;
   private workshop!: WorkshopZone;
   private lanterns!: LanternZone;
+  private leavingChapter = false;
+  private leavingWorld = false;
 
   constructor() {
     super('WorldScene');
   }
 
   create(): void {
+    this.leavingChapter = false;
+    this.leavingWorld = false;
     const { height } = this.scale;
     const width = WORLD_WIDTH;
     // En pantallas verticales (más altas), separamos más los objetos en
@@ -267,6 +271,7 @@ export class WorldScene extends Phaser.Scene {
       this.progress.markResidentHeard('intro');
       this.storyCard.show('Miga · La ciudad al revés', 'El manual lo escribió un pato. Hay que preparar una fiesta. Empieza por la luz de la plaza.');
     }
+    if (this.lanterns.confetti.isActive && !this.progress.hasSeenChapter()) this.finishChapter();
 
     // Save movement periodically, and flush before leaving or hiding the world.
     const savePosition = (): void => this.progress.savePosition(this.nexus.x, this.nexus.y / height);
@@ -286,7 +291,7 @@ export class WorldScene extends Phaser.Scene {
   private getStatusMessage(): string {
     const doneCount = ALL_FRAGMENT_IDS.filter(id => this.progress.hasFragment(id)).length;
 
-    if (doneCount === ALL_FRAGMENT_IDS.length) return 'Ya restauraste todo el lugar';
+    if (doneCount === ALL_FRAGMENT_IDS.length) return chapterObjective(this.progress.snapshot());
     if (doneCount === 0) return 'Los Nexus — conecta la fuente con la lámpara';
     return chapterObjective(this.progress.snapshot());
   }
@@ -295,6 +300,18 @@ export class WorldScene extends Phaser.Scene {
     this.progress.markResidentHeard(info.id);
     if (info.id === 'miga' && this.fountain.isActive) this.progress.markDiscovery('house-garden');
     this.storyCard.show(info.name, residentLine(info, this.progress.snapshot()));
+  }
+
+  private finishChapter(): void {
+    if (this.leavingChapter || this.leavingWorld) return;
+    this.leavingChapter = true;
+    this.leavingWorld = true;
+    this.progress.markChapterSeen();
+    this.instructionText.setText('¡La fiesta funciona!');
+    this.audio.playSuccess();
+    if (!EffectsSettings.isReduced()) this.cameras.main.flash(400, 255, 230, 150);
+    this.sparkleBurst(this.lanterns.confetti.x, this.lanterns.confetti.y);
+    this.time.delayedCall(1100, () => fadeToScene(this, 'EndingScene', [32, 35, 58]));
   }
 
   private applyChapterConsequences(): void {
@@ -447,7 +464,7 @@ export class WorldScene extends Phaser.Scene {
         this.progress.markDiscovery('shy-lantern');
         this.storyCard.show('El farol tímido', '¿Por qué cruzó el cable el camino? Porque alguien lo conectó. Perdón.');
       }
-      if (targetId === 'party-confetti') this.storyCard.show('Miga', '¡La fiesta funciona! El pato exige aparecer en los créditos.');
+      if (targetId === 'party-confetti') this.finishChapter();
     };
 
     this.events.on('tunnel-requested', onTunnelRequested);
@@ -569,7 +586,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private collectFragment(fragment: Fragment, id: string): void {
-    if (!fragment.visible || fragment.isCollected) return;
+    if (this.leavingWorld || !fragment.visible || fragment.isCollected) return;
+    this.leavingWorld = true;
 
     this.progress.savePosition(this.nexus.x, this.nexus.y / this.scale.height);
     fragment.collect();

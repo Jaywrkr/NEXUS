@@ -23,3 +23,8 @@ El usuario hace los PR y merges. No hay ramas paralelas independientes.
 Al iniciar este bloque se verificaron los siete primeros heads publicados y
 la base original en `05a5e52`. Las seis fases nuevas se ejecutan en este orden;
 ver `CHAPTER_ONE.md` para el diseño y `CHANGELOG.md` para lo que se implementó.
+
+Las seis fases del capítulo se publicaron durante este bloque. La fase 6 reúne
+la validación completa, el desenlace y el protocolo `PLAYTEST_CHAPTER_ONE.md`.
+Cada rama conserva el estado jugable correspondiente a su fase; la última
+incluye toda la cadena.

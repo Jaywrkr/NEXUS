@@ -11,7 +11,6 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 (Decisión 008) si es una mecánica nueva.
 
 ## Pulido visual pendiente
-- Pantalla de créditos simple (nombres, "hecho con Luca", fecha).
 - Más variedad de partículas al conectar (ahora es una sola chispa por el cable).
 
 ## Producto / UX

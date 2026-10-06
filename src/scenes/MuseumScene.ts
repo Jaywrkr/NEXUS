@@ -4,16 +4,19 @@ import { fadeToScene } from '../utils/sceneTransition';
 import { ensureRoundedRectTexture } from '../utils/uiTextures';
 import { EffectsSettings } from '../systems/EffectsSettings';
 import { COLLECTION, type Souvenir } from '../data/collection';
+import { DISCOVERY_IDS, RESIDENTS } from '../data/chapter';
 
 export class MuseumScene extends Phaser.Scene {
   private progress!: ProgressSystem;
   private memoryText!: Phaser.GameObjects.Text;
+  private leaving = false;
 
   constructor() {
     super('MuseumScene');
   }
 
   create(): void {
+    this.leaving = false;
     const { width, height } = this.scale;
     const portrait = height > width;
     this.progress = new ProgressSystem();
@@ -32,6 +35,18 @@ export class MuseumScene extends Phaser.Scene {
     this.memoryText = this.add.text(width / 2, 85, 'Toca un recuerdo para verlo despertar', {
       fontFamily: 'sans-serif', fontSize: '16px', color: '#c9cbe0',
     }).setOrigin(0.5);
+    const story = this.progress.snapshot().story;
+    const discovered = DISCOVERY_IDS.filter(id => story?.discoveries.includes(id)).length;
+    const heard = RESIDENTS.filter(r => story?.heard.includes(r.id)).length;
+    this.add.text(width / 2, 112, `Sorpresas: ${discovered}/${DISCOVERY_IDS.length} · Habitantes: ${heard}/${RESIDENTS.length}`, {
+      fontFamily: 'sans-serif', fontSize: '14px', color: '#c9cbe0',
+    }).setOrigin(0.5);
+    if (this.progress.hasSeenChapter()) {
+      ensureRoundedRectTexture(this, 'museum-ending', 110, 42, 12);
+      const ending = this.add.image(width - 70, 40, 'museum-ending').setTint(0x9be37a).setInteractive({ useHandCursor: true });
+      this.add.text(width - 70, 40, 'Ver final', { fontFamily: 'sans-serif', fontSize: '16px', color: '#20233a' }).setOrigin(0.5);
+      ending.on('pointerdown', () => { if (this.leaving) return; this.leaving = true; fadeToScene(this, 'EndingScene', [32, 35, 58]); });
+    }
 
     const spacing = Math.min(220, (width - 160) / (COLLECTION.length - 1));
     const startX = width / 2 - (spacing * (COLLECTION.length - 1)) / 2;
@@ -58,10 +73,9 @@ export class MuseumScene extends Phaser.Scene {
         .setOrigin(0.5);
     }
 
-    let returning = false;
     const returnToWorld = (): void => {
-      if (returning) return;
-      returning = true;
+      if (this.leaving) return;
+      this.leaving = true;
       fadeToScene(this, 'WorldScene', [207, 232, 216]);
     };
 
