@@ -193,6 +193,12 @@ export class MuseumScene extends Phaser.Scene {
         art.fillStyle(0xfff8c9);
         art.fillCircle(0, -18, 10);
         break;
+      case 'workshop-fragment':
+        art.fillEllipse(-5, 5, 64, 40).fillCircle(16, -18, 20);
+        art.fillStyle(0xffb86c).fillTriangle(30, -22, 46, -14, 29, -8);
+        art.fillStyle(0x20233a).fillCircle(20, -23, 3);
+        art.fillStyle(0xc7a0ef).fillCircle(-20, 33, 8).fillCircle(20, 33, 8);
+        break;
     }
     return art;
   }

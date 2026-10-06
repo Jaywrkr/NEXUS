@@ -1,6 +1,6 @@
 import { test, expect, ready, world, start, connect, saved, collect, returnToWorld, checkpoint, winTunnel, titleButton, tunnelButton, runningTunnel, failedTunnel, tap, clickObject } from './helpers.js';
 
-const fragmentIds = ['plaza-fragment', 'fountain-fragment', 'beacon-fragment', 'bridge-fragment', 'garden-fragment'];
+const fragmentIds = ['plaza-fragment', 'fountain-fragment', 'beacon-fragment', 'bridge-fragment', 'garden-fragment', 'workshop-fragment'];
 
 async function reloadAndContinue(page) {
   await page.reload();
@@ -16,7 +16,7 @@ async function museumLayout(page) {
       labels: s.children.list.filter(o => o.type === 'Text').map(o => ({ text: o.text, left: o.getBounds().left, right: o.getBounds().right })),
     };
   });
-  expect(layout.rows).toBe(page.viewportSize().height > page.viewportSize().width ? 3 : 1);
+  expect(layout.rows).toBe(page.viewportSize().height > page.viewportSize().width ? 4 : 1);
   for (const label of layout.labels) {
     expect(label.left, label.text).toBeGreaterThanOrEqual(0);
     expect(label.right, label.text).toBeLessThanOrEqual(page.viewportSize().width);
@@ -24,7 +24,7 @@ async function museumLayout(page) {
   return layout.labels.map(label => label.text);
 }
 
-test('complete all five zones, lose and win the tunnel, and revisit the museum', async ({ page, isMobile }, testInfo) => {
+test('complete all six zones, lose and win the tunnel, and revisit the museum', async ({ page, isMobile }, testInfo) => {
   await start(page);
   // Wrong pairs do not unlock objects or create saved connections.
   await connect(page, 'energy-source', 'door');
@@ -92,11 +92,18 @@ test('complete all five zones, lose and win the tunnel, and revisit the museum',
   expect(await world(page, 'return s.flowerBed.isActive && s.gardenFragment.visible;')).toBe(true);
   await checkpoint(page, testInfo, 'garden-flowering');
   await collect(page, 'gardenFragment', fragmentIds[4]);
+  await returnToWorld(page);
+  await connect(page, 'toy-source', 'toy-motor');
+  await connect(page, 'toy-motor', 'toy-duck');
+  await connect(page, 'toy-motor', 'toy-bell');
+  await connect(page, 'toy-duck', 'toy-parade');
+  await connect(page, 'toy-bell', 'toy-parade');
+  await collect(page, 'workshop.fragment', fragmentIds[5]);
   expect((await museumLayout(page))).toContain('¡Colección completa!');
   expect((await saved(page)).fragmentsCollected).toEqual(fragmentIds);
-  expect((await saved(page)).connections).toHaveLength(8);
+  expect((await saved(page)).connections).toHaveLength(13);
   expect((await saved(page)).seenCompletion).toBe(true);
-  expect((await saved(page)).completionCount).toBe(5);
+  expect((await saved(page)).completionCount).toBe(6);
   expect(await page.evaluate(() => window.__effectCalls.flash)).toBeGreaterThan(0);
   expect(await page.evaluate(() => window.__effectCalls.shake)).toBeGreaterThan(0);
   await checkpoint(page, testInfo, 'museum-complete');
@@ -284,7 +291,7 @@ test('hints wait for inactivity and soft effects persist without changing reward
   await world(page, 's.scene.stop();');
   await page.waitForFunction(() => !window.__nexusTest.scene.isActive('WorldScene'));
   await page.evaluate(() => localStorage.setItem('los-nexus-progress', JSON.stringify({
-    fragmentsCollected: ['plaza-fragment', 'fountain-fragment', 'beacon-fragment', 'garden-fragment'],
+    fragmentsCollected: ['plaza-fragment', 'fountain-fragment', 'beacon-fragment', 'garden-fragment', 'workshop-fragment'],
     connections: [], position: { x: 2530, yRatio: 0.8 }, seenCompletion: false,
   })));
   await reloadAndContinue(page);

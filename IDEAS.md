@@ -27,8 +27,6 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 - Dominio propio.
 
 ## Ideas de contenido (mecánica, siempre reutilizando "conectar")
-- Taller de juguetes: siguiente zona del plan aprobado, con conexiones que
-  ponen en marcha juguetes. Definir su secuencia al encarar esa parte.
 - Faroles encadenados: parte posterior del plan aprobado, encendiendo el camino
   mediante conexiones sucesivas.
 

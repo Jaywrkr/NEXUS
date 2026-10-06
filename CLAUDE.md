@@ -16,14 +16,15 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
 
 - **Consecuencias y secretos**: el agua de la fuente hace brotar flores en la plaza y la antena publica CUAC FM en la casa. Tres parejas inválidas muestran bromas específicas; se guardan como descubrimientos únicos sin resolver puzzles. Volver a Miga tras reparar la fuente descubre otra frase.
 - **Capítulo 1 — La ciudad al revés**: Miga, Bombo, Vera, Don Paso y Alcalde Goteo dan encargos breves para preparar una fiesta. Las frases aparecen al acercarse por primera vez o tocar al habitante, se cierran al tocar el recuadro y no pausan el movimiento. Se guardan las visitas; el objetivo considera conexiones parciales y recuerdos antiguos.
-- **5 zonas jugables** en un mundo de scroll horizontal de 3750px de ancho (no una sola pantalla):
+- **6 zonas jugables** en un mundo de scroll horizontal de 4750px de ancho (no una sola pantalla):
   1. **La plaza**: fuente → lámpara → puerta (puzzle secuencial de 3 pasos).
   2. **La fuente de agua**: fuente → fuente de agua (puzzle de un solo paso).
   3. **La antena**: dos fuentes → una antena (necesita **dos** conexiones simultáneas).
   4. **El puente**: un interruptor revela un puente sobre una grieta que **físicamente bloquea el paso** hasta conectarlo (única zona con barrera real de colisión).
   5. **El jardín**: fuente de energía → aspersor → flores. El aspersor solo puede iniciar el segundo cable una vez encendido; las flores transforman el parterre y revelan un quinto fragmento, al otro lado del puente.
 - **Personaje con sprites reales** (Decisión 017): el Nexus ya no se dibuja con formas de Phaser — son 4 imágenes PNG generadas por IA (idle, dos de caminata, celebrar) en `public/assets/nexus/`, cargadas por `loadNexusAssets()` desde `BootScene.preload()`. Sin personalización por ahora (se sacó `CustomizeScene`, ver más abajo) — el diseño es fijo: orejas tipo conejo con puntas de color, cabeza clara con cara negra y ojos ovalados amarillos, hoodie turquesa, mochila con cable de energía colgando. Los prompts usados están en `ART_PROMPTS.md` por si hay que generar más poses o variantes.
-- **Museo** con 5 vitrinas (dos columnas y tres filas en vertical, con la quinta centrada; una fila en horizontal), recuerdos distintos por zona (luz, gota, antena, puente y flor) que reaccionan al toque con un mensaje y un pulso breve, botón táctil «Volver al mundo» y atajo ESPACIO para regresar, mensaje de "Colección completa" y celebración especial (flash + chispas en las 5 zonas) la primera vez que se completa la colección actual. Mundo y museo comparten la lista `src/data/collection.ts`.
+  6. **El taller**: energía → motor; motor → pato y campana; ambos → desfile. Dos ramas en cualquier orden y reunión de dos entradas distintas.
+- **Museo** con 6 vitrinas (dos columnas y tres filas en vertical, las dos últimas en la tercera fila; una fila en horizontal), recuerdos distintos por zona (luz, gota, antena, puente, flor y pato) que reaccionan al toque con un mensaje y un pulso breve, botón táctil «Volver al mundo» y atajo ESPACIO para regresar, mensaje de "Colección completa" y celebración especial (flash + chispas en las 6 zonas) la primera vez que se completa la colección actual. Mundo y museo comparten la lista `src/data/collection.ts`.
 - **Controles duales**: teclado/mouse en desktop, joystick virtual táctil + **botón de interacción** (aparece al acercarse a un objeto conectable, evita tener que acertar el toque exacto sobre algo pequeño).
 - **Adaptación real a móvil vertical**: la resolución interna del juego cambia (960×540 landscape ↔ 540×960 portrait) según orientación + tipo de puntero, para llenar la pantalla en vez de dejar barras negras. Ver `src/config/gameConfig.ts`.
 - **Sonido**: tonos generados por código (Web Audio, sin archivos de audio) para conectar/error/recolectar, con botón de mute/unmute (🔊/🔇, esquina superior izquierda de `WorldScene`) que persiste en `localStorage`.
@@ -32,7 +33,7 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
 - **Efectos suaves**: opción en el título que suprime flashes/sacudidas de cámara y deja las pistas estáticas y suprime el pulso de los recuerdos y el crecimiento animado de las flores. Sigue por defecto `prefers-reduced-motion`; una elección explícita se guarda en `los-nexus-reduced-effects`, independiente del progreso y de «Nueva partida». No cambia dificultad, recompensas ni controles.
 - **Progreso persistente** en `localStorage`: fragmentos, celebración final (y tamaño de la colección completada), conexiones resueltas (incluida la antena parcial) y posición del Nexus. La posición Y se guarda como proporción de la altura para conservar el lugar al rotar. Se guarda cada 500 ms si cambió y al ocultar/salir/pausar el mundo; volver del museo recupera el lugar. Las partidas antiguas siguen funcionando: una celebración anterior sin `completionCount` corresponde a cuatro recuerdos, y completar el quinto permite una nueva celebración, una sola vez. «Nueva partida» borra todo ese progreso.
 - **Pantalla de título** (`BootScene`): "Jugar" si no hay progreso guardado, o "Continuar" + "Nueva partida" si ya hay fragmentos recolectados — las tres van directo a `WorldScene` (no hay pantalla de personalización).
-- **Pulido visual**: transiciones de fade in/out entre las 4 escenas (`src/utils/sceneTransition.ts`), fondo con parallax en `WorldScene` (nubes + dos capas de colinas con distinto `scrollFactor`), cable de conexión dibujado como curva bezier con una chispa que lo recorre al conectar válido, e indicador `★ n/5` fijo en el HUD del mundo que se actualiza al recolectar cada fragmento.
+- **Pulido visual**: transiciones de fade in/out entre las 4 escenas (`src/utils/sceneTransition.ts`), fondo con parallax en `WorldScene` (nubes + dos capas de colinas con distinto `scrollFactor`), cable de conexión dibujado como curva bezier con una chispa que lo recorre al conectar válido, e indicador `★ n/6` fijo en el HUD del mundo que se actualiza al recolectar cada fragmento.
 - **Realismo**: movimiento del Nexus con aceleración/desaceleración gradual (no velocidad instantánea), sombras de piso en todos los objetos interactivos y decoración estática, viento sutil en el árbol y mariposas cruzando el mundo.
 - **Mini-túnel del cable** (idea de Luca, `CableTunnelScene`): la conexión fuente→lámpara de la plaza, en vez de resolverse al toque, abre un mini-juego con perspectiva tipo Mario Kart — anillos concéntricos que se agrandan al acercarse (efecto vórtex dibujado con `Graphics`, sin assets), la chispa vista desde atrás/abajo, y control libre en 2D (flechas/WASD, las 4 direcciones, o el mismo joystick táctil que en `WorldScene`) para esquivar las paredes del tubo mientras serpentea. Al entrar ofrece práctica sin avanzar ni perder y botón «Empezar». Perder muestra «Reintentar» (reinicia directamente el mismo túnel) y «Volver al mundo»; ganar completa la conexión normalmente. ESPACIO empieza/reintenta y ESC vuelve desde práctica o fallo. La dificultad queda pendiente de validar con Luca. Ver Decisión 016. Por ahora solo esa conexión lo usa — el resto sigue resolviéndose al toque directo.
 
@@ -51,7 +52,7 @@ Hay una suite automatizada: `npm run test:unit` verifica el guardado y `npm run 
 
 Después de cambios:
 1. `npm run build` (debe terminar sin errores).
-2. `npm test` (12 pruebas unitarias y 20 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
+2. `npm test` (13 pruebas unitarias y 22 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
 3. Revisar las capturas adjuntas en `test-results/` y el informe en `playwright-report/`; los fallos conservan trazas.
 4. La prueba en dispositivo real con Luca sigue siendo necesaria para validar comodidad y dificultad.
 
@@ -65,7 +66,7 @@ src/
   config/gameConfig.ts       — resolución dinámica según orientación/puntero
   scenes/
     BootScene.ts             — pantalla de título: "Jugar"/"Continuar" según haya progreso guardado, precarga los sprites del Nexus
-    WorldScene.ts            — el mundo completo, las 5 zonas, cámara, joystick, botón de interacción
+    WorldScene.ts            — el mundo completo, las 6 zonas, cámara, joystick, botón de interacción
     MuseumScene.ts           — vitrinas de fragmentos
     CableTunnelScene.ts      — mini-túnel dentro del cable (ver Decisión 016), se lanza sobre WorldScene pausada
   entities/
@@ -114,13 +115,15 @@ Ver `DECISIONS.md` para la lista completa. Las más importantes:
 
 ## Coordenadas de referencia del mundo (para pruebas o debug futuro)
 
-`WORLD_WIDTH = 3750`, altura del mundo = `this.scale.height` (540 en landscape, 960 en portrait). `midY = height / 2`. Con `vScale = height / 540` (1 en landscape) multiplicando los desplazamientos verticales:
+`WORLD_WIDTH = 4750`, altura del mundo = `this.scale.height` (540 en landscape, 960 en portrait). `midY = height / 2`. Con `vScale = height / 540` (1 en landscape) multiplicando los desplazamientos verticales:
 
 - Zona 1 (plaza): fuente `(480, midY-40·v)`, lámpara `(680, midY-20·v)`, puerta `(820, midY+60·v)`, fragmento `(820, midY-10·v)`.
 - Zona 2 (fuente de agua): fuente `(1300, midY-40·v)`, fuente de agua `(1460, midY+40·v)`, fragmento `(1460, midY-60·v)`.
 - Zona 3 (antena): fuente A `(1980, midY-80·v)`, fuente B `(1980, midY+80·v)`, antena `(2220, midY)`, fragmento `(2220, midY-90·v)`.
 - Zona 4 (puente): fuente `(2500, midY-40·v)`, interruptor `(2560, midY)`, grieta centrada en `x=2610` (ancho 100), fragmento `(2820, midY-40·v)`.
 - Zona 5 (jardín): fuente `(3150, midY-40·v)`, aspersor `(3310, midY+10·v)`, flores `(3500, midY+40·v)`, fragmento `(3500, midY-85·v)`.
+
+- Zona 6 (taller): fuente x=3950, motor x=4110, pato/campana x=4290, desfile/fragmento x=4490. Implementación modular en `src/zones/WorkshopZone.ts`.
 
 El Nexus arranca en `(480, midY+100·v)`. La cámara sigue al Nexus con `startFollow(nexus, true, 0.12, 0.12)` y límites `(0,0,WORLD_WIDTH,height)`.
 

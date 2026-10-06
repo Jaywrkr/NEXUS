@@ -127,6 +127,9 @@ El título presenta «La ciudad al revés». Cinco habitantes con siluetas propi
 ## Consecuencias y humor del barrio
 Tres parejas inválidas tienen respuestas propias: puerta cantante, devolución de luz y ensalada electrificada. Se guardan como descubrimientos únicos, sin conexiones ni fragmentos gratis. La puerta hace una pequeña inclinación si los efectos suaves están desactivados. Reparar la fuente hace brotar flores en la plaza; completar la antena publica CUAC FM en la casa. Miga comenta el riego compartido al volver, otra sorpresa opcional. Estos cambios se restauran sin repetir recompensas. El feedback del cable se ajusta en líneas y sube para no tapar el botón de proximidad. Se prueban bromas repetidas, ausencia de premio, efectos entre zonas y recuperación al recargar.
 
+## Taller de Pipa y desfile ramificado
+Sexta zona en un mundo de 4750 px. Un motor despierta al pato supervisor y a la campana; sus cables distintos reúnen el desfile. El orden de las ramas es libre y repetir una entrada no completa el desfile. Se restauran motor, ramas y reunión parcial; el fragmento solo aparece al completar ambas. Pipa explica el encargo y comenta el resultado. El museo añade un pato, y la colección pasa a seis. Se prueban la rama de la campana primero, duplicación, reload parcial, premio y museo de seis recuerdos; el recorrido general usa el orden inverso.
+
 
 ## Más variedad de partículas al conectar
 `ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.

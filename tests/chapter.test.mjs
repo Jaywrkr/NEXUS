@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { chapterObjective, residentLine, RESIDENTS, connectionSurprise } from '../src/data/chapter.ts';
+import { chapterObjective, residentLine, RESIDENTS, connectionSurprise, hasChapterConnection } from '../src/data/chapter.ts';
 
 const state = (connections = [], fragmentsCollected = []) => ({ connections, fragmentsCollected, seenCompletion: false, position: null });
 test('objectives retain the partial steps and accept legacy collected rewards', () => {
@@ -19,4 +19,11 @@ test('specific wrong pairs have original responses while unknown pairs stay ordi
   assert.equal(connectionSurprise('energy-source', 'door').id, 'singing-door');
   assert.equal(connectionSurprise('garden-source', 'garden-bed').id, 'salad-decree');
   assert.equal(connectionSurprise('door', 'lamp'), undefined);
+});
+
+test('the parade needs the named duck and bell inputs, not two arbitrary cables', () => {
+  const duck = { sourceId: 'toy-duck', targetId: 'toy-parade' };
+  assert.equal(hasChapterConnection(state([duck, duck]), 'toy-parade'), false);
+  assert.equal(hasChapterConnection(state([duck, { sourceId: 'lamp', targetId: 'toy-parade' }]), 'toy-parade'), false);
+  assert.equal(hasChapterConnection(state([duck, { sourceId: 'toy-bell', targetId: 'toy-parade' }]), 'toy-parade'), true);
 });

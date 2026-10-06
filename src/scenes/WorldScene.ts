@@ -12,6 +12,7 @@ import { COLLECTION } from '../data/collection';
 import { RESIDENTS, chapterObjective, residentLine, type ResidentInfo, type CONNECTION_SURPRISES } from '../data/chapter';
 import { Resident } from '../objects/Resident';
 import { StoryCard } from '../ui/StoryCard';
+import { WorkshopZone } from '../zones/WorkshopZone';
 import { Fragment } from '../objects/Fragment';
 import { ConnectionSystem } from '../systems/ConnectionSystem';
 import { ProgressSystem } from '../systems/ProgressSystem';
@@ -34,7 +35,7 @@ const BRIDGE_FRAGMENT_ID = 'bridge-fragment';
 const GARDEN_FRAGMENT_ID = 'garden-fragment';
 const SECRET_FRAGMENT_ID = 'secret-fragment';
 const ALL_FRAGMENT_IDS = COLLECTION.map(item => item.id);
-const WORLD_WIDTH = 3750;
+const WORLD_WIDTH = 4750;
 const GAP_X = 2610;
 const GAP_WIDTH = 100;
 
@@ -75,6 +76,7 @@ export class WorldScene extends Phaser.Scene {
   private storyCard!: StoryCard;
   private plazaFlowers!: Phaser.GameObjects.Graphics;
   private radioBanner!: Phaser.GameObjects.Text;
+  private workshop!: WorkshopZone;
 
   constructor() {
     super('WorldScene');
@@ -206,8 +208,10 @@ export class WorldScene extends Phaser.Scene {
       this.sprinkler.activate();
       this.flowerBed.activate();
     }
+    if (this.progress.hasFragment('workshop-fragment')) this.workshop.restoreCollected();
 
     this.connectionSystem.restoreConnections(this.progress.getConnections());
+    this.workshop.refresh(this.progress.hasFragment('workshop-fragment'));
     if (this.lamp.isActive) this.lightHouseWindow(false);
     if (this.door.isActive && !plazaDone) {
       this.plazaFragment.reveal();
@@ -332,6 +336,7 @@ export class WorldScene extends Phaser.Scene {
     this.sprinkler = new Sprinkler(this, 3310, midY + 10 * vScale);
     this.flowerBed = new FlowerBed(this, 3500, midY + 40 * vScale);
     this.gardenFragment = new Fragment(this, 3500, midY - 85 * vScale);
+    this.workshop = new WorkshopZone(this, height, vScale);
     for (const [object, label] of [[gardenSource, 'Energía'], [this.sprinkler, 'Aspersor'], [this.flowerBed, 'Flores']] as const) {
       this.add.text(object.x, object.y + 65, label, {
         fontFamily: 'sans-serif', fontSize: '16px', color: '#365137',
@@ -353,6 +358,7 @@ export class WorldScene extends Phaser.Scene {
       gardenSource,
       this.sprinkler,
       this.flowerBed,
+      ...this.workshop.connectables,
     ];
 
     this.connectables.forEach((obj) => obj.setDepth(11));
@@ -372,6 +378,7 @@ export class WorldScene extends Phaser.Scene {
     this.connectionSystem.addRule({ sourceId: bridgeSource.id, targetId: this.bridge.id });
     this.connectionSystem.addRule({ sourceId: gardenSource.id, targetId: this.sprinkler.id });
     this.connectionSystem.addRule({ sourceId: this.sprinkler.id, targetId: this.flowerBed.id });
+    this.workshop.rules.forEach(rule => this.connectionSystem.addRule(rule));
 
     this.bridgeBlocker = this.add.zone(GAP_X, midY, GAP_WIDTH - 20, height);
     this.physics.add.existing(this.bridgeBlocker, true);
@@ -434,6 +441,7 @@ export class WorldScene extends Phaser.Scene {
       }
       this.instructionText.setText(chapterObjective(this.progress.snapshot()));
       this.applyChapterConsequences();
+      this.workshop.refresh(this.progress.hasFragment('workshop-fragment'));
     };
 
     this.events.on('tunnel-requested', onTunnelRequested);
@@ -462,6 +470,9 @@ export class WorldScene extends Phaser.Scene {
     );
     this.physics.add.overlap(this.nexus, this.gardenFragment, () =>
       this.collectFragment(this.gardenFragment, GARDEN_FRAGMENT_ID),
+    );
+    this.physics.add.overlap(this.nexus, this.workshop.fragment, () =>
+      this.collectFragment(this.workshop.fragment, 'workshop-fragment'),
     );
   }
 
@@ -592,6 +603,7 @@ export class WorldScene extends Phaser.Scene {
       { x: 2220, y: midY },
       { x: 2820, y: midY - 40 * vScale },
       { x: 3500, y: midY + 40 * vScale },
+      { x: 4490, y: midY + 20 * vScale },
     ];
 
     spots.forEach((spot, index) => {

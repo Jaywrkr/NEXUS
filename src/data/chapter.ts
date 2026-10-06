@@ -17,12 +17,17 @@ export const RESIDENTS = [
   { id: 'goteo', name: 'Alcalde Goteo', x: 3620, offsetY: 140, color: 0xffb86c, fragment: 'garden-fragment', target: 'garden-bed',
     request: 'Decreto municipal: flores felices. Energía al aspersor, agua a las flores.',
     restored: '¡Ha florecido mi mandato! Las flores prefieren decir que las regaste tú.' },
+  { id: 'pipa', name: 'Pipa', x: 4610, offsetY: 130, color: 0xc7a0ef, fragment: 'workshop-fragment', target: 'toy-parade',
+    request: 'Motor al pato y a la campana. Luego júntalos en el desfile. El pato insiste en supervisar.',
+    restored: '¡El desfile funciona! El pato pidió vacaciones antes de su primer día.' },
 ];
 
 export type ResidentInfo = typeof RESIDENTS[number];
 
 export function hasChapterConnection(state: GameState, target: string): boolean {
-  if (target === 'beacon') return new Set(state.connections.filter(c => c.targetId === target).map(c => c.sourceId)).size >= 2;
+  const required = target === 'beacon' ? ['beacon-source-a', 'beacon-source-b']
+    : target === 'toy-parade' ? ['toy-duck', 'toy-bell'] : null;
+  if (required) return required.every(source => state.connections.some(c => c.targetId === target && c.sourceId === source));
   return state.connections.some(c => c.targetId === target);
 }
 
@@ -52,5 +57,10 @@ export function chapterObjective(state: GameState): string {
   if (!done('bridge-fragment', 'bridge')) return 'Conecta el interruptor para cruzar el puente';
   if (!done('garden-fragment', 'garden-bed')) return hasChapterConnection(state, 'garden-sprinkler')
     ? 'Conecta el aspersor con las flores de la fiesta' : 'Enciende el aspersor del jardín';
+  if (!done('workshop-fragment', 'toy-parade')) {
+    if (!hasChapterConnection(state, 'toy-motor')) return 'Pipa necesita un desfile: enciende el motor del taller';
+    if (!hasChapterConnection(state, 'toy-duck') || !hasChapterConnection(state, 'toy-bell')) return 'Conecta el motor con el pato y con la campana';
+    return 'Lleva el pato y la campana al desfile: faltan sus dos cables';
+  }
   return 'El barrio está listo. Explora y recupera los recuerdos';
 }
