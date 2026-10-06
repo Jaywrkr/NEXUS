@@ -66,3 +66,10 @@ Los recuerdos del museo representan cada zona con una forma propia y una pequeñ
 
 **Decisión 021**
 La quinta zona del plan aprobado es un jardín al otro lado del puente, con energía → aspersor → flores. Mantiene la única acción de conectar y no añade otro mini-juego ni botones. Completar el riego transforma el lugar y entrega una flor para el museo. La colección actual se define en un lugar compartido; la celebración guardada incluye su tamaño para permitir continuar una partida terminada antes de añadir zonas sin perder progreso ni repetir la celebración al recargar.
+
+
+**Decisión histórica H018 (señuelo)**
+Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica especial: es un objeto registrado en `ConnectionSystem` sin ninguna regla, así que cae en el manejo genérico de conexión inválida. Debe verse sutilmente distinto de los reales (la fuente señuelo es gris y sin brillo animado) para que el puzzle sea de observar, no de adivinar. Primer uso: zona de la antena.
+
+**Decisión histórica H019 (fragmento secreto)**
+Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.
