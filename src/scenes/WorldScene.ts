@@ -184,7 +184,51 @@ export class WorldScene extends Phaser.Scene {
       this.removeBridgeBlocker();
     }
 
+    this.connectionSystem.restoreConnections(this.progress.getConnections());
+    if (this.lamp.isActive) this.lightHouseWindow(false);
+    if (this.door.isActive && !plazaDone) {
+      this.plazaFragment.reveal();
+      this.transformWorld(false);
+    }
+    if (this.fountain.isActive && !fountainDone) this.fountainFragment.reveal();
+    if (this.beacon.isFullyActive && !beaconDone) this.beaconFragment.reveal();
+    if (this.bridge.isActive && !bridgeDone) {
+      this.revealBridgeDeck(false);
+      this.removeBridgeBlocker();
+      this.bridgeFragment.reveal();
+    }
+
+    const position = this.progress.getPosition();
+    if (position) {
+      // Keep the body inside the world, and on the near side of a closed bridge.
+      const maxX = this.bridge.isActive ? WORLD_WIDTH - 26 : GAP_X - (GAP_WIDTH - 20) / 2 - 26;
+      this.nexus.setPosition(
+        Phaser.Math.Clamp(position.x, 26, maxX),
+        Phaser.Math.Clamp(position.yRatio * height, 42, height - 32),
+      );
+      this.nexus.body.updateFromGameObject();
+    }
+
     this.instructionText.setText(this.getStatusMessage(plazaDone, fountainDone, beaconDone, bridgeDone));
+    if (!plazaDone && this.lamp.isActive) {
+      this.instructionText.setText(this.door.isActive
+        ? '¡La puerta se abrió! Acércate al fragmento'
+        : 'La lámpara está encendida — conéctala con la puerta');
+    }
+
+    // Save movement periodically, and flush before leaving or hiding the world.
+    const savePosition = (): void => this.progress.savePosition(this.nexus.x, this.nexus.y / height);
+    this.time.addEvent({ delay: 500, loop: true, callback: savePosition });
+    const onHidden = (): void => { if (document.hidden) savePosition(); };
+    window.addEventListener('pagehide', savePosition);
+    document.addEventListener('visibilitychange', onHidden);
+    this.events.on('pause', savePosition);
+    this.events.once('shutdown', () => {
+      savePosition();
+      window.removeEventListener('pagehide', savePosition);
+      document.removeEventListener('visibilitychange', onHidden);
+      this.events.off('pause', savePosition);
+    });
   }
 
   private getStatusMessage(plazaDone: boolean, fountainDone: boolean, beaconDone: boolean, bridgeDone: boolean): string {
@@ -272,7 +316,9 @@ export class WorldScene extends Phaser.Scene {
       },
     );
 
-    this.events.on('connection-made', (targetId: string) => {
+    this.events.on('connection-made', (targetId: string, sourceId: string) => {
+      this.progress.saveConnection(sourceId, targetId);
+      this.progress.savePosition(this.nexus.x, this.nexus.y / this.scale.height);
       if (targetId === this.lamp.id) {
         this.lightHouseWindow(true);
       }
@@ -411,6 +457,7 @@ export class WorldScene extends Phaser.Scene {
   private collectFragment(fragment: Fragment, id: string): void {
     if (!fragment.visible || fragment.isCollected) return;
 
+    this.progress.savePosition(this.nexus.x, this.nexus.y / this.scale.height);
     fragment.collect();
     this.progress.collectFragment(id);
     this.audio.playCollect();

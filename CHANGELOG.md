@@ -88,6 +88,9 @@ El usuario decidió romper la regla de "solo formas de Phaser" para el personaje
 ## Museo adaptado a celular
 Botón «Volver al mundo» accesible por toque y clic, conservando ESPACIO como atajo. En vertical las cuatro vitrinas se distribuyen en una cuadrícula 2×2; en horizontal conservan una fila. Las entradas repetidas y los estados vacío, parcial y completo se verifican con Playwright en escritorio y móvil vertical.
 
+## Continuar conexiones y posición
+El guardado incluye las conexiones resueltas y la posición del Nexus, además de los fragmentos. Al continuar o volver del museo se restauran la lámpara, puerta, fuente, antena parcial/completa, puente y fragmentos pendientes. La posición vertical es relativa a la altura para soportar la rotación; se valida contra los límites del mundo y un puente cerrado. «Continuar» también aparece antes del primer fragmento y «Nueva partida» borra todos los campos. Las partidas antiguas conservan sus fragmentos. Las conexiones repetidas ya no cuentan dos veces para la antena. Se añaden cuatro pruebas de serialización, migración, datos inválidos y reinicio (`node --test tests/gameState.test.mjs`, Node 24).
+
 
 ## Más variedad de partículas al conectar
 `ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.

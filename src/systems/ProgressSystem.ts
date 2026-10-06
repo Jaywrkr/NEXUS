@@ -1,15 +1,40 @@
-import type { GameState } from '../data/gameState';
+import type { GameState, SavedConnection, SavedPosition } from '../data/gameState';
 import { clearGameState, loadGameState, saveGameState } from '../data/gameState';
 
 /**
  * Punto único de acceso al progreso guardado (localStorage):
- * fragmentos recolectados.
+ * fragmentos, conexiones resueltas y posición del Nexus.
  */
 export class ProgressSystem {
   private state: GameState;
 
   constructor() {
     this.state = loadGameState();
+  }
+
+  hasProgress(): boolean {
+    return this.state.fragmentsCollected.length > 0 || this.state.connections.length > 0 || this.state.position !== null;
+  }
+
+  getConnections(): SavedConnection[] {
+    return this.state.connections.map((connection) => ({ ...connection }));
+  }
+
+  saveConnection(sourceId: string, targetId: string): void {
+    if (this.state.connections.some((c) => c.sourceId === sourceId && c.targetId === targetId)) return;
+    this.state.connections.push({ sourceId, targetId });
+    saveGameState(this.state);
+  }
+
+  getPosition(): SavedPosition | null {
+    return this.state.position ? { ...this.state.position } : null;
+  }
+
+  savePosition(x: number, yRatio: number): void {
+    if (!Number.isFinite(x) || !Number.isFinite(yRatio)) return;
+    if (this.state.position?.x === x && this.state.position.yRatio === yRatio) return;
+    this.state.position = { x, yRatio };
+    saveGameState(this.state);
   }
 
   hasFragment(id: string): boolean {
@@ -35,7 +60,7 @@ export class ProgressSystem {
     saveGameState(this.state);
   }
 
-  /** Borra todo el progreso guardado (fragmentos y celebración vista). Usado por "Nueva partida". */
+  /** Borra todo el progreso guardado (fragmentos, conexiones, posición y celebración vista). Usado por "Nueva partida". */
   resetProgress(): void {
     clearGameState();
     this.state = loadGameState();

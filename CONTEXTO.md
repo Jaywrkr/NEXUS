@@ -25,7 +25,7 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
 - **Adaptación real a móvil vertical**: la resolución interna del juego cambia (960×540 landscape ↔ 540×960 portrait) según orientación + tipo de puntero, para llenar la pantalla en vez de dejar barras negras. Ver `src/config/gameConfig.ts`.
 - **Sonido**: tonos generados por código (Web Audio, sin archivos de audio) para conectar/error/recolectar, con botón de mute/unmute (🔊/🔇, esquina superior izquierda de `WorldScene`) que persiste en `localStorage`.
 - **Animaciones del Nexus**: idle, caminar, conectar (implícito en el cable), celebrar (salto + chispas al recoger fragmentos).
-- **Progreso persistente** en `localStorage` (fragmentos recolectados, si ya vio la celebración final).
+- **Progreso persistente** en `localStorage`: fragmentos, celebración final, conexiones resueltas (incluida la antena parcial) y posición del Nexus. La posición Y se guarda como proporción de la altura para conservar el lugar al rotar. Se guarda cada 500 ms si cambió y al ocultar/salir/pausar el mundo; volver del museo recupera el lugar. Las partidas antiguas siguen funcionando. «Nueva partida» borra todo ese progreso.
 - **Pantalla de título** (`BootScene`): "Jugar" si no hay progreso guardado, o "Continuar" + "Nueva partida" si ya hay fragmentos recolectados — las tres van directo a `WorldScene` (no hay pantalla de personalización).
 - **Pulido visual**: transiciones de fade in/out entre las 4 escenas (`src/utils/sceneTransition.ts`), fondo con parallax en `WorldScene` (nubes + dos capas de colinas con distinto `scrollFactor`), cable de conexión dibujado como curva bezier con una chispa que lo recorre al conectar válido, e indicador `★ n/4` fijo en el HUD del mundo que se actualiza al recolectar cada fragmento.
 - **Realismo**: movimiento del Nexus con aceleración/desaceleración gradual (no velocidad instantánea), sombras de piso en todos los objetos interactivos y decoración estática, viento sutil en el árbol y mariposas cruzando el mundo.
@@ -42,7 +42,7 @@ npm run dev -- --host   # para probar desde el celular en la misma red WiFi
 npm run build     # build de producción — SIEMPRE correr esto después de cualquier cambio
 ```
 
-No hay test suite automatizado. La forma de verificar cambios en esta sesión fue:
+Hay pruebas de guardado en `tests/gameState.test.mjs`: ejecutar `node --test tests/gameState.test.mjs` con Node 24 (TypeScript nativo). Para verificar también el juego:
 1. `npm run build` (debe terminar sin errores).
 2. Levantar el dev server y usar Playwright (`chromium` en `/opt/pw-browsers/chromium`, paquete Playwright en `/opt/node22/lib/node_modules/playwright`) para simular clics/teclado, tomar screenshots, y leerlos con la herramienta de lectura de imágenes.
 3. Revisar consola por errores (`page.on('pageerror', ...)`).
