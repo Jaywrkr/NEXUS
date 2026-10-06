@@ -100,3 +100,10 @@ El usuario pide una estética más moderna con toques visuales de Fortnite y aut
 
 **Decisión 030**
 Con «sigue», el usuario autoriza extender la dirección moderna aprobada al resto del juego. Los siete distritos comparten losas grandes, fachadas con volumen y vegetación facetada, con hitos propios por barrio. Armario, diario, encargos, museo, final y túnel adoptan azul/violeta, energía cian, texto claro y botones planos. La estética es original; no se incorporan recursos de Fortnite. Se conservan funciones, posiciones, geometría del túnel, identidad del Nexus y guardado. La rama se anida sobre `codex/estilo-moderno-plaza`; PR y merge a cargo del usuario.
+
+
+**Decisión histórica H018 (señuelo)**
+Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica especial: es un objeto registrado en `ConnectionSystem` sin ninguna regla, así que cae en el manejo genérico de conexión inválida. Debe verse sutilmente distinto de los reales (la fuente señuelo es gris y sin brillo animado) para que el puzzle sea de observar, no de adivinar. Primer uso: zona de la antena.
+
+**Decisión histórica H019 (fragmento secreto)**
+Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.
