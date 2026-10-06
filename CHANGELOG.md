@@ -98,6 +98,9 @@ Las pruebas encontraron áreas interactivas desplazadas por el origen de los Con
 
 El recorrido completo también detectó listeners del mundo que se acumulaban al volver del museo: abrir el puente intentaba destruir su collider varias veces. Se eliminan los listeners propios en shutdown y la retirada de la barrera es idempotente, incluyendo puentes restaurados desde partidas antiguas.
 
+## Práctica y reintento directo del túnel
+La conexión fuente→lámpara abre una fase de práctica con los mismos controles, sin avance ni derrota. «Empezar» inicia el recorrido desde el centro. Al perder se conserva el mundo pausado y aparecen «Reintentar» (reinicia ese túnel sin volver a seleccionar objetos) y «Volver al mundo». ESPACIO empieza/reintenta y ESC sale desde práctica o fallo. Solo ganar guarda la conexión; practicar, perder y salir no la desbloquean. Se reinicia el joystick al comenzar y tras un fallo, y se limpian los atajos al cerrar/reiniciar la escena. Velocidad, curvas y radio mantienen sus valores: el balance sigue pendiente de la prueba con Luca. Se amplían las pruebas E2E del recorrido y se agrega un escenario de práctica/cancelación/reintentos para escritorio y móvil.
+
 
 ## Más variedad de partículas al conectar
 `ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.

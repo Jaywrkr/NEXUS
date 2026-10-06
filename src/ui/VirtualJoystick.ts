@@ -71,6 +71,11 @@ export class VirtualJoystick {
   private endDrag(pointer: Phaser.Input.Pointer): void {
     if (this.pointerId !== pointer.id) return;
 
+    this.reset();
+  }
+
+  /** Release any drag before a new attempt starts. */
+  reset(): void {
     this.pointerId = null;
     this.vector.set(0, 0);
     this.knob.setPosition(this.centerX, this.centerY);

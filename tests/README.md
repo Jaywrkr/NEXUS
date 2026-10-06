@@ -21,7 +21,7 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test
 
 ```bash
 npm run test:unit    # cuatro pruebas de guardado
-npm run test:e2e     # tres escenarios en escritorio y tres en móvil vertical
+npm run test:e2e     # cuatro escenarios en escritorio y cuatro en móvil vertical
 npm test            # ambas suites
 npm run build       # TypeScript y build de producción; check separado
 ```
@@ -42,6 +42,9 @@ No hay retries automáticos ni pruebas omitidas por defecto.
 - Continuar antes del primer fragmento, antena parcial, fuentes duplicadas,
   movimiento de teclado/joystick y recuperación de posición. En móvil también
   se gira a horizontal y se comprueba que la posición vertical relativa se conserva.
+- Práctica con movimiento real sin avance ni derrota; empezar por toque/teclado,
+  cancelar sin desbloquear la lámpara, reintentos consecutivos sin seleccionar
+  objetos otra vez y salida por botón/ESC después de perder.
 - Partidas antiguas y confirmación/cancelación de «Nueva partida».
 - Serialización, migración, datos malformados y reinicio sin arrays compartidos.
 

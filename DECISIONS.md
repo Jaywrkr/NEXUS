@@ -53,7 +53,11 @@ El usuario decidió explícitamente romper la regla de "nada de assets externos"
 
 
 **Decisión 018**
+El mini-túnel ofrece una fase de práctica sin derrota antes de empezar. Tras perder permite reintentar directamente la misma conexión o volver al mundo; no hay penalidad ni recompensa por cancelar. Solo superar el recorrido completa la conexión. Esta mejora forma parte del plan aprobado de desarrollo; la dificultad se ajustará después de probar con Luca.
+
+
+**Decisión histórica H018 (señuelo)**
 Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica especial: es un objeto registrado en `ConnectionSystem` sin ninguna regla, así que cae en el manejo genérico de conexión inválida. Debe verse sutilmente distinto de los reales (la fuente señuelo es gris y sin brillo animado) para que el puzzle sea de observar, no de adivinar. Primer uso: zona de la antena.
 
-**Decisión 019**
+**Decisión histórica H019 (fragmento secreto)**
 Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.

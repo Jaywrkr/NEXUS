@@ -1,4 +1,4 @@
-import { test, expect, ready, world, start, connect, saved, collect, returnToWorld, checkpoint, winTunnel, titleButton } from './helpers.js';
+import { test, expect, ready, world, start, connect, saved, collect, returnToWorld, checkpoint, winTunnel, titleButton, tunnelButton, runningTunnel, failedTunnel } from './helpers.js';
 
 const fragmentIds = ['plaza-fragment', 'fountain-fragment', 'beacon-fragment', 'bridge-fragment'];
 
@@ -35,13 +35,16 @@ test('complete all four zones, lose and win the tunnel, and revisit the museum',
   await ready(page, 'CableTunnelScene');
   await checkpoint(page, testInfo, 'tunnel');
   expect(await page.evaluate(() => window.__nexusTest.scene.isPaused('WorldScene'))).toBe(true);
+  await tunnelButton(page, 'Empezar');
+  await runningTunnel(page);
   // With no steering the real collision check must fail, not award the lamp.
-  await ready(page, 'WorldScene');
+  await failedTunnel(page);
   expect(await world(page, 'return s.lamp.isActive;')).toBe(false);
   expect((await saved(page)).connections).toEqual([]);
 
-  await connect(page, 'energy-source', 'lamp');
-  await ready(page, 'CableTunnelScene');
+  await checkpoint(page, testInfo, 'tunnel-failed');
+  await tunnelButton(page, 'Reintentar');
+  await runningTunnel(page);
   await winTunnel(page);
   expect((await saved(page)).connections).toContainEqual({ sourceId: 'energy-source', targetId: 'lamp' });
   await connect(page, 'lamp', 'door');
@@ -166,4 +169,61 @@ test('legacy saves migrate and new game confirmation preserves or clears progres
   expect(await world(page, 'return s.progress.getCollectedFragments();')).toEqual([]);
   expect(await world(page, 'return s.nexus.x;')).toBe(480);
   await checkpoint(page, testInfo, 'new-game');
+});
+
+
+test('practice safely, cancel, and retry multiple times without reselecting objects', async ({ page, isMobile }, testInfo) => {
+  await start(page);
+  await connect(page, 'energy-source', 'lamp');
+  await ready(page, 'CableTunnelScene');
+  const initialX = await page.evaluate(() => window.__nexusTest.scene.getScene('CableTunnelScene').shipX);
+  if (isMobile) {
+    const touch = await page.context().newCDPSession(page);
+    const y = page.viewportSize().height - 90;
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 90, y, id: 1 }] });
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 130, y, id: 1 }] });
+    await page.waitForTimeout(600);
+    await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await touch.detach();
+  } else {
+    await page.keyboard.down('ArrowRight');
+    await page.waitForTimeout(600);
+    await page.keyboard.up('ArrowRight');
+  }
+  expect(await page.evaluate(() => window.__nexusTest.scene.getScene('CableTunnelScene').shipX)).toBeGreaterThan(initialX + 40);
+  await page.waitForTimeout(700);
+  expect(await page.evaluate(() => {
+    const s = window.__nexusTest.scene.getScene('CableTunnelScene');
+    return { phase: s.phase, progress: s.progress, finished: s.finished };
+  })).toEqual({ phase: 'practice', progress: 0, finished: false });
+  expect((await saved(page)).connections).toEqual([]);
+  await checkpoint(page, testInfo, 'practice');
+  await tunnelButton(page, 'Volver al mundo');
+  await ready(page, 'WorldScene');
+  expect(await world(page, 'return s.lamp.isActive;')).toBe(false);
+
+  // Every fresh connection offers practice again; keyboard and touch can start.
+  await connect(page, 'energy-source', 'lamp');
+  await ready(page, 'CableTunnelScene');
+  expect(await page.evaluate(() => window.__nexusTest.scene.getScene('CableTunnelScene').phase)).toBe('practice');
+  if (isMobile) await tunnelButton(page, 'Empezar');
+  else await page.keyboard.press('Space');
+  await runningTunnel(page);
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await failedTunnel(page);
+    expect(await world(page, 'return s.lamp.isActive;')).toBe(false);
+    expect((await saved(page)).connections).toEqual([]);
+    if (isMobile) await tunnelButton(page, 'Reintentar');
+    else await page.keyboard.press('Space');
+    await runningTunnel(page);
+    expect(await page.evaluate(() => window.__nexusTest.scene.isPaused('WorldScene'))).toBe(true);
+    expect(await page.evaluate(() => window.__nexusTest.scene.getScene('CableTunnelScene').progress)).toBeLessThan(200);
+  }
+  await failedTunnel(page);
+  await checkpoint(page, testInfo, 'retry-menu');
+  if (isMobile) await tunnelButton(page, 'Volver al mundo');
+  else await page.keyboard.press('Escape');
+  await ready(page, 'WorldScene');
+  expect((await saved(page)).connections).toEqual([]);
+  expect(await world(page, 'return s.connectionSystem.hasSelection();')).toBe(false);
 });

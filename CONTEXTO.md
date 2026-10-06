@@ -29,7 +29,7 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
 - **Pantalla de título** (`BootScene`): "Jugar" si no hay progreso guardado, o "Continuar" + "Nueva partida" si ya hay fragmentos recolectados — las tres van directo a `WorldScene` (no hay pantalla de personalización).
 - **Pulido visual**: transiciones de fade in/out entre las 4 escenas (`src/utils/sceneTransition.ts`), fondo con parallax en `WorldScene` (nubes + dos capas de colinas con distinto `scrollFactor`), cable de conexión dibujado como curva bezier con una chispa que lo recorre al conectar válido, e indicador `★ n/4` fijo en el HUD del mundo que se actualiza al recolectar cada fragmento.
 - **Realismo**: movimiento del Nexus con aceleración/desaceleración gradual (no velocidad instantánea), sombras de piso en todos los objetos interactivos y decoración estática, viento sutil en el árbol y mariposas cruzando el mundo.
-- **Mini-túnel del cable** (idea de Luca, `CableTunnelScene`): la conexión fuente→lámpara de la plaza, en vez de resolverse al toque, abre un mini-juego con perspectiva tipo Mario Kart — anillos concéntricos que se agrandan al acercarse (efecto vórtex dibujado con `Graphics`, sin assets), la chispa vista desde atrás/abajo, y control libre en 2D (flechas/WASD, las 4 direcciones, o el mismo joystick táctil que en `WorldScene`) para esquivar las paredes del tubo mientras serpentea. Perder devuelve a intentar la conexión; ganar la completa normalmente. Ver Decisión 016. Por ahora solo esa conexión lo usa — el resto sigue resolviéndose al toque directo.
+- **Mini-túnel del cable** (idea de Luca, `CableTunnelScene`): la conexión fuente→lámpara de la plaza, en vez de resolverse al toque, abre un mini-juego con perspectiva tipo Mario Kart — anillos concéntricos que se agrandan al acercarse (efecto vórtex dibujado con `Graphics`, sin assets), la chispa vista desde atrás/abajo, y control libre en 2D (flechas/WASD, las 4 direcciones, o el mismo joystick táctil que en `WorldScene`) para esquivar las paredes del tubo mientras serpentea. Al entrar ofrece práctica sin avanzar ni perder y botón «Empezar». Perder muestra «Reintentar» (reinicia directamente el mismo túnel) y «Volver al mundo»; ganar completa la conexión normalmente. ESPACIO empieza/reintenta y ESC vuelve desde práctica o fallo. La dificultad queda pendiente de validar con Luca. Ver Decisión 016. Por ahora solo esa conexión lo usa — el resto sigue resolviéndose al toque directo.
 
 Todo esto se probó jugando de verdad (no solo `npm run build`) usando Playwright headless para simular clics/toques y tomar capturas de pantalla, además de pruebas reales en el celular de Luca que revelaron bugs que el simulador no mostraba.
 
@@ -46,7 +46,7 @@ Hay una suite automatizada: `npm run test:unit` verifica el guardado y `npm run 
 
 Después de cambios:
 1. `npm run build` (debe terminar sin errores).
-2. `npm test` (4 pruebas unitarias y 6 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
+2. `npm test` (4 pruebas unitarias y 8 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
 3. Revisar las capturas adjuntas en `test-results/` y el informe en `playwright-report/`; los fallos conservan trazas.
 4. La prueba en dispositivo real con Luca sigue siendo necesaria para validar comodidad y dificultad.
 
