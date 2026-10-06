@@ -138,3 +138,22 @@ La plaza usa una línea transitable medida por los pies: el Nexus no puede entra
 Se conserva el circuito guardado generador → lámpara → puerta, explicándolo como lámpara con relé que alimenta el cierre eléctrico. La selección señala las entradas disponibles y admite cancelación tocando de nuevo el origen o con Escape. Los errores y éxitos reemplazan su feedback anterior, sin dejar temporizadores que borren un cable más reciente. El túnel sigue siendo una prueba explícita de conducir energía, con práctica y salida.
 
 Los sprites de los conectables solo se sincronizan cuando cambia su estado, contador o variante, en lugar de volver a aplicar textura y escala cada fotograma. Esto reduce trabajo repetido; no equivale a demostrar rendimiento en un teléfono real.
+
+## 035 — Circuito de agua con causa visible y poses por dirección
+
+El usuario pide elevar la profesionalidad, resolver demoras y exigir lógica en
+movimientos y conexiones, y autoriza la implementación con «hazlo». El Paseo del
+Agua sustituye el enchufe directo a la fuente por generador → bomba → una válvula
+→ fuente. Directa de 3 bar y reguladora de 2 bar son alternativas reversibles,
+con distinta animación del flujo; cambiar cierra la salida anterior. Sigue siendo
+la única acción de conectar y no añade penalizaciones ni requisitos al álbum.
+Partidas antiguas restauran su logro; cambiar de ruta persiste la cadena completa.
+
+Se autorizan sprites originales adicionales con el mismo lápiz: dos pasos de
+perfil, dos de espalda, reposo de perfil y espalda, bomba y dos válvulas.
+La cadencia depende del desplazamiento real; no se corre contra las huellas.
+La sombra queda en el suelo. La radio se separa de la fuente para evitar solapes.
+Se prepara la paleta antes de jugar, y audio/gestos se liberan al salir de escenas.
+Build, pruebas unitarias, circuito en ambas orientaciones y recorrido completo
+caminando documentan el alcance; rendimiento real en teléfono requiere playtest.
+Rama desde la base integrada, commit y push; PR/merge a cargo del usuario.

@@ -106,3 +106,10 @@ Las tres fases se publican con commits y pushes propios. La corrección de la
 visita/pistas de Miga se incorporó a la primera fase y se propagó mediante
 merges normales hacia las otras dos, conservando el historial y la ascendencia.
 La validación y sus alcances están documentados en `PLAZA_PLAYTEST.md`.
+
+## Circuito de agua y movimiento
+
+`codex/water-circuit-polish` parte de `e97282f` de la rama predeterminada
+`claude/los-nexus-game-mvp-cppkef`, con la plaza ya integrada (#51). Incluye circuito
+reversible, maquinaria ilustrada, poses direccionales y limpieza de audio/input.
+Ver `WATER_CIRCUIT_PLAYTEST.md`. No depende de integrar otras ramas pendientes.

@@ -20,8 +20,8 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test
 ## Comandos
 
 ```bash
-npm run test:unit    # 18 pruebas de guardado, preferencias y objetivos
-npm run test:e2e     # 22 escenarios en escritorio y 22 en móvil vertical
+npm run test:unit    # 23 pruebas de guardado, audio, circuito, preferencias y objetivos
+npm run test:e2e     # 30 escenarios en escritorio y 30 en móvil vertical
 npm test            # ambas suites
 npm run build       # TypeScript y build de producción; check separado
 ```
@@ -32,6 +32,8 @@ Cada prueba usa un contexto de navegador nuevo con almacenamiento independiente.
 No hay retries automáticos ni pruebas omitidas por defecto.
 
 ## Cobertura
+
+- Agua: tres pasos reales, tipos de entrada, dos rutas de presión reversibles, salida invalidada al cambiar, restauración parcial/antigua y migración al elegir otra ruta. Huellas físicas, poses direccionales y reposo; métricas de once conexiones y cierre del audio al salir al museo.
 
 - Armario: nombre, paletas en caminar/celebrar, colores de cable, bloqueo de recompensas, cancelar, recarga y conservación del progreso.
 - Tres historias: requisitos, conexiones inválidas, avance parcial, señales distintas, las seis variantes, repetición sin borrar barrio ni álbum, restauración y tres recompensas de apariencia.
@@ -123,3 +125,11 @@ reaparece al cargar. Las pruebas del museo incluyen su octava vitrina.
 `plaza-polish.spec.js` cubre posiciones antiguas sobre fachadas, huellas físicas
 que bloquean el paso, orden por profundidad, selección/cancelación y corrección
 rápida de un cable sin perder el feedback más reciente, en ambos formatos.
+
+Los fixtures que cambian posición/cámara esperan `game.events.postrender` antes
+de pulsar; el punto de entrada debe corresponder a la cámara renderizada. Los
+recorridos hacia Miga rodean las válvulas por el pavimento inferior. La prueba
+de agua incluye toques en el socket lateral y el surtidor alto, fuera de las
+áreas antiguas. El tiempo de despacho de conexión tiene un límite de 250 ms;
+las tareas largas se adjuntan como diagnóstico, sin prometer FPS en dispositivos.
+Resultados de esta entrega: `WATER_CIRCUIT_PLAYTEST.md`.

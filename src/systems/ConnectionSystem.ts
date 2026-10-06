@@ -20,6 +20,7 @@ export interface ConnectionRule {
   showHint?: () => boolean;
   blockedMessage?: string;
   successMessage?: string;
+  invalidates?: SavedConnection[];
   /** At most one rule in the group stays completed; reconnecting changes choice. */
   exclusiveGroup?: string;
   onActivate?: () => void;
@@ -108,7 +109,7 @@ export class ConnectionSystem {
       const target = this.objects.find((object) => object.id === rule.targetId);
       const key = JSON.stringify([rule.sourceId, rule.targetId]);
       if (!source || !target || !source.canInitiate() || this.completed.has(key)) continue;
-      this.activateRule(rule);
+      this.activateRule(rule, true);
       this.completed.add(key);
       source.activate();
       target.activate();
@@ -118,6 +119,7 @@ export class ConnectionSystem {
   /** Punto de entrada público: tocar el objeto directamente o presionar el botón de interacción hacen lo mismo. */
   interact(object: ConnectableObject): void {
     if (this.pendingTunnel) return;
+    this.scene.events.emit('object-interacted', object.canInitiate() ? object.getPlugPoint() : object.getInputPoint());
     this.resetHint();
     this.handleClick(object);
   }
@@ -197,7 +199,9 @@ export class ConnectionSystem {
     if (!rule) {
       this.drawCable(source, target, false);
       const surprise = connectionSurprise(source.id, target.id);
-      this.showFeedback(source.id === 'energy-source' && target.id === 'door'
+      this.showFeedback(source.outputSignal && target.inputSignal && source.outputSignal !== target.inputSignal
+        ? `${target.displayName} recibe ${target.inputSignal === 'water' ? 'agua, no electricidad. Alimenta primero la bomba.' : 'electricidad, no agua.'}`
+        : source.id === 'energy-source' && target.id === 'door'
         ? 'El generador no controla el cierre: primero alimenta el relé de la lámpara.'
         : surprise ? '¡Una conexión inesperada!' : 'Esta entrada no acepta esa salida. Busca un destino compatible.', '#8a4b1f');
       if (surprise) this.scene.events.emit('connection-surprise', surprise);
@@ -255,7 +259,11 @@ export class ConnectionSystem {
     this.scene.events.emit('connection-made', target.id, source.id);
   }
 
-  private activateRule(rule: ConnectionRule): void {
+  private activateRule(rule: ConnectionRule, restoring = false): void {
+    if (rule.invalidates) {
+      for (const c of rule.invalidates) this.completed.delete(JSON.stringify([c.sourceId, c.targetId]));
+      if (!restoring) this.scene.events.emit('connections-invalidated', rule.invalidates);
+    }
     if (rule.exclusiveGroup) {
       for (const candidate of this.rules) if (candidate.exclusiveGroup === rule.exclusiveGroup)
         this.completed.delete(JSON.stringify([candidate.sourceId, candidate.targetId]));
@@ -313,7 +321,7 @@ export class ConnectionSystem {
   private drawCable(from: ConnectableObject, to: ConnectableObject, valid: boolean): void {
     this.cableTimer?.remove();
     const start = from.getPlugPoint();
-    const end = to.getPlugPoint();
+    const end = to.getInputPoint();
     const color = valid ? this.color : INVALID_COLOR;
 
     const midX = (start.x + end.x) / 2;
@@ -389,7 +397,7 @@ export class ConnectionSystem {
       if (rule.sourceId !== source.id || (rule.available && !rule.available())
         || this.completed.has(JSON.stringify([rule.sourceId, rule.targetId]))) continue;
       const target = this.objects.find(o => o.id === rule.targetId);
-      if (target) this.selectionRings.lineStyle(2, this.color, .8).strokeCircle(target.x, target.y, 34);
+      if (target) { const p = target.getInputPoint(); this.selectionRings.lineStyle(2, this.color, .8).strokeCircle(p.x, p.y, 20); }
     }
     const pointer = this.scene.input.activePointer;
     // A released touch has no cursor; keep only the source and destination rings.

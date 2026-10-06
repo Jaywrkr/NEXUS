@@ -23,7 +23,8 @@ export class VirtualJoystick {
 
     pencilDiscTexture(scene, 'pencil-joystick-base', BASE_RADIUS);
     pencilDiscTexture(scene, 'pencil-joystick-knob', KNOB_RADIUS);
-    scene.add.image(x, y, 'pencil-joystick-base').setTint(0xf2ead9).setAlpha(.94).setScrollFactor(0).setDepth(50);
+    const touch = window.matchMedia('(pointer: coarse)').matches;
+    scene.add.image(x, y, 'pencil-joystick-base').setTint(0xf2ead9).setAlpha(.94).setScrollFactor(0).setDepth(50).setVisible(touch);
     const trim = scene.add.graphics().setDepth(50).setScrollFactor(0);
     pencilCircle(trim, x, y, BASE_RADIUS - 6, 0x638f8b, .45);
     for (let i = 0; i < 4; i++) {
@@ -31,18 +32,29 @@ export class VirtualJoystick {
       pencilLine(trim, x + Math.cos(a) * 34, y + Math.sin(a) * 34, x + Math.cos(a) * 39, y + Math.sin(a) * 39);
     }
     this.knob = scene.add.image(x, y, 'pencil-joystick-knob').setTint(0xa7c2b5).setScrollFactor(0).setDepth(51);
+    trim.setVisible(touch); this.knob.setVisible(touch);
 
     const touchZone = scene.add
       .circle(x, y, TOUCH_ZONE_RADIUS, 0x000000, 0)
       .setScrollFactor(0)
       .setDepth(52)
-      .setInteractive();
+      .setVisible(touch);
+    if (touch) touchZone.setInteractive();
 
     touchZone.on('pointerdown', (pointer: Phaser.Input.Pointer) => this.startDrag(pointer));
 
-    scene.input.on('pointermove', (pointer: Phaser.Input.Pointer) => this.updateDrag(pointer));
-    scene.input.on('pointerup', (pointer: Phaser.Input.Pointer) => this.endDrag(pointer));
-    scene.input.on('pointerupoutside', (pointer: Phaser.Input.Pointer) => this.endDrag(pointer));
+    const move = (pointer: Phaser.Input.Pointer): void => this.updateDrag(pointer);
+    const end = (pointer: Phaser.Input.Pointer): void => this.endDrag(pointer);
+    const reset = (): void => this.reset();
+    scene.input.on('pointermove', move);
+    scene.input.on('pointerup', end);
+    scene.input.on('pointerupoutside', end);
+    scene.events.on('pause', reset);
+    scene.game.events.on('blur', reset);
+    scene.events.once('shutdown', () => {
+      scene.input.off('pointermove', move); scene.input.off('pointerup', end); scene.input.off('pointerupoutside', end);
+      scene.events.off('pause', reset); scene.game.events.off('blur', reset);
+    });
   }
 
   private startDrag(pointer: Phaser.Input.Pointer): void {

@@ -19,6 +19,10 @@ import { RESIDENTS, chapterObjective, chapterTask, residentLine, type ResidentIn
 import { Resident } from '../objects/Resident';
 import { plazaStep } from '../data/plazaGuide';
 import { groundTop } from '../utils/walkableGround';
+import { WaterZone } from '../zones/WaterZone';
+import { prepareNexusAppearance } from '../art/nexusLook';
+import { restoreWaterConnections, WATER_VALVES } from '../data/waterCircuit';
+import type { SavedConnection } from '../data/gameState';
 import { PlazaGuide } from '../ui/PlazaGuide';
 import { StoryCard } from '../ui/StoryCard';
 import { WorkshopZone } from '../zones/WorkshopZone';
@@ -62,6 +66,7 @@ export class WorldScene extends Phaser.Scene {
   private secretFragment!: Fragment;
   private plazaFragment!: Fragment;
   private fountain!: Fountain;
+  private water!: WaterZone;
   private fountainFragment!: Fragment;
   private beacon!: Beacon;
   private beaconFragment!: Fragment;
@@ -117,7 +122,8 @@ export class WorldScene extends Phaser.Scene {
     const vScale = height / 540;
 
     this.progress = new ProgressSystem();
-    this.audio = new AudioSystem();
+    prepareNexusAppearance(this);
+    this.audio = new AudioSystem(this);
 
     this.physics.world.setBounds(0, 0, width, height);
     this.cameras.main.setBounds(0, 0, width, height);
@@ -232,10 +238,6 @@ export class WorldScene extends Phaser.Scene {
       this.transformWorld(false);
     }
 
-    if (fountainDone) {
-      this.fountain.activate();
-    }
-
     if (beaconDone) {
       this.beacon.forceFullyActive();
     }
@@ -253,7 +255,8 @@ export class WorldScene extends Phaser.Scene {
     if (this.progress.hasFragment('workshop-fragment')) this.workshop.restoreCollected();
     if (this.progress.hasFragment('lantern-fragment')) this.lanterns.restoreCollected();
 
-    this.connectionSystem.restoreConnections(this.progress.getConnections());
+    this.connectionSystem.restoreConnections(restoreWaterConnections(this.progress.getConnections(), fountainDone));
+    this.water.refresh();
     this.radio.refresh();
     this.workshop.refresh(this.progress.hasFragment('workshop-fragment'));
     this.lanterns.refresh(this.progress.hasFragment('lantern-fragment'));
@@ -379,10 +382,9 @@ export class WorldScene extends Phaser.Scene {
     if (!this.progress.hasFragment(SECRET_FRAGMENT_ID)) this.secretFragment.reveal();
 
 
-    // Zona 2: la fuente restaurada (segunda fuente → fuente de agua)
-    const fountainSource = new EnergySource(this, 1300, midY - 40 * vScale, 'fountain-source');
-    this.fountain = new Fountain(this, 1460, midY + 40 * vScale);
-    this.fountainFragment = new Fragment(this, 1460, midY - 60 * vScale);
+    this.water = new WaterZone(this, height);
+    this.fountain = this.water.fountain;
+    this.fountainFragment = this.water.fragment;
 
     // Zona 3: la antena (dos fuentes → una sola antena)
     const beaconSourceA = new EnergySource(this, 1980, midY - 80 * vScale, 'beacon-source-a');
@@ -417,8 +419,7 @@ export class WorldScene extends Phaser.Scene {
       source,
       this.lamp,
       this.door,
-      fountainSource,
-      this.fountain,
+      ...this.water.connectables,
       beaconSourceA,
       beaconSourceB,
       beaconSourceFake,
@@ -453,12 +454,13 @@ export class WorldScene extends Phaser.Scene {
       successMessage: 'Lámpara encendida. Su relé ya puede alimentar el cierre de la puerta.' });
     this.connectionSystem.addRule({ sourceId: this.lamp.id, targetId: this.door.id,
       successMessage: 'El relé alimenta el cierre eléctrico. La puerta está abierta.' });
-    for (const object of [source, this.lamp, this.door]) {
+    for (const object of [source, this.lamp, this.door, ...this.water.connectables]) {
       const footprint = this.add.zone(object.x, object.groundY - 8, object === this.door ? 52 : 36, 16);
+      if (object === this.fountain) footprint.setSize(88, 24);
       this.physics.add.existing(footprint, true);
       this.physics.add.collider(this.nexus, footprint);
     }
-    this.connectionSystem.addRule({ sourceId: fountainSource.id, targetId: this.fountain.id });
+    this.water.rules.forEach(rule => this.connectionSystem.addRule(rule));
     this.connectionSystem.addRule({ sourceId: beaconSourceA.id, targetId: this.beacon.id });
     this.connectionSystem.addRule({ sourceId: beaconSourceB.id, targetId: this.beacon.id });
     this.connectionSystem.addRule({ sourceId: bridgeSource.id, targetId: this.bridge.id });
@@ -491,7 +493,12 @@ export class WorldScene extends Phaser.Scene {
     };
 
     const onConnectionMade = (targetId: string, sourceId: string): void => {
-      this.progress.saveConnection(sourceId, targetId, sourceId === RADIO_SOURCE_ID);
+      if (sourceId === 'water-pump') {
+        // Legacy replays must become a complete modern path when the player changes route.
+        this.progress.saveConnection('fountain-source', 'water-pump');
+        this.progress.saveExclusiveConnection(sourceId, targetId, WATER_VALVES);
+      }
+      else this.progress.saveConnection(sourceId, targetId, sourceId === RADIO_SOURCE_ID);
       this.progress.savePosition(this.nexus.x, this.nexus.y / this.scale.height);
       if (targetId === this.lamp.id) {
         this.lightHouseWindow(true);
@@ -534,6 +541,7 @@ export class WorldScene extends Phaser.Scene {
       this.instructionText.setText(chapterObjective(this.progress.snapshot()));
       this.applyChapterConsequences();
       this.radio.refresh();
+      this.water.refresh();
       if (sourceId === RADIO_SOURCE_ID) this.storyCard.show('CUAC FM', this.radio.channel === 'music'
         ? 'El jardín recibe música. Sus flores quieren dar un concierto. Visita a Goteo cuando hayan florecido.'
         : 'La plaza recibe noticias. Miga tiene un anuncio absurdo que quiere publicar. Vuelve a verla.');
@@ -551,7 +559,13 @@ export class WorldScene extends Phaser.Scene {
     this.events.on('tunnel-requested', onTunnelRequested);
     this.events.on('resume', onResume);
     this.events.on('connection-made', onConnectionMade);
+    const onObjectInteracted = (point: Phaser.Math.Vector2): void => this.nexus.interactAt(point);
+    this.events.on('object-interacted', onObjectInteracted);
+    const onInvalidated = (connections: SavedConnection[]): void => this.progress.removeConnections(connections);
+    this.events.on('connections-invalidated', onInvalidated);
     this.events.once('shutdown', () => {
+      this.events.off('object-interacted', onObjectInteracted);
+      this.events.off('connections-invalidated', onInvalidated);
       this.events.off('tunnel-requested', onTunnelRequested);
       this.events.off('resume', onResume);
       this.events.off('connection-made', onConnectionMade);
@@ -775,6 +789,7 @@ export class WorldScene extends Phaser.Scene {
     for (const object of this.connectables) object.setDepth(10 + object.groundY / this.scale.height);
     for (const resident of this.residents) resident.setDepth(10 + (resident.y + 36) / this.scale.height);
     this.plazaAtmosphere.update(_time, delta);
+    this.water.refresh();
     this.updateInteractButton();
     this.connectionSystem.updateHint();
     this.connectionSystem.updateSelection();

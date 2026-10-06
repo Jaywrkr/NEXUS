@@ -38,7 +38,7 @@ export class SideStoryScene extends Phaser.Scene {
     const six=this.story.nodes.length===6;
     const positions=mobile?(six?[[.25,240],[.75,240],[.5,405],[.25,575],[.75,575],[.5,735]]:[[.25,240],[.75,240],[.25,410],[.25,575],[.75,575],[.75,410],[.5,735]])
       :(six?[[.11,270],[.29,270],[.48,270],[.68,205],[.68,350],[.88,270]]:[[.1,270],[.27,270],[.44,205],[.44,350],[.63,350],[.63,205],[.87,270]]);
-    this.connection=new ConnectionSystem(this,new AudioSystem());
+    this.connection=new ConnectionSystem(this,new AudioSystem(this));
     this.story.nodes.forEach((node,i)=>{
       const [x,y]=positions[i];
       const machine=new StoryMachine(this,width*x,y,storyObjectId(this.story.id,node.id),node,this.story.links.some(l=>l.source===node.id),node.id==='source');

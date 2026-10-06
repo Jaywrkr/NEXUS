@@ -20,7 +20,7 @@ test('illustrated districts keep controls usable and textures reusable after the
   };`);
   expect(art.backgrounds).toBe(7);
   expect(art.font).toBe(true);
-  expect(art.objects.every(keys => keys.length === 1 && keys[0].startsWith('sketch-'))).toBe(true);
+  expect(art.objects.every(keys => keys.length === 1 && (keys[0].startsWith('sketch-') || keys[0] === 'water-machines'))).toBe(true);
   expect(art.sources.every(w => w >= 1600)).toBe(true);
   expect(art.residents.flat().every(key => ['sketch-residents', 'plaza-sprites'].includes(key))).toBe(true);
   // Decoration must never receive input intended for an actual connectable.

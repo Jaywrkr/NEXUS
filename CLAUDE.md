@@ -20,7 +20,7 @@ El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias
 - **Capítulo 1 — La ciudad al revés**: Miga, Bombo, Vera, Don Paso, Alcalde Goteo, Pipa y Lucio dan encargos breves para preparar una fiesta. Las frases aparecen al acercarse por primera vez o tocar al habitante, se cierran al tocar el recuadro y no pausan el movimiento. Se guardan las visitas; el objetivo considera conexiones parciales y recuerdos antiguos.
 - **7 zonas jugables** en un mundo de scroll horizontal de 6100px de ancho (no una sola pantalla):
   1. **La plaza**: fuente → lámpara → puerta (dos cables y el mini-túnel del primero).
-  2. **La fuente de agua**: fuente → fuente de agua (puzzle de un solo paso).
+  2. **La fuente de agua**: generador → bomba → válvula directa (3 bar) o regulada (2 bar) → fuente; rutas reversibles, presión visible y guardados antiguos compatibles.
   3. **La antena**: dos fuentes → una antena (necesita **dos** conexiones simultáneas).
   4. **El puente**: un interruptor revela un puente sobre una grieta que **físicamente bloquea el paso** hasta conectarlo (única zona con barrera real de colisión).
   5. **El jardín**: fuente de energía → aspersor → flores. El aspersor solo puede iniciar el segundo cable una vez encendido; las flores transforman el parterre y revelan un quinto fragmento, al otro lado del puente.
@@ -59,7 +59,7 @@ Hay una suite automatizada: `npm run test:unit` verifica el guardado y `npm run 
 
 Después de cambios:
 1. `npm run build` (debe terminar sin errores).
-2. `npm test` (18 pruebas unitarias y 44 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
+2. `npm test` (23 pruebas unitarias y 60 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
 3. Revisar las capturas adjuntas en `test-results/` y el informe en `playwright-report/`; los fallos conservan trazas.
 4. La prueba en dispositivo real con Luca sigue siendo necesaria para validar comodidad y dificultad.
 

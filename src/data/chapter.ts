@@ -6,8 +6,8 @@ export const RESIDENTS = [
   { id: 'miga', name: 'Miga', x: 350, offsetY: 70, color: 0x5ee7ff, fragment: 'plaza-fragment', target: 'door',
     request: 'El manual lo escribió un pato. Empecemos por dar luz a la plaza.',
     restored: 'Una puerta que abre. Casi revolucionario. Bombo necesita agua para la fiesta.' },
-  { id: 'bombo', name: 'Bombo', x: 1570, offsetY: 140, color: 0x5ee7ff, fragment: 'fountain-fragment', target: 'fountain',
-    request: 'Mi concierto de agua está un poco seco. ¿Enciendes la fuente?',
+  { id: 'bombo', name: 'Bombo', x: 1720, offsetY: 165, color: 0x5ee7ff, fragment: 'fountain-fragment', target: 'fountain',
+    request: 'La fuente necesita agua, no un enchufe. Despierta la bomba y elige: chorro fuerte o flujo suave.',
     restored: '¡Plin, plon, CHOF! Ya tenemos música. Vera anunciará la fiesta.' },
   { id: 'vera', name: 'Vera', x: 2320, offsetY: 140, color: 0xff9ff3, fragment: 'beacon-fragment', target: 'beacon',
     request: 'Una señal dice CUAC. La otra debería decir dónde será la fiesta. Necesito las dos.',
@@ -70,7 +70,9 @@ export function chapterTask(state: GameState): { id: string; objective: string; 
   if (!done('plaza-fragment', 'door')) return hasChapterConnection(state, 'lamp')
     ? task('door', 'La lámpara funciona, pero la puerta sigue cerrada', 'La puerta necesita algo que ya tenga luz.', 'La lámpara encendida también puede iniciar un cable.', 'Lámpara → puerta.')
     : task('lamp', 'Dale luz a la plaza: fuente → lámpara', 'Toca la estrella y después la lámpara.', 'El primer cable tiene un túnel: puedes practicar antes de empezar.', 'Fuente → lámpara. Dentro del cable, guía la chispa con flechas o joystick.');
-  if (!done('fountain-fragment', 'fountain')) return task('fountain', 'Bombo sigue ensayando su concierto en seco', 'Busca qué le falta a la fuente para despertar.', 'La estrella cercana puede alimentar la fuente.', 'Fuente de energía → fuente de agua.');
+  if (!done('fountain-fragment', 'fountain')) return hasChapterConnection(state, 'water-pump')
+    ? task('fountain', 'La bomba funciona: elige presión para la fuente', 'Las dos válvulas reciben agua; cada una cambia el chorro.', 'La directa entrega 3 bar; la reguladora reduce a 2 bar. Ambas restauran la fuente.', 'Bomba → válvula directa o reguladora → fuente. Puedes cambiar de ruta.')
+    : task('fountain', 'La fuente está seca: su bomba necesita energía', 'Observa los conectores: energía dorada, agua azul.', 'El generador alimenta el motor de la bomba. La fuente solo recibe agua.', 'Generador → bomba → una válvula → fuente.');
   if (!done('beacon-fragment', 'beacon')) return task('beacon', 'El anuncio de Vera todavía llega incompleto', 'Una sola voz no cuenta el anuncio completo.', 'Hay dos estrellas; cada una aporta una señal distinta.', 'Conecta cada fuente de la antena con la antena. Necesita ambas.');
   if (!done('bridge-fragment', 'bridge')) return task('bridge', 'Don Paso necesita despertar su mecanismo', 'El puente espera una señal antes de dejarte cruzar.', 'Observa el interruptor y su estrella cercana.', 'Fuente del puente → interruptor.');
   if (!done('garden-fragment', 'garden-bed')) return hasChapterConnection(state, 'garden-sprinkler')

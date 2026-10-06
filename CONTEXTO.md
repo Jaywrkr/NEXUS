@@ -212,3 +212,29 @@ anidadas después de `codex/plaza-entorno-vivo`; el usuario sigue haciendo PR y 
 `utils/walkableGround.ts` define el borde posterior transitable en coordenadas de los pies. `WorldScene` limita también las posiciones antiguas guardadas y usa huellas físicas para los tres objetos de la plaza. El cuerpo físico del Nexus representa sus pies, no el torso. La profundidad de conectables, habitantes y personaje se calcula por su base. Al cambiar la geometría, ejecutar el recorrido completo caminando en ambos proyectos, además de `plaza-polish.spec.js` y `plaza-guide.spec.js`.
 
 Las conexiones muestran una selección y destinos disponibles, y la plaza explica el relé de la lámpara y el cierre eléctrico. `ConnectionSystem` limpia feedback y temporizadores anteriores; cancelar el túnel debe liberar también su estado pendiente. `ConnectableObject` sincroniza el dibujo solo cuando cambia el estado visible. La sombra permanece fuera del contenedor animado del Nexus.
+
+## Paseo del Agua y poses direccionales
+
+Ver Decisión 035 y `WATER_CIRCUIT_PLAYTEST.md`. `zones/WaterZone.ts` agrupa cinco
+objetos y tres pasos: generador x1230 → bomba x1350 → válvula x1490 → fuente x1630.
+Directa está en .48 de la altura; reguladora en .72; la fuente en .61. Recuerdo
+x1630,.80; Bombo x1720. `waterCircuit.ts` normaliza conexiones antiguas al restaurar
+sin escribir el guardado, y distingue logros antiguos de rutas modernas parciales.
+Los grupos exclusivos invalidan las dos salidas al cambiar de válvula. Al guardar
+una elección desde la bomba se incluye su alimentación, también en partidas antiguas.
+
+`WaterMachine` usa el atlas alfa 3×1 y conectores separados; `Fountain.setFlow`
+cambia presión y gotas. Radio: origen x1850,.70; receptores x2020/x2190,.87, fuera
+de la fuente. `groundTop` incluye el pavimento del paseo; sus máquinas tienen
+huellas estáticas. Diez poses mantienen las claves originales y añaden perfil y
+espalda. Las adicionales se registran por casco/base, y la ropa se precalcula al
+inicio del mundo; las variantes anteriores se eliminan al cambiar de apariencia. El avance de pasos se calcula con desplazamiento real.
+`AudioSystem(scene)` cierra el contexto al shutdown y desconecta voces terminadas.
+`VirtualJoystick` limpia listeners al salir y el gesto al pause/blur.
+
+Las áreas interactivas de `EnergySource` y `Fountain` se ampliaron a la silueta
+ilustrada; el atlas sustituyó estrellas y círculos mucho menores. La prueba de
+agua toca explícitamente el socket lateral y el surtidor alto. Los fixtures
+`near()` esperan `game.events.postrender` después de mover la cámara para que
+su matriz de entrada coincida con los puntos de clic. Los recorridos de regreso
+usan la franja baja del pavimento antes de acercarse a Miga, rodeando las válvulas.

@@ -1,4 +1,4 @@
-import { test, expect, ready, world, start, connect, saved, collect, returnToWorld, checkpoint, winTunnel, titleButton, tunnelButton, runningTunnel, failedTunnel, tap, clickObject } from './helpers.js';
+import { connectWater, test, expect, ready, world, start, connect, saved, collect, returnToWorld, checkpoint, winTunnel, titleButton, tunnelButton, runningTunnel, failedTunnel, tap, clickObject } from './helpers.js';
 
 const fragmentIds = ['plaza-fragment', 'fountain-fragment', 'beacon-fragment', 'bridge-fragment', 'garden-fragment', 'workshop-fragment', 'lantern-fragment'];
 
@@ -54,7 +54,7 @@ test('complete all seven zones, lose and win the tunnel, and revisit the museum'
   await checkpoint(page, testInfo, 'museum-partial');
   await returnToWorld(page, !isMobile);
 
-  await connect(page, 'fountain-source', 'fountain');
+  await connectWater(page);
   expect(await world(page, 'return s.fountain.isActive && s.fountainFragment.visible;')).toBe(true);
   await collect(page, 'fountainFragment', fragmentIds[1]);
   await returnToWorld(page);
@@ -107,7 +107,7 @@ test('complete all seven zones, lose and win the tunnel, and revisit the museum'
   await collect(page, 'lanterns.fragment', fragmentIds[6]);
   expect((await museumLayout(page))).toContain('¡Colección completa!');
   expect((await saved(page)).fragmentsCollected).toEqual(fragmentIds);
-  expect((await saved(page)).connections).toHaveLength(16);
+  expect((await saved(page)).connections).toHaveLength(18);
   expect((await saved(page)).seenCompletion).toBe(true);
   expect((await saved(page)).completionCount).toBe(7);
   expect(await page.evaluate(() => window.__effectCalls.flash)).toBeGreaterThan(0);
@@ -122,7 +122,7 @@ test('complete all seven zones, lose and win the tunnel, and revisit the museum'
 
 test('resume before collecting, retain a partial antenna and position, and rotate on mobile', async ({ page, isMobile }, testInfo) => {
   await start(page);
-  await connect(page, 'fountain-source', 'fountain');
+  await connectWater(page);
   await connect(page, 'beacon-source-a', 'beacon');
   if (isMobile) {
     const touch = await page.context().newCDPSession(page);
@@ -141,7 +141,7 @@ test('resume before collecting, retain a partial antenna and position, and rotat
   await page.waitForTimeout(700);
   const before = await saved(page);
   expect(before.fragmentsCollected).toEqual([]);
-  expect(before.connections).toHaveLength(2);
+  expect(before.connections).toHaveLength(4);
   await reloadAndContinue(page);
   expect(await world(page, 'return s.fountain.isActive && s.fountainFragment.visible && !s.beacon.isFullyActive;')).toBe(true);
   expect(await world(page, 'return s.nexus.x;')).toBeCloseTo(before.position.x, 0);

@@ -2,7 +2,7 @@ import { gridFrames, loadSketchAccessories } from '../art/sketchAtlas';
 import Phaser from 'phaser';
 import { loadPlazaAssets, createPlazaFrames } from '../art/plazaAssets';
 import { MODERN as ART, ensureFlatTexture } from '../art/modernArt';
-import { nexusPortrait } from '../art/nexusLook';
+import { nexusPortrait, prepareNexusAppearance } from '../art/nexusLook';
 import { drawTitleArt } from '../art/neighborhood';
 import { fadeToScene } from '../utils/sceneTransition';
 import { ProgressSystem } from '../systems/ProgressSystem';
@@ -24,12 +24,15 @@ export class BootScene extends Phaser.Scene {
     loadNexusAssets(this);
     loadSketchAccessories(this);
     loadPlazaAssets(this);
+    this.load.image('water-machines', 'assets/sketch/water-machines.png');
   }
 
   create(): void {
     createNexusFrames(this);
+    prepareNexusAppearance(this);
     gridFrames(this, 'sketch-extras', 4, 4);
     createPlazaFrames(this);
+    gridFrames(this, 'water-machines', 3, 1);
     const { width, height } = this.scale;
     const progress = new ProgressSystem();
     const hasProgress = progress.hasProgress();

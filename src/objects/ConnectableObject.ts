@@ -2,11 +2,15 @@ import { sketchTexture } from '../art/sketchAtlas';
 import Phaser from 'phaser';
 
 export type ConnectableRole = 'source' | 'target';
+export type ConnectionSignal = 'electricity' | 'water';
 
 export abstract class ConnectableObject extends Phaser.GameObjects.Container {
   readonly role: ConnectableRole;
   readonly id: string;
   protected active_ = false;
+  protected get useSketch(): boolean { return true; }
+  get inputSignal(): ConnectionSignal | null { return null; }
+  get outputSignal(): ConnectionSignal | null { return null; }
   private sketchImage?: Phaser.GameObjects.Image;
   private sketchStatus?: Phaser.GameObjects.Text;
   private renderedState = '';
@@ -17,7 +21,7 @@ export abstract class ConnectableObject extends Phaser.GameObjects.Container {
 
   /** Rendering only: preserve object identities, inputs, counters and save state. */
   private syncSketch(): void {
-    if (!this.scene.textures.exists('sketch-props-off')) return;
+    if (!this.useSketch || !this.scene.textures.exists('sketch-props-off')) return;
     const state = `${this.active_}:${this.sketchCount ?? ''}:${this.name}`;
     if (state === this.renderedState) return;
     this.renderedState = state;
@@ -33,7 +37,7 @@ export abstract class ConnectableObject extends Phaser.GameObjects.Container {
       this.add(this.sketchStatus);
     }
     for (const child of this.list) {
-      if (child !== this.sketchImage && child !== this.sketchStatus && !(child instanceof Phaser.GameObjects.Text))
+      if (child !== this.sketchImage && child !== this.sketchStatus && child.name !== 'flow-effect' && !(child instanceof Phaser.GameObjects.Text))
         (child as unknown as Phaser.GameObjects.Components.Visible).setVisible(false);
     }
     this.sketchImage.setTexture(key, frame);
@@ -56,6 +60,7 @@ export abstract class ConnectableObject extends Phaser.GameObjects.Container {
   getPlugPoint(): Phaser.Math.Vector2 {
     return new Phaser.Math.Vector2(this.x, this.y);
   }
+  getInputPoint(): Phaser.Math.Vector2 { return this.getPlugPoint(); }
 
   get isActive(): boolean {
     return this.active_;
@@ -64,7 +69,7 @@ export abstract class ConnectableObject extends Phaser.GameObjects.Container {
   get groundY(): number { return this.y + this.sketchBottom; }
 
   get displayName(): string {
-    return ({ 'energy-source': 'Generador', lamp: 'Lámpara con relé', door: 'Cierre eléctrico' } as Record<string, string>)[this.id]
+    return ({ 'energy-source': 'Generador', 'fountain-source': 'Generador de la bomba', lamp: 'Lámpara con relé', door: 'Cierre eléctrico' } as Record<string, string>)[this.id]
       ?? (this.list.find(child => child instanceof Phaser.GameObjects.Text && child !== this.sketchStatus) as Phaser.GameObjects.Text | undefined)?.text
       ?? (this.role === 'source' ? 'Origen' : 'Destino');
   }

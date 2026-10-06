@@ -50,6 +50,11 @@ export class ProgressSystem {
     return this.state.connections.map((connection) => ({ ...connection }));
   }
 
+  removeConnections(connections: SavedConnection[]): void {
+    this.state.connections = this.state.connections.filter(c => !connections.some(old => old.sourceId === c.sourceId && old.targetId === c.targetId));
+    saveGameState(this.state);
+  }
+
   saveConnection(sourceId: string, targetId: string, replaceSource = false): void {
     if (replaceSource) this.state.connections = this.state.connections.filter(c => c.sourceId !== sourceId);
     if (this.state.connections.some((c) => c.sourceId === sourceId && c.targetId === targetId)) return;

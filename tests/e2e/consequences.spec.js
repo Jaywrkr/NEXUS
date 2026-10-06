@@ -1,4 +1,4 @@
-import { test, expect, start, ready, world, connect, saved, collect, returnToWorld, tap, checkpoint } from './helpers.js';
+import { connectWater, test, expect, start, ready, world, connect, saved, collect, returnToWorld, tap, checkpoint } from './helpers.js';
 
 test('unexpected connections are harmless discoveries and repairs change other places', async ({ page }, testInfo) => {
   await start(page);
@@ -10,7 +10,7 @@ test('unexpected connections are harmless discoveries and repairs change other p
   expect(await world(page, 'return s.door.isActive;')).toBe(false);
   await checkpoint(page, testInfo, 'singing-door');
 
-  await connect(page, 'fountain-source', 'fountain');
+  await connectWater(page);
   expect(await world(page, 'return s.plazaFlowers.visible;')).toBe(true);
   await collect(page, 'fountainFragment', 'fountain-fragment');
   await returnToWorld(page);
@@ -30,5 +30,5 @@ test('unexpected connections are harmless discoveries and repairs change other p
   await start(page, 'Continuar');
   expect(await world(page, 'return s.plazaFlowers.visible && s.radioBanner.visible;')).toBe(true);
   expect((await saved(page)).story.discoveries).toEqual(['singing-door', 'house-garden']);
-  expect((await saved(page)).connections).toHaveLength(3);
+  expect((await saved(page)).connections).toHaveLength(5);
 });
