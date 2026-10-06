@@ -10,6 +10,9 @@ const FRAGMENTS = [
   { id: 'bridge-fragment', label: 'Fragmento del puente' },
 ];
 
+const SECRET_FRAGMENT = { id: 'secret-fragment', label: 'Fragmento secreto', memory: '¡Explorar también conecta!', color: 0xb6a0ff };
+const DISPLAYED_FRAGMENTS = [...FRAGMENTS, SECRET_FRAGMENT];
+
 export class MuseumScene extends Phaser.Scene {
   private progress!: ProgressSystem;
 
@@ -33,19 +36,21 @@ export class MuseumScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    const spacing = Math.min(220, (width - 140) / (FRAGMENTS.length - 1));
-    const startX = width / 2 - (spacing * (FRAGMENTS.length - 1)) / 2;
+    const spacing = Math.min(220, (width - 140) / (DISPLAYED_FRAGMENTS.length - 1));
+    const startX = width / 2 - (spacing * (DISPLAYED_FRAGMENTS.length - 1)) / 2;
 
-    FRAGMENTS.forEach((fragment, index) => {
+    const rows = Math.ceil(DISPLAYED_FRAGMENTS.length / 2);
+    const firstRowY = 210, lastRowY = height - 290;
+    DISPLAYED_FRAGMENTS.forEach((fragment, index) => {
       const x = portrait ? width * (index % 2 === 0 ? 0.28 : 0.72) : startX + index * spacing;
-      const y = portrait ? height * (index < 2 ? 0.3 : 0.6) : height / 2;
+      const y = portrait ? firstRowY + Math.floor(index / 2) * (lastRowY - firstRowY) / Math.max(1, rows - 1) : height / 2;
       this.buildVitrina(x, y, fragment.id, fragment.label);
     });
 
     const allCollected = FRAGMENTS.every((f) => this.progress.hasFragment(f.id));
     if (allCollected) {
       this.add
-        .text(width / 2, portrait ? height * 0.6 + 160 : height / 2 + 145, '¡Colección completa!', {
+        .text(width / 2, portrait ? lastRowY + 145 : height / 2 + 145, '¡Colección completa!', {
           fontFamily: 'sans-serif',
           fontSize: '20px',
           color: '#ffe066',

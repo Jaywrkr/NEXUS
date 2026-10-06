@@ -100,3 +100,16 @@ El recorrido completo también detectó listeners del mundo que se acumulaban al
 
 ## Práctica y reintento directo del túnel
 La conexión fuente→lámpara abre una fase de práctica con los mismos controles, sin avance ni derrota. «Empezar» inicia el recorrido desde el centro. Al perder se conserva el mundo pausado y aparecen «Reintentar» (reinicia ese túnel sin volver a seleccionar objetos) y «Volver al mundo». ESPACIO empieza/reintenta y ESC sale desde práctica o fallo. Solo ganar guarda la conexión; practicar, perder y salir no la desbloquean. Se reinicia el joystick al comenzar y tras un fallo, y se limpian los atajos al cerrar/reiniciar la escena. Velocidad, curvas y radio mantienen sus valores: el balance sigue pendiente de la prueba con Luca. Se amplían las pruebas E2E del recorrido y se agrega un escenario de práctica/cancelación/reintentos para escritorio y móvil.
+
+
+## Más variedad de partículas al conectar
+`ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.
+
+## Fuente señuelo en la antena
+`EnergySource` ahora acepta un `variant` ('active' | 'dim'); la variante 'dim' no tiene brillo animado ni rotación. Se agregó una tercera fuente (`beacon-source-fake`, variante 'dim') en la zona de la antena, entre las dos fuentes reales y la antena, sin ninguna regla de conexión asociada — cualquier intento de conectarla da el mensaje genérico de "no encaja". No requirió tocar `ConnectionSystem`: el comportamiento de señuelo sale gratis del manejo existente de conexiones inválidas, solo hacía falta un objeto de más para que el jugador tuviera que observar antes de conectar.
+
+## Fragmento secreto
+Quinto fragmento (`secret-fragment`) escondido detrás de la casa apagada, al oeste del punto de partida — visible desde el arranque (no depende de ninguna conexión), premia a quien explore para atrás en vez de ir directo a la derecha. No cuenta para el contador `★ n/4` del HUD ni para "¡Colección completa!" (esos siguen atados solo a los 4 fragmentos de zona), pero sí tiene su propia vitrina en el Museo. `MuseumScene` ahora separa `FRAGMENTS` (los 4 que definen la colección completa) de `SECRET_FRAGMENT` (se muestra igual, no afecta ese chequeo).
+
+## Documentación para continuar con otras IAs
+Se crea `CONTEXTO.md`: un único archivo autocontenido (qué es, estado, arquitectura, cómo funciona la conexión, coordenadas, reglas, trampas técnicas, backlog y forma de trabajo) para poder seguir el proyecto en ChatGPT u otra herramienta que no lee `CLAUDE.md` automáticamente. Se actualizan `CLAUDE.md`, `README.md` (la estructura todavía listaba `CustomizeScene`) y `DECISIONS.md` (018: señuelos; 019: fragmentos extra que no cuentan para la colección completa).
