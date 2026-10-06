@@ -1,10 +1,10 @@
 import Phaser from 'phaser';
 
-/** Funde a negro-del-color-de-fondo y arranca la escena destino cuando termina. */
+/** Funde a papel y arranca la escena destino cuando termina. */
 export function fadeToScene(
   scene: Phaser.Scene,
   key: string,
-  rgb: [number, number, number] = [27, 31, 59],
+  rgb: [number, number, number] = [238, 229, 210],
   duration = 300
 ): void {
   scene.cameras.main.fadeOut(duration, ...rgb);

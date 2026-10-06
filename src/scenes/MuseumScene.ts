@@ -26,36 +26,32 @@ export class MuseumScene extends Phaser.Scene {
     this.progress = new ProgressSystem();
 
     screenArt(this, true);
-    this.cameras.main.fadeIn(300, 32, 35, 58);
+    this.cameras.main.fadeIn(300, 238, 229, 210);
 
-    const room = this.add.graphics();
-
-    room.lineStyle(1, 0x6b96e5, 0.3);
-    for (let x = 52; x < width; x += 68) room.lineBetween(x, 140, x, height - 150);
-    room.fillStyle(0x15234e).fillRect(26, height - 160, width - 52, 85);
-    room.lineStyle(2, 0x57cdeb, 0.45).lineBetween(27, 139, width - 27, 139);
+    const background = this.add.image(width / 2, height / 2, 'sketch-district-7');
+    background.setScale(Math.max(width / background.width, height / background.height)).setAlpha(.24).setDepth(-4.5);
 
     this.add
       .text(width / 2, 40, 'Museo Nexus', {
         fontFamily: ART.display,
         fontSize: '28px',
-        color: '#ffffff',
+        color: '#34332e',
       })
       .setOrigin(0.5);
 
     this.memoryText = this.add.text(width / 2, 93, 'Toca un recuerdo para verlo despertar', {
-      fontFamily: ART.body, fontSize: '16px', color: '#b7ccf2',
+      fontFamily: ART.body, fontSize: '16px', color: '#655f50',
     }).setOrigin(0.5);
     const story = this.progress.snapshot().story;
     const discovered = DISCOVERY_IDS.filter(id => story?.discoveries.includes(id)).length;
     const heard = RESIDENTS.filter(r => story?.heard.includes(r.id)).length;
     this.add.text(width / 2, 112, `Sorpresas: ${discovered}/${DISCOVERY_IDS.length} · Habitantes: ${heard}/${RESIDENTS.length}`, {
-      fontFamily: ART.body, fontSize: '14px', color: '#b7ccf2',
+      fontFamily: ART.body, fontSize: '14px', color: '#655f50',
     }).setOrigin(0.5);
     if (this.progress.hasSeenChapter()) {
       ensureRoundedRectTexture(this, 'museum-ending', 110, 42, 12);
-      const ending = this.add.image(width - 70, 40, 'museum-ending').setTint(0x8ce8ff).setInteractive({ useHandCursor: true });
-      this.add.text(width - 70, 40, 'Ver final', { fontFamily: ART.body, fontSize: '16px', color: '#20233a' }).setOrigin(0.5);
+      const ending = this.add.image(width - 70, 40, 'museum-ending').setTint(0xadc2b8).setInteractive({ useHandCursor: true });
+      this.add.text(width - 70, 40, 'Ver final', { fontFamily: ART.body, fontSize: '16px', color: '#34332e' }).setOrigin(0.5);
       ending.on('pointerdown', () => { if (this.leaving) return; this.leaving = true; fadeToScene(this, 'EndingScene', [32, 35, 58]); });
     }
 
@@ -79,7 +75,7 @@ export class MuseumScene extends Phaser.Scene {
         .text(width / 2, portrait ? lastRowY + 145 : height / 2 + 145, '¡Colección completa!', {
           fontFamily: ART.body,
           fontSize: '20px',
-          color: '#ffe066',
+          color: '#925425',
         })
         .setOrigin(0.5);
     }
@@ -93,25 +89,25 @@ export class MuseumScene extends Phaser.Scene {
     ensureRoundedRectTexture(this, 'museum-return-button', 240, 52, 14);
     const returnButton = this.add
       .image(width / 2, height - 80, 'museum-return-button')
-      .setTint(0xffe342)
+      .setTint(0xe6bd65)
       .setInteractive({ useHandCursor: true });
     this.add
       .text(width / 2, height - 80, 'Volver al mundo', {
         fontFamily: ART.body,
         fontSize: '20px',
         fontStyle: 'bold',
-        color: '#1b1f3b',
+        color: '#34332e',
       })
       .setOrigin(0.5);
-    returnButton.on('pointerover', () => returnButton.setTint(0x8ce8ff));
-    returnButton.on('pointerout', () => returnButton.setTint(0xffe342));
+    returnButton.on('pointerover', () => returnButton.setTint(0xadc2b8));
+    returnButton.on('pointerout', () => returnButton.setTint(0xe6bd65));
     returnButton.on('pointerdown', returnToWorld);
 
     this.add
       .text(width / 2, height - 32, 'También puedes volver con ESPACIO', {
         fontFamily: ART.body,
         fontSize: '16px',
-        color: '#b7ccf2',
+        color: '#655f50',
       })
       .setOrigin(0.5);
 
@@ -122,7 +118,7 @@ export class MuseumScene extends Phaser.Scene {
     const horizontal = this.scale.width > this.scale.height;
     // Fit eight cabinets without shrinking the souvenirs or their reactions.
     const widthScale = horizontal ? Math.min(1, (this.scale.width - 160) / (DISPLAYED_FRAGMENTS.length - 1) / 138) : 1;
-    this.add.image(x, y, 'sketch-extras', 10).setDisplaySize(148 * size * widthScale, 184 * size);
+    this.add.image(x, y, 'sketch-extras', 10).setDisplaySize(120 * size * widthScale, 170 * size);
     const glass = this.add.rectangle(x, y, 120 * size * widthScale, 160 * size, 0xf2ead9, 0).setName(fragment.id);
 
     if (this.progress.hasFragment(fragment.id)) {
@@ -130,7 +126,7 @@ export class MuseumScene extends Phaser.Scene {
       souvenir.setScale(size);
       glass.setName(fragment.id).setInteractive({ useHandCursor: true });
       glass.on('pointerdown', () => {
-        this.memoryText.setText(fragment.memory).setColor(`#${fragment.color.toString(16).padStart(6, '0')}`);
+        this.memoryText.setText(fragment.memory).setColor('#557b73');
         this.tweens.killTweensOf(souvenir);
         souvenir.setScale(size);
         if (!EffectsSettings.isReduced()) {
@@ -142,15 +138,15 @@ export class MuseumScene extends Phaser.Scene {
         .text(x, y + 100 * size + 2, fragment.label, {
           fontFamily: ART.body,
           fontSize: horizontal ? '12px' : '14px',
-          color: '#ffffff',
+          color: '#34332e',
         })
         .setOrigin(0.5);
     } else {
       this.add
-        .text(x, y, 'Vitrina vacía', {
+        .text(x, y + 100 * size + 2, 'Vitrina vacía', {
           fontFamily: ART.body,
           fontSize: horizontal ? '12px' : '14px',
-          color: '#b7ccf2',
+          color: '#655f50',
         })
         .setOrigin(0.5);
     }
@@ -161,7 +157,8 @@ export class MuseumScene extends Phaser.Scene {
       'beacon-fragment': 4, 'bridge-fragment': 5, 'garden-fragment': 7,
       'workshop-fragment': 9, 'lantern-fragment': 12 };
     const image = this.add.image(0, 0, ['secret-fragment', 'bridge-fragment'].includes(fragment.id) ? 'sketch-extras' : 'sketch-props-on',
-      fragment.id === 'secret-fragment' ? 9 : fragment.id === 'bridge-fragment' ? 11 : frames[fragment.id]).setDisplaySize(86, 86);
+      fragment.id === 'secret-fragment' ? 9 : fragment.id === 'bridge-fragment' ? 11 : frames[fragment.id]);
+    image.setScale(Math.min(78 / image.height, 86 / image.width));
     return this.add.container(x, y, [image]).setName(`souvenir-${fragment.id}`);
   }
 }

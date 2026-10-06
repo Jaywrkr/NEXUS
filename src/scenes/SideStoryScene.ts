@@ -1,3 +1,4 @@
+import { pencilLine } from '../art/modernArt';
 import Phaser from 'phaser';
 import { screenArt, cardArt, ART } from '../art/interfaceArt';
 import { SIDE_STORIES, storyAvailable, storyObjectId, type SideStory, type StoryId } from '../data/sideStories';
@@ -30,12 +31,10 @@ export class SideStoryScene extends Phaser.Scene {
 
     const top=mobile?195:150,bottom=height-110;
     cardArt(room,35,top,width-70,bottom-top,this.story.color);
-    room.fillStyle(0x1b3165,.8).fillRoundedRect(43,top+8,width-86,bottom-top-16,14);
-    for(let y=top+12;y<bottom-20;y+=30)for(let x=50+(Math.floor(y/30)%2)*23;x<width-85;x+=48){
-      room.lineStyle(1,0x83b5ff,.12).strokeRoundedRect(x,y,42,24,5);
-    }
-    this.add.text(width/2,38,this.story.title,{fontFamily:ART.display,fontSize:'26px',color:'#ffffff'}).setOrigin(.5);
-    this.objective=this.add.text(width/2,70,'',{fontFamily:ART.body,fontSize:'15px',color:'#b7ccf2',align:'center',wordWrap:{width:width-80}}).setOrigin(.5,0);
+    for (let y = top + 24; y < bottom - 20; y += 36)
+      pencilLine(room, 55, y, width - 55, y + 1, ART.ink, .07);
+    this.add.text(width/2,38,this.story.title,{fontFamily:ART.display,fontSize:'26px',color:'#34332e'}).setOrigin(.5);
+    this.objective=this.add.text(width/2,70,'',{fontFamily:ART.body,fontSize:'15px',color:'#655f50',align:'center',wordWrap:{width:width-80}}).setOrigin(.5,0);
     const six=this.story.nodes.length===6;
     const positions=mobile?(six?[[.25,240],[.75,240],[.5,405],[.25,575],[.75,575],[.5,735]]:[[.25,240],[.75,240],[.25,410],[.25,575],[.75,575],[.75,410],[.5,735]])
       :(six?[[.11,270],[.29,270],[.48,270],[.68,205],[.68,350],[.88,270]]:[[.1,270],[.27,270],[.44,205],[.44,350],[.63,350],[.63,205],[.87,270]]);
@@ -117,8 +116,8 @@ export class SideStoryScene extends Phaser.Scene {
   }
   private button(x:number,y:number,width:number,label:string,callback:()=>void):Phaser.GameObjects.Image {
     const key=`side-button-${width}`;ensureRoundedRectTexture(this,key,width,42,12);
-    const image=this.add.image(x,y,key).setTint(0x345cdd).setDepth(50).setInteractive({useHandCursor:true});
-    const text=this.add.text(x,y,label,{fontFamily:ART.body,fontSize:'15px',color:'#ffffff'}).setOrigin(.5).setDepth(51);
+    const image=this.add.image(x,y,key).setTint(0x8daaa2).setDepth(50).setInteractive({useHandCursor:true});
+    const text=this.add.text(x,y,label,{fontFamily:ART.body,fontSize:'15px',color:'#34332e'}).setOrigin(.5).setDepth(51);
     if(label==='Repetir'){
       const sync=()=>text.setVisible(image.visible);this.events.on('postupdate',sync);
       this.events.once('shutdown',()=>this.events.off('postupdate',sync));

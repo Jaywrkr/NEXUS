@@ -1,3 +1,5 @@
+> **Dirección vigente: [cuaderno a lápiz](SKETCH_ART_DIRECTION.md), Decisión 033.** El usuario sustituyó expresamente el acabado anterior por su hoja de referencia para todos los personajes, objetos y pantallas. Las secciones anteriores a esa decisión son históricas.
+
 # Dirección moderna completa — Nexus
 
 Continúa la muestra aprobada por el usuario, con referencias al volumen

@@ -1,3 +1,5 @@
+> **Dirección vigente: [cuaderno a lápiz](SKETCH_ART_DIRECTION.md), Decisión 033.** El usuario sustituyó expresamente el acabado anterior por su hoja de referencia para todos los personajes, objetos y pantallas. Las secciones anteriores a esa decisión son históricas.
+
 # Prompts para generar las imágenes del Nexus
 
 Ver Decisión 017 en `DECISIONS.md` y `public/assets/nexus/README.md` para
@@ -83,3 +85,30 @@ size as the idle pose.
 3. Guardarlas en `public/assets/nexus/` con esos nombres exactos.
 4. Avisarle a Claude para conectar `loadNexusAssets()` y reemplazar el
    dibujo por formas en `Nexus.ts` por estos sprites.
+
+## Prompts vigentes — Decisión 033
+
+Usar la hoja de personaje aportada por el usuario como referencia visual, no el
+acabado de los prompts históricos. Describir siempre:
+
+> Loose graphite and coloured-pencil sketch on warm ivory paper. Repeated,
+> imperfect construction contours, visible scribbled charcoal face and pencil
+> pigment. Cream pod head, two long pale yellow oval eyes, no mouth. Outward
+> antenna ears with orange and dusty blue tips, blue circular side discs. Teal
+> zip hoodie with a clearly curved handwritten numeral **2**, orange scarf,
+> charcoal gloves and short legs, ivory sneakers with orange trims. Ivory
+> backpack with teal circular energy port and dangling lime cable. No 3D,
+> no smooth vector contours, no plastic shading, no phone UI or screenshot frame.
+
+Para las cuatro poses: atlas 2×2 registrado, quieto / paso izquierdo / paso derecho
+/ festejo, misma proporción de cabeza y ropa. Para atlas de objetos y habitantes:
+cuadros iguales, cada silueta completa dentro de su cuadro y márgenes transparentes
+amplios, sin trazos de un cuadro en el vecino. Interiores opacos; alfa cero fuera.
+Los estados apagado/encendido conservan tamaño y posición de la base. Fuente y
+aspersor apagados no tienen agua; flores apagadas son capullos; puerta activa está
+abierta. Las luces encendidas se dibujan con pigmento amarillo, sin efecto de plástico.
+
+Para cada barrio: ilustración panorámica independiente de alta resolución,
+construcciones al fondo y bordes, suelo amplio despejado, sin personajes ni máquinas
+interactivas. El agua del paseo queda al fondo; no atraviesa la zona de caminar.
+El barrio del puente no incorpora un puente permanente al fondo.

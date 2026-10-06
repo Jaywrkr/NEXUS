@@ -36,9 +36,9 @@ export class ReturnCircuits {
       { sourceId: 'garden-sprinkler', targetId: this.band.id, available: () => channel() === 'music' && gardenReady(),
         restoreAvailable: gardenReady, blockedMessage: 'Las flores necesitan agua y música de CUAC FM.' },
     ];
-    this.notes = scene.add.text(3500, y - 135 * v, '♫  ♪  ♫', { fontFamily: ART.body, fontSize: '30px', color: '#9d367c' }).setOrigin(0.5).setDepth(3);
-    this.bulletinText = scene.add.text(1060, y - 145 * v, '', { fontFamily: ART.body, fontSize: '15px', color: '#4a3c63', align: 'center', wordWrap: { width: 190 }, backgroundColor: '#edf1ed', padding: { x: 6, y: 4 } }).setOrigin(0.5).setDepth(5);
-    this.bandText = scene.add.text(3650, y - 150 * v, '', { fontFamily: ART.body, fontSize: '15px', color: '#4a3c63', align: 'center', wordWrap: { width: 190 } }).setOrigin(0.5).setDepth(3);
+    this.notes = scene.add.text(3500, y - 135 * v, '♫  ♪  ♫', { fontFamily: ART.body, fontSize: '30px', color: '#7b5140' }).setOrigin(0.5).setDepth(5);
+    this.bulletinText = scene.add.text(1060, y - 145 * v, '', { fontFamily: ART.body, fontSize: '15px', color: '#4a3c63', align: 'center', wordWrap: { width: 190 }, backgroundColor: '#f2ead9', padding: { x: 6, y: 4 } }).setOrigin(0.5).setDepth(5);
+    this.bandText = scene.add.text(3650, y - 150 * v, '', { fontFamily: ART.body, fontSize: '15px', color: '#4a3c63', align: 'center', wordWrap: { width: 190 }, backgroundColor: '#f2ead9', padding: { x: 6, y: 4 } }).setOrigin(0.5).setDepth(5);
     this.refresh();
   }
 

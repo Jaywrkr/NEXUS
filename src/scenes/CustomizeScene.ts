@@ -1,3 +1,4 @@
+import { pencilCircle, pencilLine } from '../art/modernArt';
 import Phaser from 'phaser';
 import { screenArt, ART } from '../art/interfaceArt';
 import { loadAppearance, saveAppearance, OUTFITS, ACCESSORIES, CABLES, type Appearance } from '../data/appearance';
@@ -20,24 +21,24 @@ export class CustomizeScene extends Phaser.Scene {
     const { width, height } = this.scale;
     const mobile = height > width;
     this.look = loadAppearance(); this.buttons = [];
-    this.cameras.main.setBackgroundColor('#bed4c6');
+    this.cameras.main.setBackgroundColor('#e9dfca');
     screenArt(this);
     const frame=this.add.graphics();
     const pxPreview=mobile?width/2:width*.21;
-    frame.fillStyle(0x27e7da,.13).fillCircle(pxPreview,mobile?203:232,mobile?105:111);
-    frame.lineStyle(1,0x57cdeb,.3).strokeCircle(pxPreview,mobile?203:232,mobile?113:119);
-    frame.fillStyle(0x14234e,.08).fillEllipse(pxPreview,mobile?268:308,125,15);
-    if(!mobile)frame.lineStyle(1,0x57cdeb,.3).lineBetween(width*.4,105,width*.4,365);
-    this.add.text(width / 2, 48, 'Mi Nexus', { fontFamily: ART.display, fontSize: '32px', color: '#ffffff' }).setOrigin(0.5);
+    frame.fillStyle(0x729d95,.13).fillCircle(pxPreview,mobile?203:232,mobile?105:111);
+    pencilCircle(frame, pxPreview, mobile ? 203 : 232, mobile ? 113 : 119, ART.ink, .3);
+    frame.fillStyle(0xf2ead9,.08).fillEllipse(pxPreview,mobile?268:308,125,15);
+    if (!mobile) pencilLine(frame, width * .4, 105, width * .4, 365, ART.ink, .3);
+    this.add.text(width / 2, 48, 'Mi Nexus', { fontFamily: ART.display, fontSize: '32px', color: '#34332e' }).setOrigin(0.5);
     const px = mobile ? width / 2 : width * 0.21;
     const py = mobile ? 265 : 305;
-    this.name = this.add.text(px, py + 22, '', { fontFamily: ART.body, fontSize: '20px', color: '#ffffff', align: 'center' }).setOrigin(0.5, 0);
+    this.name = this.add.text(px, py + 22, '', { fontFamily: ART.body, fontSize: '20px', color: '#34332e', align: 'center' }).setOrigin(0.5, 0);
     this.button(px, py + 76, 180, 'Cambiar nombre', () => {
       const name = window.prompt('¿Cómo se llama tu Nexus? (máximo 16 caracteres)', this.look.name);
       if (name !== null) { this.look.name = name; this.refresh(); }
     });
     this.status = this.add.text(width / 2, height - (mobile ? 225 : 125), 'Elige tu estilo. Puedes cambiarlo cuando quieras.', {
-      fontFamily: ART.body, fontSize: '15px', color: '#b7ccf2', align: 'center', wordWrap: { width: width - 70 },
+      fontFamily: ART.body, fontSize: '15px', color: '#655f50', align: 'center', wordWrap: { width: width - 70 },
     }).setOrigin(0.5);
     this.selected=this.add.graphics();
     const choices = [
@@ -48,7 +49,7 @@ export class CustomizeScene extends Phaser.Scene {
     choices.forEach(({ key, label, options }, row) => {
       const cx = mobile ? width / 2 : width * 0.67;
       const y = mobile ? 425 + row * 115 : 122 + row * 95;
-      this.add.text(cx, y - 38, label, { fontFamily: ART.body, fontSize: '18px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5);
+      this.add.text(cx, y - 38, label, { fontFamily: ART.body, fontSize: '18px', fontStyle: 'bold', color: '#34332e' }).setOrigin(0.5);
       options.forEach((option, index) => {
         const locked = 'reward' in option && !this.look.unlocked.includes(option.reward);
         const x = cx + (index - (options.length - 1) / 2) * 88;
@@ -86,16 +87,19 @@ export class CustomizeScene extends Phaser.Scene {
     this.selected.clear();
     this.buttons.forEach(b => {
       const chosen=this.look[b.key]===b.id;
-      b.image.setTint(chosen?0x4168d8:0x34549b);
-      if(chosen)this.selected.lineStyle(2,0x27e7da,.85).strokeRoundedRect(b.image.x-42,b.image.y-23,84,46,8);
+      b.image.setTint(chosen?0x9cbdb1:0xd2c6af);
+      if (chosen) {
+        pencilLine(this.selected, b.image.x - 40, b.image.y + 18, b.image.x + 38, b.image.y + 17, ART.ink, .9);
+        pencilLine(this.selected, b.image.x - 35, b.image.y + 21, b.image.x + 29, b.image.y + 20, ART.ink, .4);
+      }
     });
   }
   private button(x: number, y: number, width: number, text: string, action: () => void): Phaser.GameObjects.Image {
     const key = `wardrobe-button-${width}`;
     ensureRoundedRectTexture(this, key, width, 44, 12);
     const primary = text === 'Guardar y volver';
-    const image = this.add.image(x, y, key).setTint(primary ? 0xffe342 : 0x34549b).setInteractive({ useHandCursor: true });
-    this.add.text(x, y, text, { fontFamily: ART.body, fontSize: width < 100 ? '13px' : '17px', color: primary ? '#14234e' : '#ffffff' }).setOrigin(0.5);
+    const image = this.add.image(x, y, key).setTint(primary ? 0xe6bd65 : 0xd2c6af).setInteractive({ useHandCursor: true });
+    this.add.text(x, y, text, { fontFamily: ART.body, fontSize: width < 100 ? '16px' : '18px', color: primary ? '#34332e' : '#34332e' }).setOrigin(0.5);
     image.on('pointerdown', action);
     return image;
   }

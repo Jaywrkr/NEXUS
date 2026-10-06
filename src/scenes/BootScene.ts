@@ -43,63 +43,63 @@ export class BootScene extends Phaser.Scene {
     nexusPortrait(this, portrait ? width / 2 : width * .25,
       portrait ? height / 2 - 168 : height * 0.78, portrait ? 170 : 225, NEXUS_ASSET_KEYS.idle);
     this.add.text(menuX, height / 2 - 18, 'Conecta · descubre · celebra', {
-      fontFamily: ART.body, fontSize: '14px', color: '#8ce8ff',
+      fontFamily: ART.body, fontSize: '14px', color: '#557b73',
     }).setOrigin(0.5);
-    this.cameras.main.fadeIn(300, 25, 44, 103);
+    this.cameras.main.fadeIn(300, 238, 229, 210);
 
     this.add
       .text(menuX, height / 2 - 104, 'Los Nexus', {
         fontFamily: ART.display,
         fontSize: '54px',
         fontStyle: 'bold italic',
-        color: '#ffffff',
+        color: '#34332e',
       })
       .setOrigin(0.5)
-      .setShadow(0, 3, 'rgba(27, 31, 59, 0.25)', 6, false, true);
+      .setShadow(0, 0, 'rgba(0,0,0,0)', 0);
 
     this.add
       .text(menuX, height / 2 - 50, `Capítulo 1 · ${CHAPTER_TITLE}`, {
         fontFamily: ART.body,
         fontSize: '18px',
-        color: '#bdd3ff',
+        color: '#655f50',
       })
       .setOrigin(0.5);
 
     const firstButtonY = hasProgress ? height / 2 + 20 : height / 2 + 40;
 
     if (hasProgress) {
-      this.buildButton(menuX, firstButtonY, 'Continuar', 0xffe342, () => {
+      this.buildButton(menuX, firstButtonY, 'Continuar', 0xe6bd65, () => {
         fadeToScene(this, 'WorldScene', [207, 232, 216]);
       });
-      this.buildButton(menuX, firstButtonY + BUTTON_HEIGHT + 18, 'Nueva partida', 0x425cbe, () => {
+      this.buildButton(menuX, firstButtonY + BUTTON_HEIGHT + 18, 'Nueva partida', 0xb8c8b8, () => {
         const confirmed = window.confirm('¿Seguro que quieres borrar tu progreso y empezar de nuevo?');
         if (!confirmed) return;
         progress.resetProgress();
         fadeToScene(this, 'WorldScene', [207, 232, 216]);
       });
     } else {
-      this.buildButton(menuX, firstButtonY, 'Jugar', 0xffe342, () => {
+      this.buildButton(menuX, firstButtonY, 'Jugar', 0xe6bd65, () => {
         fadeToScene(this, 'WorldScene', [207, 232, 216]);
       });
     }
 
-    this.buildButton(menuX, height / 2 + 143, 'Mi Nexus', 0x425cbe, () => {
+    this.buildButton(menuX, height / 2 + 143, 'Mi Nexus', 0xb8c8b8, () => {
       this.scene.start('CustomizeScene', { returnScene: 'BootScene' });
     });
 
     const effectsLabel = (): string => `Efectos suaves: ${EffectsSettings.isReduced() ? 'Sí' : 'No'}`;
     ensureRoundedRectTexture(this, 'effects-toggle', 260, 44, 12);
     const effectsButton = this.add.image(width / 2, height - 65, 'effects-toggle')
-      .setTint(0x293b85).setInteractive({ useHandCursor: true });
+      .setTint(0xe7dbc1).setInteractive({ useHandCursor: true });
     const effectsText = this.add.text(width / 2, height - 65, effectsLabel(), {
-      fontFamily: ART.body, fontSize: '18px', color: '#e3edff',
+      fontFamily: ART.body, fontSize: '18px', color: '#454239',
     }).setOrigin(0.5);
     effectsButton.on('pointerdown', () => {
       EffectsSettings.setReduced(!EffectsSettings.isReduced());
       effectsText.setText(effectsLabel());
     });
     this.add.text(width / 2, height - 28, 'Sin flashes ni sacudidas al activarlos', {
-      fontFamily: ART.body, fontSize: '14px', color: '#bdd3ff',
+      fontFamily: ART.body, fontSize: '14px', color: '#655f50',
     }).setOrigin(0.5);
 
   }
@@ -115,7 +115,7 @@ export class BootScene extends Phaser.Scene {
         fontFamily: ART.body,
         fontSize: '20px',
         fontStyle: 'bold italic',
-        color: color === 0xffe342 ? '#14234e' : '#ffffff',
+        color: '#34332e',
       })
       .setOrigin(0.5);
 

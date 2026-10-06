@@ -14,10 +14,10 @@ export class RadioReceiver extends ConnectableObject {
     super(scene, x, y, id, 'target');
     this.color = color;
     this.panel = scene.add.rectangle(0, 0, 76, 60, 0x7199bf).setStrokeStyle(3, 0x67b7fa);
-    this.indicator = scene.add.text(0, 0, '○', { fontFamily: 'sans-serif', fontSize: '28px', color: '#f4f1e8' }).setOrigin(0.5);
+    this.indicator = scene.add.text(0, 0, '○', { fontFamily: '"Patrick Hand", cursive', fontSize: '28px', color: '#f4f1e8' }).setOrigin(0.5);
     this.indicator.setVisible(false);
     const antenna = scene.add.rectangle(0, -39, 4, 18, 0x20233a);
-    const title = scene.add.text(0, 48, label, { fontFamily: 'sans-serif', fontSize: '14px', color: '#20233a', align: 'center', wordWrap: { width: 135 } }).setOrigin(0.5);
+    const title = scene.add.text(0, 48, label, { fontFamily: '"Patrick Hand", cursive', fontSize: '14px', color: '#20233a', align: 'center', wordWrap: { width: 135 } }).setOrigin(0.5);
     const trim = scene.add.graphics();
     trim.lineStyle(2, 0xf4faff, 0.65).lineBetween(-32, -24, 30, -24);
     trim.lineStyle(2, 0x14234e, 0.5);

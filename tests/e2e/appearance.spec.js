@@ -33,6 +33,7 @@ test('wardrobe persists names, outfit poses and cable colors without changing pr
   await page.keyboard.up('ArrowRight');
   await world(page, 's.nexus.celebrate();');
   expect(await world(page, 'return s.nexus.sprite.texture.key;')).toContain('celebrate-outfit-coral');
+  await page.screenshot({ path:testInfo.outputPath('personalized-celebration.png') });
   await page.reload(); await ready(page, 'BootScene'); await start(page, 'Continuar');
   expect(await world(page, 'return s.nexus.look.name;')).toBe('Luca Rayo');
   const progress = await page.evaluate(() => JSON.parse(localStorage.getItem('los-nexus-progress')));

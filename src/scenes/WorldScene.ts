@@ -1,3 +1,4 @@
+import { pencilCard } from '../art/modernArt';
 import Phaser from 'phaser';
 import { PlazaAtmosphere } from '../art/PlazaAtmosphere';
 import { PLAZA } from '../art/plazaAssets';
@@ -87,7 +88,7 @@ export class WorldScene extends Phaser.Scene {
   private storyCard!: StoryCard;
   private plazaGuide!: PlazaGuide;
   private plazaAtmosphere!: PlazaAtmosphere;
-  private plazaFlowers!: Phaser.GameObjects.Graphics;
+  private plazaFlowers!: Phaser.GameObjects.Image;
   private radioBanner!: Phaser.GameObjects.Text;
   private workshop!: WorkshopZone;
   private lanterns!: LanternZone;
@@ -132,8 +133,8 @@ export class WorldScene extends Phaser.Scene {
     this.setupConnections(height, vScale);
     this.plazaAtmosphere = new PlazaAtmosphere(this, this.nexus, this.connectables[0], this.lamp, this.door);
 
-    this.cameras.main.setBackgroundColor('#cfe8d8');
-    this.cameras.main.fadeIn(300, 207, 232, 216);
+    this.cameras.main.setBackgroundColor('#e9dfca');
+    this.cameras.main.fadeIn(300, 238, 229, 210);
 
     this.cursors = this.input.keyboard!.createCursorKeys();
     this.wasd = this.input.keyboard!.addKeys('W,A,S,D') as typeof this.wasd;
@@ -147,26 +148,24 @@ export class WorldScene extends Phaser.Scene {
 
     ensureRoundedRectTexture(this, HUD_PILL_TEXTURE, 100, 36, 18);
 
-    this.add.graphics().setDepth(19).setScrollFactor(0)
-      .fillStyle(0x14234e, 0.97).fillRoundedRect(110, 14, this.scale.width - 220, 66, 16)
-      .lineStyle(1, 0x57cdeb, 0.6).strokeRoundedRect(114, 18, this.scale.width - 228, 58, 12);
+    pencilCard(this.add.graphics().setDepth(19).setScrollFactor(0), 110, 14, this.scale.width - 220, 66);
 
     this.instructionText = this.add
       .text(this.scale.width / 2, 24, '', {
         fontFamily: ART.body,
         fontSize: '16px',
-        color: '#ffffff',
+        color: '#34332e',
         wordWrap: { width: this.scale.width - 220, useAdvancedWrap: true },
       })
       .setOrigin(0.5, 0)
       .setDepth(20)
       .setScrollFactor(0)
-      .setShadow(0, 1, 'rgba(0,0,0,0.3)', 2, false, true);
+      .setShadow(0, 0, 'rgba(0,0,0,0)', 0);
 
     this.add
       .image(this.scale.width - 16 - 42, 16 + 18, HUD_PILL_TEXTURE)
       .setDisplaySize(84, 36)
-      .setTint(0x14234e)
+      .setTint(0xf2ead9)
       .setAlpha(0.95)
       .setDepth(19)
       .setScrollFactor(0);
@@ -176,7 +175,7 @@ export class WorldScene extends Phaser.Scene {
         fontFamily: ART.body,
         fontSize: '18px',
         fontStyle: 'bold',
-        color: '#ffe342',
+        color: '#925425',
       })
       .setOrigin(1, 0.5)
       .setDepth(20)
@@ -185,7 +184,7 @@ export class WorldScene extends Phaser.Scene {
     const mutePill = this.add
       .image(16 + 42, 16 + 18, HUD_PILL_TEXTURE)
       .setDisplaySize(84, 36)
-      .setTint(0x14234e)
+      .setTint(0xf2ead9)
       .setAlpha(0.95)
       .setDepth(19)
       .setScrollFactor(0)
@@ -195,7 +194,7 @@ export class WorldScene extends Phaser.Scene {
       .text(16 + 42, 16 + 18, this.muteButtonLabel(), {
         fontFamily: ART.body,
         fontSize: '18px',
-        color: '#ffffff',
+        color: '#34332e',
       })
       .setOrigin(0.5)
       .setDepth(20)
@@ -209,14 +208,14 @@ export class WorldScene extends Phaser.Scene {
     });
 
     const wardrobe = this.add.image(65, height - 185, HUD_PILL_TEXTURE).setDisplaySize(106, 36)
-      .setTint(0x14234e).setDepth(50).setScrollFactor(0).setInteractive({ useHandCursor: true });
-    this.add.text(65, height - 185, 'Mi Nexus', { fontFamily: ART.body, fontSize: '14px', color: '#ffffff' })
+      .setTint(0xf2ead9).setDepth(50).setScrollFactor(0).setInteractive({ useHandCursor: true });
+    this.add.text(65, height - 185, 'Mi Nexus', { fontFamily: ART.body, fontSize: '14px', color: '#34332e' })
       .setOrigin(0.5).setDepth(51).setScrollFactor(0);
     wardrobe.on('pointerdown', () => { if (this.leavingWorld) return; this.leavingWorld = true; this.scene.start('CustomizeScene', { returnScene: 'WorldScene' }); });
 
     const journal = this.add.image(65, height - 230, HUD_PILL_TEXTURE).setDisplaySize(106, 36)
-      .setTint(0x14234e).setDepth(50).setScrollFactor(0).setInteractive({ useHandCursor: true });
-    this.add.text(65, height - 230, 'Diario', { fontFamily: ART.body, fontSize: '14px', color: '#ffffff' })
+      .setTint(0xf2ead9).setDepth(50).setScrollFactor(0).setInteractive({ useHandCursor: true });
+    this.add.text(65, height - 230, 'Diario', { fontFamily: ART.body, fontSize: '14px', color: '#34332e' })
       .setOrigin(0.5).setDepth(51).setScrollFactor(0);
     journal.on('pointerdown', () => { if (this.leavingWorld) return; this.leavingWorld = true; this.scene.start('JournalScene'); });
 
@@ -289,9 +288,9 @@ export class WorldScene extends Phaser.Scene {
     this.storyCard = new StoryCard(this);
     this.plazaGuide = new PlazaGuide(this);
     const hint = this.add.image(this.scale.width - 62, height - 86, HUD_PILL_TEXTURE)
-      .setDisplaySize(92, 44).setTint(0xffe342).setDepth(50).setScrollFactor(0)
+      .setDisplaySize(92, 44).setTint(0xe6bd65).setDepth(50).setScrollFactor(0)
       .setInteractive({ useHandCursor: true });
-    this.add.text(hint.x, hint.y, 'Pista', { fontFamily: ART.body, fontSize: '18px', color: '#20233a' })
+    this.add.text(hint.x, hint.y, 'Pista', { fontFamily: ART.body, fontSize: '18px', color: '#34332e' })
       .setOrigin(0.5).setDepth(51).setScrollFactor(0);
     hint.on('pointerdown', () => {
       const task = this.returnCircuits.taskNear(this.nexus.x) ?? chapterTask(this.progress.snapshot());
@@ -437,8 +436,8 @@ export class WorldScene extends Phaser.Scene {
     this.connectables.forEach((obj) => obj.setDepth(11));
     for (const [object, label] of [[source, 'GENERADOR'], [this.lamp, 'LÁMPARA'], [this.door, 'PUERTA']] as const) {
       this.add.text(object.x, object.y + 66, label, {
-        fontFamily: ART.body, fontSize: '11px', fontStyle: 'bold', color: '#ffffff',
-        backgroundColor: '#152b47', padding: { x: 7, y: 4 }, letterSpacing: 1,
+        fontFamily: ART.body, fontSize: '14px', fontStyle: 'bold', color: '#34332e',
+        backgroundColor: '#f2ead9', padding: { x: 7, y: 4 }, letterSpacing: 1,
       }).setOrigin(.5).setDepth(12);
     }
     this.plazaFragment.setDepth(12);
@@ -830,7 +829,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   private spawnButterfly(baseX: number, baseY: number): void {
-    const butterfly = this.add.image(baseX, baseY, 'sketch-residents', 7).setDisplaySize(36, 36).setDepth(9);
+    const butterfly = this.add.image(baseX, baseY, 'sketch-residents', 7).setDepth(9);
+    butterfly.setScale(36 / butterfly.width);
     const wingFlutter = this.tweens.add({
       targets: butterfly,
       scaleX: { from: butterfly.scaleX, to: butterfly.scaleX * .4 },
@@ -881,7 +881,10 @@ export class WorldScene extends Phaser.Scene {
       tex.refresh();
     }
     const ravine = this.add.graphics().setDepth(4.5);
-    ravine.fillStyle(0x53584f, .65).fillRect(GAP_X - GAP_WIDTH / 2, midY - 96 * vScale, GAP_WIDTH, height);
+    ravine.fillStyle(0x53584f, .7).beginPath().moveTo(GAP_X - 50, midY - 96 * vScale);
+    for (let y = midY - 96 * vScale; y <= height + 20; y += 18) ravine.lineTo(GAP_X - 49 + Math.sin(y * .13) * 4, y);
+    for (let y = height + 20; y >= midY - 96 * vScale; y -= 18) ravine.lineTo(GAP_X + 49 + Math.sin(y * .17) * 4, y);
+    ravine.closePath().fillPath();
     for (let y = midY - 90 * vScale; y < height; y += 13) {
       ravine.lineStyle(1, 0x434942, .55).lineBetween(GAP_X - 45, y + 9, GAP_X + 43, y - 5);
       ravine.lineStyle(1, 0x6f9f9a, .5).lineBetween(GAP_X - 24, y, GAP_X + 25, y - 4);
@@ -903,19 +906,15 @@ export class WorldScene extends Phaser.Scene {
       fontFamily: ART.body, fontSize: '16px', color: '#365137',
     }).setOrigin(0.5).setDepth(5).setVisible(false);
     if (this.textures.exists(PLAZA.background)) this.houseWindow.setVisible(false);
-    this.plazaFlowers = this.add.graphics({ x: 1050, y: midY + 40 * vScale }).setDepth(3).setVisible(false);
-    for (const x of [-24, 0, 24]) {
-      this.plazaFlowers.lineStyle(3, 0x4a7c3a).lineBetween(x, 0, x, 18);
-      this.plazaFlowers.fillStyle(0xffb86c).fillCircle(x, 0, 8);
-      this.plazaFlowers.fillStyle(0xffe066).fillCircle(x, 0, 3);
-    }
+    this.plazaFlowers = this.add.image(1050, midY + 65 * vScale, 'sketch-props-on', 7)
+      .setDisplaySize(96, 70).setOrigin(.5, 1).setDepth(10.8).setVisible(false);
 
     // Árbol sin hojas (mundo apagado)
     this.add.rectangle(940, midY - 10 * vScale, 12, 60, 0x565591).setDepth(3);
     this.treeCrown = this.add.circle(940, midY - 60 * vScale, 40, 0x6375a9).setDepth(3);
 
     const foliage = this.add.graphics({ x: 940, y: midY - 60 * vScale }).setDepth(3);
-    foliage.fillStyle(0x14234e, 0.23).fillEllipse(-14, -18, 34, 18).fillCircle(18, -10, 9);
+    foliage.fillStyle(0xf2ead9, 0.23).fillEllipse(-14, -18, 34, 18).fillCircle(18, -10, 9);
     foliage.lineStyle(2, 0x34494e, 0.2).lineBetween(-14, 20, 0, 30).lineBetween(14, 10, 0, 30);
 
     // Torre de la estación de la antena (decoración, no interactiva)

@@ -15,7 +15,7 @@ export class InteractButton {
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensureRoundedRectTexture(scene, 'interact-button', 190, 56, 16);
     this.bg = scene.add
-      .image(x, y, 'interact-button').setTint(0x14234e)
+      .image(x, y, 'interact-button').setTint(0xf2ead9)
       .setScrollFactor(0)
       .setDepth(60)
       .setVisible(false)
@@ -25,7 +25,7 @@ export class InteractButton {
       .text(x, y, 'Tocar', {
         fontFamily: ART.body,
         fontSize: '20px',
-        color: '#ffffff',
+        color: '#34332e',
       })
       .setOrigin(0.5)
       .setScrollFactor(0)

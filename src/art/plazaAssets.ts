@@ -25,7 +25,11 @@ export function createPlazaFrames(scene: Phaser.Scene): void {
     sources.forEach(([source, index], i) => {
       const texture = scene.textures.get(source), frame = texture.get(String(index));
       const x = i % 3 * 512, y = Math.floor(i / 3) * 512;
-      canvas.getContext().drawImage(texture.getSourceImage() as HTMLImageElement, frame.cutX, frame.cutY, frame.cutWidth, frame.cutHeight, x, y, 512, 512);
+      const scale = 512 / Math.max(frame.cutWidth, frame.cutHeight);
+      canvas.getContext().drawImage(texture.getSourceImage() as HTMLImageElement,
+        frame.cutX, frame.cutY, frame.cutWidth, frame.cutHeight,
+        x + (512 - frame.cutWidth * scale) / 2, y + 512 - frame.cutHeight * scale,
+        frame.cutWidth * scale, frame.cutHeight * scale);
       canvas.add(String(i), 0, x, y, 512, 512);
     });
     canvas.refresh();
