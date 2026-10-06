@@ -21,7 +21,7 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test
 
 ```bash
 npm run test:unit    # catorce pruebas de guardado, preferencias y objetivos
-npm run test:e2e     # diecisiete escenarios en escritorio y diecisiete en móvil vertical
+npm run test:e2e     # dieciocho escenarios en escritorio y dieciocho en móvil vertical
 npm test            # ambas suites
 npm run build       # TypeScript y build de producción; check separado
 ```
@@ -32,6 +32,8 @@ Cada prueba usa un contexto de navegador nuevo con almacenamiento independiente.
 No hay retries automáticos ni pruebas omitidas por defecto.
 
 ## Cobertura
+
+- Encargos de regreso: requisitos de emisión, movimiento entre lugares, diálogo y pistas locales, dos desenlaces opcionales, resultados permanentes al cambiar de canal, recarga y reinicio.
 
 - Radio reversible: antena parcial bloqueada, cambio repetido, destino único, recarga y elección válida más reciente en un guardado con cables incompatibles.
 

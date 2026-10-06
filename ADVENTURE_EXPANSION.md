@@ -25,3 +25,25 @@ con Luca; usar `PLAYTEST_CHAPTER_ONE.md`, anotando qué decisiones investiga.
 Después de esa prueba quedan propuestas: historias secundarias más largas,
 segunda aventura en una estación abandonada, puzzles que combinan reglas y
 finales según decisiones. No forman parte de estas tres ramas.
+
+## Orden del bloque posterior propuesto
+
+4. Historias secundarias: ampliar los encargos que resulten interesantes para
+   Luca; cada historia necesita problema, conexiones propias y desenlace.
+5. Segunda aventura: investigar la señal de una estación abandonada, con un
+   objetivo central y nuevos lugares que cambien al resolverlos.
+6. Combinación de reglas: enseñar una variante por vez y después combinarla con
+   ramificaciones y decisiones ya conocidas; evitar dificultad por ensayo ciego.
+7. Variaciones del final y secretos: mostrar consecuencias de las decisiones y
+   motivos concretos para volver a jugar. Sin exigir todos los secretos.
+
+Este bloque está propuesto, no implementado ni publicado. Si se desarrolla,
+continuará la cadena desde `codex/consecuencias-regreso`, conservando una rama,
+commit y push por fase y dejando los PR y merges al usuario.
+
+## Validación del bloque implementado
+Las tres fases están implementadas y publicadas. Build de producción aprobado;
+`npm test` aprobó las 14 pruebas unitarias y los 36 escenarios E2E en escritorio
+y móvil vertical. Se revisaron las capturas de pistas, radio y ambos encargos.
+La primera partida con Luca sigue pendiente; estos resultados no demuestran
+una duración humana de 20–30 minutos.

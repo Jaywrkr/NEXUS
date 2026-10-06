@@ -14,6 +14,8 @@ export interface ConnectionRule {
   /** Si es true, antes de completarse hay que superar el mini-túnel del cable (ver CableTunnelScene). */
   useTunnel?: boolean;
   available?: () => boolean;
+  /** Solved projects may outlive a temporary prerequisite such as a radio channel. */
+  restoreAvailable?: () => boolean;
   showHint?: () => boolean;
   blockedMessage?: string;
   /** At most one rule in the group stays completed; reconnecting changes choice. */
@@ -74,7 +76,8 @@ export class ConnectionSystem {
   /** Replay only registered rules, in puzzle order, without tunnel, sound or rewards. */
   restoreConnections(connections: SavedConnection[]): void {
     for (const rule of this.rules) {
-      if (rule.available && !rule.available()) continue;
+      const available = rule.restoreAvailable ?? rule.available;
+      if (available && !available()) continue;
       if (!connections.some((c) => c.sourceId === rule.sourceId && c.targetId === rule.targetId)) continue;
       if (rule.exclusiveGroup) {
         const group = this.rules.filter(candidate => candidate.exclusiveGroup === rule.exclusiveGroup);

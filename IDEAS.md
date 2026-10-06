@@ -26,6 +26,13 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 - Dominio propio.
 
 ## Ideas de contenido (mecánica, siempre reutilizando "conectar")
+- Extender historias secundarias después de probar las decisiones y encargos de regreso:
+  buzón que entrega insultos absurdos, inauguración exigida por el pato y banda de flores.
+- Segunda aventura: señal imposible desde una estación abandonada, con un problema
+  central y consecuencias entre lugares; propuesta pendiente de desarrollo.
+- Introducir y combinar reglas de señales y ramificaciones gradualmente; probar
+  comprensión antes de añadir dificultad.
+- Variar el desenlace según decisiones, con secretos que den motivos para volver.
 - Añadir más capítulos después de probar la duración y comprensión del primero
   con Luca; no ampliar el mundo solo para aumentar el número de zonas.
 

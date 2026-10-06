@@ -33,4 +33,4 @@ Cada rama conserva el estado jugable correspondiente a su fase; la última
 incluye toda la cadena.
 
 El siguiente bloque de tres fases está definido en `ADVENTURE_EXPANSION.md`.
-La fila 14 está publicada; las filas 15–16 se publicarán al completar su implementación y validación.
+Las filas 14–16 están implementadas, probadas y publicadas, en ese orden.

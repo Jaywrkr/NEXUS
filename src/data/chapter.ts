@@ -1,7 +1,7 @@
 import type { GameState } from './gameState';
 
 export const CHAPTER_TITLE = 'La ciudad al revés';
-export const DISCOVERY_IDS = ['singing-door', 'no-refunds', 'salad-decree', 'house-garden', 'shy-lantern'];
+export const DISCOVERY_IDS = ['singing-door', 'no-refunds', 'salad-decree', 'house-garden', 'shy-lantern', 'plaza-bulletin', 'garden-concert'];
 export const RESIDENTS = [
   { id: 'miga', name: 'Miga', x: 1020, offsetY: 120, color: 0x5ee7ff, fragment: 'plaza-fragment', target: 'door',
     request: 'El manual lo escribió un pato. Empecemos por dar luz a la plaza.',
@@ -44,7 +44,7 @@ export function residentLine(resident: ResidentInfo, state: GameState): string {
       'don-paso': 'He dejado pasar a todos. Mi autobiografía tendrá muchas páginas en blanco.',
       goteo: 'Las flores votaron. He perdido contra una regadera. Acepto el resultado.',
       pipa: 'El pato supervisa la campana. La campana supervisa al pato. Yo descanso.',
-      lucio: 'La fiesta sigue. Puedes ver el final otra vez o buscar nuestras cinco sorpresas.',
+      lucio: 'La fiesta sigue. Puedes ver el final otra vez o buscar las sorpresas del barrio.',
     };
     return epilogues[resident.id] ?? resident.restored;
   }
