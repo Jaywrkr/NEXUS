@@ -96,3 +96,7 @@ El usuario solicita una revisión completa del arte y todas las interfaces sin a
 
 **Decisión 029**
 El usuario pide una estética más moderna con toques visuales de Fortnite y autoriza la muestra propuesta de plaza, portada y HUD. Se adopta una ilustración original de formas volumétricas estilizadas, color saturado, energía cian, base azul/violeta y acciones amarillas. Paneles y botones planos, tipografía gruesa y sombras por planos sustituyen el acabado de papel y cobre en la muestra. Se conservan identidad del Nexus, funciones, guardado, controles y áreas de input. La rama se anida sobre `codex/acabado-artistico`; el usuario integra los PR.
+
+
+**Decisión 030**
+Con «sigue», el usuario autoriza extender la dirección moderna aprobada al resto del juego. Los siete distritos comparten losas grandes, fachadas con volumen y vegetación facetada, con hitos propios por barrio. Armario, diario, encargos, museo, final y túnel adoptan azul/violeta, energía cian, texto claro y botones planos. La estética es original; no se incorporan recursos de Fortnite. Se conservan funciones, posiciones, geometría del túnel, identidad del Nexus y guardado. La rama se anida sobre `codex/estilo-moderno-plaza`; PR y merge a cargo del usuario.

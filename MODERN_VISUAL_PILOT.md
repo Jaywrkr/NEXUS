@@ -34,3 +34,8 @@ sin omisiones, en escritorio y móvil vertical. Las capturas de portada y plaza
 se revisaron en ambas orientaciones. El build servido también cargó portada,
 armario y mundo y conservó el nombre guardado, sin errores JavaScript/HTTP.
 Capturas en `/workspace/nexus-modern-evidence/`.
+
+## Extensión aprobada
+La continuación `codex/estilo-moderno-completo` extiende esta muestra a todos
+los distritos, objetos y pantallas. Ver `MODERN_ART_DIRECTION.md` para la
+dirección vigente; los párrafos anteriores describen el alcance de la muestra.

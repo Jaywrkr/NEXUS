@@ -181,3 +181,29 @@ Dirección contemporánea aprobada con toques visuales de Fortnite: portada azul
 
 Validación: build aprobado y suite completa sin fallos ni omisiones: 18 pruebas unitarias y 42 escenarios E2E en escritorio y móvil vertical. Capturas revisadas de la nueva portada, plaza y controles en ambas orientaciones; siguen funcionando diálogo, conexiones, túnel, armario y restauración del progreso.
 El build servido cargó portada, armario y mundo en ambos formatos, con edición/guardado de nombre y sin errores JavaScript ni HTTP.
+
+
+## Dirección moderna completa
+La muestra de portada/plaza/HUD se extiende a los siete distritos y todas las
+pantallas. Paseo del agua con tuberías, CUAC FM con antena iluminada, río azul,
+invernadero de vidrio facetado, taller con toldo y camino con banderines vivos.
+Fachadas laterales, sombras por planos, vegetación facetada y losas grandes se
+hornean en las mismas siete texturas reutilizables. Las fuentes de energía,
+lámparas y puertas comparten el acabado de la plaza; el resto de conectables,
+juguetes y faroles reciben metal azul y señales claras de estado.
+
+Armario, diario, encargos, museo, final y túnel adoptan fondos azul/violeta,
+tipografía sin serif, tarjetas oscuras, botones planos y energía cian. Las
+acciones principales usan amarillo con texto oscuro. Contadores de máquinas
+y nombres de habitantes usan paneles oscuros legibles. Se conservan funciones,
+guardado, controles, áreas interactivas, posiciones y geometría del túnel.
+Ningún recurso externo nuevo ni animación obligatoria. La rama continúa sobre
+`codex/estilo-moderno-plaza`; ver `MODERN_ART_DIRECTION.md`.
+
+Validación final: `npm run build` aprobado y `npm test` con 18 pruebas unitarias
+y 42 escenarios E2E aprobados, sin omisiones, en escritorio y móvil vertical.
+Los 12 escenarios de revisión visual/interacción también pasaron antes de la
+suite completa. Capturas revisadas de los siete distritos, armario, diario,
+encargos, museo, final y túnel en ambas orientaciones. Build servido verificado
+con cambio/guardado de nombre largo y entrada al mundo, sin errores JavaScript
+ni HTTP. Evidencia en `/workspace/nexus-modern-complete-evidence/`.

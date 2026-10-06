@@ -48,5 +48,6 @@ Capturas conservadas en `/workspace/nexus-art-finish-evidence/`.
 ## Revisión posterior de la dirección
 El usuario pidió después un aspecto contemporáneo con toques de Fortnite.
 `MODERN_VISUAL_PILOT.md` registra la nueva muestra de portada, plaza y HUD.
-Esa muestra sustituye allí el lenguaje editorial descrito arriba; los distritos
-y pantallas restantes conservan esta referencia anterior.
+La extensión completa, documentada en `MODERN_ART_DIRECTION.md`, sustituye
+el lenguaje editorial de este documento en los siete distritos y todas las
+interfaces. Este archivo se conserva como referencia histórica.

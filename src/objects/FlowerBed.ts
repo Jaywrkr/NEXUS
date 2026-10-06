@@ -9,7 +9,7 @@ export class FlowerBed extends ConnectableObject {
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y, 'garden-bed', 'target');
-    this.soil = scene.add.rectangle(0, 20, 110, 52, 0x9e896b).setStrokeStyle(3, 0x725e43);
+    this.soil = scene.add.rectangle(0, 20, 110, 52, 0x4166c6).setStrokeStyle(3, 0x243875);
     this.flowers = scene.add.graphics().setVisible(false);
     this.add(this.soil);
     for (const [index, dx] of [-32, 0, 32].entries()) {
@@ -26,9 +26,9 @@ export class FlowerBed extends ConnectableObject {
       this.flowers.fillCircle(dx, -18, 6);
     }
     const trim = scene.add.graphics();
-    trim.fillStyle(0x9c7252).fillRoundedRect(-59, 31, 118, 14, 3);
-    trim.fillStyle(0xc39b72).fillRoundedRect(-62, 27, 124, 7, 3);
-    trim.lineStyle(1, 0xe1bf90, 0.8).lineBetween(-52, 37, 52, 37);
+    trim.fillStyle(0x34549b).fillRoundedRect(-59, 31, 118, 14, 3);
+    trim.fillStyle(0x7fa9ef).fillRoundedRect(-62, 27, 124, 7, 3);
+    trim.lineStyle(1, 0xafe5ff, 0.8).lineBetween(-52, 37, 52, 37);
     for (const x of [-32, 0, 32]) {
       trim.fillStyle(0x70915a).fillEllipse(x - 8, 2, 18, 9).fillEllipse(x + 8, -5, 18, 9);
     }

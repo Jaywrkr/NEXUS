@@ -19,14 +19,14 @@ export class Bridge extends ConnectableObject {
     super(scene, x, y, id, 'target');
 
     this.glow = scene.add.circle(0, -10, 30, ON_COLOR, 0);
-    this.post = scene.add.rectangle(0, 10, 8, 50, 0x3a3d48);
+    this.post = scene.add.rectangle(0, 10, 8, 50, 0x345c9b);
     this.handle = scene.add.rectangle(0, -10, 4, 22, OFF_COLOR).setOrigin(0.5, 1);
     this.knob = scene.add.circle(0, -10, 5, OFF_COLOR);
 
     const trim = scene.add.graphics();
-    trim.fillStyle(0x34494e).fillRoundedRect(-19, 31, 38, 7, 3);
-    trim.fillStyle(0xc49a61).fillRoundedRect(-15, 18, 30, 13, 3);
-    trim.lineStyle(2, 0xffefd1, 0.6).lineBetween(-10, 20, 10, 20);
+    trim.fillStyle(0x14234e).fillRoundedRect(-19, 31, 38, 7, 3);
+    trim.fillStyle(0x67b7fa).fillRoundedRect(-15, 18, 30, 13, 3);
+    trim.lineStyle(2, 0xf4faff, 0.6).lineBetween(-10, 20, 10, 20);
     this.add([this.glow, this.post, trim, this.handle, this.knob]);
     this.addShadow(38, 40, 12);
 

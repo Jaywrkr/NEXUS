@@ -48,7 +48,7 @@ function tree(g:G,x:number,y:number,s=1):void {
   polygon(g,[x+2*s,y-137*s,x+40*s,y-118*s,x+51*s,y-78*s,x+8*s,y-89*s],0x3abfa6);
 }
 
-export function modernPlaza(g:G,width:number,mid:number,v:number):void {
+function modernGround(g:G,width:number,mid:number,v:number):void {
   g.clear();const top=mid-95*v,bottom=mid+142*v;
   g.fillStyle(0x58bda4).fillRect(0,top,width,mid*2-top);
   polygon(g,[0,bottom+38,width,bottom-5,width,mid*2,0,mid*2],0x43a698);
@@ -59,26 +59,86 @@ export function modernPlaza(g:G,width:number,mid:number,v:number):void {
     g.fillStyle((row+Math.floor(x/89))%3?0xdce9f7:0xcddff2).fillRoundedRect(x,y,81,47,4);
     g.lineStyle(1,0xffffff,.6).lineBetween(x+4,y+2,x+75,y+2);
   }
-  building(g,265,mid+30*v,154,0xbcd0ff,MODERN.violet);
-  building(g,795,mid-65*v,145,0x8bdadf,0x376ae5);
-  tree(g,105,mid+38*v,1.05);
-  // Low planter volumes and path lights sit away from puzzle hit areas.
-  for(const x of [350,1060]){
-    const y=mid+45*v;
-    polygon(g,[x-30,y-9,x+22,y-9,x+34,y-17,x-18,y-17],0x97c4ed);
-    g.fillStyle(0x527ac5).fillRoundedRect(x-30,y-8,52,19,3);
-    polygon(g,[x+22,y-9,x+34,y-17,x+34,y+4,x+22,y+11],0x344c9a);
-    for(let i=-1;i<=1;i++)g.fillStyle(i%2?0x41d9b0:0x8ee978).fillCircle(x+i*15,y-23,11);
-  }
-  for(const x of [160,390,720,1020]){
-    const y=bottom+14;
-    g.fillStyle(0x39549b).fillRoundedRect(x-14,y,28,8,3);
-    g.fillStyle(MODERN.cyan,.35).fillEllipse(x,y+6,57,17);
-    g.fillStyle(0x99fcf0).fillRoundedRect(x-10,y-2,20,4,2);
-  }
   for(let i=0;i<20;i++) {
     const x=35+(i*137)%Math.floor(width-70),y=bottom+55+(i*43)%Math.max(1,Math.floor(mid*2-bottom-60));
     g.lineStyle(2,0x90e8a9,.7).lineBetween(x,y,x-4,y-9).lineBetween(x,y,x+5,y-7);
+  }
+}
+
+
+function planter(g:G,x:number,y:number):void {
+  polygon(g,[x-30,y-9,x+22,y-9,x+34,y-17,x-18,y-17],0x97c4ed);
+  g.fillStyle(0x527ac5).fillRoundedRect(x-30,y-8,52,19,3);
+  polygon(g,[x+22,y-9,x+34,y-17,x+34,y+4,x+22,y+11],0x344c9a);
+  for(let i=-1;i<=1;i++)g.fillStyle(i%2?MODERN.cyan:0x8ee978).fillCircle(x+i*15,y-23,11);
+}
+
+/** Seven original landmarks, baked once. Coordinates preserve the existing playable river. */
+export function modernDistrict(g:G,width:number,mid:number,v:number,zone:number):void {
+  modernGround(g,width,mid,v);
+  const back=mid-112*v,bottom=mid+142*v;
+  if(zone===0){
+    building(g,265,mid+30*v,154,0xbcd0ff,MODERN.violet);
+    building(g,795,mid-65*v,145,0x8bdadf,MODERN.blue);
+    tree(g,105,mid+38*v,1.05);
+    planter(g,350,mid+45*v);planter(g,1060,mid+45*v);
+  }else if(zone===1){
+    building(g,220,back+5,174,0x90e3dc,MODERN.blue);
+    tree(g,width-70,back+35,.8);
+    planter(g,64,bottom-4*v);planter(g,width-80,bottom-4*v);
+    // Waterworks: glazed roof vent and an offset, shaded pipe.
+    g.lineStyle(10,0x3659a4).lineBetween(125,back-24,85,back-24).lineBetween(85,back-24,85,back+16);
+    g.lineStyle(3,0x8cecff).lineBetween(125,back-27,89,back-27);
+  }else if(zone===2){
+    building(g,360,back+6,146,0xc1b6ff,MODERN.violet);
+    g.lineStyle(5,MODERN.ink).lineBetween(370,back-139,370,back-200);
+    g.lineStyle(3,0x98daff).lineBetween(350,back-178,390,back-178);
+    g.fillStyle(MODERN.yellow).fillCircle(370,back-204,6);
+    for(const radius of [18,30])g.lineStyle(2,MODERN.cyan,.55).beginPath().arc(370,back-204,radius,-.7,.7).strokePath();
+    tree(g,70,back+40,.7);
+  }else if(zone===3){
+    const bankY=mid-96*v;
+    g.fillStyle(0x345caa).fillRect(150,bankY,100,mid*2-bankY);
+    g.fillStyle(0x183976).fillRect(150,bankY,12,mid*2-bankY).fillRect(238,bankY,12,mid*2-bankY);
+    g.fillStyle(0x44c5e3).fillRect(162,bankY,76,mid*2-bankY);
+    for(let y=bankY+28;y<mid*2;y+=39){
+      polygon(g,[174,y,205,y-4,229,y+2,199,y+6],0xa7fff4,.5);
+      polygon(g,[140,y+10,149,y+1,149,y+21],0x88cbb5);
+    }
+    tree(g,436,back+70,1.1);planter(g,480,bottom+8*v);
+  }else if(zone===4){
+    // A faceted glass greenhouse: teal glazing, blue steel, reflected sky.
+    polygon(g,[210,back-90,345,back-157,480,back-90,480,back+5,210,back+5],0x72dce3);
+    polygon(g,[345,back-157,505,back-135,530,back-67,480,back-90],0x4c87ce);
+    polygon(g,[480,back-90,530,back-67,530,back+27,480,back+5],0x347cb5);
+    g.lineStyle(4,0x3256aa).strokeRect(210,back-90,270,95);
+    for(let x=210;x<=480;x+=54)g.lineBetween(x,back-90,x,back+5).lineBetween(345,back-157,x,back-90);
+    for(const x of [222,276,384])polygon(g,[x,back-80,x+35,back-80,x,back-39],0xe5ffff,.45);
+    planter(g,255,back+4);planter(g,432,back+4);tree(g,65,back+46,.85);
+  }else if(zone===5){
+    building(g,435,back+8,246,0xffc078,MODERN.violet);
+    polygon(g,[340,back-26,530,back-26,545,back+3,325,back+3],MODERN.blue);
+    for(let x=340;x<530;x+=32)polygon(g,[x,back-26,x+15,back-26,x+20,back+3,x-5,back+3],0x93f5ec);
+    g.fillStyle(0x34529b).fillRoundedRect(38,bottom,86,16,4);
+    polygon(g,[38,bottom,124,bottom,136,bottom-9,50,bottom-9],0x9ec7ff);
+    planter(g,680,back+44);
+  }else{
+    building(g,820,back+25,202,0xc7b7ff,MODERN.violet);
+    g.lineStyle(2,MODERN.ink).beginPath().moveTo(130,back-32);
+    for(let x=130;x<=width-60;x+=10)g.lineTo(x,back-32+Math.sin((x-130)/(width-190)*Math.PI)*25);
+    g.strokePath();
+    for(let x=145,i=0;x<width-70;x+=42,i++){
+      const y=back-32+Math.sin((x-130)/(width-190)*Math.PI)*25;
+      g.fillStyle([MODERN.cyan,MODERN.yellow,MODERN.violet,0xff75be][i%4]).fillTriangle(x-10,y,x+10,y,x,y+20);
+    }
+    tree(g,44,back+50,.85);tree(g,width-63,mid+113*v,1.1);
+    for(const x of [135,435,710,1140])planter(g,x,bottom+18*v);
+  }
+  for(let x=160;x<width-50;x+=230){
+    const y=bottom+14;
+    g.fillStyle(0x39549b).fillRoundedRect(x-14,y,28,8,3);
+    g.fillStyle(MODERN.cyan,.3).fillEllipse(x,y+6,57,17);
+    g.fillStyle(0x99fcf0).fillRoundedRect(x-10,y-2,20,4,2);
   }
 }
 

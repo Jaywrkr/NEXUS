@@ -846,10 +846,10 @@ export class WorldScene extends Phaser.Scene {
     if (!this.textures.exists(bridgeKey)) {
       const planks = this.make.graphics({ x: 0, y: 0 });
       const deckH = 38 * vScale;
-      planks.fillStyle(0x34494e, 0.3).fillRoundedRect(0, 6, GAP_WIDTH, deckH + 8, 4);
-      planks.fillStyle(0x9c7252).fillRoundedRect(0, 0, GAP_WIDTH, deckH, 4);
+      planks.fillStyle(0x14234e, 0.3).fillRoundedRect(0, 6, GAP_WIDTH, deckH + 8, 4);
+      planks.fillStyle(0x34549b).fillRoundedRect(0, 0, GAP_WIDTH, deckH, 4);
       for (let x = 3; x < GAP_WIDTH; x += 12) {
-        planks.fillStyle(0xc49a6b).fillRoundedRect(x, 2, 9, deckH - 4, 2);
+        planks.fillStyle(0x8bb6f6).fillRoundedRect(x, 2, 9, deckH - 4, 2);
         planks.lineStyle(1, 0xe5c79a, 0.8).lineBetween(x + 2, 5, x + 2, deckH - 5);
       }
       planks.lineStyle(4, 0x725941).lineBetween(0, 4, GAP_WIDTH, 4).lineBetween(0, deckH - 3, GAP_WIDTH, deckH - 3);
