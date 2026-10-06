@@ -13,16 +13,16 @@ export const RESIDENTS = [
     request: 'Una señal dice CUAC. La otra debería decir dónde será la fiesta. Necesito las dos.',
     restored: '¡Atención, barrio! Fiesta en preparación. Traigan alegría, no enchufes mordidos.' },
   { id: 'don-paso', name: 'Don Paso', x: 2850, offsetY: 120, color: 0xffe066, fragment: 'bridge-fragment', target: 'bridge',
-    request: 'Estoy cerrado por mantenimiento de mi autoestima. Conecta el interruptor.',
+    request: 'Estoy cerrado por mantenimiento de mi autoestima. Mi mecanismo está dormido.',
     restored: 'Pueden pasar. Las fotos de mi lado elegante son gratuitas.' },
   { id: 'goteo', name: 'Alcalde Goteo', x: 3620, offsetY: 140, color: 0xffb86c, fragment: 'garden-fragment', target: 'garden-bed',
-    request: 'Decreto municipal: flores felices. Energía al aspersor, agua a las flores.',
+    request: 'Decreto municipal: flores felices. El jardín está seco y mi aspersor ni se mueve.',
     restored: '¡Ha florecido mi mandato! Las flores prefieren decir que las regaste tú.' },
   { id: 'pipa', name: 'Pipa', x: 4610, offsetY: 130, color: 0xc7a0ef, fragment: 'workshop-fragment', target: 'toy-parade',
-    request: 'Motor al pato y a la campana. Luego júntalos en el desfile. El pato insiste en supervisar.',
+    request: 'El desfile necesita música y un supervisor. Tenemos una campana muda y un pato demasiado quieto.',
     restored: '¡El desfile funciona! El pato pidió vacaciones antes de su primer día.' },
   { id: 'lucio', name: 'Lucio', x: 5510, offsetY: 170, color: 0x9be37a, fragment: 'lantern-fragment', target: 'lantern-last',
-    request: 'Puedes llevar la luz por arriba o por los faroles curiosos de abajo. Nos vemos en la fiesta.',
+    request: 'El camino está oscuro. Unos faroles tienen prisa; otros prefieren conversar. ¿Por dónde viajará la luz?',
     restored: '¡Tenemos camino! El farol tímido solo cuenta chistes si te desvías a verlo.' },
 ];
 
@@ -64,22 +64,27 @@ export function connectionSurprise(source: string, target: string) {
   return CONNECTION_SURPRISES.find(surprise => surprise.source === source && surprise.target === target);
 }
 
-export function chapterObjective(state: GameState): string {
+export function chapterTask(state: GameState): { id: string; objective: string; clues: string[] } {
   const done = (fragment: string, target: string): boolean => state.fragmentsCollected.includes(fragment) || hasChapterConnection(state, target);
+  const task = (id: string, objective: string, ...clues: string[]) => ({ id, objective, clues });
   if (!done('plaza-fragment', 'door')) return hasChapterConnection(state, 'lamp')
-    ? 'Conecta la lámpara con la puerta del barrio' : 'Dale luz a la plaza: fuente → lámpara';
-  if (!done('fountain-fragment', 'fountain') || !done('beacon-fragment', 'beacon'))
-    return 'Prepara la fiesta: agua para Bombo y dos señales para Vera';
-  if (!done('bridge-fragment', 'bridge')) return 'Conecta el interruptor para cruzar el puente';
+    ? task('door', 'La lámpara funciona, pero la puerta sigue cerrada', 'La puerta necesita algo que ya tenga luz.', 'La lámpara encendida también puede iniciar un cable.', 'Lámpara → puerta.')
+    : task('lamp', 'Dale luz a la plaza: fuente → lámpara', 'Toca la estrella y después la lámpara.', 'El primer cable tiene un túnel: puedes practicar antes de empezar.', 'Fuente → lámpara. Dentro del cable, guía la chispa con flechas o joystick.');
+  if (!done('fountain-fragment', 'fountain')) return task('fountain', 'Bombo sigue ensayando su concierto en seco', 'Busca qué le falta a la fuente para despertar.', 'La estrella cercana puede alimentar la fuente.', 'Fuente de energía → fuente de agua.');
+  if (!done('beacon-fragment', 'beacon')) return task('beacon', 'El anuncio de Vera todavía llega incompleto', 'Una sola voz no cuenta el anuncio completo.', 'Hay dos estrellas; cada una aporta una señal distinta.', 'Conecta cada fuente de la antena con la antena. Necesita ambas.');
+  if (!done('bridge-fragment', 'bridge')) return task('bridge', 'Don Paso necesita despertar su mecanismo', 'El puente espera una señal antes de dejarte cruzar.', 'Observa el interruptor y su estrella cercana.', 'Fuente del puente → interruptor.');
   if (!done('garden-fragment', 'garden-bed')) return hasChapterConnection(state, 'garden-sprinkler')
-    ? 'Conecta el aspersor con las flores de la fiesta' : 'Enciende el aspersor del jardín';
+    ? task('flowers', 'El aspersor funciona, pero las flores siguen secas', 'La electricidad ya hizo su trabajo. Ahora falta agua.', 'Un aparato encendido puede alimentar otro objeto.', 'Aspersor → flores.')
+    : task('sprinkler', 'El jardín está seco; su aspersor tampoco despierta', 'Las flores necesitan agua, no electricidad directa.', 'Primero hay que despertar al que reparte el agua.', 'Fuente del jardín → aspersor.');
   if (!done('workshop-fragment', 'toy-parade')) {
-    if (!hasChapterConnection(state, 'toy-motor')) return 'Pipa necesita un desfile: enciende el motor del taller';
-    if (!hasChapterConnection(state, 'toy-duck') || !hasChapterConnection(state, 'toy-bell')) return 'Conecta el motor con el pato y con la campana';
-    return 'Lleva el pato y la campana al desfile: faltan sus dos cables';
+    if (!hasChapterConnection(state, 'toy-motor')) return task('motor', 'El taller está quieto: falta música y un supervisor', 'Busca qué puede poner en marcha a los juguetes.', 'El motor puede repartir la energía a más de un juguete.', 'Fuente del taller → motor.');
+    if (!hasChapterConnection(state, 'toy-duck') || !hasChapterConnection(state, 'toy-bell')) return task('toys', 'El desfile todavía necesita a sus dos participantes', 'Uno supervisa y el otro hace música.', 'El motor tiene energía para los dos.', 'Motor → pato y motor → campana, en cualquier orden.');
+    return task('parade', 'Los juguetes despiertan, pero no se han reunido', 'Los dos participantes deben llegar al mismo lugar.', 'El desfile necesita dos cables distintos.', 'Pato → desfile y campana → desfile.');
   }
-  if (!done('lantern-fragment', 'lantern-last')) return 'Lleva la luz a la salida: ruta directa o faroles curiosos';
-  if (!hasChapterConnection(state, 'party-stage')) return 'Conecta la luz de salida con el escenario de la fiesta';
-  if (!hasChapterConnection(state, 'party-confetti')) return 'Último cable: escenario → confeti';
-  return '¡La fiesta está en marcha! Explora y recupera los recuerdos';
+  if (!done('lantern-fragment', 'lantern-last')) return task('lanterns', 'Hay luz al inicio; falta encontrar un camino a la fiesta', 'La luz puede pasar de un farol encendido a otro.', 'Arriba hay un camino corto; abajo esperan los faroles curiosos.', 'Fuente → primer farol. Continúa por arriba o por los dos faroles de abajo hasta la salida.');
+  if (!hasChapterConnection(state, 'party-stage')) return task('stage', 'El barrio está listo, pero el escenario sigue apagado', 'La luz que llegó al final del camino todavía puede viajar.', 'El escenario espera la señal de salida de los faroles.', 'Farol de salida → escenario.');
+  if (!hasChapterConnection(state, 'party-confetti')) return task('confetti', 'La fiesta está preparada; falta la sorpresa final', 'Hay una máquina esperando la señal del escenario.', 'El escenario encendido puede iniciar el último cable.', 'Escenario → confeti.');
+  return task('explore', '¡La fiesta está en marcha! Explora y recupera los recuerdos', 'Los habitantes tienen algo nuevo que contar.', 'Algunas parejas equivocadas tienen respuestas propias.', 'Vuelve a Miga tras reparar la fuente o prueba el camino de faroles curiosos.');
 }
+
+export function chapterObjective(state: GameState): string { return chapterTask(state).objective; }

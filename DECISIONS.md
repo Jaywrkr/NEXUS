@@ -70,3 +70,7 @@ La quinta zona del plan aprobado es un jardín al otro lado del puente, con ener
 
 **Decisión 022**
 El usuario autoriza ejecutar de forma autónoma seis fases anidadas para crear un primer capítulo: diseño, habitantes/objetivos, humor/consecuencias, taller, faroles/reto final y desenlace/exploración. La historia y las reacciones son breves y originales, sin bloquear los controles ni añadir otra acción de puzzle. La duración se valida jugando; no se fabrica con esperas. Cada fase se prueba, se publica en su rama y deja PR/merge al usuario.
+
+
+**Decisión 023**
+Se desarrolla el primer bloque de la ampliación propuesta: encargos con misterio, decisiones reversibles y consecuencias entre lugares. El primer cable conserva una enseñanza explícita. El botón opcional «Pista» revela ayuda en tres niveles sin detener el movimiento, ampliando la ayuda automática de la Decisión 019. Cambiar una elección se hace conectando otro destino, conserva los preparativos y no penaliza. No se atribuye duración humana a un recorrido automático. Cada fase se publica en una rama anidada y el usuario integra los PR.
