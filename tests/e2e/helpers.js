@@ -13,7 +13,17 @@ export const test = base.extend({
       const response = await route.fetch();
       const body = await response.text();
       expect(body).toContain('new Phaser.Game(gameConfig)');
-      await route.fulfill({ response, body: body.replace('new Phaser.Game(gameConfig)', 'window.__nexusTest = new Phaser.Game(gameConfig)') });
+      const instrumentation = `
+        window.__effectCalls = { flash: 0, shake: 0 };
+        for (const name of ['flash', 'shake']) {
+          const original = Phaser.Cameras.Scene2D.Camera.prototype[name];
+          Phaser.Cameras.Scene2D.Camera.prototype[name] = function (...args) {
+            window.__effectCalls[name] += 1;
+            return original.apply(this, args);
+          };
+        }
+        window.__nexusTest = new Phaser.Game(gameConfig)`;
+      await route.fulfill({ response, body: body.replace('new Phaser.Game(gameConfig)', instrumentation) });
     });
     await page.goto('/');
     await ready(page, 'BootScene');

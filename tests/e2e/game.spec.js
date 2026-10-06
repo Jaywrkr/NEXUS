@@ -1,4 +1,4 @@
-import { test, expect, ready, world, start, connect, saved, collect, returnToWorld, checkpoint, winTunnel, titleButton, tunnelButton, runningTunnel, failedTunnel } from './helpers.js';
+import { test, expect, ready, world, start, connect, saved, collect, returnToWorld, checkpoint, winTunnel, titleButton, tunnelButton, runningTunnel, failedTunnel, tap, clickObject } from './helpers.js';
 
 const fragmentIds = ['plaza-fragment', 'fountain-fragment', 'beacon-fragment', 'bridge-fragment'];
 
@@ -87,6 +87,8 @@ test('complete all four zones, lose and win the tunnel, and revisit the museum',
   expect((await saved(page)).fragmentsCollected).toEqual(fragmentIds);
   expect((await saved(page)).connections).toHaveLength(6);
   expect((await saved(page)).seenCompletion).toBe(true);
+  expect(await page.evaluate(() => window.__effectCalls.flash)).toBeGreaterThan(0);
+  expect(await page.evaluate(() => window.__effectCalls.shake)).toBeGreaterThan(0);
   await checkpoint(page, testInfo, 'museum-complete');
   await returnToWorld(page);
   await reloadAndContinue(page);
@@ -226,4 +228,68 @@ test('practice safely, cancel, and retry multiple times without reselecting obje
   await ready(page, 'WorldScene');
   expect((await saved(page)).connections).toEqual([]);
   expect(await world(page, 'return s.connectionSystem.hasSelection();')).toBe(false);
+});
+
+
+test('hints wait for inactivity and soft effects persist without changing rewards', async ({ page }, testInfo) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.reload();
+  await ready(page, 'BootScene');
+  const effectsLabel = () => page.evaluate(() => window.__nexusTest.scene.getScene('BootScene').children.list.find(o => o.type === 'Text' && o.text.startsWith('Efectos suaves:')).text);
+  expect(await effectsLabel()).toBe('Efectos suaves: Sí');
+  // Explicit choice overrides the OS and survives reload.
+  await tap(page, page.viewportSize().width / 2, page.viewportSize().height - 65);
+  expect(await effectsLabel()).toBe('Efectos suaves: No');
+  await page.reload();
+  await ready(page, 'BootScene');
+  expect(await effectsLabel()).toBe('Efectos suaves: No');
+  await tap(page, page.viewportSize().width / 2, page.viewportSize().height - 65);
+  expect(await effectsLabel()).toBe('Efectos suaves: Sí');
+  await start(page);
+  expect(await world(page, 'return s.connectionSystem.hintRing.visible;')).toBe(false);
+  await expect.poll(() => world(page, 'return s.connectionSystem.hintObject?.id;'), { timeout: 15_000 }).toBe('energy-source');
+  expect(await world(page, 'return s.connectionSystem.hintRing.scaleX;')).toBe(1);
+  await checkpoint(page, testInfo, 'source-hint');
+  await clickObject(page, 'energy-source');
+  await expect.poll(() => world(page, 'return s.connectionSystem.hasSelection();')).toBe(true);
+  expect(await world(page, 'return s.connectionSystem.hintRing.visible;')).toBe(false);
+  await expect.poll(() => world(page, 'return s.connectionSystem.hintObject?.id;'), { timeout: 15_000 }).toBe('lamp');
+  await checkpoint(page, testInfo, 'target-hint');
+  await clickObject(page, 'lamp');
+  await ready(page, 'CableTunnelScene');
+  await tunnelButton(page, 'Empezar');
+  await runningTunnel(page);
+  await failedTunnel(page);
+  expect(await page.evaluate(() => window.__effectCalls)).toEqual({ flash: 0, shake: 0 });
+  await tunnelButton(page, 'Reintentar');
+  await runningTunnel(page);
+  await winTunnel(page);
+  expect((await saved(page)).connections).toContainEqual({ sourceId: 'energy-source', targetId: 'lamp' });
+  expect(await page.evaluate(() => window.__effectCalls)).toEqual({ flash: 0, shake: 0 });
+  expect(await world(page, 'return s.connectionSystem.hintRing.visible;')).toBe(false);
+
+  // Restore three collected zones and finish the last to exercise world celebration.
+  await world(page, 's.scene.stop();');
+  await page.waitForFunction(() => !window.__nexusTest.scene.isActive('WorldScene'));
+  await page.evaluate(() => localStorage.setItem('los-nexus-progress', JSON.stringify({
+    fragmentsCollected: ['plaza-fragment', 'fountain-fragment', 'beacon-fragment'],
+    connections: [], position: { x: 2530, yRatio: 0.8 }, seenCompletion: false,
+  })));
+  await reloadAndContinue(page);
+  await expect.poll(() => world(page, 'return s.connectionSystem.hintObject?.id;'), { timeout: 15_000 }).toBe('bridge-source');
+  await connect(page, 'bridge-source', 'bridge');
+  expect(await world(page, 'return s.connectionSystem.hintRing.visible;')).toBe(false);
+  await collect(page, 'bridgeFragment', 'bridge-fragment');
+  expect((await saved(page)).seenCompletion).toBe(true);
+  expect(await page.evaluate(() => window.__effectCalls)).toEqual({ flash: 0, shake: 0 });
+  await returnToWorld(page);
+  await page.waitForTimeout(10_200);
+  expect(await world(page, 'return s.connectionSystem.hintRing.visible;')).toBe(false);
+  await world(page, "s.scene.start('BootScene');");
+  await ready(page, 'BootScene');
+  page.once('dialog', dialog => dialog.accept());
+  await titleButton(page, 'Nueva partida');
+  await ready(page, 'WorldScene');
+  expect(await page.evaluate(() => localStorage.getItem('los-nexus-reduced-effects'))).toBe('true');
+  expect(await world(page, 'return s.progress.getCollectedFragments();')).toEqual([]);
 });

@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ConnectableObject } from '../objects/ConnectableObject';
 import { AudioSystem } from '../systems/AudioSystem';
+import { EffectsSettings } from '../systems/EffectsSettings';
 import { VirtualJoystick } from '../ui/VirtualJoystick';
 import { ensureRoundedRectTexture } from '../utils/uiTextures';
 
@@ -377,7 +378,7 @@ export class CableTunnelScene extends Phaser.Scene {
     const pulse = 0.6 + 0.4 * Math.sin(this.elapsed * (0.004 + dangerT * 0.012));
     this.tunnelGraphics.lineStyle(3 + dangerT * 2, Phaser.Display.Color.GetColor(wallColor.r, wallColor.g, wallColor.b), 0.6 + pulse * 0.3);
     this.tunnelGraphics.strokeCircle(vanishingX + wallOffsetX, vanishingY + wallOffsetY, TUBE_RADIUS);
-    if (this.phase === 'running' && dangerT > 0.5 && !this.shakeCooldown) {
+    if (this.phase === 'running' && dangerT > 0.5 && !this.shakeCooldown && !EffectsSettings.isReduced()) {
       this.cameras.main.shake(120, 0.002 * dangerT);
       this.shakeCooldown = true;
       this.time.delayedCall(200, () => {
@@ -434,10 +435,10 @@ export class CableTunnelScene extends Phaser.Scene {
 
     if (success) {
       this.audio.playSuccess();
-      this.cameras.main.flash(200, 94, 231, 255);
+      if (!EffectsSettings.isReduced()) this.cameras.main.flash(200, 94, 231, 255);
     } else {
       this.audio.playError();
-      this.cameras.main.flash(200, 255, 107, 107);
+      if (!EffectsSettings.isReduced()) this.cameras.main.flash(200, 255, 107, 107);
       this.joystick.reset();
       this.showMenu(true);
       return;

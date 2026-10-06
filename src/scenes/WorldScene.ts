@@ -10,6 +10,7 @@ import { Fragment } from '../objects/Fragment';
 import { ConnectionSystem } from '../systems/ConnectionSystem';
 import { ProgressSystem } from '../systems/ProgressSystem';
 import { AudioSystem } from '../systems/AudioSystem';
+import { EffectsSettings } from '../systems/EffectsSettings';
 import { VirtualJoystick } from '../ui/VirtualJoystick';
 import { InteractButton } from '../ui/InteractButton';
 import type { ConnectableObject } from '../objects/ConnectableObject';
@@ -312,6 +313,7 @@ export class WorldScene extends Phaser.Scene {
       _sys: Phaser.Scenes.Systems,
       data?: { tunnelSuccess: boolean; source: ConnectableObject; target: ConnectableObject },
     ): void => {
+      this.connectionSystem.resetHint();
       if (!data) return;
       this.connectionSystem.finishTunnel(data.source, data.target, data.tunnelSuccess);
     };
@@ -493,7 +495,7 @@ export class WorldScene extends Phaser.Scene {
 
   /** Celebración especial al restaurar las cuatro zonas por primera vez. */
   private spawnWorldCelebration(): void {
-    this.cameras.main.flash(500, 255, 230, 150);
+    if (!EffectsSettings.isReduced()) this.cameras.main.flash(500, 255, 230, 150);
 
     const midY = this.scale.height / 2;
     const vScale = this.scale.height / 540;
@@ -553,6 +555,7 @@ export class WorldScene extends Phaser.Scene {
 
     this.nexus.move(dx, dy, delta);
     this.updateInteractButton();
+    this.connectionSystem.updateHint();
   }
 
   /** Busca el objeto conectable más cercano al Nexus, si está a distancia de interacción. */
