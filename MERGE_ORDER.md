@@ -1,3 +1,27 @@
+# Bloque actual: muestra de la plaza
+
+Las 22 ramas de la tabla histórica de abajo ya fueron integradas por el usuario.
+El bloque nuevo parte de `27fe834` del destino `claude/los-nexus-game-mvp-cppkef`.
+
+1. `codex/plaza-primeros-pasos`: enseñanza en seis pasos y señal del objetivo.
+2. `codex/plaza-arte-ilustrado`: fondo y sprites originales, composición del inicio.
+3. `codex/plaza-entorno-vivo`: reacciones de fauna, plantas, cables, iluminación y pruebas.
+
+Las tres ramas están anidadas. Integra una por una, en ese orden, en el destino
+habitual mediante commits de merge. Si preparas PR antes de integrar la base,
+compara la segunda con la primera y la tercera con la segunda para revisar
+solo su fase; después cambia la base al destino. El usuario hace PR y merge.
+No usar squash/rebase para conservar la ascendencia de las ramas pendientes.
+
+Para probar la muestra completa tras los merges: `npm ci`, `npm run dev`,
+y **Nueva partida** (conserva la apariencia, reinicia la aventura). Continúa
+una partida anterior también para verificar que no se repite lo ya resuelto.
+La renovación de los otros distritos queda pendiente de revisar esta muestra.
+
+---
+
+## Historial de integración de las 22 ramas anteriores
+
 # Integrar las ramas una por una
 
 Destino de integración: `claude/los-nexus-game-mvp-cppkef`.

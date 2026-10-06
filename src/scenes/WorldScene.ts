@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { PlazaAtmosphere } from '../art/PlazaAtmosphere';
 import { PLAZA } from '../art/plazaAssets';
 import { MODERN as ART } from '../art/modernArt';
 import { sideResidentLine } from '../data/sideStories';
@@ -85,6 +86,7 @@ export class WorldScene extends Phaser.Scene {
   private residents: Resident[] = [];
   private storyCard!: StoryCard;
   private plazaGuide!: PlazaGuide;
+  private plazaAtmosphere!: PlazaAtmosphere;
   private plazaFlowers!: Phaser.GameObjects.Graphics;
   private radioBanner!: Phaser.GameObjects.Text;
   private workshop!: WorkshopZone;
@@ -128,6 +130,7 @@ export class WorldScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.nexus, true, 0.12, 0.12);
 
     this.setupConnections(height, vScale);
+    this.plazaAtmosphere = new PlazaAtmosphere(this, this.nexus, this.connectables[0], this.lamp, this.door);
 
     this.cameras.main.setBackgroundColor('#cfe8d8');
     this.cameras.main.fadeIn(300, 207, 232, 216);
@@ -752,6 +755,7 @@ export class WorldScene extends Phaser.Scene {
     }
 
     this.nexus.move(dx, dy, delta);
+    this.plazaAtmosphere.update(_time, delta);
     this.updateInteractButton();
     this.connectionSystem.updateHint();
     const step = plazaStep(this.progress.snapshot(), this.connectionSystem.selectedSourceId);
@@ -818,7 +822,7 @@ export class WorldScene extends Phaser.Scene {
     });
 
     // Mariposas cruzando el cielo en distintas zonas del mundo.
-    const butterflySpots = [520, 1400, 2100, 2750, 3430];
+    const butterflySpots = [1400, 2100, 2750, 3430];
     butterflySpots.forEach((baseX, index) => {
       const baseY = height / 2 - 160 * vScale - (index % 2) * 30 * vScale;
       this.spawnButterfly(baseX, baseY);

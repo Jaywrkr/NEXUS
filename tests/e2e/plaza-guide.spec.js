@@ -36,3 +36,19 @@ test('first plaza teaches movement, origin, destination and reward in order', as
   expect(await world(page,'return s.plazaGuide.panel.visible;')).toBe(false);
   expect(await world(page,'return s.instructionText.text;')).toContain('seco');
 });
+
+test('plaza scenery reacts to movement and reduced effects keep it still', async ({ page }, testInfo) => {
+  await start(page);
+  expect(await world(page,"return s.residents.find(r=>r.id==='miga').list.some(o=>o.type==='Image'&&o.texture.key==='plaza-sprites');")).toBe(true);
+  expect(await world(page,'return s.plazaAtmosphere.birds.every(b=>!b.art.input);')).toBe(true);
+  const plant = await world(page,'return {x:s.plazaAtmosphere.plants[1].art.x-20,y:s.plazaAtmosphere.plants[1].art.y-34};');
+  await walkTo(page, plant.x, plant.y);
+  expect(await world(page,'return s.plazaAtmosphere.plants.every(p=>Number.isFinite(p.spring.value));')).toBe(true);
+  expect(await world(page,'return s.plazaAtmosphere.birds.some(b=>b.fleeUntil>0);')).toBe(true);
+  await checkpoint(page,testInfo,'plaza-living-scenery');
+  await page.evaluate(()=>localStorage.setItem('los-nexus-reduced-effects','true'));
+  await page.reload();await ready(page,'BootScene');await start(page,'Continuar');
+  await expect.poll(()=>world(page,'return s.plazaAtmosphere.plants.every(p=>p.art.angle===0);')).toBe(true);
+  expect(await world(page,'return s.plazaAtmosphere.birds.every(b=>b.art.x===b.home.x&&b.art.y===b.home.y&&!b.art.anims.isPlaying);')).toBe(true);
+  await checkpoint(page,testInfo,'plaza-reduced-effects');
+});

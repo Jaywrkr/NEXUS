@@ -68,9 +68,9 @@ export class Resident extends Phaser.GameObjects.Container {
       const portrait = scene.add.image(0, 36, PLAZA.sprites, PLAZA_FRAME.miga).setOrigin(.5, 1).setDisplaySize(128, 128);
       this.addAt(portrait, 2);
     }
-    this.setSize(72, 100).setDepth(9);
+    this.setSize(info.id === 'miga' ? 110 : 72, info.id === 'miga' ? 190 : 100).setDepth(9);
     scene.add.existing(this);
-    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 72, 100), Phaser.Geom.Rectangle.Contains);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, this.width, this.height), Phaser.Geom.Rectangle.Contains);
     this.on('pointerdown', speak);
   }
 }

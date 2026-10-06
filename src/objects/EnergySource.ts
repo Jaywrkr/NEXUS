@@ -53,8 +53,8 @@ export class EnergySource extends ConnectableObject {
     if (id === 'energy-source' && scene.textures.exists(PLAZA.sprites)) {
       base.setVisible(false); detail.setVisible(false); this.core.setVisible(false);
       this.add(scene.add.image(0, 32, PLAZA.sprites, PLAZA_FRAME.generator).setOrigin(.5, 1).setDisplaySize(98, 98));
-      this.setSize(90, 100);
-      this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 90, 100), Phaser.Geom.Rectangle.Contains);
+      this.setSize(90, 140);
+      this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 90, 140), Phaser.Geom.Rectangle.Contains);
       return;
     }
     this.setSize(52, 52);

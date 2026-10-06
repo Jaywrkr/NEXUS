@@ -27,6 +27,7 @@ test('wardrobe persists names, outfit poses and cable colors without changing pr
   await start(page);
   expect(await world(page, "return s.nexus.sprite.texture.key;")).toContain('outfit-coral');
   expect(await world(page, 'return s.connectionSystem.color;')).toBe(0xff9fd6);
+  expect(await world(page, 'return s.plazaAtmosphere.color;')).toBe(0xff9fd6);
   await page.keyboard.down('ArrowRight');
   await expect.poll(() => world(page, 'return s.nexus.sprite.texture.key;')).toContain('walk');
   await page.keyboard.up('ArrowRight');
