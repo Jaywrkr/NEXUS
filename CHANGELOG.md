@@ -120,3 +120,6 @@ El guardado añade un `completionCount` opcional: una celebración de una partid
 
 ## Diseño del primer capítulo
 Se define «La ciudad al revés»: habitantes originales, preparativos relacionados, taller ramificado, dos rutas de faroles y final por conexiones. Se conserva el MVP histórico y se documenta el orden de las seis nuevas ramas anidadas. La duración de 20–30 minutos es un objetivo pendiente de una primera partida humana, no una medida del E2E acelerado.
+
+## Habitantes y objetivos del capítulo
+El título presenta «La ciudad al revés». Cinco habitantes con siluetas propias ofrecen encargos y reaccionan al reparar su lugar, con frases breves que no bloquean los controles. La primera visita se recuerda; se puede volver a tocar al personaje para releer. Una introducción de Miga aparece una sola vez. El objetivo sigue conexiones parciales y los fragmentos de partidas antiguas. Historia opcional validada en el guardado; nueva partida la elimina. Se prueban movimiento durante la introducción, diálogo antes/después de restaurar, cierre táctil y recuperación al recargar en escritorio/móvil.

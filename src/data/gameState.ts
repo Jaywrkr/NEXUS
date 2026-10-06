@@ -18,6 +18,7 @@ export interface GameState {
   completionCount?: number;
   connections: SavedConnection[];
   position: SavedPosition | null;
+  story?: { heard: string[]; discoveries: string[]; chapterSeen: boolean };
 }
 
 function emptyState(): GameState {
@@ -31,6 +32,8 @@ export function loadGameState(): GameState {
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return emptyState();
     const position = parsed.position;
+    const strings = (value: unknown): string[] => Array.isArray(value)
+      ? [...new Set(value.filter((id): id is string => typeof id === 'string'))] : [];
     return {
       fragmentsCollected: Array.isArray(parsed.fragmentsCollected)
         ? [...new Set<string>(parsed.fragmentsCollected.filter((id: unknown) => typeof id === 'string'))]
@@ -48,6 +51,9 @@ export function loadGameState(): GameState {
       position: position && Number.isFinite(position.x) && Number.isFinite(position.yRatio)
         ? { x: position.x, yRatio: position.yRatio }
         : null,
+      ...(parsed.story && typeof parsed.story === 'object' && !Array.isArray(parsed.story)
+        ? { story: { heard: strings(parsed.story.heard), discoveries: strings(parsed.story.discoveries), chapterSeen: parsed.story.chapterSeen === true } }
+        : {}),
     };
   } catch {
     return emptyState();
