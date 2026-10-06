@@ -248,3 +248,12 @@ Se conservan los commits originales; no se usó force push ni se crearon PR.
 - Generador, lámpara, puerta cerrada/abierta y Miga tienen sprites propios con volumen y materiales.
 - Posiciones de la plaza ajustadas al suelo de la ilustración; nombres de los tres objetos para identificarlos al aprender.
 - Tres WebP locales, 1,18 MB en total; atlas de 512×512 por celda. Fauna y vegetación listas para animación.
+
+## Muestra de la plaza — entorno vivo
+- Aves reconocibles con dos poses de alas: se apartan al acercarse el Nexus y vuelven a su posadero.
+- Vegetación con resorte amortiguado: viento y reacción al pasar cerca, con integración estable tras suspender una pestaña.
+- Cables de la plaza permanecen visibles al completar cada paso, con caída, oscilación y pulso de energía; luz cálida en el suelo de la lámpara.
+- Orden de profundidad por los pies para los tres objetos ilustrados, polvo sutil al caminar y efectos suaves sin movimiento ambiental.
+- Nuevo inicio x=550 para que el generador no tape al Nexus; interacción de escritorio situada al lado derecho para no solapar la enseñanza.
+- La visita y las pistas del cartel de Miga se ajustaron a su posición nueva y se propagaron a las tres ramas.
+- Validación: build en las tres fases, 19 unitarias correctas; regresión de 48 casos con dos visitas de prueba corregidas y revisión final de 10/10 casos relacionados. Dos casos de regreso verificados además en la primera rama. Detalle en `PLAZA_PLAYTEST.md`.

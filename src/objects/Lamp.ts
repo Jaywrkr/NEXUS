@@ -50,8 +50,8 @@ export class Lamp extends ConnectableObject {
       this.bringToTop(this.glow); this.glow.setPosition(0, -67).setRadius(22).setAlpha(0);
       scene.tweens.killTweensOf(this.glow);
     }
-    this.setSize(64, 170);
-    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 64, 170), Phaser.Geom.Rectangle.Contains);
+    this.setSize(82, 224);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 82, 224), Phaser.Geom.Rectangle.Contains);
   }
 
   canInitiate(): boolean {

@@ -116,7 +116,7 @@ src/
 
 Ver `DECISIONS.md` para la lista completa. Las más importantes:
 - **Toda mecánica nueva debe reutilizar la acción de conectar** (Decisión 008). La antena (doble conexión) y el puente (bloqueo físico) son ejemplos de cómo variar el ritmo sin salirse de esto.
-- El resto del juego (objetos, mundo, UI) sigue siendo formas de Phaser sin assets externos — la única excepción es el Nexus, que desde la Decisión 017 usa sprites PNG reales en `public/assets/nexus/`. No asumas que se puede extender esa excepción a otras cosas sin que el usuario lo pida.
+- El Nexus usa sprites PNG reales (Decisión 017). El usuario autorizó extender los assets originales al escenario, objetos, Miga y fauna de la muestra de la plaza (Decisión 032, `public/assets/plaza/`). Las demás zonas conservan formas de Phaser hasta revisar esa muestra. No ampliar automáticamente el arte de todos los barrios.
 - No agregar combate, inventario complejo, economía, multijugador, login (Decisión 006).
 - No ampliar el alcance sin que el usuario lo pida explícitamente.
 
@@ -141,7 +141,7 @@ Ver `DECISIONS.md` para la lista completa. Las más importantes:
 
 `WORLD_WIDTH = 6100`, altura del mundo = `this.scale.height` (540 en landscape, 960 en portrait). `midY = height / 2`. Con `vScale = height / 540` (1 en landscape) multiplicando los desplazamientos verticales:
 
-- Zona 1 (plaza): fuente `(480, midY-40·v)`, lámpara `(680, midY-20·v)`, puerta `(820, midY+60·v)`, fragmento `(820, midY-10·v)`.
+- Zona 1 (plaza): fuente `(480, midY+65·v)`, lámpara `(680, midY+70·v)`, puerta `(980, midY+35·v)`, fragmento `(980, midY+90·v)`.
 - Zona 2 (fuente de agua): fuente `(1300, midY-40·v)`, fuente de agua `(1460, midY+40·v)`, fragmento `(1460, midY-60·v)`.
 - Zona 3 (antena): fuente A `(1980, midY-80·v)`, fuente B `(1980, midY+80·v)`, antena `(2220, midY)`, fragmento `(2220, midY-90·v)`.
 - Zona 4 (puente): fuente `(2500, midY-40·v)`, interruptor `(2560, midY)`, grieta centrada en `x=2610` (ancho 100), fragmento `(2820, midY-40·v)`.
@@ -151,7 +151,7 @@ Ver `DECISIONS.md` para la lista completa. Las más importantes:
 
 - Zona 7 (faroles): fuente x=4870; inicio x=5030; directo x=5210; curiosos x=5150/5320; salida/fragmento x=5410; escenario x=5600; confeti x=5780. Implementación en `src/zones/LanternZone.ts`.
 
-El Nexus arranca en `(480, midY+100·v)`. La cámara sigue al Nexus con `startFollow(nexus, true, 0.12, 0.12)` y límites `(0,0,WORLD_WIDTH,height)`.
+El Nexus arranca en `(550, midY+100·v)`. La cámara sigue al Nexus con `startFollow(nexus, true, 0.12, 0.12)` y límites `(0,0,WORLD_WIDTH,height)`.
 
 ## Cómo seguir trabajando
 
@@ -188,3 +188,11 @@ Las zonas restantes conservan el arte anterior hasta que el usuario la pruebe.
 input y progreso siguen separados del arte. Fuente (480,midY+65·v), lámpara
 (680,midY+70·v), puerta (980,midY+35·v), recuerdo (980,midY+90·v).
 Estas coordenadas sustituyen las referencias históricas de la primera zona.
+`PlazaAtmosphere` añade fauna con dos poses, plantas con resorte amortiguado,
+cables persistentes de la plaza y luz de suelo. No tiene cuerpos ni input
+interactivo; sus listeners se limpian al cerrar la escena. `stepSpring` limita
+el delta y usa subpasos para sobrevivir a pestañas suspendidas. Efectos suaves
+mantiene plantas/aves quietas y cables visibles. El inicio ahora es x=550,
+midY+100·v; el botón de interacción conserva el centro en móvil y se sitúa
+abajo a la derecha en escritorio. La profundidad se ordena por los pies solo
+para Nexus y los tres objetos de la plaza. El resto del mundo conserva su arte.

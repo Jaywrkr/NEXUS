@@ -55,8 +55,8 @@ export class Door extends ConnectableObject {
       this.add(this.illustration);
       scene.tweens.killTweensOf(this.glow);
     }
-    this.setSize(116, 150);
-    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 116, 150), Phaser.Geom.Rectangle.Contains);
+    this.setSize(116, 190);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 116, 190), Phaser.Geom.Rectangle.Contains);
   }
 
   activate(): void {

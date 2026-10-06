@@ -79,3 +79,8 @@ del commit `27fe834` de `claude/los-nexus-game-mvp-cppkef`.
 
 Integrar en ese orden mediante commits de merge, sin squash ni rebase para
 preservar la ascendencia. No se crean PR ni se integran ramas por cuenta del agente.
+
+Las tres fases se publican con commits y pushes propios. La corrección de la
+visita/pistas de Miga se incorporó a la primera fase y se propagó mediante
+merges normales hacia las otras dos, conservando el historial y la ascendencia.
+La validación y sus alcances están documentados en `PLAZA_PLAYTEST.md`.
