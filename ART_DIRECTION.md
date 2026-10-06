@@ -44,3 +44,9 @@ Dos escenarios de historias repetidos tras la corrección final de la regla
 ornamental. Build servido probado en ambas orientaciones con portada, edición
 y guardado de nombre largo y entrada al mundo, sin errores JavaScript/HTTP.
 Capturas conservadas en `/workspace/nexus-art-finish-evidence/`.
+
+## Revisión posterior de la dirección
+El usuario pidió después un aspecto contemporáneo con toques de Fortnite.
+`MODERN_VISUAL_PILOT.md` registra la nueva muestra de portada, plaza y HUD.
+Esa muestra sustituye allí el lenguaje editorial descrito arriba; los distritos
+y pantallas restantes conservan esta referencia anterior.

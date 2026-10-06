@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { screenArt, cardArt, ornament } from './interfaceArt';
+import { modernPlaza, modernTitle } from './modernArt';
 
 // A shared, hand-built palette: ivory plaster, terracotta, ink and turquoise.
 const INK = 0x34494e;
@@ -121,10 +121,7 @@ export function drawNeighborhood(scene: Phaser.Scene, height: number): void {
       }
       const back = mid - 112 * v;
       if (zone === 0) {
-        house(g, 265, mid + 30 * v, 154, 0xe4c39b, 0xa56353);
-        house(g, 795, back + 18, 145, 0xe7d8b9, 0x668b85);
-        tree(g, 105, mid + 38 * v, 1.2);
-        planter(g, 350, mid + 42 * v);
+        modernPlaza(g,width,mid,v);
       } else if (zone === 1) {
         house(g, 220, back + 5, 174, 0xc6ddd0, 0x648f88);
         planter(g, 64, mid + 138 * v); planter(g, width - 80, mid + 138 * v);
@@ -167,7 +164,7 @@ export function drawNeighborhood(scene: Phaser.Scene, height: number): void {
         for (const x of [135, 435, 710, 1140]) planter(g, x, mid + 160 * v);
       }
       // Foreground details stay below the playable silhouettes and receive no input.
-      for(let i=0;i<Math.floor(width/230);i++) {
+      for(let i=0;zone!==0 && i<Math.floor(width/230);i++) {
         const x=75+i*231,y=mid+185*v;
         g.fillStyle(0x365c51,.1).fillEllipse(x+8,y+12,102,15);
         g.fillStyle(0x648771).fillEllipse(x,y,74,23).fillEllipse(x+34,y+4,56,20);
@@ -176,8 +173,8 @@ export function drawNeighborhood(scene: Phaser.Scene, height: number): void {
       }
       // District plaque: visual landmarks, rather than giant labels over the play area.
       const plaqueX = zone === 0 ? 264 : zone === 3 ? 445 : width / 2;
-      g.fillStyle(INK, 0.9).fillRoundedRect(plaqueX - 104, back - 43, 208, 28, 8);
-      g.lineStyle(1, 0xe4c68e, 0.75).strokeRoundedRect(plaqueX - 101, back - 40, 202, 22, 6);
+      g.fillStyle(zone===0?0x14234e:INK, 0.9).fillRoundedRect(plaqueX - 104, back - 43, 208, 28, 8);
+      g.lineStyle(1, zone===0?0x27e7da:0xe4c68e, 0.75).strokeRoundedRect(plaqueX - 101, back - 40, 202, 22, 6);
       g.generateTexture(key, width, height);
       g.destroy();
     }
@@ -194,7 +191,7 @@ export function drawSky(scene: Phaser.Scene, width: number, height: number): voi
   for (let y = 0; y < height; y += 8) {
     const t = y / height;
     const color = Phaser.Display.Color.Interpolate.ColorWithColor(
-      Phaser.Display.Color.ValueToColor(0x88babb), Phaser.Display.Color.ValueToColor(0xf3dfb7), 100, t * 100,
+      Phaser.Display.Color.ValueToColor(0x498fe0), Phaser.Display.Color.ValueToColor(0xb5eafb), 100, t * 100,
     );
     sky.fillStyle(Phaser.Display.Color.GetColor(color.r, color.g, color.b)).fillRect(0, y, scene.scale.width, 8);
   }
@@ -202,31 +199,14 @@ export function drawSky(scene: Phaser.Scene, width: number, height: number): voi
   scene.add.circle(scene.scale.width * 0.78, 104, 33, 0xffefd1, 0.9).setDepth(-24).setScrollFactor(0);
   for (let x = -150; x < width; x += 370) {
     const g = scene.add.graphics({ x, y: 90 + Math.sin(x * 0.03) * 26 }).setDepth(-20).setScrollFactor(0.18);
-    g.fillStyle(0xfff6e0, 0.65).fillRoundedRect(-55, -6, 122, 21, 10).fillCircle(-20, -8, 22).fillCircle(10, -16, 27).fillCircle(36, -4, 17);
+    g.fillStyle(0xf4fcff, 0.85).fillRoundedRect(-55, -6, 122, 21, 10).fillCircle(-20, -8, 22).fillCircle(10, -16, 27).fillCircle(36, -4, 17);
   }
   for (let x = -200; x < width; x += 280) {
-    scene.add.ellipse(x, height / 2 - 86 * height / 540, 420, 160 * height / 540, 0x8cb1a0, 0.6).setDepth(-11).setScrollFactor(0.35);
-    scene.add.ellipse(x + 170, height / 2 - 35 * height / 540, 330, 130 * height / 540, 0x75998b, 0.6).setDepth(-10).setScrollFactor(0.55);
+    scene.add.ellipse(x, height / 2 - 86 * height / 540, 420, 160 * height / 540, 0x63b9b9, 0.65).setDepth(-11).setScrollFactor(0.35);
+    scene.add.ellipse(x + 170, height / 2 - 35 * height / 540, 330, 130 * height / 540, 0x428f9f, 0.6).setDepth(-10).setScrollFactor(0.55);
   }
 }
 
 export function drawTitleArt(scene: Phaser.Scene, width: number, height: number): void {
-  screenArt(scene);
-  const g=scene.add.graphics();const mobile=height>width;
-  const heroX=mobile?width/2:width*.25, heroY=mobile?height/2-200:height*.53;
-  // A print-like circular illustration creates a focal point for the existing character.
-  g.fillStyle(0x243f48,.06).fillCircle(heroX+5,heroY+8,mobile?140:174);
-  g.fillStyle(0xd2e1cd).fillCircle(heroX,heroY,mobile?137:170);
-  g.lineStyle(1,0xc9a36b,.7).strokeCircle(heroX,heroY,mobile?143:177);
-  g.lineStyle(1,0xc9a36b,.25).strokeCircle(heroX,heroY,mobile?149:184);
-  const ground=mobile?height/2-155:height*.77;
-  g.fillStyle(0x64877b,.2).fillEllipse(heroX,ground-10,mobile?270:330,74);
-  house(g,heroX-95,ground-22,75,0xdcc4a1,0xac735b);
-  house(g,heroX+95,ground-30,84,0xb9d1c3,0x4b7977);
-  tree(g,heroX+132,ground-1,.55);
-  planter(g,heroX-92,ground+10);
-  bunting(g,heroX-120,heroX+120,heroY-(mobile?95:100));
-  const menuX=mobile?width/2:width*.68;
-  cardArt(g,menuX-(mobile?220:215),height/2-155,mobile?440:430,340,0xc9a36b);
-  ornament(g,menuX,height/2-137,120);
+  modernTitle(scene,width,height);
 }

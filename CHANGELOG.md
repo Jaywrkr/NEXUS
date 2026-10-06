@@ -174,3 +174,10 @@ Revisión visual de las ocho escenas sin ampliar funciones: portada con personaj
 
 Validación: build de producción y suite completa aprobados: 18 pruebas unitarias y 42 escenarios E2E en escritorio y móvil vertical. Tras retirar una línea ornamental que interfería con el objetivo de los encargos, aprobaron otra vez el build y los dos escenarios de historias. Capturas revisadas de portada, armario, diario, encargos, siete distritos, museo, final y túnel.
 El build servido también cargó portada, armario y mundo, permitió editar/guardar un nombre ancho de 16 caracteres y no produjo errores JavaScript ni HTTP en ambos formatos.
+
+
+## Muestra moderna de portada, plaza y HUD
+Dirección contemporánea aprobada con toques visuales de Fortnite: portada azul/violeta con iluminación cian, título y acciones de tipografía gruesa inclinada, acción principal amarilla y botones secundarios azules. Se retira papel, ornamentos y biseles en la muestra. Plaza con fachadas laterales, techos por planos, vidrio luminoso, árbol facetado, losas grandes y luces de camino; fuente de energía, lámpara y puerta con materiales tecnológicos. HUD, diálogo, joystick y proximidad comparten paneles planos y colores nuevos. Contraste oscuro sobre amarillo en las acciones principales. Se conservan funciones, áreas interactivas, posiciones y guardado. Portada y plaza siguen usando texturas horneadas y caché. Los demás distritos y pantallas mantienen su arte anterior; ver `MODERN_VISUAL_PILOT.md`.
+
+Validación: build aprobado y suite completa sin fallos ni omisiones: 18 pruebas unitarias y 42 escenarios E2E en escritorio y móvil vertical. Capturas revisadas de la nueva portada, plaza y controles en ambas orientaciones; siguen funcionando diálogo, conexiones, túnel, armario y restauración del progreso.
+El build servido cargó portada, armario y mundo en ambos formatos, con edición/guardado de nombre y sin errores JavaScript ni HTTP.

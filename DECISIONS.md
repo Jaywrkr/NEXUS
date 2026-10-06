@@ -92,3 +92,7 @@ Las historias secundarias son opcionales y se abren al restaurar su lugar. Cada 
 
 **Decisión 028**
 El usuario solicita una revisión completa del arte y todas las interfaces sin añadir funcionalidades. Se aplica una dirección ilustrada común a las ocho escenas: tinta azul petróleo, papel cálido, cobre, vegetación y energía turquesa. Se mejora composición, tipografía, luz, materiales y legibilidad de estados conservando mecánicas, contenido, guardado, áreas de input y controles. Fondos y materiales se hornean y reutilizan; no se incorporan assets remotos ni animaciones obligatorias. Se mantienen sprites e identidad del Nexus. La rama continúa desde `codex/historias-del-barrio`, con commit y push; PR y merge a cargo del usuario.
+
+
+**Decisión 029**
+El usuario pide una estética más moderna con toques visuales de Fortnite y autoriza la muestra propuesta de plaza, portada y HUD. Se adopta una ilustración original de formas volumétricas estilizadas, color saturado, energía cian, base azul/violeta y acciones amarillas. Paneles y botones planos, tipografía gruesa y sombras por planos sustituyen el acabado de papel y cobre en la muestra. Se conservan identidad del Nexus, funciones, guardado, controles y áreas de input. La rama se anida sobre `codex/acabado-artistico`; el usuario integra los PR.
