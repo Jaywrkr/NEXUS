@@ -13,6 +13,9 @@ const FRAGMENTS = [
 
 type Souvenir = typeof FRAGMENTS[number];
 
+const SECRET_FRAGMENT = { id: 'secret-fragment', label: 'Fragmento secreto', memory: '¡Explorar también conecta!', color: 0xb6a0ff };
+const DISPLAYED_FRAGMENTS = [...FRAGMENTS, SECRET_FRAGMENT];
+
 export class MuseumScene extends Phaser.Scene {
   private progress!: ProgressSystem;
   private memoryText!: Phaser.GameObjects.Text;
@@ -41,19 +44,21 @@ export class MuseumScene extends Phaser.Scene {
       fontFamily: 'sans-serif', fontSize: '16px', color: '#c9cbe0',
     }).setOrigin(0.5);
 
-    const spacing = Math.min(220, (width - 140) / (FRAGMENTS.length - 1));
-    const startX = width / 2 - (spacing * (FRAGMENTS.length - 1)) / 2;
+    const spacing = Math.min(220, (width - 140) / (DISPLAYED_FRAGMENTS.length - 1));
+    const startX = width / 2 - (spacing * (DISPLAYED_FRAGMENTS.length - 1)) / 2;
 
-    FRAGMENTS.forEach((fragment, index) => {
+    const rows = Math.ceil(DISPLAYED_FRAGMENTS.length / 2);
+    const firstRowY = 210, lastRowY = height - 290;
+    DISPLAYED_FRAGMENTS.forEach((fragment, index) => {
       const x = portrait ? width * (index % 2 === 0 ? 0.28 : 0.72) : startX + index * spacing;
-      const y = portrait ? height * (index < 2 ? 0.3 : 0.6) : height / 2;
+      const y = portrait ? firstRowY + Math.floor(index / 2) * (lastRowY - firstRowY) / Math.max(1, rows - 1) : height / 2;
       this.buildVitrina(x, y, fragment);
     });
 
     const allCollected = FRAGMENTS.every((f) => this.progress.hasFragment(f.id));
     if (allCollected) {
       this.add
-        .text(width / 2, portrait ? height * 0.6 + 160 : height / 2 + 145, '¡Colección completa!', {
+        .text(width / 2, portrait ? lastRowY + 145 : height / 2 + 145, '¡Colección completa!', {
           fontFamily: 'sans-serif',
           fontSize: '20px',
           color: '#ffe066',
@@ -135,6 +140,11 @@ export class MuseumScene extends Phaser.Scene {
     const art = this.add.graphics({ x, y }).setName(`souvenir-${fragment.id}`);
     art.lineStyle(4, fragment.color, 1);
     art.fillStyle(fragment.color, 1);
+    if (fragment.id === 'secret-fragment') {
+      art.fillTriangle(0, -35, -26, 0, 26, 0).fillTriangle(-26, 0, 26, 0, 0, 35);
+      art.lineStyle(3, 0xffffff, .8).lineBetween(-7, -12, 0, -22);
+      return art;
+    }
     switch (fragment.id) {
       case 'plaza-fragment':
         art.fillRoundedRect(-18, -30, 36, 44, 8);

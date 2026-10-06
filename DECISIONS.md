@@ -62,3 +62,10 @@ Las ayudas deben ser discretas y aparecer solo tras un período sin interacción
 
 **Decisión 020**
 Los recuerdos del museo representan cada zona con una forma propia y una pequeña respuesta al toque, como parte del plan aprobado. No añaden un puzzle ni recompensas: la colección se obtiene conectando en el mundo. Las vitrinas completas ofrecen un área táctil amplia; la reacción respeta «Efectos suaves» y conserva el formato de las partidas existentes.
+
+
+**Decisión histórica H018 (señuelo)**
+Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica especial: es un objeto registrado en `ConnectionSystem` sin ninguna regla, así que cae en el manejo genérico de conexión inválida. Debe verse sutilmente distinto de los reales (la fuente señuelo es gris y sin brillo animado) para que el puzzle sea de observar, no de adivinar. Primer uso: zona de la antena.
+
+**Decisión histórica H019 (fragmento secreto)**
+Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.
