@@ -9,6 +9,9 @@ import { Bridge } from '../objects/Bridge';
 import { Sprinkler } from '../objects/Sprinkler';
 import { FlowerBed } from '../objects/FlowerBed';
 import { COLLECTION } from '../data/collection';
+import { RESIDENTS, chapterObjective, residentLine } from '../data/chapter';
+import { Resident } from '../objects/Resident';
+import { StoryCard } from '../ui/StoryCard';
 import { Fragment } from '../objects/Fragment';
 import { ConnectionSystem } from '../systems/ConnectionSystem';
 import { ProgressSystem } from '../systems/ProgressSystem';
@@ -68,6 +71,8 @@ export class WorldScene extends Phaser.Scene {
   private audio!: AudioSystem;
   private interactButton!: InteractButton;
   private connectables: ConnectableObject[] = [];
+  private residents: Resident[] = [];
+  private storyCard!: StoryCard;
 
   constructor() {
     super('WorldScene');
@@ -236,6 +241,16 @@ export class WorldScene extends Phaser.Scene {
         : 'La lámpara está encendida — conéctala con la puerta');
     }
 
+    this.storyCard = new StoryCard(this);
+    this.residents = RESIDENTS.map(info => new Resident(this, info, height / 2 + info.offsetY * vScale, () => {
+      this.progress.markResidentHeard(info.id);
+      this.storyCard.show(info.name, residentLine(info, this.progress.snapshot()));
+    }));
+    if (!this.progress.hasHeardResident('intro')) {
+      this.progress.markResidentHeard('intro');
+      this.storyCard.show('Miga · La ciudad al revés', 'El manual lo escribió un pato. Hay que preparar una fiesta. Empieza por la luz de la plaza.');
+    }
+
     // Save movement periodically, and flush before leaving or hiding the world.
     const savePosition = (): void => this.progress.savePosition(this.nexus.x, this.nexus.y / height);
     this.time.addEvent({ delay: 500, loop: true, callback: savePosition });
@@ -256,7 +271,7 @@ export class WorldScene extends Phaser.Scene {
 
     if (doneCount === ALL_FRAGMENT_IDS.length) return 'Ya restauraste todo el lugar';
     if (doneCount === 0) return 'Los Nexus — conecta la fuente con la lámpara';
-    return `Restauraste ${doneCount} de ${ALL_FRAGMENT_IDS.length} lugares — sigue explorando`;
+    return chapterObjective(this.progress.snapshot());
   }
 
   private setupConnections(height: number, vScale: number): void {
@@ -395,6 +410,7 @@ export class WorldScene extends Phaser.Scene {
         this.gardenFragment.reveal();
         this.instructionText.setText('¡El jardín floreció! Acércate al fragmento');
       }
+      this.instructionText.setText(chapterObjective(this.progress.snapshot()));
     };
 
     this.events.on('tunnel-requested', onTunnelRequested);
@@ -604,6 +620,8 @@ export class WorldScene extends Phaser.Scene {
     this.nexus.move(dx, dy, delta);
     this.updateInteractButton();
     this.connectionSystem.updateHint();
+    const nearby = this.residents.find(resident => Phaser.Math.Distance.Between(this.nexus.x, this.nexus.y, resident.x, resident.y) < 120);
+    if (nearby && !this.progress.hasHeardResident(nearby.id)) nearby.emit('pointerdown');
   }
 
   /** Busca el objeto conectable más cercano al Nexus, si está a distancia de interacción. */

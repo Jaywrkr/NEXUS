@@ -16,6 +16,21 @@ export class ProgressSystem {
     return this.state.fragmentsCollected.length > 0 || this.state.connections.length > 0 || this.state.position !== null;
   }
 
+  snapshot(): GameState {
+    return structuredClone(this.state);
+  }
+
+  markResidentHeard(id: string): void {
+    this.state.story ??= { heard: [], discoveries: [], chapterSeen: false };
+    if (this.state.story.heard.includes(id)) return;
+    this.state.story.heard.push(id);
+    saveGameState(this.state);
+  }
+
+  hasHeardResident(id: string): boolean {
+    return this.state.story?.heard.includes(id) ?? false;
+  }
+
   getConnections(): SavedConnection[] {
     return this.state.connections.map((connection) => ({ ...connection }));
   }

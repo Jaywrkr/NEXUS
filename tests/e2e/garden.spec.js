@@ -24,7 +24,7 @@ test('continue a completed four-zone save into the garden and restore each water
   }, oldCollection);
   await continueGame(page);
   expect(await world(page, 'return s.fragmentHud.text;')).toBe('★ 4/5');
-  expect(await world(page, 'return s.instructionText.text;')).toContain('4 de 5');
+  expect(await world(page, 'return s.instructionText.text;')).toContain('aspersor');
   expect(await world(page, 'return s.bridge.isActive && !s.sprinkler.isActive && !s.flowerBed.isActive && !s.gardenFragment.visible;')).toBe(true);
 
   // The fifth zone is reachable by normal movement beyond the original world boundary.

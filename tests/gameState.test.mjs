@@ -40,6 +40,19 @@ test('expanded collection completion survives saving and rejects malformed count
   }
 });
 
+test('optional chapter state survives reload and normalizes malformed story fields', () => {
+  const base = { fragmentsCollected: [], seenCompletion: false, connections: [], position: null };
+  const story = { heard: ['intro', 'miga'], discoveries: ['singing-door'], chapterSeen: true };
+  saveGameState({ ...base, story });
+  assert.deepEqual(loadGameState().story, story);
+  storage.set(key, JSON.stringify({ ...base, story: { heard: ['intro', 8, 'intro'], discoveries: null, chapterSeen: 'yes' } }));
+  assert.deepEqual(loadGameState().story, { heard: ['intro'], discoveries: [], chapterSeen: false });
+  for (const value of [null, 8, []]) {
+    storage.set(key, JSON.stringify({ ...base, story: value }));
+    assert.equal(loadGameState().story, undefined);
+  }
+});
+
 test('invalid or incomplete saves cannot supply unusable coordinates or arrays', () => {
   for (const value of ['null', '{', '42']) {
     storage.set(key, value);

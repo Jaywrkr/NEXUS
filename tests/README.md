@@ -20,8 +20,8 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium npm test
 ## Comandos
 
 ```bash
-npm run test:unit    # ocho pruebas de guardado y preferencias
-npm run test:e2e     # ocho escenarios en escritorio y ocho en móvil vertical
+npm run test:unit    # once pruebas de guardado, preferencias y objetivos
+npm run test:e2e     # nueve escenarios en escritorio y nueve en móvil vertical
 npm test            # ambas suites
 npm run build       # TypeScript y build de producción; check separado
 ```
@@ -32,6 +32,9 @@ Cada prueba usa un contexto de navegador nuevo con almacenamiento independiente.
 No hay retries automáticos ni pruebas omitidas por defecto.
 
 ## Cobertura
+
+- Introducción y habitantes: controles activos durante una frase, diálogo al
+  acercarse o tocar, reparación del lugar, cierre y visitas guardadas.
 
 - Recorrido de las cinco zonas: conexión inválida, perder y ganar el túnel,
   abrir la puerta, restaurar la fuente, conectar dos fuentes distintas a la

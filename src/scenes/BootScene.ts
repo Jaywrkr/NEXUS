@@ -4,6 +4,7 @@ import { ProgressSystem } from '../systems/ProgressSystem';
 import { EffectsSettings } from '../systems/EffectsSettings';
 import { loadNexusAssets } from '../entities/nexusAssets';
 import { ensureRoundedRectTexture } from '../utils/uiTextures';
+import { CHAPTER_TITLE } from '../data/chapter';
 
 const BUTTON_WIDTH = 220;
 const BUTTON_HEIGHT = 52;
@@ -39,7 +40,7 @@ export class BootScene extends Phaser.Scene {
       .setShadow(0, 3, 'rgba(27, 31, 59, 0.25)', 6, false, true);
 
     this.add
-      .text(width / 2, height / 2 - 50, 'Conecta el mundo', {
+      .text(width / 2, height / 2 - 50, `Capítulo 1 · ${CHAPTER_TITLE}`, {
         fontFamily: 'sans-serif',
         fontSize: '18px',
         color: '#5a5e78',
