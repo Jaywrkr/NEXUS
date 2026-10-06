@@ -117,16 +117,24 @@ export class ConnectionSystem {
     this.showFeedback('¡Conexión correcta!', '#1b6b3a');
     this.audio.playSuccess();
     this.spawnConnectBurst(target.getPlugPoint());
+    this.spawnGlowRing(target.getPlugPoint());
     this.scene.events.emit('connection-made', target.id);
   }
 
   /** Ráfaga de chispas que se disparan desde el objetivo al completar una conexión, como remate visual. */
   private spawnConnectBurst(at: Phaser.Math.Vector2): void {
-    const sparkCount = 10;
+    const sparkColors = [CABLE_COLOR, 0xffffff, 0xbdf5ff];
+    const sparkCount = 14;
     for (let i = 0; i < sparkCount; i += 1) {
       const angle = (i / sparkCount) * Math.PI * 2 + Math.random() * 0.3;
-      const distance = 30 + Math.random() * 20;
-      const spark = this.scene.add.circle(at.x, at.y, 3 + Math.random() * 2, CABLE_COLOR).setDepth(16);
+      const distance = 25 + Math.random() * 35;
+      const color = sparkColors[Math.floor(Math.random() * sparkColors.length)];
+      const isStar = i % 3 === 0;
+      const size = 2 + Math.random() * 3;
+
+      const spark = isStar
+        ? this.scene.add.star(at.x, at.y, 4, size * 0.5, size, color).setDepth(16)
+        : this.scene.add.circle(at.x, at.y, size, color).setDepth(16);
 
       this.scene.tweens.add({
         targets: spark,
@@ -134,11 +142,28 @@ export class ConnectionSystem {
         y: at.y + Math.sin(angle) * distance,
         alpha: 0,
         scale: 0.3,
-        duration: 450 + Math.random() * 150,
+        rotation: isStar ? Math.random() * Math.PI : 0,
+        duration: 400 + Math.random() * 250,
         ease: 'Cubic.easeOut',
         onComplete: () => spark.destroy(),
       });
     }
+  }
+
+  /** Anillo que se expande y desvanece en el punto de conexión, como remate adicional al de las chispas. */
+  private spawnGlowRing(at: Phaser.Math.Vector2): void {
+    const ring = this.scene.add.circle(at.x, at.y, 8, undefined).setDepth(16);
+    ring.setStrokeStyle(3, CABLE_COLOR, 0.9);
+
+    this.scene.tweens.add({
+      targets: ring,
+      radius: 34,
+      alpha: 0,
+      duration: 500,
+      ease: 'Cubic.easeOut',
+      onUpdate: () => ring.setStrokeStyle(3, CABLE_COLOR, ring.alpha),
+      onComplete: () => ring.destroy(),
+    });
   }
 
   private drawCable(from: ConnectableObject, to: ConnectableObject, valid: boolean): void {
