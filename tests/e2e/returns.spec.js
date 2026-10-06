@@ -35,12 +35,14 @@ test('radio creates two optional return projects whose results survive switching
   expect(await world(page, 'return s.returnCircuits.bulletin.isActive;')).toBe(false);
   await connect(page, 'radio-source', 'radio-news');
   expect(await world(page, 'return s.returnCircuits.band.isActive && !s.returnCircuits.notes.visible;')).toBe(true);
-  await walkTo(page, 900, page.viewportSize().height * 0.8);
-  await expect.poll(() => world(page, 'return Math.abs(s.cameras.main.midPoint.x-s.nexus.x);')).toBeLessThan(1);
+  const miga = await world(page, "const r=s.residents.find(r=>r.id==='miga');return{x:r.x,y:r.y+50};");
+  await walkTo(page, miga.x, miga.y);
+  await expect.poll(() => world(page, 'return Math.abs(s.cameras.main.midPoint.x-Math.max(s.scale.width/2,s.nexus.x));')).toBeLessThan(1);
   await visit(page, 'miga');
   expect(await world(page, 'return s.storyCard.message.text;')).toContain('anuncio absurdo');
   await clue(page);
   expect(await world(page, 'return s.storyCard.speaker.text;')).toBe('Pista 1/3');
+  expect(await world(page, 'return s.storyCard.message.text;')).toContain('La noticia ya llegó');
   await connect(page, 'lamp', 'plaza-bulletin');
   expect((await saved(page)).story.discoveries).toContain('plaza-bulletin');
   await checkpoint(page, testInfo, 'plaza-announcement');
