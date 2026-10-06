@@ -81,3 +81,10 @@ Los dos encargos de regreso forman parte del bloque de consecuencias aprobado. L
 
 **Decisión 025**
 El usuario pide mejorar los gráficos. El barrio adopta una ilustración original con yeso crema, terracota, cobre, vegetación y energía turquesa. Cada zona tiene arquitectura y un letrero propio; portada, museo, final y controles comparten materiales y marcos. Se mantiene el Nexus existente y el dibujo procedural de Phaser para el resto. Los escenarios estáticos se generan una vez por zona/altura y reutilizan sus texturas al regresar del museo; los objetos conservan capas de estado y áreas de toque. La decoración no recibe input ni añade colisiones. No se añaden efectos animados obligatorios: las fuentes y la vida ambiental respetan «Efectos suaves».
+
+
+**Decisión histórica H018 (señuelo)**
+Un "señuelo" (objeto que parece conectable pero no sirve) no necesita lógica especial: es un objeto registrado en `ConnectionSystem` sin ninguna regla, así que cae en el manejo genérico de conexión inválida. Debe verse sutilmente distinto de los reales (la fuente señuelo es gris y sin brillo animado) para que el puzzle sea de observar, no de adivinar. Primer uso: zona de la antena.
+
+**Decisión histórica H019 (fragmento secreto)**
+Puede haber fragmentos extra que premian explorar (el primero: el fragmento secreto detrás de la casa) sin depender de una conexión. No cuentan para el contador `★ n/4` ni para "¡Colección completa!" — eso sigue atado solo a los fragmentos de zona (`ALL_FRAGMENT_IDS`) — pero sí tienen vitrina propia en el Museo.
