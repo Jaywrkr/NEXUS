@@ -26,7 +26,7 @@ Después de esa prueba quedan propuestas: historias secundarias más largas,
 segunda aventura en una estación abandonada, puzzles que combinan reglas y
 finales según decisiones. No forman parte de estas tres ramas.
 
-## Orden del bloque posterior propuesto
+## Propuestas posteriores al primer bloque
 
 4. Historias secundarias: ampliar los encargos que resulten interesantes para
    Luca; cada historia necesita problema, conexiones propias y desenlace.
@@ -37,9 +37,9 @@ finales según decisiones. No forman parte de estas tres ramas.
 7. Variaciones del final y secretos: mostrar consecuencias de las decisiones y
    motivos concretos para volver a jugar. Sin exigir todos los secretos.
 
-Este bloque está propuesto, no implementado ni publicado. Si se desarrolla,
-continuará la cadena desde `codex/consecuencias-regreso`, conservando una rama,
-commit y push por fase y dejando los PR y merges al usuario.
+Esta lista describía las propuestas al cerrar el primer bloque. Las historias
+secundarias ya se desarrollan en el bloque autorizado de abajo, después de la
+mejora gráfica. El segundo capítulo y las otras ampliaciones siguen pendientes.
 
 ## Validación del bloque implementado
 Las tres fases están implementadas y publicadas. Build de producción aprobado;
@@ -47,3 +47,32 @@ Las tres fases están implementadas y publicadas. Build de producción aprobado;
 y móvil vertical. Se revisaron las capturas de pistas, radio y ambos encargos.
 La primera partida con Luca sigue pendiente; estos resultados no demuestran
 una duración humana de 20–30 minutos.
+
+## Bloque autorizado: historias y personalización
+La petición posterior de «más largo, más cosas y más personalización» autoriza
+las historias secundarias y el armario. La cadena continúa desde
+`codex/identidad-visual`: primero `codex/personalizacion-nexus`, después
+`codex/historias-del-barrio`.
+
+- Armario: nombre, cuatro chaquetas iniciales, tres accesorios iniciales y
+  cuatro colores de cable. 48 combinaciones iniciales; 100 al conseguir los
+  tres estilos de los encargos. Guardar/cancelar; persistencia independiente.
+- Correo indisciplinado: ordenar, traducir, elegir tono y publicar. Cuatro
+  conexiones y dos respuestas del buzón. Desbloquea chaqueta ámbar.
+- Inspección del pato: rueda, freno, propuesta, dos pruebas y aprobación. Seis
+  conexiones, dos desenlaces e insignia de pato. Repetir una misma prueba no
+  sustituye a la otra.
+- Flores de madrugada: dirección, ritmo y perfume, concierto y destinatario.
+  Seis conexiones, dos desenlaces y corona del jardín.
+- Diario: requisitos por lugar restaurado, entrada a los nuevos espacios,
+  avance parcial guardado y álbum de seis desenlaces. Repetir borra solamente
+  los cables de esa historia; conserva el barrio, finales vistos y estilos.
+
+Se añaden 16 conexiones por una pasada de los tres encargos. No se exige
+completarlos para terminar la fiesta. Las decisiones cambian el desenlace y
+permiten repetir; las recompensas no dependen de escoger una opción «correcta».
+La duración de primera partida se sigue comprobando con una persona; no se
+atribuye una cantidad de minutos a un piloto que conoce las soluciones.
+La estación abandonada y un segundo capítulo siguen siendo propuestas futuras.
+
+Validación del bloque: 18 pruebas unitarias y 42 escenarios E2E aprobados en la suite completa, con build de producción. La corrección posterior de espaciado del armario se verifica con build y cuatro escenarios de apariencia/historias en ambos formatos.

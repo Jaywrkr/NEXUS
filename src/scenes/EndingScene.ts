@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { SIDE_STORIES, storyCompleted, storyEndings } from '../data/sideStories';
 import { nexusPortrait } from '../art/nexusLook';
 import { ProgressSystem } from '../systems/ProgressSystem';
 import { CHAPTER_TITLE, DISCOVERY_IDS, RESIDENTS } from '../data/chapter';
@@ -37,7 +38,7 @@ export class EndingScene extends Phaser.Scene {
     const discoveries = DISCOVERY_IDS.filter(id => state.story?.discoveries.includes(id)).length;
     const heard = RESIDENTS.filter(r => state.story?.heard.includes(r.id)).length;
     const memories = COLLECTION.filter(item => state.fragmentsCollected.includes(item.id)).length;
-    this.add.text(width / 2, 242, `Recuerdos: ${memories}/${COLLECTION.length} · Sorpresas: ${discoveries}/${DISCOVERY_IDS.length}\nHabitantes: ${heard}/${RESIDENTS.length} · Cables: ${state.connections.length}`, {
+    this.add.text(width / 2, 242, `Recuerdos: ${memories}/${COLLECTION.length} · Sorpresas: ${discoveries}/${DISCOVERY_IDS.length}\nHabitantes: ${heard}/${RESIDENTS.length} · Cables: ${state.connections.length}\nEncargos: ${SIDE_STORIES.filter(s => storyCompleted(s.id, state)).length}/3 · Desenlaces: ${SIDE_STORIES.reduce((n, s) => n + storyEndings(s.id, state), 0)}/6`, {
       fontFamily: 'sans-serif', fontSize: '17px', color: '#9be37a', align: 'center',
     }).setOrigin(0.5, 0);
     nexusPortrait(this, width / 2, portrait ? height * 0.66 : height - 135, portrait ? 170 : 100, NEXUS_ASSET_KEYS.celebrate);

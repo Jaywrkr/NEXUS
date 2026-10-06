@@ -14,6 +14,7 @@ El capítulo está en `CHAPTER_ONE.md`; ampliación actual en `ADVENTURE_EXPANSI
 
 El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias rondas. Desde entonces el proyecto avanzó bastante más allá de ese alcance inicial, con aprobación explícita del usuario en cada paso. Estado real hoy:
 
+- **Historias secundarias**: «Diario» en el mundo abre correo, inspección del pato y concierto de flores según el lugar restaurado. 16 cables adicionales y seis desenlaces; avance parcial y álbum guardados. «Repetir» borra únicamente conexiones `side-<historia>-`, conserva barrio/álbum y estilos ganados. Las propuestas son únicas por pasada; repetir permite cambiar. Las dos pruebas del pato y las dos señales del concierto necesitan grupos diferentes. `saveExclusiveConnection` cambia solo destinos del grupo y conserva las otras ramas de la fuente. Recompensas de apariencia: ámbar, pato y corona; 100 combinaciones al ganarlas. No bloquean la fiesta.
 - **Consecuencias y secretos**: el agua de la fuente hace brotar flores en la plaza y la antena publica CUAC FM en la casa. Tres parejas inválidas muestran bromas específicas; se guardan como descubrimientos únicos sin resolver puzzles. Volver a Miga tras reparar la fuente descubre otra frase.
 - **Desenlace y exploración**: el cable escenario→confeti cierra el capítulo con una pantalla de resultados y créditos. Permite seguir explorando o visitar el museo; «Ver final» en el museo permite releerlo. `story.chapterSeen` evita repetir la celebración al continuar. Los habitantes tienen epílogos, y álbum/habitantes/sorpresas son objetivos opcionales. Validación y protocolo de duración en `PLAYTEST_CHAPTER_ONE.md`.
 - **Capítulo 1 — La ciudad al revés**: Miga, Bombo, Vera, Don Paso, Alcalde Goteo, Pipa y Lucio dan encargos breves para preparar una fiesta. Las frases aparecen al acercarse por primera vez o tocar al habitante, se cierran al tocar el recuadro y no pausan el movimiento. Se guardan las visitas; el objetivo considera conexiones parciales y recuerdos antiguos.
@@ -58,7 +59,7 @@ Hay una suite automatizada: `npm run test:unit` verifica el guardado y `npm run 
 
 Después de cambios:
 1. `npm run build` (debe terminar sin errores).
-2. `npm test` (16 pruebas unitarias y 40 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
+2. `npm test` (18 pruebas unitarias y 42 escenarios E2E). Playwright inicia su propio Vite en el puerto 5174.
 3. Revisar las capturas adjuntas en `test-results/` y el informe en `playwright-report/`; los fallos conservan trazas.
 4. La prueba en dispositivo real con Luca sigue siendo necesaria para validar comodidad y dificultad.
 
@@ -71,6 +72,8 @@ src/
   main.ts                    — entrada, crea el Phaser.Game, recarga si cambia orientación
   config/gameConfig.ts       — resolución dinámica según orientación/puntero
   scenes/
+    JournalScene.ts          — encargos, requisitos y álbum de desenlaces
+    SideStoryScene.ts        — salas de conexiones, restauración y repetición
     CustomizeScene.ts        — armario, preview, guardar/cancelar y nombre
     BootScene.ts             — pantalla de título: "Jugar"/"Continuar" según haya progreso guardado, precarga los sprites del Nexus
     WorldScene.ts            — el mundo completo, las 7 zonas, cámara, joystick, botón de interacción
@@ -98,6 +101,8 @@ src/
     StoryCard.ts             — frases que no bloquean los controles
     InteractButton.ts        — botón fijo de interacción por proximidad (¡NO usar Container, ver abajo!)
   data/
+    appearance.ts            — aspecto y desbloqueos persistentes separados de la aventura
+    sideStories.ts           — historias, máquinas, reglas y desenlaces
     collection.ts            — recuerdos y tamaño de la colección actual
     gameState.ts             — shape del estado guardado + carga/guardado con merge seguro
   utils/

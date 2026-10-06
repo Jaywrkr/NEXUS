@@ -40,7 +40,7 @@ export class CustomizeScene extends Phaser.Scene {
     ];
     choices.forEach(({ key, label, options }, row) => {
       const cx = mobile ? width / 2 : width * 0.67;
-      const y = mobile ? 385 + row * 115 : 122 + row * 95;
+      const y = mobile ? 425 + row * 115 : 122 + row * 95;
       this.add.text(cx, y - 38, label, { fontFamily: 'sans-serif', fontSize: '18px', fontStyle: 'bold', color: '#34494e' }).setOrigin(0.5);
       options.forEach((option, index) => {
         const locked = 'reward' in option && !this.look.unlocked.includes(option.reward);
