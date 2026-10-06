@@ -21,12 +21,12 @@ export class VirtualJoystick {
     this.centerY = y;
 
     scene.add
-      .circle(x, y, BASE_RADIUS, 0x1b1f3b, 0.15)
+      .circle(x, y, BASE_RADIUS, 0x34494e, 0.32).setStrokeStyle(2, 0xffefd1, 0.6)
       .setScrollFactor(0)
       .setDepth(50);
 
     this.knob = scene.add
-      .circle(x, y, KNOB_RADIUS, 0x1b1f3b, 0.35)
+      .circle(x, y, KNOB_RADIUS, 0xffefd1, 0.75).setStrokeStyle(2, 0x34494e, 0.5)
       .setScrollFactor(0)
       .setDepth(51);
 

@@ -78,3 +78,6 @@ Se desarrolla el primer bloque de la ampliación propuesta: encargos con misteri
 
 **Decisión 024**
 Los dos encargos de regreso forman parte del bloque de consecuencias aprobado. La emisión habilita resolverlos, pero el resultado de un proyecto terminado permanece al cambiar de canal. Se distingue disponibilidad inicial de restauración de un cable guardado. Los encargos amplían las sorpresas de cinco a siete sin añadir recuerdos obligatorios ni impedir el desenlace. Las pistas locales reutilizan «Pista» y mantienen la graduación en tres niveles.
+
+**Decisión 025**
+El usuario pide mejorar los gráficos. El barrio adopta una ilustración original con yeso crema, terracota, cobre, vegetación y energía turquesa. Cada zona tiene arquitectura y un letrero propio; portada, museo, final y controles comparten materiales y marcos. Se mantiene el Nexus existente y el dibujo procedural de Phaser para el resto. Los escenarios estáticos se generan una vez por zona/altura y reutilizan sus texturas al regresar del museo; los objetos conservan capas de estado y áreas de toque. La decoración no recibe input ni añade colisiones. No se añaden efectos animados obligatorios: las fuentes y la vida ambiental respetan «Efectos suaves».

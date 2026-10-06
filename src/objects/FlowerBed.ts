@@ -25,7 +25,14 @@ export class FlowerBed extends ConnectableObject {
       this.flowers.fillStyle(0xfff8c9);
       this.flowers.fillCircle(dx, -18, 6);
     }
-    this.add(this.flowers);
+    const trim = scene.add.graphics();
+    trim.fillStyle(0x9c7252).fillRoundedRect(-59, 31, 118, 14, 3);
+    trim.fillStyle(0xc39b72).fillRoundedRect(-62, 27, 124, 7, 3);
+    trim.lineStyle(1, 0xe1bf90, 0.8).lineBetween(-52, 37, 52, 37);
+    for (const x of [-32, 0, 32]) {
+      trim.fillStyle(0x70915a).fillEllipse(x - 8, 2, 18, 9).fillEllipse(x + 8, -5, 18, 9);
+    }
+    this.add([this.flowers, trim]);
     this.addShadow(48, 116, 14);
     this.setSize(124, 100);
     this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 124, 100), Phaser.Geom.Rectangle.Contains);

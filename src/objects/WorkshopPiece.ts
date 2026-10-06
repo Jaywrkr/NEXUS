@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { workshopArt } from '../art/props';
 import { ConnectableObject } from './ConnectableObject';
 import { EffectsSettings } from '../systems/EffectsSettings';
 
@@ -42,32 +43,7 @@ export class WorkshopPiece extends ConnectableObject {
   forceActive(): void { this.inputs = this.kind === 'parade' ? 2 : 1; this.active_ = true; this.draw(); }
 
   private draw(): void {
-    const color = this.active_ ? 0xffe066 : 0x8b8f9d;
-    const g = this.art.clear().fillStyle(color).lineStyle(4, 0x4a4e75);
-    switch (this.kind) {
-      case 'motor':
-        g.fillRoundedRect(-32, -24, 64, 48, 6);
-        g.fillStyle(0x20233a).fillCircle(0, 0, 17);
-        g.lineStyle(4, this.active_ ? 0x5ee7ff : 0xb7bdc6).lineBetween(-10, 0, 10, 0).lineBetween(0, -10, 0, 10);
-        break;
-      case 'duck':
-        g.fillEllipse(-3, 5, 60, 36).fillCircle(14, -16, 19);
-        g.fillStyle(0xffb86c).fillTriangle(28, -20, 46, -12, 27, -7);
-        g.fillStyle(0x20233a).fillCircle(19, -20, 3);
-        g.fillStyle(0x4a4e75).fillCircle(-20, 30, 7).fillCircle(20, 30, 7);
-        break;
-      case 'bell':
-        g.fillTriangle(0, -32, -30, 20, 30, 20).fillRoundedRect(-34, 16, 68, 10, 3);
-        g.fillCircle(0, 31, 7);
-        break;
-      case 'parade':
-        g.fillRoundedRect(-42, 12, 84, 10, 3);
-        g.lineBetween(-30, 12, -30, -28).lineBetween(30, 12, 30, -28);
-        g.fillTriangle(-30, -28, -30, -8, -6, -18).fillTriangle(30, -28, 30, -8, 6, -18);
-        g.fillStyle(this.inputs > 0 ? 0x5ee7ff : 0x6b7280).fillCircle(-14, -3, 8);
-        g.fillStyle(this.inputs > 1 ? 0xff9ff3 : 0x6b7280).fillCircle(14, -3, 8);
-        this.counter?.setText(`${this.inputs}/2`);
-        break;
-    }
+    workshopArt(this.art, this.kind, this.active_, this.inputs);
+    this.counter?.setText(`${this.inputs}/2`);
   }
 }

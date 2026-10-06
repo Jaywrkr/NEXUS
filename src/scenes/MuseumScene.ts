@@ -24,9 +24,17 @@ export class MuseumScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#20233a');
     this.cameras.main.fadeIn(300, 32, 35, 58);
 
+    const room = this.add.graphics();
+    room.fillStyle(0x2d3e47).fillRoundedRect(16, 16, width - 32, height - 32, 24);
+    room.lineStyle(1, 0xc49a61, 0.6).strokeRoundedRect(25, 25, width - 50, height - 50, 20);
+    room.lineStyle(1, 0x60716f, 0.3);
+    for (let x = 52; x < width; x += 68) room.lineBetween(x, 140, x, height - 150);
+    room.fillStyle(0x22343c).fillRect(26, height - 160, width - 52, 85);
+    room.lineStyle(2, 0xc49a61, 0.45).lineBetween(27, 139, width - 27, 139);
+
     this.add
       .text(width / 2, 40, 'Museo Nexus', {
-        fontFamily: 'sans-serif',
+        fontFamily: 'Georgia, serif',
         fontSize: '28px',
         color: '#f4f1e8',
       })
@@ -108,9 +116,17 @@ export class MuseumScene extends Phaser.Scene {
   }
 
   private buildVitrina(x: number, y: number, fragment: Souvenir, size: number): void {
-    this.add.rectangle(x, y + 80 * size, 100 * size, 20 * size, 0x3a3d55);
-    const glass = this.add.rectangle(x, y, 120 * size, 160 * size, 0x4a4e75, 0.3).setName(fragment.id);
-    glass.setStrokeStyle(2, 0x8a8dc0, 0.6);
+    const cabinet = this.add.graphics({ x, y }).setScale(size);
+    cabinet.fillStyle(fragment.color, 0.06).fillTriangle(-24, -90, -64, 72, 64, 72).fillTriangle(24, -90, -64, 72, 64, 72);
+    cabinet.fillStyle(0x172b33).fillRoundedRect(-65, -85, 130, 174, 12);
+    cabinet.lineStyle(2, 0xc49a61, 0.8).strokeRoundedRect(-65, -85, 130, 174, 12);
+    cabinet.fillStyle(0xc49a61).fillRoundedRect(-32, -91, 64, 7, 3);
+    cabinet.fillStyle(0x8e775c).fillRoundedRect(-64, 73, 128, 15, 4);
+    cabinet.fillStyle(0xd2b98e).fillRect(-61, 73, 122, 4);
+    cabinet.lineStyle(2, 0xffefd1, 0.12).lineBetween(-48, -67, -28, -40).lineBetween(-48, -48, -37, -33);
+    cabinet.fillStyle(fragment.color, 0.09).fillEllipse(0, 30, 90, 22);
+    const glass = this.add.rectangle(x, y, 120 * size, 160 * size, 0x759d9b, 0.08).setName(fragment.id);
+    glass.setStrokeStyle(1, 0xc4dfd6, 0.25);
 
     if (this.progress.hasFragment(fragment.id)) {
       const souvenir = this.drawSouvenir(x, y, fragment);
@@ -136,8 +152,8 @@ export class MuseumScene extends Phaser.Scene {
       this.add
         .text(x, y, 'Vitrina vacía', {
           fontFamily: 'sans-serif',
-          fontSize: '16px',
-          color: '#8a8dc0',
+          fontSize: '14px',
+          color: '#afbdba',
         })
         .setOrigin(0.5);
     }

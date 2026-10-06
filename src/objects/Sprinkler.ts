@@ -18,7 +18,11 @@ export class Sprinkler extends ConnectableObject {
       this.water.fillStyle(0x4fb8e0);
       this.water.fillCircle(dx, -36, 3);
     }
-    this.add([base, pipe, this.nozzle, this.water]);
+    const trim = scene.add.graphics();
+    trim.lineStyle(2, 0xffefd1, 0.55).lineBetween(-3, 0, -3, 17);
+    trim.fillStyle(0xc49a61).fillRoundedRect(-10, 10, 20, 5, 2).fillRoundedRect(-20, 19, 40, 5, 2);
+    trim.lineStyle(2, 0xc49a61).strokeCircle(0, -18, 10);
+    this.add([base, pipe, this.nozzle, trim, this.water]);
     this.addShadow(36, 64, 12);
     this.setSize(88, 100);
     this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 88, 100), Phaser.Geom.Rectangle.Contains);

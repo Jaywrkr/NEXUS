@@ -14,6 +14,15 @@ export class EndingScene extends Phaser.Scene {
     const state = new ProgressSystem().snapshot();
     this.cameras.main.setBackgroundColor('#20233a');
     this.cameras.main.fadeIn(300, 32, 35, 58);
+    const party = this.add.graphics();
+    party.fillStyle(0x2d3e47).fillRoundedRect(18, 18, width - 36, height - 36, 24);
+    party.lineStyle(1, 0xc49a61, 0.6).strokeRoundedRect(25, 25, width - 50, height - 50, 20);
+    party.fillStyle(0xe6c582, 0.06).fillCircle(width / 2, height * 0.6, portrait ? 180 : 95);
+    for (let i = 0; i < 36; i++) {
+      const x = i % 2 ? 40 + (i * 13) % 65 : width - 40 - (i * 13) % 65;
+      const y = 55 + (i * 61) % (height - 150);
+      party.fillStyle([0xe9cb73, 0xe7a8c6, 0x86d7cc][i % 3], 0.7).fillRoundedRect(x, y, 4, 9, 1);
+    }
     this.add.text(width / 2, 55, '¡La fiesta funciona!', {
       fontFamily: 'sans-serif', fontSize: '32px', fontStyle: 'bold', color: '#ffe066',
     }).setOrigin(0.5);
