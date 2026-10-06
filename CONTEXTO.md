@@ -1,172 +1,130 @@
-# Los Nexus — Contexto completo para continuar con cualquier IA
+# Contexto para continuar esta fase de Nexus
 
-> **Para la IA que lee esto (ChatGPT u otra):** este archivo es autocontenido.
-> Con él solo deberías poder entender el proyecto, su estado y cómo seguir.
-> Si tenés acceso al repo, los demás `.md` amplían cada tema (ver "Mapa de documentos" al final).
-> Última actualización: 2026-10-05.
+# Los Nexus — Guía rápida para Claude
 
----
+Este archivo existe para que una sesión nueva de Claude Code entienda el proyecto en segundos, sin tener que releer todo el historial de conversación. Léelo primero.
 
-## 1. Qué es
+## Qué es esto
 
-**Los Nexus** es un juego web 2D que un padre construye junto a su hijo **Luca (9 años, TDAH)**.
-No es comercial: el objetivo es que Luca vea que sus ideas se convierten en algo jugable, con ciclos cortos entre idea y resultado.
+Juego web 2D hecho con **Phaser 3 (v4 instalado) + TypeScript + Vite**, construido junto a Luca (9 años, TDAH) como ejercicio creativo padre-hijo. No es comercial. Ver `GAME_VISION.md` para la visión completa del proyecto (público, pilares de diseño, filosofía).
 
-- **Mecánica única:** el jugador controla al Nexus (criatura humanoide con orejas de conejo, hoodie turquesa y mochila con cable) y **conecta** objetos del escenario con un cable de energía: toca un objeto origen y luego un destino. Si la conexión es válida, algo cambia en el mundo.
-- **Nada de** combate, enemigos, inventario, economía, tiendas, multijugador ni login.
-- **Ciclo:** explorar → encontrar algo apagado → conectar → el mundo se transforma → aparece un fragmento → se guarda en el Museo.
+**Mecánica única:** el jugador controla al Nexus y **conecta** objetos del escenario entre sí con un cable de energía (clic/toque en origen, luego en destino). Esa es la única acción de juego — nada de combate, inventario o economía. Ver `DECISIONS.md` para el registro completo de decisiones y por qué.
 
-Público y filosofía: sesiones cortas, progreso visible en el mundo, aprender probando (sin tutoriales largos), juego justo. Regla permanente: *ninguna idea nueva puede romper la simplicidad del primer minuto.*
+## Estado actual (no es solo el MVP 0.0 original)
 
-## 2. Stack y cómo correrlo
+El MVP 0.0 original (`MVP_SCOPE.md`) se completó y se probó con Luca en varias rondas. Desde entonces el proyecto avanzó bastante más allá de ese alcance inicial, con aprobación explícita del usuario en cada paso. Estado real hoy:
 
-- **Phaser 4.2** (API compatible con Phaser 3) + **TypeScript 6** + **Vite 8**. Sin backend.
-- Repo: `github.com/Jaywrkr/NEXUS`.
+- **4 zonas jugables** en un mundo de scroll horizontal de 2950px de ancho (no una sola pantalla):
+  1. **La plaza**: fuente → lámpara → puerta (puzzle secuencial de 3 pasos).
+  2. **La fuente de agua**: fuente → fuente de agua (puzzle de un solo paso).
+  3. **La antena**: dos fuentes → una antena (necesita **dos** conexiones simultáneas).
+  4. **El puente**: un interruptor revela un puente sobre una grieta que **físicamente bloquea el paso** hasta conectarlo (única zona con barrera real de colisión).
+- **Personaje con sprites reales** (Decisión 017): el Nexus ya no se dibuja con formas de Phaser — son 4 imágenes PNG generadas por IA (idle, dos de caminata, celebrar) en `public/assets/nexus/`, cargadas por `loadNexusAssets()` desde `BootScene.preload()`. Sin personalización por ahora (se sacó `CustomizeScene`, ver más abajo) — el diseño es fijo: orejas tipo conejo con puntas de color, cabeza clara con cara negra y ojos ovalados amarillos, hoodie turquesa, mochila con cable de energía colgando. Los prompts usados están en `ART_PROMPTS.md` por si hay que generar más poses o variantes.
+- **Museo** con 4 vitrinas (2×2 en vertical, una fila en horizontal), botón táctil «Volver al mundo» y atajo ESPACIO para regresar, mensaje de "Colección completa" y celebración especial (flash + chispas en las 4 zonas) la primera vez que se completan las 4.
+- **Controles duales**: teclado/mouse en desktop, joystick virtual táctil + **botón de interacción** (aparece al acercarse a un objeto conectable, evita tener que acertar el toque exacto sobre algo pequeño).
+- **Adaptación real a móvil vertical**: la resolución interna del juego cambia (960×540 landscape ↔ 540×960 portrait) según orientación + tipo de puntero, para llenar la pantalla en vez de dejar barras negras. Ver `src/config/gameConfig.ts`.
+- **Sonido**: tonos generados por código (Web Audio, sin archivos de audio) para conectar/error/recolectar, con botón de mute/unmute (🔊/🔇, esquina superior izquierda de `WorldScene`) que persiste en `localStorage`.
+- **Animaciones del Nexus**: idle, caminar, conectar (implícito en el cable), celebrar (salto + chispas al recoger fragmentos).
+- **Progreso persistente** en `localStorage` (fragmentos recolectados, si ya vio la celebración final).
+- **Pantalla de título** (`BootScene`): "Jugar" si no hay progreso guardado, o "Continuar" + "Nueva partida" si ya hay fragmentos recolectados — las tres van directo a `WorldScene` (no hay pantalla de personalización).
+- **Pulido visual**: transiciones de fade in/out entre las 4 escenas (`src/utils/sceneTransition.ts`), fondo con parallax en `WorldScene` (nubes + dos capas de colinas con distinto `scrollFactor`), cable de conexión dibujado como curva bezier con una chispa que lo recorre al conectar válido, e indicador `★ n/4` fijo en el HUD del mundo que se actualiza al recolectar cada fragmento.
+- **Realismo**: movimiento del Nexus con aceleración/desaceleración gradual (no velocidad instantánea), sombras de piso en todos los objetos interactivos y decoración estática, viento sutil en el árbol y mariposas cruzando el mundo.
+- **Mini-túnel del cable** (idea de Luca, `CableTunnelScene`): la conexión fuente→lámpara de la plaza, en vez de resolverse al toque, abre un mini-juego con perspectiva tipo Mario Kart — anillos concéntricos que se agrandan al acercarse (efecto vórtex dibujado con `Graphics`, sin assets), la chispa vista desde atrás/abajo, y control libre en 2D (flechas/WASD, las 4 direcciones, o el mismo joystick táctil que en `WorldScene`) para esquivar las paredes del tubo mientras serpentea. Perder devuelve a intentar la conexión; ganar la completa normalmente. Ver Decisión 016. Por ahora solo esa conexión lo usa — el resto sigue resolviéndose al toque directo.
+
+Todo esto se probó jugando de verdad (no solo `npm run build`) usando Playwright headless para simular clics/toques y tomar capturas de pantalla, además de pruebas reales en el celular de Luca que revelaron bugs que el simulador no mostraba.
+
+## Cómo correr y probar
 
 ```bash
 npm install
-npm run dev              # http://localhost:5173
-npm run dev -- --host    # para probar desde el celular en la misma WiFi
-npm run build            # tsc + vite build — correr SIEMPRE tras cualquier cambio
+npm run dev      # servidor de desarrollo (localhost:5173)
+npm run dev -- --host   # para probar desde el celular en la misma red WiFi
+npm run build     # build de producción — SIEMPRE correr esto después de cualquier cambio
 ```
 
-No hay tests automatizados. La verificación se hace con `npm run build` sin errores + jugando (Playwright headless con capturas, y el usuario prueba en el celular real de Luca).
+No hay test suite automatizado. La forma de verificar cambios en esta sesión fue:
+1. `npm run build` (debe terminar sin errores).
+2. Levantar el dev server y usar Playwright (`chromium` en `/opt/pw-browsers/chromium`, paquete Playwright en `/opt/node22/lib/node_modules/playwright`) para simular clics/teclado, tomar screenshots, y leerlos con la herramienta de lectura de imágenes.
+3. Revisar consola por errores (`page.on('pageerror', ...)`).
 
-## 3. Estado actual del juego
+Ver la sección "Bugs reales encontrados" más abajo antes de asumir que algo raro en una prueba es un bug del juego — varias veces resultó ser imprecisión del script de prueba (el Nexus no estaba lo bastante cerca en el eje Y, por ejemplo), no un problema real.
 
-Mundo de **scroll horizontal de 2950 px** (la cámara sigue al Nexus) con **4 zonas**, cada una con un "sabor" de puzzle distinto, siempre usando solo "conectar":
-
-| Zona | Puzzle | Detalle |
-|---|---|---|
-| 1. La plaza | fuente → lámpara → puerta | Secuencial de 3 pasos. La conexión fuente→lámpara abre el **mini-túnel del cable** (ver abajo). Al abrir la puerta: la ventana de la casa se enciende, el árbol saca hojas, la plaza cambia de color. |
-| 2. La fuente de agua | fuente → fuente de agua | Un solo paso. |
-| 3. La antena | fuente A + fuente B → antena | Necesita **dos** conexiones. Hay además una **fuente señuelo** gris (sin brillo) que no conecta con nada: obliga a observar antes de tocar. |
-| 4. El puente | interruptor → puente | Una grieta **bloquea físicamente** el paso hasta conectar el interruptor. |
-
-Además:
-- **Fragmentos:** cada zona revela uno al resolverse; se recogen por cercanía y llevan al Museo. Contador `★ n/4` en el HUD.
-- **Fragmento secreto:** un 5º fragmento escondido detrás de la casa, al oeste del punto de partida. Visible desde el inicio (no depende de conectar nada). **No** cuenta para `★ n/4` ni para "¡Colección completa!", pero tiene su propia vitrina.
-- **Museo:** 5 vitrinas (4 de zona + secreta). Al completar las 4 de zona por primera vez: flash + chispas en todo el mundo y mensaje "¡Colección completa!".
-- **Mini-túnel del cable** (idea de Luca): mini-juego en perspectiva tipo Mario Kart; la chispa avanza sola por un tubo ondulado y hay que esquivar las paredes (flechas/WASD o joystick). Ganar completa la conexión; perder permite reintentar sin castigo. Por ahora solo en fuente→lámpara.
-- **Feedback de conexión:** cable curvo (bezier) con una chispa que lo recorre; al completar, ráfaga de chispas variadas (círculos y estrellas, cian/blanco) + anillo expansivo. Cable rojo y sonido de error si la conexión no encaja.
-- **Controles:** teclado/mouse en PC; joystick virtual + **botón de interacción** por proximidad en celular ("Tocar"/"Conectar", aparece cerca de un objeto conectable).
-- **Celular vertical real:** la resolución interna cambia (960×540 ↔ 540×960) según orientación + tipo de puntero.
-- **Sonido** generado por código (Web Audio), con botón mute 🔊/🔇.
-- **Personaje con sprites PNG reales** (4 poses: idle, caminar ×2, celebrar). Es la **única** excepción a "todo con formas de Phaser". Sin personalización por ahora.
-- **Pantalla de título:** "Jugar", o "Continuar" + "Nueva partida" si hay progreso.
-- **Progreso** en `localStorage` (clave `los-nexus-progress`: `{ fragmentsCollected: string[], seenCompletion: boolean }`).
-- Pulido: fades entre escenas, parallax (nubes y colinas), sombras de piso, aceleración suave del Nexus, viento en el árbol, mariposas.
-
-## 4. Arquitectura
+## Arquitectura (carpetas reales, no las "próximamente" del README viejo)
 
 ```
 src/
-  main.ts                  — crea Phaser.Game; recarga la página si cambia la orientación
-  config/gameConfig.ts     — resolución según orientación/puntero; lista de escenas
+  main.ts                    — entrada, crea el Phaser.Game, recarga si cambia orientación
+  config/gameConfig.ts       — resolución dinámica según orientación/puntero
   scenes/
-    BootScene.ts           — título + precarga de sprites del Nexus
-    WorldScene.ts          — todo el mundo: zonas, reglas de conexión, fragmentos, HUD, cámara
-    MuseumScene.ts         — vitrinas (FRAGMENTS = las 4 de zona; SECRET_FRAGMENT aparte)
-    CableTunnelScene.ts    — mini-túnel; se lanza encima de WorldScene pausada
+    BootScene.ts             — pantalla de título: "Jugar"/"Continuar" según haya progreso guardado, precarga los sprites del Nexus
+    WorldScene.ts            — el mundo completo, las 4 zonas, cámara, joystick, botón de interacción
+    MuseumScene.ts           — vitrinas de fragmentos
+    CableTunnelScene.ts      — mini-túnel dentro del cable (ver Decisión 016), se lanza sobre WorldScene pausada
   entities/
-    Nexus.ts               — personaje (sprite, movimiento con aceleración, celebrate())
-    nexusAssets.ts         — claves y loader de public/assets/nexus/*.png
+    Nexus.ts                 — el personaje jugable (sprite real + movimiento + celebrar, ver Decisión 017)
+    nexusAssets.ts           — claves y loader de los PNG del Nexus (public/assets/nexus/)
   systems/
-    ConnectionSystem.ts    — mecánica de conectar
-    ProgressSystem.ts      — wrapper de localStorage
-    AudioSystem.ts         — tonos Web Audio + mute
+    ConnectionSystem.ts      — la mecánica de conectar (seleccionar origen → destino, reglas, cable)
+    ProgressSystem.ts        — wrapper de localStorage (fragmentos, seenCompletion)
+    AudioSystem.ts           — tonos generados por Web Audio
   objects/
-    ConnectableObject.ts   — base abstracta (Container) de todo lo conectable
-    EnergySource.ts        — fuente; variant 'active' (dorada) | 'dim' (señuelo gris)
-    Lamp.ts, Door.ts, Fountain.ts, Beacon.ts, Bridge.ts
-    Fragment.ts            — coleccionable (reveal(), collect())
-  ui/VirtualJoystick.ts, ui/InteractButton.ts
-  data/gameState.ts        — forma del estado guardado + load/save con merge seguro
-  utils/sceneTransition.ts — fadeToScene()
-  utils/uiTextures.ts      — texturas de rectángulo redondeado para botones/HUD
-public/assets/nexus/       — los 4 PNG del personaje
+    ConnectableObject.ts     — clase base abstracta de todo lo conectable
+    EnergySource.ts, Lamp.ts, Door.ts, Fountain.ts, Beacon.ts, Bridge.ts, Fragment.ts
+  ui/
+    VirtualJoystick.ts       — joystick táctil
+    InteractButton.ts        — botón fijo de interacción por proximidad (¡NO usar Container, ver abajo!)
+  data/
+    gameState.ts             — shape del estado guardado + carga/guardado con merge seguro
+  utils/
+    sceneTransition.ts       — fadeToScene(): fade out + scene.start(), usado por las 4 escenas
+  styles/main.css
 ```
 
-### Cómo funciona la conexión (lo más importante para agregar contenido)
+## Decisiones de diseño que no romper sin preguntar
 
-```ts
-// En WorldScene.setupConnections():
-const src = new EnergySource(this, x, y, 'mi-fuente');      // role 'source': puede iniciar
-const obj = new Lamp(this, x2, y2);                           // role 'target'
-this.connectables.push(src, obj);                             // se registran con connectionSystem.register()
-this.connectionSystem.addRule({ sourceId: src.id, targetId: obj.id });          // conexión válida
-// opcional: { ..., useTunnel: true } para pasar por el mini-túnel antes de completarse
+Ver `DECISIONS.md` para la lista completa. Las más importantes:
+- **Toda mecánica nueva debe reutilizar la acción de conectar** (Decisión 008). La antena (doble conexión) y el puente (bloqueo físico) son ejemplos de cómo variar el ritmo sin salirse de esto.
+- El resto del juego (objetos, mundo, UI) sigue siendo formas de Phaser sin assets externos — la única excepción es el Nexus, que desde la Decisión 017 usa sprites PNG reales en `public/assets/nexus/`. No asumas que se puede extender esa excepción a otras cosas sin que el usuario lo pida.
+- No agregar combate, inventario complejo, economía, multijugador, login (Decisión 006).
+- No ampliar el alcance sin que el usuario lo pida explícitamente.
 
-// Reacción del mundo:
-this.events.on('connection-made', (targetId: string) => { if (targetId === obj.id) { /* ... */ } });
-```
+## Gotchas / bugs reales ya encontrados y arreglados (no los repitas)
 
-- Primer toque en un objeto con `canInitiate()` (fuentes) lo selecciona; segundo toque en otro objeto busca una regla `source→target`.
-- **Sin regla = conexión inválida** (cable rojo, sonido de error, "Esa conexión no encaja, prueba otra"). Por eso un señuelo no necesita código especial: es un objeto registrado sin reglas.
-- Al completar: `source.activate()`, `target.activate()`, partículas, y se emite `'connection-made'` con el id del destino.
-- Para un objeto nuevo: extender `ConnectableObject`, dibujarlo con formas de Phaser, implementar `activate()`, y llamar `setSize` + `setInteractive`.
+1. **`Phaser.GameObjects.Container` con hijos interactivos es poco confiable para botones de UI**: el primer clic funciona, los siguientes no se registran. `InteractButton` se reescribió usando objetos de escena planos (rectángulo + texto sueltos, sin Container) — igual que los botones de `BootScene`, que siempre funcionaron bien. Si agregás un botón nuevo, seguí ese patrón (sin Container).
+2. **`StaticBody.updateFromGameObject()` no funciona con `Container`**: llama a `gameObject.getTopLeft()`, que `Container` no implementa. Si necesitás mover un cuerpo físico estático cada frame (ej. un objeto que flota), actualizá `body.x`/`body.y` manualmente en vez de usar ese método.
+3. **Objetos de texto/gráficos de UI necesitan `setScrollFactor(0)` explícito**, incluso si están dentro de un sistema que ya parece "fijo en pantalla". El texto de feedback de `ConnectionSystem` quedó invisible en la zona 2 por esto — se posicionaba en coordenadas de mundo y la cámara lo dejaba fuera de vista al hacer scroll.
+4. **`100vh` en CSS no es confiable en navegadores móviles** (la barra de direcciones ocupa espacio variable). Se usa `100dvh` con `100vh` como respaldo. Además, ningún elemento de UI importante (como el botón "Jugar") debería depender de estar pegado al borde inferior de la pantalla — mejor calcularlo relativo al contenido de arriba.
+5. **`window.matchMedia('(orientation: portrait) and (pointer: coarse)')`** es la forma de distinguir un celular real en vertical de una ventana de escritorio angosta (que tiene `pointer: fine`). No uses solo el ancho de la ventana para esa detección.
+6. **Cuidado al probar con Playwright**: mover al Nexus solo en un eje (por ejemplo solo `ArrowRight`) y luego hacer clic en el botón de interacción puede fallar si el objetivo está a más de 90px en el otro eje (el radio de interacción es circular, no solo horizontal). Varias veces esto se confundió con un bug real cuando en realidad era el script de prueba. Siempre mover en diagonal (mantener dos teclas) para acercarse de verdad, o usar clics directos con coordenadas ya validadas en este documento/commits anteriores.
+7. **Patrón para mini-juegos que se abren "sobre" `WorldScene`** (como `CableTunnelScene`): `this.scene.launch('OtraEscena', data)` + `this.scene.pause()` desde `WorldScene`, y al terminar la escena hija hace `this.scene.stop()` + `this.scene.resume('WorldScene', resultado)`. `WorldScene` escucha su propio evento `'resume'` (`this.events.on('resume', (sys, data) => ...)`) para recibir el resultado. Pausar la escena para el input/física del Nexus automáticamente sin código extra.
+8. **PNGs generados por IA suelen venir con mucho margen transparente/halo y en una resolución enorme** (las 4 imágenes del Nexus llegaron en 1024×1536, ~2MB cada una — 8MB en total, demasiado para cargar bien en celular). Antes de usarlos: recortar al bounding box del contenido visible (umbral de alpha, no 0 exacto, para no cortar el halo de brillo intencional) + un padding chico, y reescalar a una altura razonable (se usó 480px). Con Pillow: `alpha.point(lambda a: 255 if a > 40 else 0).getbbox()`. Esto bajó el total a ~700KB sin perder calidad visible. También: todas las poses deben quedar recortadas con el mismo criterio para que los pies terminen a la misma distancia del borde inferior — si no, el personaje "salta" verticalmente al cambiar de sprite (idle↔caminar↔festejar) porque cada imagen tiene su propio contenido a distinta altura dentro del lienzo.
 
-### Fragmentos
-`new Fragment(scene, x, y)` empieza invisible; `reveal()` lo muestra; se recoge con `this.physics.add.overlap(this.nexus, frag, () => this.collectFragment(frag, ID))`. `collectFragment` guarda el progreso, actualiza el HUD y lleva al Museo. Solo los ids de `ALL_FRAGMENT_IDS` cuentan para la colección completa.
+## Coordenadas de referencia del mundo (para pruebas o debug futuro)
 
-### Coordenadas del mundo (landscape: `midY = 270`, `v = height/540 = 1`)
-- Inicio del Nexus `(480, midY+100v)`. Cámara con límites `(0, 0, 2950, height)`.
-- Zona 1: fuente `(480, midY-40v)`, lámpara `(680, midY-20v)`, puerta `(820, midY+60v)`, fragmento `(820, midY-10v)`. Casa decorativa en `x=280`.
-- Fragmento secreto: `(140, midY+60v)`.
-- Zona 2: fuente `(1300, midY-40v)`, fuente de agua `(1460, midY+40v)`, fragmento `(1460, midY-60v)`.
-- Zona 3: fuente A `(1980, midY-80v)`, fuente B `(1980, midY+80v)`, señuelo `(2100, midY)`, antena `(2220, midY)`, fragmento `(2220, midY-90v)`.
-- Zona 4: fuente `(2500, midY-40v)`, interruptor `(2560, midY)`, grieta en `x=2610` (ancho 100), fragmento `(2820, midY-40v)`.
+`WORLD_WIDTH = 2950`, altura del mundo = `this.scale.height` (540 en landscape, 960 en portrait). `midY = height / 2`. Con `vScale = height / 540` (1 en landscape) multiplicando los desplazamientos verticales:
 
-## 5. Reglas que no hay que romper sin preguntar
+- Zona 1 (plaza): fuente `(480, midY-40·v)`, lámpara `(680, midY-20·v)`, puerta `(820, midY+60·v)`, fragmento `(820, midY-10·v)`.
+- Zona 2 (fuente de agua): fuente `(1300, midY-40·v)`, fuente de agua `(1460, midY+40·v)`, fragmento `(1460, midY-60·v)`.
+- Zona 3 (antena): fuente A `(1980, midY-80·v)`, fuente B `(1980, midY+80·v)`, antena `(2220, midY)`, fragmento `(2220, midY-90·v)`.
+- Zona 4 (puente): fuente `(2500, midY-40·v)`, interruptor `(2560, midY)`, grieta centrada en `x=2610` (ancho 100), fragmento `(2820, midY-40·v)`.
 
-1. **Toda mecánica nueva reutiliza la acción de conectar.** Variar el ritmo (secuencia, doble conexión, bloqueo físico, timing), no agregar botones ni acciones.
-2. **Todo se dibuja con formas de Phaser** (rectángulos, círculos, estrellas, `Graphics`). Única excepción: los sprites del Nexus. No agregar imágenes/audio externos sin que el usuario lo pida.
-3. Nada de combate, inventario complejo, economía, multijugador ni login.
-4. **No ampliar el alcance sin aprobación explícita.** Se avanza de a un paso chico, se prueba, y se pregunta antes del siguiente.
-5. Pensar siempre en celular vertical y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
+El Nexus arranca en `(480, midY+100·v)`. La cámara sigue al Nexus con `startFollow(nexus, true, 0.12, 0.12)` y límites `(0,0,WORLD_WIDTH,height)`.
 
-Registro completo de decisiones (001–019): `DECISIONS.md`.
+## Cómo seguir trabajando
 
-## 6. Trampas técnicas ya conocidas (no repetirlas)
+1. Leé este archivo, `GAME_VISION.md`, `MVP_SCOPE.md`, `DECISIONS.md` e `IDEAS.md`.
+2. Este es un proyecto que sigue creciendo, no una lista para "terminar". `IDEAS.md` es el backlog vivo: agregá ahí las ideas que surjan aunque no se implementen todavía, y borrá la línea cuando se implemente una.
+3. Antes de proponer algo nuevo, preguntate si reutiliza la acción de conectar (Decisión 008) y si el usuario lo pidió o aprobó.
+4. Después de cualquier cambio: `npm run build` sin errores, y probar de verdad jugando (Playwright headless + screenshots como mínimo; el usuario prueba en dispositivo real por su cuenta).
+5. Documentar en `DECISIONS.md` si es una decisión de diseño nueva, y actualizar este archivo si cambia la arquitectura o aparece un gotcha nuevo.
+6. El usuario maneja los PR y merges a mano — vos trabajás en una rama y hacés commit, no hace falta abrir PR salvo que te lo pidan explícitamente.
 
-1. **Botones de UI: no usar `Container` con hijos interactivos** — el primer clic funciona y los siguientes no. Usar rectángulo + texto sueltos (como `InteractButton` y los botones de `BootScene`).
-2. `StaticBody.updateFromGameObject()` no funciona con `Container`: si un cuerpo estático se mueve, actualizar `body.x/body.y` a mano.
-3. Todo texto/gráfico de HUD necesita `setScrollFactor(0)`, si no desaparece al hacer scroll.
-4. En CSS usar `100dvh` (con `100vh` de respaldo); no pegar UI importante al borde inferior.
-5. Detectar celular vertical con `matchMedia('(orientation: portrait) and (pointer: coarse)')`, no por ancho de ventana.
-6. Mini-juegos encima del mundo: `scene.launch('Otra', data)` + `scene.pause()`; al terminar, la hija hace `scene.stop()` + `scene.resume('WorldScene', resultado)`, y `WorldScene` escucha `this.events.on('resume', (sys, data) => ...)`.
-7. PNG generados por IA: recortar margen transparente (umbral de alpha ~40) y reducir (~480 px de alto); recortar todas las poses con el mismo criterio para que los pies queden alineados.
-8. Al probar con Playwright: el radio de interacción es circular (90 px) — acercarse en diagonal. Para pruebas puntuales sirve exponer temporalmente el juego (`(window as any).__debugGame = new Phaser.Game(...)` en `main.ts`) y llamar métodos de la escena; **revertirlo antes de commitear**.
-9. Las animaciones cortas (<600 ms) pueden terminar antes de que Playwright saque la captura: capturar sin espera, o no asumir que "no se ve" = bug.
 
-## 7. Qué sigue (backlog acordado, en este orden)
-
-Ya hechos de esta lista: partículas variadas, fuente señuelo, fragmento secreto.
-
-1. **Criatura que despierta**: al conectar algo aparece una criatura pequeña que sigue al Nexus un rato y reacciona (salto/sonido) cerca de conexiones pendientes. Sin diálogo.
-2. **Objeto en movimiento**: algo que se mueve (péndulo, luz que gira) y solo se puede conectar cuando está en la posición correcta — variante de timing.
-3. **Energía compartida**: una fuente que alimenta un solo objeto a la vez; hay que decidir el orden. Toca las reglas de `ConnectionSystem` → más riesgo.
-4. **Cable largo entre zonas**: conectar algo de una zona con algo de otra ya visitada. La más compleja; dejar para el final.
-
-Otras ideas sueltas (`IDEAS.md`): pantalla de créditos ("hecho con Luca"), mensaje suave al girar el teléfono en vez de recargar, deploy a una URL propia + PWA instalable, ajustar dificultad del mini-túnel jugando con Luca y quizá aplicarlo a más conexiones.
-
-## 8. Forma de trabajo
-
-- Pasos chicos: proponer → el usuario aprueba → implementar → `npm run build` → probar jugando → actualizar docs → commit.
-- Tras cada cambio: borrar la idea de `IDEAS.md`, sumar una entrada a `CHANGELOG.md`, y si es una decisión de diseño, agregarla a `DECISIONS.md`. Mantener este archivo al día.
-- Git: el usuario maneja los PR y merges a mano. Trabajo reciente en la rama `claude/project-documentation-43sxil` (partículas, señuelo, fragmento secreto, docs) — pusheada, sin PR todavía.
-- Idioma del proyecto: español (código en inglés, comentarios y textos del juego en español).
-
-## 9. Mapa de documentos
-
-| Archivo | Para qué |
-|---|---|
-| `CONTEXTO.md` | Este archivo: todo en uno, para cualquier IA. |
-| `CLAUDE.md` | Lo mismo orientado a Claude Code (se carga solo en esas sesiones). |
-| `GAME_VISION.md` | Visión original, público, pilares, estilo (no se modifica). |
-| `DECISIONS.md` | Registro numerado de decisiones de diseño. |
-| `IDEAS.md` | Backlog vivo. |
-| `CHANGELOG.md` | Historial cronológico de lo construido. |
-| `MVP_SCOPE.md` | Alcance del MVP 0.0 original (histórico). |
-| `ART_PROMPTS.md` | Prompts usados para generar los sprites del Nexus. |
-| `public/assets/nexus/README.md` | Detalle técnico de los sprites. |
+## Cambios de la base conservados al sincronizar ramas
+Además de esta fase, se conservan la fuente señuelo gris de la antena
+(`beacon-source-fake`, variante `dim`), las partículas variadas y el anillo
+al conectar, y el fragmento secreto al oeste (`secret-fragment`, x=140).
+El secreto tiene una vitrina propia; no incrementa el contador de recuerdos
+de zona ni el requisito de colección completa. El museo conserva adaptación
+táctil y vertical. Los efectos nuevos respetan la opción de efectos suaves.
+`CONTEXTO.md` refleja el estado de esta rama para continuar con otras IAs.

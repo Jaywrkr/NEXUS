@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { ProgressSystem } from '../systems/ProgressSystem';
 import { fadeToScene } from '../utils/sceneTransition';
+import { ensureRoundedRectTexture } from '../utils/uiTextures';
 
 const FRAGMENTS = [
   { id: 'plaza-fragment', label: 'Fragmento de la plaza' },
@@ -9,8 +10,8 @@ const FRAGMENTS = [
   { id: 'bridge-fragment', label: 'Fragmento del puente' },
 ];
 
-/** Fragmento secreto (no ligado a una conexión). No cuenta para "¡Colección completa!". */
-const SECRET_FRAGMENT = { id: 'secret-fragment', label: 'Fragmento secreto' };
+const SECRET_FRAGMENT = { id: 'secret-fragment', label: 'Fragmento secreto', memory: '¡Explorar también conecta!', color: 0xb6a0ff };
+const DISPLAYED_FRAGMENTS = [...FRAGMENTS, SECRET_FRAGMENT];
 
 export class MuseumScene extends Phaser.Scene {
   private progress!: ProgressSystem;
@@ -21,6 +22,7 @@ export class MuseumScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
+    const portrait = height > width;
     this.progress = new ProgressSystem();
 
     this.cameras.main.setBackgroundColor('#20233a');
@@ -34,18 +36,21 @@ export class MuseumScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    const displayedFragments = [...FRAGMENTS, SECRET_FRAGMENT];
-    const spacing = Math.min(180, (width - 140) / (displayedFragments.length - 1));
-    const startX = width / 2 - (spacing * (displayedFragments.length - 1)) / 2;
+    const spacing = Math.min(220, (width - 140) / (DISPLAYED_FRAGMENTS.length - 1));
+    const startX = width / 2 - (spacing * (DISPLAYED_FRAGMENTS.length - 1)) / 2;
 
-    displayedFragments.forEach((fragment, index) => {
-      this.buildVitrina(startX + index * spacing, height / 2, fragment.id, fragment.label);
+    const rows = Math.ceil(DISPLAYED_FRAGMENTS.length / 2);
+    const firstRowY = 210, lastRowY = height - 290;
+    DISPLAYED_FRAGMENTS.forEach((fragment, index) => {
+      const x = portrait ? width * (index % 2 === 0 ? 0.28 : 0.72) : startX + index * spacing;
+      const y = portrait ? firstRowY + Math.floor(index / 2) * (lastRowY - firstRowY) / Math.max(1, rows - 1) : height / 2;
+      this.buildVitrina(x, y, fragment.id, fragment.label);
     });
 
     const allCollected = FRAGMENTS.every((f) => this.progress.hasFragment(f.id));
     if (allCollected) {
       this.add
-        .text(width / 2, height / 2 + 160, '¡Colección completa!', {
+        .text(width / 2, portrait ? lastRowY + 145 : height / 2 + 145, '¡Colección completa!', {
           fontFamily: 'sans-serif',
           fontSize: '20px',
           color: '#ffe066',
@@ -53,17 +58,39 @@ export class MuseumScene extends Phaser.Scene {
         .setOrigin(0.5);
     }
 
+    let returning = false;
+    const returnToWorld = (): void => {
+      if (returning) return;
+      returning = true;
+      fadeToScene(this, 'WorldScene', [207, 232, 216]);
+    };
+
+    ensureRoundedRectTexture(this, 'museum-return-button', 240, 52, 14);
+    const returnButton = this.add
+      .image(width / 2, height - 80, 'museum-return-button')
+      .setTint(0x5ee7ff)
+      .setInteractive({ useHandCursor: true });
     this.add
-      .text(width / 2, height - 40, 'Presiona ESPACIO para volver', {
+      .text(width / 2, height - 80, 'Volver al mundo', {
+        fontFamily: 'sans-serif',
+        fontSize: '20px',
+        fontStyle: 'bold',
+        color: '#1b1f3b',
+      })
+      .setOrigin(0.5);
+    returnButton.on('pointerover', () => returnButton.setTint(0x9be37a));
+    returnButton.on('pointerout', () => returnButton.setTint(0x5ee7ff));
+    returnButton.on('pointerdown', returnToWorld);
+
+    this.add
+      .text(width / 2, height - 32, 'También puedes volver con ESPACIO', {
         fontFamily: 'sans-serif',
         fontSize: '16px',
         color: '#c9cbe0',
       })
       .setOrigin(0.5);
 
-    this.input.keyboard!.once('keydown-SPACE', () => {
-      fadeToScene(this, 'WorldScene', [207, 232, 216]);
-    });
+    this.input.keyboard!.once('keydown-SPACE', returnToWorld);
   }
 
   private buildVitrina(x: number, y: number, fragmentId: string, label: string): void {

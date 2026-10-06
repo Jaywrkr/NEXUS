@@ -13,6 +13,7 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 ## Pulido visual pendiente
 - Pantalla de créditos simple (nombres, "hecho con Luca", fecha).
 
+
 ## Producto / UX
 - Pantalla de opciones más completa (volumen si se agregan más tipos de sonido,
   no solo mute/unmute).
@@ -26,18 +27,7 @@ la siguiente a hacer, revisar que siga reutilizando la acción de conectar
 - Dominio propio.
 
 ## Ideas de contenido (mecánica, siempre reutilizando "conectar")
-Backlog acordado con el usuario (2026-08-06) para ir probando de a una, ordenado
-de menor a mayor esfuerzo/riesgo de romper zonas existentes:
-- Criatura que se despierta al conectar algo y sigue un rato al Nexus,
-  reaccionando cerca de conexiones pendientes (sin diálogo, sin ser NPC complejo).
-- Objeto en movimiento (péndulo, luz que gira) que solo se puede conectar
-  cuando está en la posición correcta — variante de timing.
-- Energía compartida: una fuente que solo alimenta un objeto a la vez, hay que
-  decidir el orden de conexión. Toca las reglas del `ConnectionSystem`, más
-  riesgo de afectar zonas existentes — dejar para cuando el resto esté probado.
-- Cable largo entre zonas: conectar algo en una zona con algo en otra ya
-  visitada. La más compleja (cable cruzando cámara/scroll, estado entre zonas
-  lejanas) — dejar para el final.
+- (vacío por ahora — agregar acá si surge una quinta zona, variante de puzzle, etc.)
 
 ## Mini-túnel del cable (idea de Luca, prototipo en fuente→lámpara de la plaza)
 - Probarlo con Luca de verdad antes de decidir si se aplica a más conexiones —
@@ -51,3 +41,19 @@ de menor a mayor esfuerzo/riesgo de romper zonas existentes:
   (túnel más angosto o más ondulado en zonas más avanzadas).
 - Posible variante: que el ancho del túnel varíe (no solo constante), para más
   variedad de dificultad entre conexiones.
+
+
+## Ideas de contenido conservadas de la base
+
+Backlog acordado con el usuario (2026-08-06) para ir probando de a una, ordenado
+de menor a mayor esfuerzo/riesgo de romper zonas existentes:
+- Criatura que se despierta al conectar algo y sigue un rato al Nexus,
+  reaccionando cerca de conexiones pendientes (sin diálogo, sin ser NPC complejo).
+- Objeto en movimiento (péndulo, luz que gira) que solo se puede conectar
+  cuando está en la posición correcta — variante de timing.
+- Energía compartida: una fuente que solo alimenta un objeto a la vez, hay que
+  decidir el orden de conexión. Toca las reglas del `ConnectionSystem`, más
+  riesgo de afectar zonas existentes — dejar para cuando el resto esté probado.
+- Cable largo entre zonas: conectar algo en una zona con algo en otra ya
+  visitada. La más compleja (cable cruzando cámara/scroll, estado entre zonas
+  lejanas) — dejar para el final.

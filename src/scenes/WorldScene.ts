@@ -24,7 +24,6 @@ const PLAZA_FRAGMENT_ID = 'plaza-fragment';
 const FOUNTAIN_FRAGMENT_ID = 'fountain-fragment';
 const BEACON_FRAGMENT_ID = 'beacon-fragment';
 const BRIDGE_FRAGMENT_ID = 'bridge-fragment';
-/** Fragmento extra, no ligado a ninguna conexión: premia explorar detrás de la casa apagada. */
 const SECRET_FRAGMENT_ID = 'secret-fragment';
 const ALL_FRAGMENT_IDS = [PLAZA_FRAGMENT_ID, FOUNTAIN_FRAGMENT_ID, BEACON_FRAGMENT_ID, BRIDGE_FRAGMENT_ID];
 const WORLD_WIDTH = 2950;
@@ -38,6 +37,7 @@ export class WorldScene extends Phaser.Scene {
   private connectionSystem!: ConnectionSystem;
   private progress!: ProgressSystem;
   private door!: Door;
+  private secretFragment!: Fragment;
   private plazaFragment!: Fragment;
   private fountain!: Fountain;
   private fountainFragment!: Fragment;
@@ -45,7 +45,6 @@ export class WorldScene extends Phaser.Scene {
   private beaconFragment!: Fragment;
   private bridge!: Bridge;
   private bridgeFragment!: Fragment;
-  private secretFragment!: Fragment;
   private bridgeDeck!: Phaser.GameObjects.Rectangle;
   private bridgeBlocker!: Phaser.GameObjects.Zone;
   private bridgeCollider!: Phaser.Physics.Arcade.Collider;
@@ -205,19 +204,17 @@ export class WorldScene extends Phaser.Scene {
     this.lamp = new Lamp(this, 680, midY - 20 * vScale);
     this.door = new Door(this, 820, midY + 60 * vScale);
     this.plazaFragment = new Fragment(this, 820, midY - 10 * vScale);
-
-    // Fragmento secreto: detrás de la casa apagada, al oeste del punto de partida.
-    // No depende de ninguna conexión, ya está visible — premia a quien explore para atrás.
     this.secretFragment = new Fragment(this, 140, midY + 60 * vScale);
     this.secretFragment.setDepth(12);
-    this.secretFragment.reveal();
+    if (!this.progress.hasFragment(SECRET_FRAGMENT_ID)) this.secretFragment.reveal();
+
 
     // Zona 2: la fuente restaurada (segunda fuente → fuente de agua)
     const fountainSource = new EnergySource(this, 1300, midY - 40 * vScale, 'fountain-source');
     this.fountain = new Fountain(this, 1460, midY + 40 * vScale);
     this.fountainFragment = new Fragment(this, 1460, midY - 60 * vScale);
 
-    // Zona 3: la antena (dos fuentes → una sola antena, más una fuente señuelo sin brillo que no sirve)
+    // Zona 3: la antena (dos fuentes → una sola antena)
     const beaconSourceA = new EnergySource(this, 1980, midY - 80 * vScale, 'beacon-source-a');
     const beaconSourceB = new EnergySource(this, 1980, midY + 80 * vScale, 'beacon-source-b');
     const beaconSourceFake = new EnergySource(this, 2100, midY, 'beacon-source-fake', 'dim');
@@ -308,6 +305,9 @@ export class WorldScene extends Phaser.Scene {
       }
     });
 
+    this.physics.add.overlap(this.nexus, this.secretFragment, () =>
+      this.collectFragment(this.secretFragment, SECRET_FRAGMENT_ID),
+    );
     this.physics.add.overlap(this.nexus, this.plazaFragment, () =>
       this.collectFragment(this.plazaFragment, PLAZA_FRAGMENT_ID),
     );
@@ -319,9 +319,6 @@ export class WorldScene extends Phaser.Scene {
     );
     this.physics.add.overlap(this.nexus, this.bridgeFragment, () =>
       this.collectFragment(this.bridgeFragment, BRIDGE_FRAGMENT_ID),
-    );
-    this.physics.add.overlap(this.nexus, this.secretFragment, () =>
-      this.collectFragment(this.secretFragment, SECRET_FRAGMENT_ID),
     );
   }
 
@@ -532,8 +529,7 @@ export class WorldScene extends Phaser.Scene {
 
   /** Fondo con parallax: cielo + dos capas de colinas que se mueven más lento que la cámara. */
   private fragmentHudLabel(): string {
-    const zoneCollected = ALL_FRAGMENT_IDS.filter((fid) => this.progress.hasFragment(fid)).length;
-    return `★ ${zoneCollected}/${ALL_FRAGMENT_IDS.length}`;
+    return `★ ${ALL_FRAGMENT_IDS.filter(id => this.progress.hasFragment(id)).length}/${ALL_FRAGMENT_IDS.length}`;
   }
 
   private muteButtonLabel(): string {
