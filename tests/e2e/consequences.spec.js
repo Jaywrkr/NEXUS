@@ -3,7 +3,7 @@ import { test, expect, start, ready, world, connect, saved, collect, returnToWor
 test('unexpected connections are harmless discoveries and repairs change other places', async ({ page }, testInfo) => {
   await start(page);
   await connect(page, 'energy-source', 'door');
-  expect(await world(page, 'return s.storyCard.message.text;')).toContain('DOOO');
+  expect(await world(page, 'return s.storyCard.message.text;')).toContain('relé de la lámpara');
   await connect(page, 'energy-source', 'door');
   expect((await saved(page)).story.discoveries).toEqual(['singing-door']);
   expect((await saved(page)).connections).toEqual([]);

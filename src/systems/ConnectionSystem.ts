@@ -19,6 +19,7 @@ export interface ConnectionRule {
   restoreAvailable?: () => boolean;
   showHint?: () => boolean;
   blockedMessage?: string;
+  successMessage?: string;
   /** At most one rule in the group stays completed; reconnecting changes choice. */
   exclusiveGroup?: string;
   onActivate?: () => void;
@@ -42,6 +43,11 @@ export class ConnectionSystem {
   private hintObject: ConnectableObject | null = null;
   private lastInteractionAt: number;
   private color = cableColor();
+  private preview: Phaser.GameObjects.Graphics;
+  private selectionRings: Phaser.GameObjects.Graphics;
+  private cableTimer?: Phaser.Time.TimerEvent;
+  private pendingTunnel = false;
+  private nextHintAt = 0;
 
 
   constructor(scene: Phaser.Scene, audio: AudioSystem) {
@@ -51,16 +57,28 @@ export class ConnectionSystem {
     this.hintRing = scene.add.circle(0, 0, 38)
       .setStrokeStyle(3, 0x1b6b3a, 0.65).setDepth(14).setVisible(false);
     this.cableGraphics = scene.add.graphics().setDepth(15);
+    this.preview = scene.add.graphics().setDepth(15);
+    this.selectionRings = scene.add.graphics().setDepth(14);
+    const cancel = (): void => this.clearSelection();
+    const resume = (): void => { this.pendingTunnel = false; };
+    scene.input.keyboard?.on('keydown-ESC', cancel);
+    scene.events.on('resume', resume);
+    scene.events.once('shutdown', () => {
+      scene.input.keyboard?.off('keydown-ESC', cancel);
+      scene.events.off('resume', resume);
+    });
 
     this.feedbackText = scene.add
-      .text(scene.scale.width / 2, scene.scale.height - 132, '', {
+      .text(scene.scale.width / 2, 64, '', {
         fontFamily: '"Patrick Hand", cursive',
-        fontSize: '18px',
+        fontSize: '14px',
         color: '#1b1f3b',
         wordWrap: { width: Math.min(480, scene.scale.width - 48), useAdvancedWrap: true },
         align: 'center',
+        backgroundColor: '#f2ead9',
+        padding: { x: 8, y: 4 },
       })
-      .setOrigin(0.5)
+      .setOrigin(0.5, 0)
       .setDepth(20)
       .setScrollFactor(0)
       .setAlpha(0);
@@ -99,6 +117,7 @@ export class ConnectionSystem {
 
   /** Punto de entrada público: tocar el objeto directamente o presionar el botón de interacción hacen lo mismo. */
   interact(object: ConnectableObject): void {
+    if (this.pendingTunnel) return;
     this.resetHint();
     this.handleClick(object);
   }
@@ -123,6 +142,8 @@ export class ConnectionSystem {
       this.hintRing.setVisible(false);
       return;
     }
+    if (this.scene.game.loop.now < this.nextHintAt) return;
+    this.nextHintAt = this.scene.game.loop.now + 100;
     const visible = this.scene.cameras.main.worldView;
     const candidates: ConnectableObject[] = [];
     for (const rule of this.rules) {
@@ -147,21 +168,27 @@ export class ConnectionSystem {
 
   private handleClick(object: ConnectableObject): void {
     if (!this.selected) {
-      if (!object.canInitiate()) return;
+      if (!object.canInitiate()) {
+        this.showFeedback(object.isActive ? `${object.displayName}: ya está funcionando.`
+          : object.id === 'lamp' ? 'La lámpara necesita energía del generador.'
+          : object.id === 'door' ? 'El cierre necesita la salida del relé de la lámpara.'
+          : `${object.displayName}: necesita una entrada. Elige primero un origen.`, '#34494e');
+        return;
+      }
       this.selected = object;
-      this.showFeedback('Ahora conecta con algo...', '#1b1f3b');
+      this.showFeedback(`${object.displayName} seleccionado. Elige una entrada señalada; toca el origen para cancelar.`, '#34494e');
+      this.updateSelection();
       return;
     }
 
     if (object === this.selected) {
-      this.selected = null;
-      this.cableGraphics.clear();
+      this.clearSelection();
       return;
     }
 
     const source = this.selected;
     const target = object;
-    this.selected = null;
+    this.clearSelection();
 
     const rule = this.rules.find(
       (r) => r.sourceId === source.id && r.targetId === target.id,
@@ -170,7 +197,9 @@ export class ConnectionSystem {
     if (!rule) {
       this.drawCable(source, target, false);
       const surprise = connectionSurprise(source.id, target.id);
-      this.showFeedback(surprise ? '¡Una conexión inesperada!' : 'Esa conexión no encaja, prueba otra', '#8a4b1f');
+      this.showFeedback(source.id === 'energy-source' && target.id === 'door'
+        ? 'El generador no controla el cierre: primero alimenta el relé de la lámpara.'
+        : surprise ? '¡Una conexión inesperada!' : 'Esta entrada no acepta esa salida. Busca un destino compatible.', '#8a4b1f');
       if (surprise) this.scene.events.emit('connection-surprise', surprise);
       this.audio.playError();
       return;
@@ -187,6 +216,7 @@ export class ConnectionSystem {
     }
 
     if (rule.useTunnel) {
+      this.pendingTunnel = true;
       this.scene.events.emit('tunnel-requested', { source, target });
       return;
     }
@@ -196,6 +226,7 @@ export class ConnectionSystem {
 
   /** Se llama cuando el jugador supera (o pierde) el mini-túnel de una conexión con useTunnel. */
   finishTunnel(source: ConnectableObject, target: ConnectableObject, success: boolean): void {
+    this.pendingTunnel = false;
     if (success) {
       this.completeConnection(source, target);
       return;
@@ -217,7 +248,7 @@ export class ConnectionSystem {
     this.drawCable(source, target, true);
     source.activate();
     target.activate();
-    this.showFeedback('¡Conexión correcta!', '#1b6b3a');
+    this.showFeedback(rule.successMessage ?? `${source.displayName} → ${target.displayName}: conexión activa.`, '#1b6b3a');
     this.audio.playSuccess();
     this.spawnConnectBurst(target.getPlugPoint());
     this.spawnGlowRing(target.getPlugPoint());
@@ -280,6 +311,7 @@ export class ConnectionSystem {
   }
 
   private drawCable(from: ConnectableObject, to: ConnectableObject, valid: boolean): void {
+    this.cableTimer?.remove();
     const start = from.getPlugPoint();
     const end = to.getPlugPoint();
     const color = valid ? this.color : INVALID_COLOR;
@@ -299,7 +331,7 @@ export class ConnectionSystem {
     curve.draw(this.cableGraphics, 32);
 
     if (!valid) {
-      this.scene.time.delayedCall(500, () => this.cableGraphics.clear());
+      this.cableTimer = this.scene.time.delayedCall(500, () => this.cableGraphics.clear());
       return;
     }
 
@@ -324,6 +356,7 @@ export class ConnectionSystem {
   }
 
   private showFeedback(message: string, color: string): void {
+    this.scene.tweens.killTweensOf(this.feedbackText);
     this.feedbackText.setText(message);
     this.feedbackText.setColor(color);
     this.feedbackText.setAlpha(1);
@@ -331,8 +364,37 @@ export class ConnectionSystem {
     this.scene.tweens.add({
       targets: this.feedbackText,
       alpha: 0,
-      delay: 1200,
+      delay: 2600,
       duration: 400,
     });
+  }
+
+  private clearSelection(): void {
+    this.selected = null;
+    this.preview.clear();
+    this.selectionRings.clear();
+    this.scene.tweens.killTweensOf(this.feedbackText);
+    this.feedbackText.setAlpha(0);
+  }
+
+  /** Lightweight overlays follow the pointer without changing object hit areas. */
+  updateSelection(): void {
+    this.preview.clear();
+    this.selectionRings.clear();
+    if (!this.selected) return;
+    const source = this.selected;
+    const start = source.getPlugPoint();
+    this.selectionRings.lineStyle(3, this.color, .95).strokeCircle(start.x, start.y, 30);
+    for (const rule of this.rules) {
+      if (rule.sourceId !== source.id || (rule.available && !rule.available())
+        || this.completed.has(JSON.stringify([rule.sourceId, rule.targetId]))) continue;
+      const target = this.objects.find(o => o.id === rule.targetId);
+      if (target) this.selectionRings.lineStyle(2, this.color, .8).strokeCircle(target.x, target.y, 34);
+    }
+    const pointer = this.scene.input.activePointer;
+    // A released touch has no cursor; keep only the source and destination rings.
+    if (pointer.wasTouch && !pointer.isDown) return;
+    const end = pointer.positionToCamera(this.scene.cameras.main) as Phaser.Math.Vector2;
+    this.preview.lineStyle(2, this.color, .65).beginPath().moveTo(start.x, start.y).lineTo(end.x, end.y).strokePath();
   }
 }

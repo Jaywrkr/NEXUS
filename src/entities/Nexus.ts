@@ -19,6 +19,7 @@ export class Nexus extends Phaser.GameObjects.Container {
   declare body: Phaser.Physics.Arcade.Body;
 
   private visual: Phaser.GameObjects.Container;
+  private shadow: Phaser.GameObjects.Ellipse;
   private sprite: Phaser.GameObjects.Image;
   private facing: 1 | -1 = 1;
   private walkTime = 0;
@@ -33,13 +34,14 @@ export class Nexus extends Phaser.GameObjects.Container {
 
     this.visual = scene.add.container(0, 0);
 
-    const shadow = scene.add.ellipse(0, GROUND_Y, 40, 12, 0x000000, 0.2);
+    this.shadow = scene.add.ellipse(0, GROUND_Y, 40, 12, 0x000000, 0.2);
+    this.add(this.shadow);
 
     this.sprite = scene.add.image(0, GROUND_Y, NEXUS_ASSET_KEYS.idle).setOrigin(0.5, 1);
     applyNexusPose(this.sprite, NEXUS_ASSET_KEYS.idle, this.look);
     this.applySpriteScale();
     const accessory = drawAccessory(scene, this.look);
-    this.visual.add([shadow, this.sprite, accessory]);
+    this.visual.add([this.sprite, accessory]);
     if (this.look.name !== 'Nexus') this.add(scene.add.text(0, -100, this.look.name, {
       fontFamily: '"Patrick Hand", cursive', fontSize: '12px', color: '#34494e', backgroundColor: '#ffefd1', padding: { x: 5, y: 2 },
       wordWrap: { width: 120 }, align: 'center',
@@ -49,8 +51,9 @@ export class Nexus extends Phaser.GameObjects.Container {
     scene.add.existing(this);
     scene.physics.add.existing(this);
 
-    this.body.setSize(48, 70);
-    this.body.setOffset(-24, -40);
+    // Collision is the footprint, not the character's head and torso.
+    this.body.setSize(32, 20);
+    this.body.setOffset(-16, GROUND_Y - 20);
     this.body.setCollideWorldBounds(true);
   }
 
@@ -69,10 +72,13 @@ export class Nexus extends Phaser.GameObjects.Container {
     this.velY += (dy * SPEED - this.velY) * smoothing;
     this.body.setVelocity(this.velX, this.velY);
 
-    const isMoving = dx !== 0 || dy !== 0;
+    const speed = this.body.velocity.length();
+    const isMoving = speed > 12 && !this.body.blocked.none ?
+      !((this.body.blocked.left && dx < 0) || (this.body.blocked.right && dx > 0)
+        || (this.body.blocked.up && dy < 0) || (this.body.blocked.down && dy > 0)) : speed > 12;
 
     const newFacing = dx > 0 ? 1 : dx < 0 ? -1 : this.facing;
-    if (newFacing !== this.facing) {
+    if (!this.celebrating && newFacing !== this.facing) {
       this.facing = newFacing;
       this.playTurnSquash();
     }
@@ -80,11 +86,11 @@ export class Nexus extends Phaser.GameObjects.Container {
     if (this.celebrating) return;
 
     if (isMoving) {
-      this.walkTime += delta;
-      const bob = Math.sin(this.walkTime / 80) * 3;
+      this.walkTime += Math.min(delta, 50) * Math.min(1, speed / SPEED);
+      const bob = -Math.abs(Math.sin(this.walkTime / 95)) * 1.5;
       // Estira un poco arriba de cada salto del paso y se achata al tocar
       // el piso, para que el caminar se sienta con más peso e impulso.
-      const stretch = Math.cos(this.walkTime / 80) * 0.05;
+      const stretch = Math.cos(this.walkTime / 95) * 0.012;
       this.visual.setY(bob);
       this.visual.scaleY = 1 + stretch;
 
@@ -105,25 +111,28 @@ export class Nexus extends Phaser.GameObjects.Container {
     }
   }
 
-  /** Achica el ancho a 0 y lo vuelve a abrir del lado nuevo, en vez de girar instantáneo. */
+  /** Giro corto, sin rebote y sin acumular animaciones al cambiar de dirección. */
   private playTurnSquash(): void {
+    this.scene.tweens.killTweensOf(this.visual);
     this.scene.tweens.add({
       targets: this.visual,
-      scaleX: { from: 0, to: this.facing },
-      duration: 90,
-      ease: 'Back.easeOut',
+      scaleX: this.facing,
+      duration: 65,
+      ease: 'Sine.easeOut',
     });
   }
 
   playIdle(): void {
     this.walkTime = 0;
     this.visual.setY(0);
+    this.visual.setScale(this.facing, 1);
     applyNexusPose(this.sprite, NEXUS_ASSET_KEYS.idle, this.look);
     this.applySpriteScale();
   }
 
   /** Animación corta de celebración: salto y chispas, con la pose de festejo. */
   celebrate(): void {
+    if (this.celebrating) return;
     this.walkTime = 0;
     this.velX = 0;
     this.velY = 0;
@@ -155,6 +164,8 @@ export class Nexus extends Phaser.GameObjects.Container {
 
     this.spawnCelebrationSparkles();
   }
+
+  get groundY(): number { return this.y + GROUND_Y; }
 
   private spawnCelebrationSparkles(): void {
     const colors = [0xffe066, 0x5ee7ff, 0xff9ff3];

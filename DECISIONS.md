@@ -130,3 +130,11 @@ seleccionados y desbloqueos siguen guardados. Las preferencias antiguas del cabl
 se respetan; el nuevo color predeterminado es lima. Los fondos independientes evitan ampliar
 celdas pequeñas y se encuadran sin deformarlas. Las tres ramas son descendientes
 de la cadena pendiente de la plaza; el usuario hace PR y merge.
+
+## 034 — Plaza con suelo, huellas y conexiones explicables
+
+La plaza usa una línea transitable medida por los pies: el Nexus no puede entrar en las fachadas o caminar sobre los tejados. El borde baja suavemente al salir hacia el paseo. Generador, lámpara y puerta tienen huellas físicas pequeñas, y los objetos y habitantes se ordenan por la altura de sus pies. La sombra del Nexus se mantiene en el suelo; caminar usa un balanceo corto y la celebración no arrastra la sombra.
+
+Se conserva el circuito guardado generador → lámpara → puerta, explicándolo como lámpara con relé que alimenta el cierre eléctrico. La selección señala las entradas disponibles y admite cancelación tocando de nuevo el origen o con Escape. Los errores y éxitos reemplazan su feedback anterior, sin dejar temporizadores que borren un cable más reciente. El túnel sigue siendo una prueba explícita de conducir energía, con práctica y salida.
+
+Los sprites de los conectables solo se sincronizan cuando cambia su estado, contador o variante, en lugar de volver a aplicar textura y escala cada fotograma. Esto reduce trabajo repetido; no equivale a demostrar rendimiento en un teléfono real.

@@ -78,9 +78,6 @@ export class PlazaAtmosphere {
     this.cables.clear();
     if (this.lamp.isActive) this.drawCable(this.source, this.lamp, reduced ? 0 : this.cableSpring.value, time, reduced);
     if (this.door.isActive) this.drawCable(this.lamp, this.door, reduced ? 0 : this.cableSpring.value, time, reduced);
-    // Feet sort against the three illustrated props, keeping the original hit areas steady.
-    this.nexus.setDepth(10 + (this.nexus.y + 34) / this.scene.scale.height);
-    for (const object of [this.source, this.lamp, this.door]) object.setDepth(10 + (object.y + 45) / this.scene.scale.height);
     if (!reduced && speed > 70 && this.nexus.x < 1160 && time > this.dustAt) {
       this.dustAt = time + 170;
       const dust = this.scene.add.ellipse(this.nexus.x, this.nexus.y + 32, 14, 5, 0xf5e3bd, .3).setDepth(9);
