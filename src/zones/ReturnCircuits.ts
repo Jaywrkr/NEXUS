@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ART } from '../art/interfaceArt';
 import { RadioReceiver } from '../objects/RadioReceiver';
 import type { ConnectionRule } from '../systems/ConnectionSystem';
 import type { RadioChannel } from '../data/radio';
@@ -34,9 +35,9 @@ export class ReturnCircuits {
       { sourceId: 'garden-sprinkler', targetId: this.band.id, available: () => channel() === 'music' && gardenReady(),
         restoreAvailable: gardenReady, blockedMessage: 'Las flores necesitan agua y música de CUAC FM.' },
     ];
-    this.notes = scene.add.text(3500, y - 135 * v, '♫  ♪  ♫', { fontFamily: 'sans-serif', fontSize: '30px', color: '#9d367c' }).setOrigin(0.5).setDepth(3);
-    this.bulletinText = scene.add.text(1060, y - 145 * v, '', { fontFamily: 'sans-serif', fontSize: '15px', color: '#4a3c63', align: 'center', wordWrap: { width: 190 } }).setOrigin(0.5).setDepth(3);
-    this.bandText = scene.add.text(3650, y - 150 * v, '', { fontFamily: 'sans-serif', fontSize: '15px', color: '#4a3c63', align: 'center', wordWrap: { width: 190 } }).setOrigin(0.5).setDepth(3);
+    this.notes = scene.add.text(3500, y - 135 * v, '♫  ♪  ♫', { fontFamily: ART.body, fontSize: '30px', color: '#9d367c' }).setOrigin(0.5).setDepth(3);
+    this.bulletinText = scene.add.text(1060, y - 145 * v, '', { fontFamily: ART.body, fontSize: '15px', color: '#4a3c63', align: 'center', wordWrap: { width: 190 } }).setOrigin(0.5).setDepth(3);
+    this.bandText = scene.add.text(3650, y - 150 * v, '', { fontFamily: ART.body, fontSize: '15px', color: '#4a3c63', align: 'center', wordWrap: { width: 190 } }).setOrigin(0.5).setDepth(3);
     this.refresh();
   }
 

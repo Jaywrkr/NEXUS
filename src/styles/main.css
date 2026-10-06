@@ -3,7 +3,7 @@ html, body {
   padding: 0;
   width: 100%;
   height: 100%;
-  background: #0e1024;
+  background: #102d37;
   overflow: hidden;
 }
 
@@ -22,3 +22,5 @@ canvas {
   max-height: 100dvh;
   touch-action: none;
 }
+
+canvas { display: block; outline: none; }

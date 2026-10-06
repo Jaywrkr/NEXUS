@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ART } from '../art/interfaceArt';
 import type { ResidentInfo } from '../data/chapter';
 
 /** A readable silhouette and optional speech, not a second puzzle mechanic. */
@@ -58,7 +59,7 @@ export class Resident extends Phaser.GameObjects.Container {
       art.fillStyle(0xffe39b).fillRect(25, 17, 7, 10);
     }
     const name = scene.add.text(0, 48, info.name, {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#34494e', backgroundColor: '#ffefd1', padding: { x: 7, y: 3 },
+      fontFamily: ART.body, fontSize: '14px', color: '#34494e', backgroundColor: '#ffefd1', padding: { x: 7, y: 3 },
     }).setOrigin(0.5);
     this.add([shadow, art, name]);
     this.setSize(72, 100).setDepth(9);

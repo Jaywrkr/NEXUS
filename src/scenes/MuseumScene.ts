@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { screenArt, ornament, ART } from '../art/interfaceArt';
 import { ProgressSystem } from '../systems/ProgressSystem';
 import { fadeToScene } from '../utils/sceneTransition';
 import { ensureRoundedRectTexture } from '../utils/uiTextures';
@@ -21,12 +22,11 @@ export class MuseumScene extends Phaser.Scene {
     const portrait = height > width;
     this.progress = new ProgressSystem();
 
-    this.cameras.main.setBackgroundColor('#20233a');
+    screenArt(this, true);
     this.cameras.main.fadeIn(300, 32, 35, 58);
 
     const room = this.add.graphics();
-    room.fillStyle(0x2d3e47).fillRoundedRect(16, 16, width - 32, height - 32, 24);
-    room.lineStyle(1, 0xc49a61, 0.6).strokeRoundedRect(25, 25, width - 50, height - 50, 20);
+
     room.lineStyle(1, 0x60716f, 0.3);
     for (let x = 52; x < width; x += 68) room.lineBetween(x, 140, x, height - 150);
     room.fillStyle(0x22343c).fillRect(26, height - 160, width - 52, 85);
@@ -40,19 +40,19 @@ export class MuseumScene extends Phaser.Scene {
       })
       .setOrigin(0.5);
 
-    this.memoryText = this.add.text(width / 2, 85, 'Toca un recuerdo para verlo despertar', {
-      fontFamily: 'sans-serif', fontSize: '16px', color: '#c9cbe0',
+    this.memoryText = this.add.text(width / 2, 93, 'Toca un recuerdo para verlo despertar', {
+      fontFamily: ART.body, fontSize: '16px', color: '#c1d0ca',
     }).setOrigin(0.5);
     const story = this.progress.snapshot().story;
     const discovered = DISCOVERY_IDS.filter(id => story?.discoveries.includes(id)).length;
     const heard = RESIDENTS.filter(r => story?.heard.includes(r.id)).length;
     this.add.text(width / 2, 112, `Sorpresas: ${discovered}/${DISCOVERY_IDS.length} · Habitantes: ${heard}/${RESIDENTS.length}`, {
-      fontFamily: 'sans-serif', fontSize: '14px', color: '#c9cbe0',
+      fontFamily: ART.body, fontSize: '14px', color: '#c1d0ca',
     }).setOrigin(0.5);
     if (this.progress.hasSeenChapter()) {
       ensureRoundedRectTexture(this, 'museum-ending', 110, 42, 12);
-      const ending = this.add.image(width - 70, 40, 'museum-ending').setTint(0x9be37a).setInteractive({ useHandCursor: true });
-      this.add.text(width - 70, 40, 'Ver final', { fontFamily: 'sans-serif', fontSize: '16px', color: '#20233a' }).setOrigin(0.5);
+      const ending = this.add.image(width - 70, 40, 'museum-ending').setTint(0xedce97).setInteractive({ useHandCursor: true });
+      this.add.text(width - 70, 40, 'Ver final', { fontFamily: ART.body, fontSize: '16px', color: '#20233a' }).setOrigin(0.5);
       ending.on('pointerdown', () => { if (this.leaving) return; this.leaving = true; fadeToScene(this, 'EndingScene', [32, 35, 58]); });
     }
 
@@ -74,7 +74,7 @@ export class MuseumScene extends Phaser.Scene {
     if (allCollected) {
       this.add
         .text(width / 2, portrait ? lastRowY + 145 : height / 2 + 145, '¡Colección completa!', {
-          fontFamily: 'sans-serif',
+          fontFamily: ART.body,
           fontSize: '20px',
           color: '#ffe066',
         })
@@ -90,25 +90,25 @@ export class MuseumScene extends Phaser.Scene {
     ensureRoundedRectTexture(this, 'museum-return-button', 240, 52, 14);
     const returnButton = this.add
       .image(width / 2, height - 80, 'museum-return-button')
-      .setTint(0x5ee7ff)
+      .setTint(0x87c9bb)
       .setInteractive({ useHandCursor: true });
     this.add
       .text(width / 2, height - 80, 'Volver al mundo', {
-        fontFamily: 'sans-serif',
+        fontFamily: ART.body,
         fontSize: '20px',
         fontStyle: 'bold',
         color: '#1b1f3b',
       })
       .setOrigin(0.5);
-    returnButton.on('pointerover', () => returnButton.setTint(0x9be37a));
-    returnButton.on('pointerout', () => returnButton.setTint(0x5ee7ff));
+    returnButton.on('pointerover', () => returnButton.setTint(0xedce97));
+    returnButton.on('pointerout', () => returnButton.setTint(0x87c9bb));
     returnButton.on('pointerdown', returnToWorld);
 
     this.add
       .text(width / 2, height - 32, 'También puedes volver con ESPACIO', {
-        fontFamily: 'sans-serif',
+        fontFamily: ART.body,
         fontSize: '16px',
-        color: '#c9cbe0',
+        color: '#c1d0ca',
       })
       .setOrigin(0.5);
 
@@ -117,6 +117,7 @@ export class MuseumScene extends Phaser.Scene {
 
   private buildVitrina(x: number, y: number, fragment: Souvenir, size: number): void {
     const cabinet = this.add.graphics({ x, y }).setScale(size);
+    cabinet.fillStyle(0x071b26,.3).fillRoundedRect(-61,-78,130,178,12);
     cabinet.fillStyle(fragment.color, 0.06).fillTriangle(-24, -90, -64, 72, 64, 72).fillTriangle(24, -90, -64, 72, 64, 72);
     cabinet.fillStyle(0x172b33).fillRoundedRect(-65, -85, 130, 174, 12);
     cabinet.lineStyle(2, 0xc49a61, 0.8).strokeRoundedRect(-65, -85, 130, 174, 12);
@@ -125,6 +126,7 @@ export class MuseumScene extends Phaser.Scene {
     cabinet.fillStyle(0xd2b98e).fillRect(-61, 73, 122, 4);
     cabinet.lineStyle(2, 0xffefd1, 0.12).lineBetween(-48, -67, -28, -40).lineBetween(-48, -48, -37, -33);
     cabinet.fillStyle(fragment.color, 0.09).fillEllipse(0, 30, 90, 22);
+    ornament(cabinet,0,85,78,0xd2b98e);
     const glass = this.add.rectangle(x, y, 120 * size, 160 * size, 0x759d9b, 0.08).setName(fragment.id);
     glass.setStrokeStyle(1, 0xc4dfd6, 0.25);
 
@@ -143,7 +145,7 @@ export class MuseumScene extends Phaser.Scene {
 
       this.add
         .text(x, y + 100 * size + 2, fragment.label, {
-          fontFamily: 'sans-serif',
+          fontFamily: ART.body,
           fontSize: '14px',
           color: '#f4f1e8',
         })
@@ -151,7 +153,7 @@ export class MuseumScene extends Phaser.Scene {
     } else {
       this.add
         .text(x, y, 'Vitrina vacía', {
-          fontFamily: 'sans-serif',
+          fontFamily: ART.body,
           fontSize: '14px',
           color: '#afbdba',
         })
@@ -198,15 +200,15 @@ export class MuseumScene extends Phaser.Scene {
         art.fillRoundedRect(-42, 8, 84, 12, 3);
         for (const post of [-36, -12, 12, 36]) art.lineBetween(post, -18, post, 30);
         art.lineBetween(-40, -12, 40, -12);
-        art.lineStyle(3, 0x5ee7ff, 0.8);
+        art.lineStyle(3, 0x87c9bb, 0.8);
         art.lineBetween(-38, 43, -12, 39);
         art.lineBetween(-12, 39, 12, 43);
         art.lineBetween(12, 43, 38, 39);
         break;
       case 'garden-fragment':
-        art.lineStyle(4, 0x9be37a);
+        art.lineStyle(4, 0xedce97);
         art.lineBetween(0, -5, 0, 40);
-        art.fillStyle(0x9be37a);
+        art.fillStyle(0xedce97);
         art.fillEllipse(-12, 22, 26, 12);
         art.fillEllipse(12, 10, 26, 12);
         art.fillStyle(fragment.color);

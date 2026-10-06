@@ -88,3 +88,7 @@ El usuario solicita más duración, contenido y personalización. Se autoriza un
 
 **Decisión 027**
 Las historias secundarias son opcionales y se abren al restaurar su lugar. Cada pasada acepta una sola propuesta; repetir permite explorar el otro desenlace sin borrar los finales vistos, la apariencia ganada ni los cables del barrio. Las metas de dos entradas necesitan señales distintas. Cambiar una propuesta guardada solo sustituye los destinos de su grupo, conservando las otras ramas del origen. Los tres encargos aportan 16 conexiones por pasada y seis desenlaces, sin afirmar una duración humana a partir de las pruebas automatizadas.
+
+
+**Decisión 028**
+El usuario solicita una revisión completa del arte y todas las interfaces sin añadir funcionalidades. Se aplica una dirección ilustrada común a las ocho escenas: tinta azul petróleo, papel cálido, cobre, vegetación y energía turquesa. Se mejora composición, tipografía, luz, materiales y legibilidad de estados conservando mecánicas, contenido, guardado, áreas de input y controles. Fondos y materiales se hornean y reutilizan; no se incorporan assets remotos ni animaciones obligatorias. Se mantienen sprites e identidad del Nexus. La rama continúa desde `codex/historias-del-barrio`, con commit y push; PR y merge a cargo del usuario.

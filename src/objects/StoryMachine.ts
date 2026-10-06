@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ART } from '../art/interfaceArt';
 import { ConnectableObject } from './ConnectableObject';
 import type { StoryNode } from '../data/sideStories';
 import { workshopArt, lanternArt } from '../art/props';
@@ -15,8 +16,8 @@ export class StoryMachine extends ConnectableObject {
     this.node=node; this.emits=emits;
     this.active_=source;
     this.art=scene.add.graphics(); this.add(this.art); this.addShadow(43,78,12);
-    this.add(scene.add.text(0,58,node.label,{fontFamily:'sans-serif',fontSize:'14px',color:'#34494e',align:'center',wordWrap:{width:130}}).setOrigin(0.5,0));
-    if (node.required===2) { this.counter=scene.add.text(0,37,'0/2',{fontFamily:'sans-serif',fontSize:'14px',color:'#34494e',backgroundColor:'#ffefd1'}).setOrigin(0.5); this.add(this.counter); }
+    this.add(scene.add.text(0,58,node.label,{fontFamily:ART.body,fontSize:'14px',color:'#34494e',align:'center',wordWrap:{width:130}}).setOrigin(0.5,0));
+    if (node.required===2) { this.counter=scene.add.text(0,37,'0/2',{fontFamily:ART.body,fontSize:'14px',color:'#34494e',backgroundColor:'#ffefd1'}).setOrigin(0.5); this.add(this.counter); }
     this.draw(); this.setSize(96,106).setDepth(11).setInteractive(new Phaser.Geom.Rectangle(0,0,96,106),Phaser.Geom.Rectangle.Contains);
   }
   canInitiate(): boolean { return this.emits&&this.active_; }
@@ -33,6 +34,12 @@ export class StoryMachine extends ConnectableObject {
       g.fillStyle(0xc49a61).fillRoundedRect(-31,-30,62,62,7);
       g.fillStyle(0xffefd1).fillRoundedRect(-27,-26,54,54,5);
       g.lineStyle(3,color).strokeRoundedRect(-24,-23,48,48,4);
+      g.fillStyle(0x243f48).fillRoundedRect(-39,29,78,10,3);
+      g.fillStyle(0xc9a36b).fillRoundedRect(-36,29,72,3,1);
+      for(const x of [-30,30])for(const y of [-29,28]){
+        g.fillStyle(0xffefd1).fillCircle(x,y,2);g.lineStyle(1,0x67573e).lineBetween(x-1,y,x+1,y);
+      }
+      g.lineStyle(2,0x8a795e).lineBetween(-12,-34,-12,-41).lineBetween(-12,-41,12,-41).lineBetween(12,-41,12,-34);
       g.fillStyle(color);
       if(this.node.kind==='power') {
         g.fillTriangle(-3,-21,-15,3,0,3).fillTriangle(1,-4,14,-4,-1,23);

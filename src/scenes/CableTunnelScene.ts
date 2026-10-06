@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ART } from '../art/interfaceArt';
 import { ConnectableObject } from '../objects/ConnectableObject';
 import { AudioSystem } from '../systems/AudioSystem';
 import { EffectsSettings } from '../systems/EffectsSettings';
@@ -16,7 +17,7 @@ const FOCAL_LENGTH = 260;
 const VIEW_DEPTH = 900;
 const RING_STEP = 90;
 const RING_COLOR_FAR = new Phaser.Display.Color(6, 16, 28); // profundidad del túnel, casi negro
-const RING_COLOR_NEAR = new Phaser.Display.Color(64, 168, 214); // banda más cercana, iluminada por la chispa
+const RING_COLOR_NEAR = new Phaser.Display.Color(49, 128, 139); // banda más cercana, iluminada por la chispa
 const SHIP_ACCEL_MS = 90;
 const SHIP_SPEED = 220;
 const VANISHING_POINT_Y_RATIO = 0.4;
@@ -92,9 +93,12 @@ export class CableTunnelScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor('#0a1f2e');
     this.cameras.main.fadeIn(200, 10, 31, 46);
 
+    const hud=this.add.graphics().setDepth(19);
+    hud.fillStyle(0x102e39,.9).fillRoundedRect(20,12,width-40,58,12);
+    hud.lineStyle(1,0xc9a36b,.45).strokeRoundedRect(24,16,width-48,50,9);
     this.instructionText = this.add
       .text(width / 2, 20, 'Guía la chispa por el cable — no toques las paredes', {
-        fontFamily: 'sans-serif',
+        fontFamily: ART.body,
         fontSize: '16px',
         color: '#d8f4ff',
         align: 'center',
@@ -145,10 +149,10 @@ export class CableTunnelScene extends Phaser.Scene {
     const shipAnchorX = width / 2;
     const shipAnchorY = height * VANISHING_POINT_Y_RATIO;
     this.shipGlow = this.add.circle(shipAnchorX, shipAnchorY, 20, 0x5ee7ff, 0.3).setDepth(4);
-    this.ship = this.add.circle(shipAnchorX, shipAnchorY, 11, 0x5ee7ff).setDepth(5);
+    this.ship = this.add.circle(shipAnchorX, shipAnchorY, 11, 0xe9d29e).setStrokeStyle(2,0xffffff,.9).setDepth(5);
 
     // Barra de progreso del túnel.
-    this.add.rectangle(width / 2, height - 20, width - 80, 10, 0x14324a).setDepth(10);
+    this.add.rectangle(width / 2, height - 20, width - 80, 10, 0x14324a).setStrokeStyle(1,0xc9a36b,.5).setDepth(10);
     this.progressBarFill = this.add
       .rectangle(40, height - 20, 1, 10, 0x5ee7ff)
       .setOrigin(0, 0.5)
@@ -182,7 +186,7 @@ export class CableTunnelScene extends Phaser.Scene {
       : 'Practica con las flechas, WASD o el joystick');
     const message = this.add.text(width / 2, height - 235,
       failed ? 'Tu progreso está a salvo' : 'Aquí puedes probar sin perder', {
-        fontFamily: 'sans-serif', fontSize: '18px', color: '#d8f4ff',
+        fontFamily: ART.body, fontSize: '18px', color: '#d8f4ff',
         align: 'center', wordWrap: { width: width - 40 },
       }).setOrigin(0.5).setDepth(70);
     this.menuObjects.push(message);
@@ -198,7 +202,7 @@ export class CableTunnelScene extends Phaser.Scene {
     const button = this.add.image(this.scale.width / 2, y, 'tunnel-menu-button')
       .setTint(color).setDepth(70).setInteractive({ useHandCursor: true });
     const text = this.add.text(this.scale.width / 2, y, label, {
-      fontFamily: 'sans-serif', fontSize: '20px', fontStyle: 'bold', color: '#1b1f3b',
+      fontFamily: ART.body, fontSize: '20px', fontStyle: 'bold', color: '#1b1f3b',
     }).setOrigin(0.5).setDepth(71);
     button.on('pointerover', () => button.setTint(0x9be37a));
     button.on('pointerout', () => button.setTint(color));
@@ -357,6 +361,11 @@ export class CableTunnelScene extends Phaser.Scene {
       this.tunnelGraphics.fillCircle(vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius);
       this.tunnelGraphics.lineStyle(2, 0x3fb8e0, 0.3);
       this.tunnelGraphics.strokeCircle(vanishingX + ring.offsetX, vanishingY + ring.offsetY, ring.radius);
+      this.tunnelGraphics.lineStyle(1,0xc9a36b,.22).strokeCircle(vanishingX+ring.offsetX,vanishingY+ring.offsetY,ring.radius-5);
+      for(let i=0;i<6;i++) {
+        const angle=i*Math.PI/3;
+        this.tunnelGraphics.fillStyle(0xd7e9d8,.4).fillCircle(vanishingX+ring.offsetX+Math.cos(angle)*ring.radius,vanishingY+ring.offsetY+Math.sin(angle)*ring.radius,1.5);
+      }
     });
 
     // Borde brillante de la pared real, AHORA MISMO (profundidad 0). Si el

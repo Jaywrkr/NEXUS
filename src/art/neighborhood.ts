@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { screenArt, cardArt, ornament } from './interfaceArt';
 
 // A shared, hand-built palette: ivory plaster, terracotta, ink and turquoise.
 const INK = 0x34494e;
@@ -25,6 +26,17 @@ function house(g: G, x: number, y: number, w: number, color: number, roof: numbe
     g.lineStyle(2, CREAM).lineBetween(x + dx, y - 71, x + dx, y - 42).lineBetween(x + dx - 11, y - 57, x + dx + 11, y - 57);
     g.fillStyle(CREAM).fillRect(x + dx - 20, y - 36, 40, 5);
   }
+  // Plaster seams, shutters and a shaded eave ground the architecture.
+  g.fillStyle(INK,.13).fillRect(x-w/2,y-98,w,9);
+  for(let i=0;i<7;i++) {
+    const bx=x-w/2+16+(i*31)%(w-32),by=y-28-(i%3)*18;
+    g.lineStyle(1,0x876748,.18).lineBetween(bx,by,bx+14,by);
+  }
+  for(const dx of [-w/3,w/3]) {
+    g.fillStyle(roof,.65).fillRoundedRect(x+dx-26,y-73,8,35,2).fillRoundedRect(x+dx+18,y-73,8,35,2);
+    g.lineStyle(1,CREAM,.3);
+    for(let yy=y-68;yy<y-41;yy+=6)g.lineBetween(x+dx-25,yy,x+dx-19,yy).lineBetween(x+dx+19,yy,x+dx+25,yy);
+  }
   g.fillStyle(0x6b7b73).fillRoundedRect(x - 19, y - 57, 38, 51, 12);
   g.fillStyle(0xe9bc74).fillCircle(x + 9, y - 27, 3);
   g.fillStyle(0xc5ac85).fillRoundedRect(x - 27, y - 6, 54, 10, 3);
@@ -37,6 +49,10 @@ function tree(g: G, x: number, y: number, size = 1): void {
   g.fillStyle(0x476e60).fillCircle(x, y - 81 * size, 43 * size).fillCircle(x - 28 * size, y - 70 * size, 27 * size).fillCircle(x + 25 * size, y - 66 * size, 27 * size);
   g.fillStyle(0x68996c).fillCircle(x - 12 * size, y - 94 * size, 28 * size).fillCircle(x + 23 * size, y - 81 * size, 23 * size);
   g.fillStyle(0x95b67b).fillEllipse(x - 18 * size, y - 109 * size, 27 * size, 13 * size);
+  for(let i=0;i<22;i++) {
+    const a=i*2.4,r=12+(i%4)*6;
+    g.fillStyle(i%2?0xb2c891:0x385d54,.3).fillEllipse(x+Math.cos(a)*r*size,y-81*size+Math.sin(a)*r*size,9*size,5*size);
+  }
   for (let i = 0; i < 5; i++) g.fillStyle(0xeac278).fillCircle(x - 28 * size + i * 12 * size, y - (72 + (i % 2) * 18) * size, 3 * size);
 }
 
@@ -74,9 +90,15 @@ export function drawNeighborhood(scene: Phaser.Scene, height: number): void {
     const key = `neighborhood-${height}-${zone}`;
     if (!scene.textures.exists(key)) {
       const g = scene.make.graphics({ x: 0, y: 0 });
+      // Atmospheric ground lighting, baked alongside the district.
+      for(let y=mid-105*v;y<height;y+=12) {
+        const t=(y-(mid-105*v))/(height-(mid-105*v));
+        g.fillStyle(t>.7?0x406c61:0x8ba780,t>.7?.055:.075).fillRect(0,y,width,12);
+      }
       // Paving is deliberately quiet under cables and interactive objects.
       const top = mid - 93 * v;
       g.fillStyle(0xc9c6a1, 0.4).fillRoundedRect(25, top - 6, width - 50, 245 * v, 38);
+      g.lineStyle(3,0xfaf2df,.65).strokeRoundedRect(30,top-2,width-60,234*v,35);
       g.fillStyle(0xf1e3be, 0.8).fillRoundedRect(32, top, width - 64, 230 * v, 34);
       for (let row = 0; row < Math.ceil(230 * v / 31); row++) {
         for (let x = 48 + (row % 2) * 25; x < width - 55; x += 51) {
@@ -84,6 +106,11 @@ export function drawNeighborhood(scene: Phaser.Scene, height: number): void {
           g.fillStyle([0xf8ebcf, 0xe8d7b3, 0xefdfbf][(row + Math.floor(x / 51)) % 3], 0.5).fillRoundedRect(x, y, 46, 25, 5);
           g.lineStyle(1, 0x9d987c, 0.17).strokeRoundedRect(x, y, 46, 25, 5);
         }
+      }
+      // Border stones read as a sidewalk rather than a floating rounded platform.
+      for(let x=45;x<width-40;x+=34) {
+        g.fillStyle(0x807d66,.18).fillRoundedRect(x,top+224*v,29,9,3);
+        g.lineStyle(1,0xfff8df,.6).lineBetween(x+2,top+224*v,x+26,top+224*v);
       }
       // Grass and pebbles along the walking path, away from the object silhouettes.
       for (let i = 0; i < width / 12; i++) {
@@ -139,6 +166,14 @@ export function drawNeighborhood(scene: Phaser.Scene, height: number): void {
         tree(g, 44, back + 50, 0.85); tree(g, width - 63, mid + 113 * v, 1.1);
         for (const x of [135, 435, 710, 1140]) planter(g, x, mid + 160 * v);
       }
+      // Foreground details stay below the playable silhouettes and receive no input.
+      for(let i=0;i<Math.floor(width/230);i++) {
+        const x=75+i*231,y=mid+185*v;
+        g.fillStyle(0x365c51,.1).fillEllipse(x+8,y+12,102,15);
+        g.fillStyle(0x648771).fillEllipse(x,y,74,23).fillEllipse(x+34,y+4,56,20);
+        g.lineStyle(1,0xa7bd88,.6).lineBetween(x-18,y-5,x+5,y-5);
+        for(let j=0;j<4;j++)g.fillStyle(j%2?0xd3b573:0xe8cda3,.75).fillCircle(x-18+j*16,y+(j%2)*4,2);
+      }
       // District plaque: visual landmarks, rather than giant labels over the play area.
       const plaqueX = zone === 0 ? 264 : zone === 3 ? 445 : width / 2;
       g.fillStyle(INK, 0.9).fillRoundedRect(plaqueX - 104, back - 43, 208, 28, 8);
@@ -159,7 +194,7 @@ export function drawSky(scene: Phaser.Scene, width: number, height: number): voi
   for (let y = 0; y < height; y += 8) {
     const t = y / height;
     const color = Phaser.Display.Color.Interpolate.ColorWithColor(
-      Phaser.Display.Color.ValueToColor(0xb3d6d4), Phaser.Display.Color.ValueToColor(0xf5e8c8), 100, t * 100,
+      Phaser.Display.Color.ValueToColor(0x88babb), Phaser.Display.Color.ValueToColor(0xf3dfb7), 100, t * 100,
     );
     sky.fillStyle(Phaser.Display.Color.GetColor(color.r, color.g, color.b)).fillRect(0, y, scene.scale.width, 8);
   }
@@ -176,20 +211,22 @@ export function drawSky(scene: Phaser.Scene, width: number, height: number): voi
 }
 
 export function drawTitleArt(scene: Phaser.Scene, width: number, height: number): void {
-  const g = scene.add.graphics();
-  g.fillStyle(0xe6dcc0).fillRect(0, 0, width, height);
-  g.fillStyle(0xbed4c6).fillRoundedRect(18, 18, width - 36, height - 36, 28);
-  g.lineStyle(1, 0x8da99a).strokeRoundedRect(26, 26, width - 52, height - 52, 24);
-  const groundY = height * 0.75;
-  g.fillStyle(0x8da99a, 0.25).fillEllipse(width / 2, groundY + 30, width * 1.3, height * 0.3);
-  house(g, 80, groundY, 138, 0xe5c69e, 0xa56353);
-  house(g, width - 75, groundY - 25, 136, 0xe1d1b4, 0x648f88);
-  tree(g, width - 27, groundY + 20, 0.9);
-  planter(g, 165, groundY + 18); planter(g, width - 155, groundY + 18);
-  bunting(g, 42, width - 42, 65);
-  // The central cream panel leaves the existing buttons and accessibility toggle unobstructed.
-  const panelWidth = Math.min(480, width - 50);
-  g.fillStyle(INK, 0.09).fillRoundedRect((width - panelWidth) / 2 + 5, height / 2 - 160 + 6, panelWidth, 295, 26);
-  g.fillStyle(0xfff3d9, 0.97).fillRoundedRect((width - panelWidth) / 2, height / 2 - 160, panelWidth, 295, 26);
-  g.lineStyle(2, 0xc3a67a, 0.65).strokeRoundedRect((width - panelWidth) / 2 + 7, height / 2 - 153, panelWidth - 14, 281, 21);
+  screenArt(scene);
+  const g=scene.add.graphics();const mobile=height>width;
+  const heroX=mobile?width/2:width*.25, heroY=mobile?height/2-200:height*.53;
+  // A print-like circular illustration creates a focal point for the existing character.
+  g.fillStyle(0x243f48,.06).fillCircle(heroX+5,heroY+8,mobile?140:174);
+  g.fillStyle(0xd2e1cd).fillCircle(heroX,heroY,mobile?137:170);
+  g.lineStyle(1,0xc9a36b,.7).strokeCircle(heroX,heroY,mobile?143:177);
+  g.lineStyle(1,0xc9a36b,.25).strokeCircle(heroX,heroY,mobile?149:184);
+  const ground=mobile?height/2-155:height*.77;
+  g.fillStyle(0x64877b,.2).fillEllipse(heroX,ground-10,mobile?270:330,74);
+  house(g,heroX-95,ground-22,75,0xdcc4a1,0xac735b);
+  house(g,heroX+95,ground-30,84,0xb9d1c3,0x4b7977);
+  tree(g,heroX+132,ground-1,.55);
+  planter(g,heroX-92,ground+10);
+  bunting(g,heroX-120,heroX+120,heroY-(mobile?95:100));
+  const menuX=mobile?width/2:width*.68;
+  cardArt(g,menuX-(mobile?220:215),height/2-155,mobile?440:430,340,0xc9a36b);
+  ornament(g,menuX,height/2-137,120);
 }

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ART } from '../art/interfaceArt';
 import { sideResidentLine } from '../data/sideStories';
 import { drawNeighborhood, drawSky } from '../art/neighborhood';
 import { Nexus } from '../entities/Nexus';
@@ -138,13 +139,13 @@ export class WorldScene extends Phaser.Scene {
     ensureRoundedRectTexture(this, HUD_PILL_TEXTURE, 100, 36, 18);
 
     this.add.graphics().setDepth(19).setScrollFactor(0)
-      .fillStyle(0x34494e, 0.94).fillRoundedRect(110, 14, this.scale.width - 220, 58, 16)
-      .lineStyle(1, 0xcab98d, 0.6).strokeRoundedRect(114, 18, this.scale.width - 228, 50, 12);
+      .fillStyle(0x243f48, 0.97).fillRoundedRect(110, 14, this.scale.width - 220, 66, 16)
+      .lineStyle(1, 0xcab98d, 0.6).strokeRoundedRect(114, 18, this.scale.width - 228, 58, 12);
 
     this.instructionText = this.add
       .text(this.scale.width / 2, 24, '', {
-        fontFamily: 'sans-serif',
-        fontSize: '18px',
+        fontFamily: ART.body,
+        fontSize: '16px',
         color: '#ffefd1',
         wordWrap: { width: this.scale.width - 220, useAdvancedWrap: true },
       })
@@ -156,14 +157,14 @@ export class WorldScene extends Phaser.Scene {
     this.add
       .image(this.scale.width - 16 - 42, 16 + 18, HUD_PILL_TEXTURE)
       .setDisplaySize(84, 36)
-      .setTint(0xffffff)
-      .setAlpha(0.55)
+      .setTint(0xf6e8ca)
+      .setAlpha(0.95)
       .setDepth(19)
       .setScrollFactor(0);
 
     this.fragmentHud = this.add
       .text(this.scale.width - 16, 16 + 18, this.fragmentHudLabel(), {
-        fontFamily: 'sans-serif',
+        fontFamily: ART.body,
         fontSize: '18px',
         fontStyle: 'bold',
         color: '#8a6d1f',
@@ -175,15 +176,15 @@ export class WorldScene extends Phaser.Scene {
     const mutePill = this.add
       .image(16 + 42, 16 + 18, HUD_PILL_TEXTURE)
       .setDisplaySize(84, 36)
-      .setTint(0xffffff)
-      .setAlpha(0.55)
+      .setTint(0xf6e8ca)
+      .setAlpha(0.95)
       .setDepth(19)
       .setScrollFactor(0)
       .setInteractive({ useHandCursor: true });
 
     this.muteButton = this.add
       .text(16 + 42, 16 + 18, this.muteButtonLabel(), {
-        fontFamily: 'sans-serif',
+        fontFamily: ART.body,
         fontSize: '18px',
         color: '#1b1f3b',
       })
@@ -191,8 +192,8 @@ export class WorldScene extends Phaser.Scene {
       .setDepth(20)
       .setScrollFactor(0);
 
-    mutePill.on('pointerover', () => mutePill.setAlpha(0.8));
-    mutePill.on('pointerout', () => mutePill.setAlpha(0.55));
+    mutePill.on('pointerover', () => mutePill.setAlpha(1));
+    mutePill.on('pointerout', () => mutePill.setAlpha(0.95));
     mutePill.on('pointerdown', () => {
       AudioSystem.setMuted(!AudioSystem.isMuted());
       this.muteButton.setText(this.muteButtonLabel());
@@ -200,13 +201,13 @@ export class WorldScene extends Phaser.Scene {
 
     const wardrobe = this.add.image(65, height - 185, HUD_PILL_TEXTURE).setDisplaySize(106, 36)
       .setTint(0xffefd1).setDepth(50).setScrollFactor(0).setInteractive({ useHandCursor: true });
-    this.add.text(65, height - 185, 'Mi Nexus', { fontFamily: 'sans-serif', fontSize: '14px', color: '#34494e' })
+    this.add.text(65, height - 185, 'Mi Nexus', { fontFamily: ART.body, fontSize: '14px', color: '#34494e' })
       .setOrigin(0.5).setDepth(51).setScrollFactor(0);
     wardrobe.on('pointerdown', () => { if (this.leavingWorld) return; this.leavingWorld = true; this.scene.start('CustomizeScene', { returnScene: 'WorldScene' }); });
 
     const journal = this.add.image(65, height - 230, HUD_PILL_TEXTURE).setDisplaySize(106, 36)
       .setTint(0xffefd1).setDepth(50).setScrollFactor(0).setInteractive({ useHandCursor: true });
-    this.add.text(65, height - 230, 'Diario', { fontFamily: 'sans-serif', fontSize: '14px', color: '#34494e' })
+    this.add.text(65, height - 230, 'Diario', { fontFamily: ART.body, fontSize: '14px', color: '#34494e' })
       .setOrigin(0.5).setDepth(51).setScrollFactor(0);
     journal.on('pointerdown', () => { if (this.leavingWorld) return; this.leavingWorld = true; this.scene.start('JournalScene'); });
 
@@ -278,9 +279,9 @@ export class WorldScene extends Phaser.Scene {
     this.instructionText.setText(this.getStatusMessage());
     this.storyCard = new StoryCard(this);
     const hint = this.add.image(this.scale.width - 62, height - 86, HUD_PILL_TEXTURE)
-      .setDisplaySize(92, 44).setTint(0xffe066).setDepth(50).setScrollFactor(0)
+      .setDisplaySize(92, 44).setTint(0xedce97).setDepth(50).setScrollFactor(0)
       .setInteractive({ useHandCursor: true });
-    this.add.text(hint.x, hint.y, 'Pista', { fontFamily: 'sans-serif', fontSize: '18px', color: '#20233a' })
+    this.add.text(hint.x, hint.y, 'Pista', { fontFamily: ART.body, fontSize: '18px', color: '#20233a' })
       .setOrigin(0.5).setDepth(51).setScrollFactor(0);
     hint.on('pointerdown', () => {
       const task = this.returnCircuits.taskNear(this.nexus.x) ?? chapterTask(this.progress.snapshot());
@@ -393,7 +394,7 @@ export class WorldScene extends Phaser.Scene {
       && this.beacon.isFullyActive && this.bridge.isActive && this.flowerBed.isActive && this.workshop.parade.isActive);
     for (const [object, label] of [[gardenSource, 'Energía'], [this.sprinkler, 'Aspersor'], [this.flowerBed, 'Flores']] as const) {
       this.add.text(object.x, object.y + 65, label, {
-        fontFamily: 'sans-serif', fontSize: '16px', color: '#365137',
+        fontFamily: ART.body, fontSize: '16px', color: '#365137',
       }).setOrigin(0.5).setDepth(9);
     }
 
@@ -869,7 +870,7 @@ export class WorldScene extends Phaser.Scene {
     // Ventana apagada
     this.houseWindow = this.add.rectangle(214, midY + 30 * vScale - 56, 22, 28, 0x4b6160).setDepth(3);
     this.radioBanner = this.add.text(280, midY - 165 * vScale, 'CUAC FM · Fiesta en preparación', {
-      fontFamily: 'sans-serif', fontSize: '16px', color: '#365137',
+      fontFamily: ART.body, fontSize: '16px', color: '#365137',
     }).setOrigin(0.5).setDepth(4).setVisible(false);
     this.plazaFlowers = this.add.graphics({ x: 1050, y: midY + 40 * vScale }).setDepth(3).setVisible(false);
     for (const x of [-24, 0, 24]) {

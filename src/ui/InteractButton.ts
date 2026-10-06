@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ART } from '../art/interfaceArt';
 import { ensureRoundedRectTexture } from '../utils/uiTextures';
 
 /**
@@ -14,7 +15,7 @@ export class InteractButton {
   constructor(scene: Phaser.Scene, x: number, y: number) {
     ensureRoundedRectTexture(scene, 'interact-button', 190, 56, 16);
     this.bg = scene.add
-      .image(x, y, 'interact-button').setTint(0x34494e)
+      .image(x, y, 'interact-button').setTint(0x243f48)
       .setScrollFactor(0)
       .setDepth(60)
       .setVisible(false)
@@ -22,7 +23,7 @@ export class InteractButton {
 
     this.label = scene.add
       .text(x, y, 'Tocar', {
-        fontFamily: 'sans-serif',
+        fontFamily: ART.body,
         fontSize: '20px',
         color: '#f4f1e8',
       })
