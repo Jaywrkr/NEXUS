@@ -169,6 +169,13 @@ Se separa el título «Chaqueta» del botón de nombre en móvil vertical; una c
 Validación del bloque: build aprobado; `npm test` aprobó 18 pruebas unitarias y 42 escenarios E2E en escritorio y móvil vertical. Tras ajustar únicamente el espaciado del armario, aprobaron otra vez el build y los cuatro escenarios de apariencia/historias, incluida la selección y persistencia de estilos desbloqueados. Capturas de armario y encargos revisadas en ambos formatos. La duración humana de primera partida sigue pendiente de la prueba con Luca.
 
 
+## Acabado de arte e interfaces
+Revisión visual de las ocho escenas sin ampliar funciones: portada con personaje protagonista e ilustración circular, fondos con luz/grano y marcos comunes, tipografía unificada, botones con relieve, armario con muestras de color/contorno de selección y nombres largos que caben en una línea, diario con emblemas y tarjetas, museo/final con luz cálida sobre tinta, diálogos y controles con el mismo material. El borde inferior deja espacio para los textos de pie. Arquitectura con juntas y contraventanas, bordes de adoquines, vegetación y sombras suaves de contacto. Fuentes de energía, lámparas y fuente reciben acabado metálico; las máquinas de encargos añaden remaches, asas y bases. El túnel mantiene recorrido/velocidad/colisiones y avisos, con remaches y contornos en anillos e interfaz común. Fondos horneados por tamaño y zonas estáticas reutilizadas; sin fuentes remotas, cambios del guardado ni nuevas animaciones obligatorias. Ver `ART_DIRECTION.md`.
+
+Validación: build de producción y suite completa aprobados: 18 pruebas unitarias y 42 escenarios E2E en escritorio y móvil vertical. Tras retirar una línea ornamental que interfería con el objetivo de los encargos, aprobaron otra vez el build y los dos escenarios de historias. Capturas revisadas de portada, armario, diario, encargos, siete distritos, museo, final y túnel.
+El build servido también cargó portada, armario y mundo, permitió editar/guardar un nombre ancho de 16 caracteres y no produjo errores JavaScript ni HTTP en ambos formatos.
+
+
 ## Más variedad de partículas al conectar
 `ConnectionSystem.spawnConnectBurst` ahora mezcla círculos y estrellas de distinto tamaño y color (cian del cable, blanco, cian claro) en vez de una sola chispa uniforme, y se agregó `spawnGlowRing`: un anillo que se expande y desvanece en el punto de conexión como remate adicional. Primer paso de la lista de "ideas de jugabilidad" que se acordó con el usuario ir implementando de a una.
 

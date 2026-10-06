@@ -30,8 +30,10 @@ export abstract class ConnectableObject extends Phaser.GameObjects.Container {
 
   /** Sombra pintada en la base del objeto, para que se sienta apoyado en el piso. */
   protected addShadow(offsetY: number, width = 40, height = 12): void {
-    const shadow = this.scene.add.ellipse(0, offsetY, width, height, 0x000000, 0.18);
-    this.addAt(shadow, 0);
+    const ambient=this.scene.add.ellipse(3,offsetY+2,width*1.28,height*1.5,0x243f48,.06);
+    const shadow=this.scene.add.ellipse(2,offsetY,width,height,0x243f48,.13);
+    const contact=this.scene.add.ellipse(0,offsetY-1,width*.62,height*.55,0x243f48,.12);
+    this.addAt(ambient,0);this.addAt(shadow,1);this.addAt(contact,2);
   }
 
   /** Se llama cuando este objeto queda conectado correctamente. */

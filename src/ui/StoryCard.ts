@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ART } from '../art/interfaceArt';
 import { ensureRoundedRectTexture } from '../utils/uiTextures';
 
 /** Brief, dismissible speech. Movement and puzzle input remain active. */
@@ -14,12 +15,12 @@ export class StoryCard {
     const width = Math.min(scene.scale.width - 32, 640);
     const x = (scene.scale.width - width) / 2;
     ensureRoundedRectTexture(scene, 'story-card', 640, 100, 16);
-    this.panel = scene.add.image(x, 86, 'story-card').setDisplaySize(width, 100).setTint(0x34494e).setAlpha(0.96)
+    this.panel = scene.add.image(x, 86, 'story-card').setDisplaySize(width, 100).setTint(0x243f48).setAlpha(0.99)
       .setOrigin(0).setDepth(42).setScrollFactor(0).setInteractive();
-    this.speaker = scene.add.text(x + 14, 96, '', { fontFamily: 'sans-serif', fontSize: '16px', fontStyle: 'bold', color: '#ffe066' })
+    this.speaker = scene.add.text(x + 20, 96, '', { fontFamily: ART.body, fontSize: '16px', fontStyle: 'bold', color: '#edd1a0' })
       .setDepth(43).setScrollFactor(0);
-    this.message = scene.add.text(x + 14, 120, '', {
-      fontFamily: 'sans-serif', fontSize: '16px', color: '#f4f1e8', wordWrap: { width: width - 28, useAdvancedWrap: true },
+    this.message = scene.add.text(x + 20, 120, '', {
+      fontFamily: ART.body, fontSize: '16px', color: '#f4f1e8', wordWrap: { width: width - 40, useAdvancedWrap: true },
     }).setDepth(43).setScrollFactor(0);
     this.panel.on('pointerdown', () => this.hide());
     this.hide();

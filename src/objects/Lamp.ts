@@ -25,6 +25,10 @@ export class Lamp extends ConnectableObject {
     trim.lineStyle(2, 0xc49a61).lineBetween(-3, -18, -3, 38);
     trim.fillStyle(0xc49a61).fillRoundedRect(-12, 35, 24, 8, 3).fillRoundedRect(-14, -23, 28, 6, 3);
     trim.lineStyle(2, 0xffefd1, 0.6).beginPath().arc(-3, -43, 12, Math.PI, Math.PI * 1.6).strokePath();
+    trim.fillStyle(0x243f48).fillRoundedRect(-19,40,38,5,2);
+    trim.lineStyle(1,0xe8d5ae,.7).lineBetween(3,-15,3,35);
+    trim.fillStyle(0xc49a61).fillCircle(0,-65,3);
+    trim.lineStyle(2,0xc49a61).lineBetween(-14,-54,-9,-61).lineBetween(-9,-61,9,-61).lineBetween(9,-61,14,-54);
     this.bulb.setFillStyle(0x81978b).setStrokeStyle(4, 0xc49a61);
     this.add([base, this.pole, this.glow, this.bulb, trim]);
     this.addShadow(52, 34, 10);

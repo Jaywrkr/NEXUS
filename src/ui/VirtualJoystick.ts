@@ -21,12 +21,19 @@ export class VirtualJoystick {
     this.centerY = y;
 
     scene.add
-      .circle(x, y, BASE_RADIUS, 0x34494e, 0.32).setStrokeStyle(2, 0xffefd1, 0.6)
+      .circle(x, y, BASE_RADIUS, 0x243f48, 0.65).setStrokeStyle(2, 0xffefd1, 0.6)
       .setScrollFactor(0)
       .setDepth(50);
 
+    const trim=scene.add.graphics().setDepth(50).setScrollFactor(0);
+    trim.lineStyle(1,0xd6bb8a,.65).strokeCircle(x,y,BASE_RADIUS-6);
+    for(let i=0;i<4;i++) {
+      const a=i*Math.PI/2;
+      trim.lineStyle(2,0xffefd1,.65).lineBetween(x+Math.cos(a)*34,y+Math.sin(a)*34,x+Math.cos(a)*39,y+Math.sin(a)*39);
+    }
+
     this.knob = scene.add
-      .circle(x, y, KNOB_RADIUS, 0xffefd1, 0.75).setStrokeStyle(2, 0x34494e, 0.5)
+      .circle(x, y, KNOB_RADIUS, 0xffefd1, 0.95).setStrokeStyle(2, 0x34494e, 0.5)
       .setScrollFactor(0)
       .setDepth(51);
 

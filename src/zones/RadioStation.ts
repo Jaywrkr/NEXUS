@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { ART } from '../art/interfaceArt';
 import { EnergySource } from '../objects/EnergySource';
 import { RadioReceiver } from '../objects/RadioReceiver';
 import type { ConnectionRule } from '../systems/ConnectionSystem';
@@ -18,8 +19,8 @@ export class RadioStation {
     this.music = new RadioReceiver(scene, 1840, y - 90 * v, RADIO_TARGETS.music, 'Música al jardín', 0xff9ff3);
     this.news = new RadioReceiver(scene, 1840, y + 75 * v, RADIO_TARGETS.news, 'Noticias a la plaza', 0xffe066);
     this.connectables = [source, this.music, this.news];
-    scene.add.text(1760, y - 170 * v, 'CUAC FM · una señal', { fontFamily: 'sans-serif', fontSize: '18px', color: '#4a3c63' }).setOrigin(0.5).setDepth(2);
-    this.status = scene.add.text(1680, y - 105 * v, '', { fontFamily: 'sans-serif', fontSize: '14px', color: '#20233a', align: 'center', wordWrap: { width: 160 } }).setOrigin(0.5).setDepth(9);
+    scene.add.text(1760, y - 170 * v, 'CUAC FM · una señal', { fontFamily: ART.body, fontSize: '18px', color: '#4a3c63' }).setOrigin(0.5).setDepth(2);
+    this.status = scene.add.text(1680, y - 105 * v, '', { fontFamily: ART.body, fontSize: '14px', color: '#20233a', align: 'center', wordWrap: { width: 160 } }).setOrigin(0.5).setDepth(9);
     this.rules = [this.music, this.news].map(receiver => ({
       sourceId: source.id, targetId: receiver.id, exclusiveGroup: 'radio-emission', available,
       blockedMessage: 'La antena necesita sus dos señales antes de emitir.',

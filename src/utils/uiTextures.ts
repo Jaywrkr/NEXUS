@@ -17,9 +17,18 @@ export function ensureRoundedRectTexture(
 
   const canvasTex = scene.textures.createCanvas(key, width, height);
   const ctx = canvasTex!.getContext();
-  ctx.fillStyle = '#ffffff';
+  // Bevel and inset keyline stay inside the existing hit area. Tint still supplies state.
+  const surface = ctx.createLinearGradient(0, 0, 0, height);
+  surface.addColorStop(0, '#ffffff');
+  surface.addColorStop(0.65, '#f4f4f4');
+  surface.addColorStop(1, '#cdcdcd');
+  ctx.fillStyle = surface;
   ctx.beginPath();
   ctx.roundRect(0, 0, width, height, radius);
   ctx.fill();
+  ctx.strokeStyle = 'rgba(25,25,25,.22)'; ctx.lineWidth = 1;
+  ctx.beginPath();ctx.roundRect(.5,.5,width-1,height-1,Math.max(2,radius-.5));ctx.stroke();
+  ctx.strokeStyle = 'rgba(255,255,255,.6)';
+  ctx.beginPath();ctx.roundRect(2.5,2.5,width-5,height-7,Math.max(2,radius-2));ctx.stroke();
   canvasTex!.refresh();
 }
