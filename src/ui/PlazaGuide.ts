@@ -13,14 +13,14 @@ export class PlazaGuide {
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
     const mobile = scene.scale.height > scene.scale.width;
-    const width = mobile ? scene.scale.width - 32 : 450;
+    const width = mobile ? scene.scale.width - 40 : 420;
     const x = mobile ? 16 : (scene.scale.width - width) / 2;
-    const y = mobile ? 195 : scene.scale.height - 118;
+    const y = mobile ? 195 : scene.scale.height - 108;
     this.panel = scene.add.graphics().setDepth(45).setScrollFactor(0);
-    pencilCard(this.panel, x, y, width, 88);
-    pencilLine(this.panel, x + 6, y + 5, x + 6, y + 83, 0xc48646, .8);
+    pencilCard(this.panel, x, y, width, 68);
+    pencilLine(this.panel, x + 6, y + 5, x + 6, y + 63, 0xc48646, .8);
     this.text = scene.add.text(x + 18, y + 10, '', {
-      fontFamily: '"Patrick Hand", cursive', fontSize: '16px', color: '#34332e', lineSpacing: 4,
+      fontFamily: '"Patrick Hand", cursive', fontSize: '14px', color: '#34332e', lineSpacing: 2,
       wordWrap: { width: width - 36 },
     }).setDepth(46).setScrollFactor(0);
     this.marker = scene.add.text(0, 0, '▼', {

@@ -79,7 +79,7 @@ export class SideStoryScene extends Phaser.Scene {
     this.refresh(false);
   }
 
-  update():void { this.connection?.updateHint(); }
+  update():void { this.connection?.updateHint(); this.connection?.updateSelection(); }
   private pending(){
     const saved=this.progress.getConnections();
     return this.story.links.find(l=>!saved.some(c=>c.sourceId===storyObjectId(this.story.id,l.source)&&c.targetId===storyObjectId(this.story.id,l.target))&&this.machines.get(l.source)!.canInitiate()&&!this.machines.get(l.target)!.isActive

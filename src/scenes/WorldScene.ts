@@ -18,6 +18,7 @@ import { COLLECTION } from '../data/collection';
 import { RESIDENTS, chapterObjective, chapterTask, residentLine, type ResidentInfo, type CONNECTION_SURPRISES } from '../data/chapter';
 import { Resident } from '../objects/Resident';
 import { plazaStep } from '../data/plazaGuide';
+import { groundTop } from '../utils/walkableGround';
 import { PlazaGuide } from '../ui/PlazaGuide';
 import { StoryCard } from '../ui/StoryCard';
 import { WorkshopZone } from '../zones/WorkshopZone';
@@ -148,12 +149,12 @@ export class WorldScene extends Phaser.Scene {
 
     ensureRoundedRectTexture(this, HUD_PILL_TEXTURE, 100, 36, 18);
 
-    pencilCard(this.add.graphics().setDepth(19).setScrollFactor(0), 110, 14, this.scale.width - 220, 66);
+    pencilCard(this.add.graphics().setDepth(19).setScrollFactor(0), 110, 14, this.scale.width - 220, 42);
 
     this.instructionText = this.add
       .text(this.scale.width / 2, 24, '', {
         fontFamily: ART.body,
-        fontSize: '16px',
+        fontSize: '14px',
         color: '#34332e',
         wordWrap: { width: this.scale.width - 220, useAdvancedWrap: true },
       })
@@ -279,7 +280,7 @@ export class WorldScene extends Phaser.Scene {
       const maxX = this.bridge.isActive ? WORLD_WIDTH - 26 : GAP_X - (GAP_WIDTH - 20) / 2 - 26;
       this.nexus.setPosition(
         Phaser.Math.Clamp(position.x, 26, maxX),
-        Phaser.Math.Clamp(position.yRatio * height, 42, height - 32),
+        Phaser.Math.Clamp(position.yRatio * height, groundTop(position.x, height) - 34, height - 36),
       );
       this.nexus.body.updateFromGameObject();
     }
@@ -434,11 +435,11 @@ export class WorldScene extends Phaser.Scene {
     ];
 
     this.connectables.forEach((obj) => obj.setDepth(11));
-    for (const [object, label] of [[source, 'GENERADOR'], [this.lamp, 'LÁMPARA'], [this.door, 'PUERTA']] as const) {
-      this.add.text(object.x, object.y + 66, label, {
-        fontFamily: ART.body, fontSize: '14px', fontStyle: 'bold', color: '#34332e',
-        backgroundColor: '#f2ead9', padding: { x: 7, y: 4 }, letterSpacing: 1,
-      }).setOrigin(.5).setDepth(12);
+    for (const object of [source, this.lamp, this.door]) {
+      this.add.text(object.x, object.groundY + 10, object.displayName, {
+        fontFamily: ART.body, fontSize: '13px', color: '#34494e',
+        backgroundColor: '#f2ead9', padding: { x: 5, y: 2 },
+      }).setOrigin(.5, 0).setDepth(12);
     }
     this.plazaFragment.setDepth(12);
     this.fountainFragment.setDepth(12);
@@ -448,8 +449,15 @@ export class WorldScene extends Phaser.Scene {
 
     this.connectables.forEach((obj) => this.connectionSystem.register(obj));
 
-    this.connectionSystem.addRule({ sourceId: source.id, targetId: this.lamp.id, useTunnel: true });
-    this.connectionSystem.addRule({ sourceId: this.lamp.id, targetId: this.door.id });
+    this.connectionSystem.addRule({ sourceId: source.id, targetId: this.lamp.id, useTunnel: true,
+      successMessage: 'Lámpara encendida. Su relé ya puede alimentar el cierre de la puerta.' });
+    this.connectionSystem.addRule({ sourceId: this.lamp.id, targetId: this.door.id,
+      successMessage: 'El relé alimenta el cierre eléctrico. La puerta está abierta.' });
+    for (const object of [source, this.lamp, this.door]) {
+      const footprint = this.add.zone(object.x, object.groundY - 8, object === this.door ? 52 : 36, 16);
+      this.physics.add.existing(footprint, true);
+      this.physics.add.collider(this.nexus, footprint);
+    }
     this.connectionSystem.addRule({ sourceId: fountainSource.id, targetId: this.fountain.id });
     this.connectionSystem.addRule({ sourceId: beaconSourceA.id, targetId: this.beacon.id });
     this.connectionSystem.addRule({ sourceId: beaconSourceB.id, targetId: this.beacon.id });
@@ -733,6 +741,12 @@ export class WorldScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
+    // Ground limits are in feet coordinates, so the sprite cannot walk on roofs.
+    const top = groundTop(this.nexus.x, this.scale.height) - 34;
+    if (this.nexus.y < top) {
+      this.nexus.y = top;
+      this.nexus.body.updateFromGameObject();
+    }
     let dx = 0;
     let dy = 0;
 
@@ -753,10 +767,17 @@ export class WorldScene extends Phaser.Scene {
       dy = joyVector.y;
     }
 
+    if (this.nexus.y <= top + 1 && dy < 0) dy = 0;
+
     this.nexus.move(dx, dy, delta);
+    if (this.nexus.y <= top + 1 && this.nexus.body.velocity.y < 0) this.nexus.body.setVelocityY(0);
+    this.nexus.setDepth(10 + this.nexus.groundY / this.scale.height);
+    for (const object of this.connectables) object.setDepth(10 + object.groundY / this.scale.height);
+    for (const resident of this.residents) resident.setDepth(10 + (resident.y + 36) / this.scale.height);
     this.plazaAtmosphere.update(_time, delta);
     this.updateInteractButton();
     this.connectionSystem.updateHint();
+    this.connectionSystem.updateSelection();
     const step = plazaStep(this.progress.snapshot(), this.connectionSystem.selectedSourceId);
     const target = step?.target === 'miga' ? this.residents.find(r => r.id === 'miga')
       : step?.target === 'fragment' ? this.plazaFragment : this.connectables.find(o => o.id === step?.target);

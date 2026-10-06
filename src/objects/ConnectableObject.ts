@@ -9,6 +9,7 @@ export abstract class ConnectableObject extends Phaser.GameObjects.Container {
   protected active_ = false;
   private sketchImage?: Phaser.GameObjects.Image;
   private sketchStatus?: Phaser.GameObjects.Text;
+  private renderedState = '';
   protected get sketchKind(): string { return 'generator'; }
   protected get sketchHeight(): number { return 112; }
   protected get sketchBottom(): number { return 43; }
@@ -17,6 +18,9 @@ export abstract class ConnectableObject extends Phaser.GameObjects.Container {
   /** Rendering only: preserve object identities, inputs, counters and save state. */
   private syncSketch(): void {
     if (!this.scene.textures.exists('sketch-props-off')) return;
+    const state = `${this.active_}:${this.sketchCount ?? ''}:${this.name}`;
+    if (state === this.renderedState) return;
+    this.renderedState = state;
     const [key, frame] = sketchTexture(this.sketchKind, this.active_);
     if (!this.sketchImage) {
       this.sketchImage = this.scene.add.image(0, this.sketchBottom, key, frame).setOrigin(.5, 1);
@@ -55,6 +59,14 @@ export abstract class ConnectableObject extends Phaser.GameObjects.Container {
 
   get isActive(): boolean {
     return this.active_;
+  }
+
+  get groundY(): number { return this.y + this.sketchBottom; }
+
+  get displayName(): string {
+    return ({ 'energy-source': 'Generador', lamp: 'Lámpara con relé', door: 'Cierre eléctrico' } as Record<string, string>)[this.id]
+      ?? (this.list.find(child => child instanceof Phaser.GameObjects.Text && child !== this.sketchStatus) as Phaser.GameObjects.Text | undefined)?.text
+      ?? (this.role === 'source' ? 'Origen' : 'Destino');
   }
 
   /** Indica si este objeto puede iniciar una conexión (primer clic). */

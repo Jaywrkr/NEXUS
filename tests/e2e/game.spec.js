@@ -73,7 +73,8 @@ test('complete all seven zones, lose and win the tunnel, and revisit the museum'
   await page.keyboard.down('ArrowRight');
   await page.waitForTimeout(700);
   await page.keyboard.up('ArrowRight');
-  expect(await world(page, 'return s.nexus.x;')).toBeLessThanOrEqual(2547);
+  const closedEdge = await world(page, 'return s.bridgeBlocker.body.left;');
+  expect(await world(page, 'return s.nexus.body.right;')).toBeLessThanOrEqual(closedEdge + .1);
   await page.waitForTimeout(400);
   await connect(page, 'bridge-source', 'bridge');
   expect(await world(page, 'return s.bridge.isActive && !s.bridgeBlocker.scene;')).toBe(true);

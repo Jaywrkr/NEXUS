@@ -119,3 +119,7 @@ sustituyen una prueba en el teléfono real de Luca.
 `upstream-integration.spec.js` verifica que el secreto y el señuelo de la base
 conviven con el capítulo: contador independiente, guardado y secreto que no
 reaparece al cargar. Las pruebas del museo incluyen su octava vitrina.
+
+`plaza-polish.spec.js` cubre posiciones antiguas sobre fachadas, huellas físicas
+que bloquean el paso, orden por profundidad, selección/cancelación y corrección
+rápida de un cable sin perder el feedback más reciente, en ambos formatos.

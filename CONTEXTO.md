@@ -206,3 +206,9 @@ Ver `SKETCH_ART_DIRECTION.md`, `SKETCH_PLAYTEST.md` y Decisión 033.
 Fuentes locales; sprites con alfa; ocho fondos de alta resolución; todas las UI
 en papel y grafito. Las funciones y los guardados se conservan. Tres ramas nuevas
 anidadas después de `codex/plaza-entorno-vivo`; el usuario sigue haciendo PR y merge.
+
+## Plaza: suelo y respuesta de conexiones
+
+`utils/walkableGround.ts` define el borde posterior transitable en coordenadas de los pies. `WorldScene` limita también las posiciones antiguas guardadas y usa huellas físicas para los tres objetos de la plaza. El cuerpo físico del Nexus representa sus pies, no el torso. La profundidad de conectables, habitantes y personaje se calcula por su base. Al cambiar la geometría, ejecutar el recorrido completo caminando en ambos proyectos, además de `plaza-polish.spec.js` y `plaza-guide.spec.js`.
+
+Las conexiones muestran una selección y destinos disponibles, y la plaza explica el relé de la lámpara y el cierre eléctrico. `ConnectionSystem` limpia feedback y temporizadores anteriores; cancelar el túnel debe liberar también su estado pendiente. `ConnectableObject` sincroniza el dibujo solo cuando cambia el estado visible. La sombra permanece fuera del contenedor animado del Nexus.

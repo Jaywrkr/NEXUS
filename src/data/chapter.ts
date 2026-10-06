@@ -55,7 +55,7 @@ export function residentLine(resident: ResidentInfo, state: GameState): string {
 }
 
 export const CONNECTION_SURPRISES = [
-  { id: 'singing-door', source: 'energy-source', target: 'door', speaker: 'La puerta', line: '¡DOOO! Quería abrir, pero me salió una nota. Prueba con la lámpara.' },
+  { id: 'singing-door', source: 'energy-source', target: 'door', speaker: 'La puerta', line: 'El generador aporta energía, pero mi cierre necesita el relé de la lámpara. Enciéndela primero.' },
   { id: 'no-refunds', source: 'lamp', target: 'energy-source', speaker: 'La fuente', line: 'No aceptamos devoluciones de luz. La puerta está por allí.' },
   { id: 'salad-decree', source: 'garden-source', target: 'garden-bed', speaker: 'Alcalde Goteo', line: '¡No electrifiques la ensalada! Enciende el aspersor primero.' },
 ];
