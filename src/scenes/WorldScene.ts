@@ -13,6 +13,8 @@ import { RESIDENTS, chapterObjective, chapterTask, residentLine, type ResidentIn
 import { Resident } from '../objects/Resident';
 import { StoryCard } from '../ui/StoryCard';
 import { WorkshopZone } from '../zones/WorkshopZone';
+import { RadioStation } from '../zones/RadioStation';
+import { RADIO_SOURCE_ID } from '../data/radio';
 import { LanternZone } from '../zones/LanternZone';
 import { Fragment } from '../objects/Fragment';
 import { ConnectionSystem } from '../systems/ConnectionSystem';
@@ -79,6 +81,7 @@ export class WorldScene extends Phaser.Scene {
   private radioBanner!: Phaser.GameObjects.Text;
   private workshop!: WorkshopZone;
   private lanterns!: LanternZone;
+  private radio!: RadioStation;
   private hintTask = '';
   private hintLevel = 0;
   private leavingChapter = false;
@@ -222,6 +225,7 @@ export class WorldScene extends Phaser.Scene {
     if (this.progress.hasFragment('lantern-fragment')) this.lanterns.restoreCollected();
 
     this.connectionSystem.restoreConnections(this.progress.getConnections());
+    this.radio.refresh();
     this.workshop.refresh(this.progress.hasFragment('workshop-fragment'));
     this.lanterns.refresh(this.progress.hasFragment('lantern-fragment'));
     if (this.lamp.isActive) this.lightHouseWindow(false);
@@ -363,6 +367,7 @@ export class WorldScene extends Phaser.Scene {
     this.sprinkler = new Sprinkler(this, 3310, midY + 10 * vScale);
     this.flowerBed = new FlowerBed(this, 3500, midY + 40 * vScale);
     this.gardenFragment = new Fragment(this, 3500, midY - 85 * vScale);
+    this.radio = new RadioStation(this, height, vScale, () => this.beacon.isFullyActive);
     this.workshop = new WorkshopZone(this, height, vScale);
     this.lanterns = new LanternZone(this, height, vScale, () => this.door.isActive && this.fountain.isActive
       && this.beacon.isFullyActive && this.bridge.isActive && this.flowerBed.isActive && this.workshop.parade.isActive);
@@ -387,6 +392,7 @@ export class WorldScene extends Phaser.Scene {
       gardenSource,
       this.sprinkler,
       this.flowerBed,
+      ...this.radio.connectables,
       ...this.workshop.connectables,
       ...this.lanterns.connectables,
     ];
@@ -408,6 +414,7 @@ export class WorldScene extends Phaser.Scene {
     this.connectionSystem.addRule({ sourceId: bridgeSource.id, targetId: this.bridge.id });
     this.connectionSystem.addRule({ sourceId: gardenSource.id, targetId: this.sprinkler.id });
     this.connectionSystem.addRule({ sourceId: this.sprinkler.id, targetId: this.flowerBed.id });
+    this.radio.rules.forEach(rule => this.connectionSystem.addRule(rule));
     this.workshop.rules.forEach(rule => this.connectionSystem.addRule(rule));
     this.lanterns.rules.forEach(rule => this.connectionSystem.addRule(rule));
 
@@ -430,7 +437,7 @@ export class WorldScene extends Phaser.Scene {
     };
 
     const onConnectionMade = (targetId: string, sourceId: string): void => {
-      this.progress.saveConnection(sourceId, targetId);
+      this.progress.saveConnection(sourceId, targetId, sourceId === RADIO_SOURCE_ID);
       this.progress.savePosition(this.nexus.x, this.nexus.y / this.scale.height);
       if (targetId === this.lamp.id) {
         this.lightHouseWindow(true);
@@ -472,6 +479,10 @@ export class WorldScene extends Phaser.Scene {
       }
       this.instructionText.setText(chapterObjective(this.progress.snapshot()));
       this.applyChapterConsequences();
+      this.radio.refresh();
+      if (sourceId === RADIO_SOURCE_ID) this.storyCard.show('CUAC FM', this.radio.channel === 'music'
+        ? 'El jardín recibe música. Conecta el otro receptor para probar las noticias.'
+        : 'La plaza recibe noticias. Conecta el otro receptor para probar la música.');
       this.workshop.refresh(this.progress.hasFragment('workshop-fragment'));
       this.lanterns.refresh(this.progress.hasFragment('lantern-fragment'));
       if (targetId === 'lantern-last' && sourceId === 'lantern-side-b') {

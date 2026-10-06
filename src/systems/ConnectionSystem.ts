@@ -16,6 +16,9 @@ export interface ConnectionRule {
   available?: () => boolean;
   showHint?: () => boolean;
   blockedMessage?: string;
+  /** At most one rule in the group stays completed; reconnecting changes choice. */
+  exclusiveGroup?: string;
+  onActivate?: () => void;
 }
 
 /**
@@ -73,10 +76,16 @@ export class ConnectionSystem {
     for (const rule of this.rules) {
       if (rule.available && !rule.available()) continue;
       if (!connections.some((c) => c.sourceId === rule.sourceId && c.targetId === rule.targetId)) continue;
+      if (rule.exclusiveGroup) {
+        const group = this.rules.filter(candidate => candidate.exclusiveGroup === rule.exclusiveGroup);
+        const latest = connections.findLast(c => group.some(candidate => candidate.sourceId === c.sourceId && candidate.targetId === c.targetId));
+        if (latest?.sourceId !== rule.sourceId || latest.targetId !== rule.targetId) continue;
+      }
       const source = this.objects.find((object) => object.id === rule.sourceId);
       const target = this.objects.find((object) => object.id === rule.targetId);
       const key = JSON.stringify([rule.sourceId, rule.targetId]);
       if (!source || !target || !source.canInitiate() || this.completed.has(key)) continue;
+      this.activateRule(rule);
       this.completed.add(key);
       source.activate();
       target.activate();
@@ -193,6 +202,9 @@ export class ConnectionSystem {
   private completeConnection(source: ConnectableObject, target: ConnectableObject): void {
     const key = JSON.stringify([source.id, target.id]);
     if (this.completed.has(key)) return;
+    const rule = this.rules.find(r => r.sourceId === source.id && r.targetId === target.id);
+    if (!rule || (rule.available && !rule.available())) return;
+    this.activateRule(rule);
     this.completed.add(key);
     this.resetHint();
     this.drawCable(source, target, true);
@@ -203,6 +215,14 @@ export class ConnectionSystem {
     this.spawnConnectBurst(target.getPlugPoint());
     this.spawnGlowRing(target.getPlugPoint());
     this.scene.events.emit('connection-made', target.id, source.id);
+  }
+
+  private activateRule(rule: ConnectionRule): void {
+    if (rule.exclusiveGroup) {
+      for (const candidate of this.rules) if (candidate.exclusiveGroup === rule.exclusiveGroup)
+        this.completed.delete(JSON.stringify([candidate.sourceId, candidate.targetId]));
+    }
+    rule.onActivate?.();
   }
 
   /** Ráfaga de chispas que se disparan desde el objetivo al completar una conexión, como remate visual. */
