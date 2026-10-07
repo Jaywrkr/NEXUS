@@ -1,3 +1,5 @@
+import type Phaser from 'phaser';
+
 const MUTED_KEY = 'los-nexus-muted';
 
 /**
@@ -6,6 +8,23 @@ const MUTED_KEY = 'los-nexus-muted';
  */
 export class AudioSystem {
   private ctx: AudioContext | null = null;
+  private disposed = false;
+  private voices = new Set<{ oscillator: OscillatorNode; gain: GainNode }>();
+
+  constructor(scene?: Phaser.Scene) {
+    scene?.events.once('shutdown', () => this.dispose());
+  }
+
+  dispose(): void {
+    this.disposed = true;
+    for (const voice of this.voices) {
+      try { voice.oscillator.stop(); } catch { /* Already ended. */ }
+      voice.oscillator.disconnect(); voice.gain.disconnect();
+    }
+    this.voices.clear();
+    if (this.ctx && this.ctx.state !== 'closed') void this.ctx.close().catch(() => {});
+    this.ctx = null;
+  }
 
   static isMuted(): boolean {
     return localStorage.getItem(MUTED_KEY) === 'true';
@@ -20,14 +39,16 @@ export class AudioSystem {
       this.ctx = new AudioContext();
     }
     if (this.ctx.state === 'suspended') {
-      void this.ctx.resume();
+      void this.ctx.resume().catch(() => {});
     }
     return this.ctx;
   }
 
   private playTone(freq: number, startDelay: number, duration: number, type: OscillatorType = 'sine', gain = 0.15): void {
-    if (AudioSystem.isMuted()) return;
-    const ctx = this.getContext();
+    if (this.disposed || AudioSystem.isMuted()) return;
+    // Audio availability must never interrupt a connection or its saved state.
+    let ctx: AudioContext;
+    try { ctx = this.getContext(); } catch { return; }
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
 
@@ -39,6 +60,11 @@ export class AudioSystem {
     gainNode.gain.linearRampToValueAtTime(gain, startTime + 0.02);
     gainNode.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
 
+    const voice = { oscillator, gain: gainNode };
+    this.voices.add(voice);
+    oscillator.onended = () => {
+      oscillator.disconnect(); gainNode.disconnect(); this.voices.delete(voice);
+    };
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
 

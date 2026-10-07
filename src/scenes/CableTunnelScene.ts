@@ -89,7 +89,7 @@ export class CableTunnelScene extends Phaser.Scene {
 
   create(): void {
     const { width, height } = this.scale;
-    this.audio = new AudioSystem();
+    this.audio = new AudioSystem(this);
 
     this.cameras.main.setBackgroundColor('#e9dfca');
     this.cameras.main.fadeIn(200, 238, 229, 210);

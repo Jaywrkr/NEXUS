@@ -73,6 +73,8 @@ export async function near(page, id, sourceId) {
     s.nexus.body.updateFromGameObject();
     s.cameras.main.centerOn(s.nexus.x, s.nexus.y);`);
   await expect.poll(() => world(page, 'return Math.abs(s.cameras.main.midPoint.x - Math.max(s.scale.width / 2, Math.min(s.physics.world.bounds.width - s.scale.width / 2, s.nexus.x)));')).toBeLessThan(1);
+  // Position fixtures also move the camera; its input matrix updates during rendering.
+  await page.evaluate(() => new Promise(resolve => window.__nexusTest.events.once('postrender', () => resolve())));
 }
 
 export async function clickObject(page, id) {
@@ -89,6 +91,12 @@ export async function connect(page, source, target) {
   await expect.poll(() => world(page, 'return s.connectionSystem.hasSelection();')).toBe(true);
   await clickObject(page, target);
   await expect.poll(() => world(page, 'return s.connectionSystem.hasSelection();')).toBe(false);
+}
+
+export async function connectWater(page, route = 'direct') {
+  await connect(page, 'fountain-source', 'water-pump');
+  await connect(page, 'water-pump', `water-${route}`);
+  await connect(page, `water-${route}`, 'fountain');
 }
 
 export function saved(page) {

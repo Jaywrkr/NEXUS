@@ -36,6 +36,8 @@ test('radio creates two optional return projects whose results survive switching
   await connect(page, 'radio-source', 'radio-news');
   expect(await world(page, 'return s.returnCircuits.band.isActive && !s.returnCircuits.notes.visible;')).toBe(true);
   const miga = await world(page, "const r=s.residents.find(r=>r.id==='miga');return{x:r.x,y:r.y+50};");
+  // Use the clear lower pavement, then approach Miga; the water valves are solid.
+  await walkTo(page, miga.x, page.viewportSize().height * .85);
   await walkTo(page, miga.x, miga.y);
   await expect.poll(() => world(page, 'return Math.abs(s.cameras.main.midPoint.x-Math.max(s.scale.width/2,s.nexus.x));')).toBeLessThan(1);
   await visit(page, 'miga');

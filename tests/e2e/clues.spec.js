@@ -1,4 +1,4 @@
-import { test, expect, ready, start, world, connect, tap, checkpoint } from './helpers.js';
+import { connectWater, test, expect, ready, start, world, connect, tap, checkpoint } from './helpers.js';
 
 async function clue(page) {
   const { width, height } = page.viewportSize();
@@ -11,7 +11,7 @@ test('requested clues progress to the solution, stay nonblocking and reset for a
     story: { heard: ['intro'], discoveries: [], chapterSeen: false },
   })));
   await page.reload(); await ready(page, 'BootScene'); await start(page, 'Continuar');
-  expect(await world(page, 'return s.instructionText.text;')).toContain('seco');
+  expect(await world(page, 'return s.instructionText.text;')).toContain('seca');
   await clue(page);
   expect(await world(page, 'return s.storyCard.speaker.text;')).toBe('Pista 1/3');
   expect(await world(page, 'return s.storyCard.message.text;')).not.toContain('→');
@@ -24,7 +24,7 @@ test('requested clues progress to the solution, stay nonblocking and reset for a
   expect(await world(page, 'return s.storyCard.message.text;')).toContain('→');
   await checkpoint(page, testInfo, 'requested-solution');
   await tap(page, page.viewportSize().width / 2, 95);
-  await connect(page, 'fountain-source', 'fountain');
+  await connectWater(page);
   await clue(page);
   expect(await world(page, 'return s.storyCard.speaker.text;')).toBe('Pista 1/3');
   expect(await world(page, 'return s.storyCard.message.text;')).toContain('anuncio');

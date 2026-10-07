@@ -6,6 +6,7 @@ import { ConnectableObject } from './ConnectableObject';
 export type EnergySourceVariant = 'active' | 'dim';
 
 export class EnergySource extends ConnectableObject {
+  override get outputSignal(): 'electricity' { return 'electricity'; }
   protected override get sketchKind(): string { return 'generator'; }
   protected override get sketchHeight(): number { return 98; }
   protected override get sketchBottom(): number { return 32; }
@@ -61,8 +62,9 @@ export class EnergySource extends ConnectableObject {
       this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 90, 140), Phaser.Geom.Rectangle.Contains);
       return;
     }
-    this.setSize(52, 52);
-    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 52, 52), Phaser.Geom.Rectangle.Contains);
+    // Cover the illustrated casing and side sockets, not just the old star's center.
+    this.setSize(112, 140);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 112, 140), Phaser.Geom.Rectangle.Contains);
   }
 
   activate(): void {

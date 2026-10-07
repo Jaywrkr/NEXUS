@@ -42,4 +42,12 @@ test('wardrobe persists names, outfit poses and cable colors without changing pr
   expect(await world(page,'return s.nexus.look.outfit;')).toBe('coral');
   expect((await page.evaluate(() => JSON.parse(localStorage.getItem('los-nexus-progress')))).connections).toEqual(progress.connections);
   await page.screenshot({ path:testInfo.outputPath('personalized-world.png') });
+  // Visiting the wardrobe must not retain every full-resolution pose of old palettes.
+  await tap(page,65,page.viewportSize().height-185); await ready(page,'CustomizeScene');
+  await choice(page,'Violeta'); await choice(page,'Guardar y volver'); await ready(page,'WorldScene');
+  expect(await world(page,'return s.nexus.look.outfit;')).toBe('violet');
+  const variants=await world(page,"return s.textures.getTextureKeys().filter(k=>k.startsWith('nexus-')&&k.includes('-outfit-'));");
+  expect(variants).toHaveLength(10);
+  expect(variants.every(k=>k.endsWith('-outfit-violet-cable-pink'))).toBe(true);
+  expect((await page.evaluate(()=>JSON.parse(localStorage.getItem('los-nexus-progress')))).connections).toEqual(progress.connections);
 });

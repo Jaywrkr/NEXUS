@@ -13,14 +13,13 @@ export class RadioStation {
   readonly rules: ConnectionRule[];
   private status: Phaser.GameObjects.Text;
 
-  constructor(scene: Phaser.Scene, height: number, v: number, available: () => boolean) {
-    const y = height / 2;
-    const source = new EnergySource(scene, 1680, y - 10 * v, RADIO_SOURCE_ID);
-    this.music = new RadioReceiver(scene, 1840, y - 90 * v, RADIO_TARGETS.music, 'Música al jardín', 0xff9ff3);
-    this.news = new RadioReceiver(scene, 1840, y + 75 * v, RADIO_TARGETS.news, 'Noticias a la plaza', 0xffe066);
+  constructor(scene: Phaser.Scene, height: number, _v: number, available: () => boolean) {
+    const source = new EnergySource(scene, 1850, height * .70, RADIO_SOURCE_ID);
+    this.music = new RadioReceiver(scene, 2020, height * .87, RADIO_TARGETS.music, 'Música al jardín', 0xff9ff3);
+    this.news = new RadioReceiver(scene, 2190, height * .87, RADIO_TARGETS.news, 'Noticias a la plaza', 0xffe066);
     this.connectables = [source, this.music, this.news];
-    scene.add.text(1760, y - 170 * v, 'CUAC FM · una señal', { fontFamily: ART.body, fontSize: '18px', color: '#4a3c63' }).setOrigin(0.5).setDepth(2);
-    this.status = scene.add.text(1680, y - 105 * v, '', { fontFamily: ART.body, fontSize: '14px', color: '#20233a', align: 'center', wordWrap: { width: 160 } }).setOrigin(0.5).setDepth(9);
+    this.status = scene.add.text(1850, height * .50, '', { fontFamily: ART.body, fontSize: '14px', color: '#34494e',
+      backgroundColor: '#f2ead9', padding: { x: 6, y: 3 }, align: 'center', wordWrap: { width: 145 } }).setOrigin(0.5).setDepth(12);
     this.rules = [this.music, this.news].map(receiver => ({
       sourceId: source.id, targetId: receiver.id, exclusiveGroup: 'radio-emission', available,
       blockedMessage: 'La antena necesita sus dos señales antes de emitir.',

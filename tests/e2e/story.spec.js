@@ -1,4 +1,4 @@
-import { test, expect, start, ready, world, connect, saved, tap, checkpoint } from './helpers.js';
+import { connectWater, test, expect, start, ready, world, connect, saved, tap, checkpoint } from './helpers.js';
 
 async function visit(page, id) {
   await world(page, `const r = s.residents.find(r => r.id === ${JSON.stringify(id)});
@@ -17,8 +17,8 @@ test('chapter introduction is nonblocking and residents remember visits and repa
   await page.keyboard.up('ArrowRight');
   await checkpoint(page, testInfo, 'chapter-introduction');
   await visit(page, 'bombo');
-  expect(await world(page, 'return s.storyCard.message.text;')).toContain('seco');
-  await connect(page, 'fountain-source', 'fountain');
+  expect(await world(page, 'return s.storyCard.message.text;')).toContain('necesita agua');
+  await connectWater(page);
   await visit(page, 'bombo');
   expect(await world(page, 'return s.storyCard.message.text;')).toContain('CHOF');
   await checkpoint(page, testInfo, 'bombo-restored');
@@ -34,5 +34,5 @@ test('chapter introduction is nonblocking and residents remember visits and repa
   expect(bounds.text.right).toBeLessThan(bounds.panel.right);
   await tap(page, bounds.panel.centerX, bounds.panel.centerY);
   expect(await world(page, 'return s.storyCard.panel.visible;')).toBe(false);
-  expect((await saved(page)).connections).toEqual([{ sourceId: 'fountain-source', targetId: 'fountain' }]);
+  expect((await saved(page)).connections).toEqual([{ sourceId: 'fountain-source', targetId: 'water-pump' }, { sourceId: 'water-pump', targetId: 'water-direct' }, { sourceId: 'water-direct', targetId: 'fountain' }]);
 });

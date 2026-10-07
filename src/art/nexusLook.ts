@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
+import { NEXUS_ASSET_KEYS } from '../entities/nexusAssets';
 import { OUTFITS, CABLES, type Appearance, loadAppearance } from '../data/appearance';
 
-/** Runtime clothing palette, shared by all four existing poses; face and ears stay intact. */
+/** Runtime clothing palette, shared by all poses; face and ears stay intact. */
 export function applyNexusPose(image: Phaser.GameObjects.Image, pose: string, look: Appearance): void {
   let key = pose;
   if (look.outfit !== 'turquoise' || look.cable !== 'lime') {
@@ -13,14 +14,14 @@ export function applyNexusPose(image: Phaser.GameObjects.Image, pose: string, lo
       ctx.drawImage(source, 0, 0);
       const pixels = ctx.getImageData(0, 0, source.width, source.height);
       const color = OUTFITS.find(o => o.id === look.outfit)!.color;
+      const cable = CABLES.find(c => c.id === look.cable)!;
       const red = color >> 16, green = color >> 8 & 255, blue = color & 255;
       // Raised celebration sleeves sit above the torso; blue ear pigment stays blue.
       for (let y = Math.floor(source.height * 0.20); y < source.height; y++) {
         for (let x = 0; x < source.width; x++) {
           const i = (y * source.width + x) * 4;
-          const [r, g, b, a] = pixels.data.subarray(i, i + 4);
-          if (a >= 30 && g > 100 && r > 75 && b < g * .6 && g >= r * .9 && x > source.width * .7) {
-            const cable = CABLES.find(c => c.id === look.cable)!;
+          const r = pixels.data[i], g = pixels.data[i + 1], b = pixels.data[i + 2], a = pixels.data[i + 3];
+          if (a >= 30 && g > 100 && r > 75 && b < g * .6 && g >= r * .9 && y > source.height * .48) {
             const shade = (r + g) / 380;
             pixels.data[i] = Math.min(255, (cable.color >> 16) * shade);
             pixels.data[i+1] = Math.min(255, (cable.color >> 8 & 255) * shade);
@@ -61,4 +62,20 @@ export function nexusPortrait(scene: Phaser.Scene, x: number, y: number, height:
   accessory.y -= 34;
   portrait.add([sprite, accessory]).setScale(height / 120);
   return portrait;
+}
+
+/** Build the current palette before gameplay, not on the first step or reward. */
+export function prepareNexusAppearance(scene: Phaser.Scene): void {
+  const look = loadAppearance();
+  const vanilla = look.outfit === 'turquoise' && look.cable === 'lime';
+  const suffix = `-outfit-${look.outfit}-cable-${look.cable}`;
+  // Called before new scene characters exist; discard palettes from stopped scenes.
+  for (const key of scene.textures.getTextureKeys()) {
+    if (key.startsWith('nexus-') && key.includes('-outfit-') && (vanilla || !key.endsWith(suffix)))
+      scene.textures.remove(key);
+  }
+  if (vanilla) return;
+  const image = scene.add.image(0, 0, NEXUS_ASSET_KEYS.idle).setVisible(false);
+  for (const pose of Object.values(NEXUS_ASSET_KEYS)) applyNexusPose(image, pose, look);
+  image.destroy();
 }

@@ -11,7 +11,7 @@ const DISPLAY_HEIGHT = 120;
 
 /**
  * El Nexus: personaje jugable dibujado con sprites reales (ver Decisión
- * 033). Las cuatro poses a lápiz están en public/assets/sketch/
+ * 033/035). Las poses originales y direccionales están en public/assets/sketch/
  * y se cargan vía
  * loadNexusAssets() desde BootScene.preload().
  */
@@ -24,6 +24,9 @@ export class Nexus extends Phaser.GameObjects.Container {
   private facing: 1 | -1 = 1;
   private walkTime = 0;
   private walkFrame: 0 | 1 = 0;
+  private direction: 'front' | 'back' | 'side' = 'front';
+  private previousX: number;
+  private previousY: number;
   private velX = 0;
   private velY = 0;
   private celebrating = false;
@@ -31,6 +34,7 @@ export class Nexus extends Phaser.GameObjects.Container {
 
   constructor(scene: Phaser.Scene, x: number, y: number) {
     super(scene, x, y);
+    this.previousX = x; this.previousY = y;
 
     this.visual = scene.add.container(0, 0);
 
@@ -72,21 +76,23 @@ export class Nexus extends Phaser.GameObjects.Container {
     this.velY += (dy * SPEED - this.velY) * smoothing;
     this.body.setVelocity(this.velX, this.velY);
 
-    const speed = this.body.velocity.length();
-    const isMoving = speed > 12 && !this.body.blocked.none ?
-      !((this.body.blocked.left && dx < 0) || (this.body.blocked.right && dx > 0)
-        || (this.body.blocked.up && dy < 0) || (this.body.blocked.down && dy > 0)) : speed > 12;
+    const distance = Math.hypot(this.x - this.previousX, this.y - this.previousY);
+    this.previousX = this.x; this.previousY = this.y;
+    const isMoving = distance > .15 && distance < 32;
+    const direction = Math.abs(dx) >= Math.abs(dy) && dx !== 0 ? 'side'
+      : dy < 0 ? 'back' : dy > 0 ? 'front' : this.direction;
 
     const newFacing = dx > 0 ? 1 : dx < 0 ? -1 : this.facing;
-    if (!this.celebrating && newFacing !== this.facing) {
+    if (!this.celebrating && (newFacing !== this.facing || direction !== this.direction)) {
       this.facing = newFacing;
+      this.direction = direction;
       this.playTurnSquash();
     }
 
     if (this.celebrating) return;
 
     if (isMoving) {
-      this.walkTime += Math.min(delta, 50) * Math.min(1, speed / SPEED);
+      this.walkTime += distance / SPEED * 1000;
       const bob = -Math.abs(Math.sin(this.walkTime / 95)) * 1.5;
       // Estira un poco arriba de cada salto del paso y se achata al tocar
       // el piso, para que el caminar se sienta con más peso e impulso.
@@ -95,17 +101,21 @@ export class Nexus extends Phaser.GameObjects.Container {
       this.visual.scaleY = 1 + stretch;
 
       const frame = Math.floor(this.walkTime / WALK_FRAME_MS) % 2 === 0 ? 0 : 1;
-      if (frame !== this.walkFrame) {
+      const pose = this.direction === 'back' ? frame === 0 ? NEXUS_ASSET_KEYS.back1 : NEXUS_ASSET_KEYS.back2
+        : this.direction === 'side' ? frame === 0 ? NEXUS_ASSET_KEYS.side1 : NEXUS_ASSET_KEYS.side2
+        : frame === 0 ? NEXUS_ASSET_KEYS.walk1 : NEXUS_ASSET_KEYS.walk2;
+      if (frame !== this.walkFrame || !this.sprite.texture.key.startsWith(pose)) {
         this.walkFrame = frame;
-        applyNexusPose(this.sprite, frame === 0 ? NEXUS_ASSET_KEYS.walk1 : NEXUS_ASSET_KEYS.walk2, this.look);
+        applyNexusPose(this.sprite, pose, this.look);
         this.applySpriteScale();
       }
     } else {
       this.walkTime = 0;
       this.visual.setY(0);
       this.visual.scaleY = 1;
-      if (!this.sprite.texture.key.startsWith(NEXUS_ASSET_KEYS.idle)) {
-        applyNexusPose(this.sprite, NEXUS_ASSET_KEYS.idle, this.look);
+      const idle = this.idlePose();
+      if (this.sprite.texture.key.split('-outfit-')[0] !== idle) {
+        applyNexusPose(this.sprite, idle, this.look);
         this.applySpriteScale();
       }
     }
@@ -114,9 +124,10 @@ export class Nexus extends Phaser.GameObjects.Container {
   /** Giro corto, sin rebote y sin acumular animaciones al cambiar de dirección. */
   private playTurnSquash(): void {
     this.scene.tweens.killTweensOf(this.visual);
+    this.visual.setAngle(0);
     this.scene.tweens.add({
       targets: this.visual,
-      scaleX: this.facing,
+      scaleX: this.direction === 'side' ? this.facing : 1,
       duration: 65,
       ease: 'Sine.easeOut',
     });
@@ -125,8 +136,8 @@ export class Nexus extends Phaser.GameObjects.Container {
   playIdle(): void {
     this.walkTime = 0;
     this.visual.setY(0);
-    this.visual.setScale(this.facing, 1);
-    applyNexusPose(this.sprite, NEXUS_ASSET_KEYS.idle, this.look);
+    this.visual.setScale(this.direction === 'side' ? this.facing : 1, 1);
+    applyNexusPose(this.sprite, this.idlePose(), this.look);
     this.applySpriteScale();
   }
 
@@ -166,6 +177,22 @@ export class Nexus extends Phaser.GameObjects.Container {
   }
 
   get groundY(): number { return this.y + GROUND_Y; }
+
+  private idlePose(): string {
+    return this.direction === 'back' ? NEXUS_ASSET_KEYS.backIdle : this.direction === 'side' ? NEXUS_ASSET_KEYS.sideIdle : NEXUS_ASSET_KEYS.idle;
+  }
+
+  interactAt(point: Phaser.Math.Vector2): void {
+    if (this.celebrating) return;
+    const dx = point.x - this.x, dy = point.y - this.y;
+    this.direction = Math.abs(dx) >= Math.abs(dy) ? 'side' : dy < 0 ? 'back' : 'front';
+    this.facing = dx < 0 ? -1 : 1;
+    this.playTurnSquash();
+    this.playIdle();
+    this.visual.setAngle(0);
+    this.scene.tweens.add({ targets: this.visual, angle: this.direction === 'side' ? this.facing * 3 : 0,
+      duration: 100, yoyo: true, ease: 'Sine.easeInOut' });
+  }
 
   private spawnCelebrationSparkles(): void {
     const colors = [0xffe066, 0x5ee7ff, 0xff9ff3];

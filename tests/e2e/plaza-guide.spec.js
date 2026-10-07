@@ -34,7 +34,7 @@ test('first plaza teaches movement, origin, destination and reward in order', as
   await walkTo(page, fragment.x, fragment.y); await ready(page,'MuseumScene');
   await returnToWorld(page);
   expect(await world(page,'return s.plazaGuide.panel.visible;')).toBe(false);
-  expect(await world(page,'return s.instructionText.text;')).toContain('seco');
+  expect(await world(page,'return s.instructionText.text;')).toContain('seca');
 });
 
 test('plaza scenery reacts to movement and reduced effects keep it still', async ({ page }, testInfo) => {

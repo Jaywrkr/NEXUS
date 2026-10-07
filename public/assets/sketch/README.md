@@ -16,3 +16,19 @@ Los sprites se convierten sin pérdida, incluidos sus márgenes transparentes;
 los fondos usan WebP calidad 92. Los recortes y claves de compatibilidad se crean
 al cargar el juego; no se mantiene ningún PNG ni WebP del acabado anterior activo.
 La tipografía está en `../fonts/` y lleva su licencia OFL. No hay fuentes remotas.
+
+## Ampliación: poses y circuito de agua (2026-10-06)
+
+Assets originales generados para esta entrega mediante imagegen y revisados como
+imágenes y dentro del juego. Se conserva el grafito, marfil, teal, naranja y lima.
+
+- `nexus-directions.png`: 2×2, dos pasos de perfil hacia la derecha en la fila
+  superior; dos pasos de espalda en la inferior. El perfil izquierdo se refleja.
+- `nexus-idle-directions.png`: 2×1, reposo de perfil y de espalda, ambos pies apoyados.
+- `water-machines.png`: 3×1, bomba eléctrica de agua, válvula directa naranja y
+  reguladora teal. Referencia de generación: `props-off.webp`; sin letras ni suelo.
+
+Los PNG mantienen alfa. `nexusAssets.ts` registra casco y pies al extraer cada pose;
+`gridFrames` recorta cada máquina por su silueta. Los labels, luces de entrada/salida,
+conductos y lectura de presión se dibujan en ejecución; no son parte del atlas.
+No se incorporan imágenes de terceros. Los originales anteriores se conservan.

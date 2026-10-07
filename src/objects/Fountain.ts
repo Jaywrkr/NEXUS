@@ -1,10 +1,15 @@
 import Phaser from 'phaser';
 import { ConnectableObject } from './ConnectableObject';
+import { EffectsSettings } from '../systems/EffectsSettings';
 
 const OFF_COLOR = 0x9aa0a8;
 const ON_COLOR = 0x4fb8e0;
 
 export class Fountain extends ConnectableObject {
+  override get inputSignal(): 'water' { return 'water'; }
+  override get displayName(): string { return 'Fuente'; }
+  pressure = 0;
+  private drops: Phaser.GameObjects.Ellipse[] = [];
   protected override get sketchKind(): string { return 'fountain'; }
   protected override get sketchHeight(): number { return 148; }
   protected override get sketchBottom(): number { return 56; }
@@ -37,41 +42,33 @@ export class Fountain extends ConnectableObject {
     trim.lineStyle(2,0xaedaff,.7).strokeCircle(0,20,45);
     this.add([this.glow, this.basin, this.water, this.spout, trim]);
     this.addShadow(66, 92, 16);
+    for (let i = 0; i < 3; i++) {
+      const drop = scene.add.ellipse((i - 1) * 17, -60, 4, 7, 0x75d5e8).setName('flow-effect').setVisible(false);
+      this.add(drop); this.drops.push(drop);
+    }
 
-    // Pulso tenue mientras está apagada, para que se note que es interactiva.
-    scene.tweens.add({
-      targets: this.glow,
-      alpha: { from: 0.05, to: 0.16 },
-      scale: { from: 0.95, to: 1.08 },
-      duration: 1300,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
-
-    this.setSize(92, 92);
-    this.setInteractive(new Phaser.Geom.Rectangle(0, 20, 92, 92), Phaser.Geom.Rectangle.Contains);
+    // The full illustration includes the high spout and the wide basin.
+    this.setSize(148, 188);
+    this.setInteractive(new Phaser.Geom.Rectangle(0, 0, 148, 188), Phaser.Geom.Rectangle.Contains);
   }
 
   activate(): void {
-    if (this.active_) return;
-    this.active_ = true;
+    if (!this.active_) this.setFlow(3);
+  }
 
-    this.water.setFillStyle(ON_COLOR);
+  override getInputPoint(): Phaser.Math.Vector2 { return new Phaser.Math.Vector2(this.x - 38, this.y + 20); }
 
-    this.scene.tweens.add({
-      targets: this.glow,
-      alpha: 0.4,
-      duration: 300,
-    });
-
-    this.scene.tweens.add({
-      targets: this.water,
-      scale: { from: 0.9, to: 1.05 },
-      duration: 500,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
-    });
+  setFlow(pressure: number): void {
+    if (this.pressure === pressure) return;
+    this.pressure = pressure;
+    this.active_ = pressure > 0;
+    this.water.setFillStyle(this.active_ ? ON_COLOR : OFF_COLOR);
+    for (const [i, drop] of this.drops.entries()) {
+      this.scene.tweens.killTweensOf(drop);
+      drop.setVisible(this.active_ && !EffectsSettings.isReduced()).setAlpha(.8);
+      if (this.active_ && !EffectsSettings.isReduced()) this.scene.tweens.add({ targets: drop,
+        y: { from: pressure === 3 ? -92 : -52, to: 14 }, alpha: { from: .8, to: .15 },
+        delay: i * 160, duration: pressure === 3 ? 550 : 900, repeat: -1, ease: 'Quad.easeIn' });
+    }
   }
 }
