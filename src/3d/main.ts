@@ -143,7 +143,9 @@ class Game {
 
   private frame(now: number): void {
     requestAnimationFrame((t) => this.frame(t));
-    const dt = Math.min((now - this.last) / 1000, 0.05);
+    const raw = (now - this.last) / 1000;
+    const dt = Math.min(raw, 0.05);
+    if (raw < 0.5) this.renderer.adapt(raw);
     this.last = now;
     const time = now / 1000;
     updateTweens(dt);

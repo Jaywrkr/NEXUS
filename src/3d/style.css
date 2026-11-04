@@ -440,6 +440,15 @@ body:not(.touch) .touch-only {
   #help {
     display: none;
   }
+  /* En el celular el objetivo va debajo de los botones de arriba, así ninguno lo tapa */
+  #msg {
+    top: calc(96px + env(safe-area-inset-top, 0px));
+    width: 92vw;
+    font-size: 16px;
+  }
+  #story {
+    top: calc(160px + env(safe-area-inset-top, 0px));
+  }
   #stars {
     font-size: 20px;
   }

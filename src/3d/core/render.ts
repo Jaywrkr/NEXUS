@@ -50,6 +50,8 @@ const brushTexture = (() => {
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.colorSpace = THREE.SRGBColorSpace;
+  // Filtrado anisótropo: el piso visto en diagonal (cámara isométrica) no se borronea a lo lejos.
+  tex.anisotropy = 8;
   return tex;
 })();
 
@@ -249,7 +251,13 @@ export function rounded(geo: THREE.BufferGeometry, mat: THREE.Material, thicknes
 
 export class Renderer {
   readonly gl: THREE.WebGLRenderer;
-  readonly dpr: number;
+  /** Resolución real (píxeles de dibujo por píxel de pantalla). La ajusta `adapt()` según la fluidez. */
+  dpr: number;
+  private readonly maxDpr: number;
+  private readonly minDpr: number;
+  private slowTime = 0;
+  private fastTime = 0;
+  private frameAvg = 1 / 60;
   private target: THREE.WebGLRenderTarget | null = null;
   private readonly postScene = new THREE.Scene();
   private readonly postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -258,15 +266,19 @@ export class Renderer {
   height = 1;
 
   constructor(canvas: HTMLCanvasElement) {
-    const touch = isTouch();
     this.gl = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: true });
-    this.dpr = Math.min(window.devicePixelRatio || 1, touch ? 1.25 : 1.5);
+    // Definición: se dibuja a la resolución real de la pantalla (hasta 2×). Antes el celular
+    // dibujaba a 1.25× y estiraba la imagen, por eso se veía borrosa y con escalones.
+    this.maxDpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.minDpr = Math.min(this.maxDpr, 1);
+    this.dpr = this.maxDpr;
     this.gl.setPixelRatio(this.dpr);
     this.gl.shadowMap.enabled = true;
     this.gl.shadowMap.type = THREE.PCFShadowMap;
 
-    // En el celular el Kuwahara usa una ventana más chica (25 lecturas por píxel en vez de 49).
-    const radius = touch ? 2 : 3;
+    // Kuwahara de radio 2 (25 lecturas por píxel) con paso de ~0.8 px de pantalla: pincelada
+    // fina que ya no se come los detalles chicos (ojos, carteles, piezas de las máquinas).
+    const radius = 2;
     const quadrant = (radius + 1) * (radius + 1);
     this.postMat = new THREE.ShaderMaterial({
       defines: { KR: radius, KQ: `${quadrant}.0` },
@@ -275,13 +287,14 @@ export class Renderer {
         time: { value: 0 },
         res: { value: new THREE.Vector2(1, 1) },
         flash: { value: 0 },
+        step: { value: 1.5 },
       },
       vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
-      fragmentShader: `uniform sampler2D tDiffuse; uniform float time; uniform vec2 res; uniform float flash; varying vec2 vUv;
+      fragmentShader: `uniform sampler2D tDiffuse; uniform float time; uniform vec2 res; uniform float flash; uniform float step; varying vec2 vUv;
         float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         vec3 toSRGB(vec3 c){ return pow(max(c, 0.0), vec3(1.0 / 2.2)); }
         void main(){
-          vec2 px = 1.5 / res;
+          vec2 px = step / res;
           vec3 m0 = vec3(0.), m1 = vec3(0.), m2 = vec3(0.), m3 = vec3(0.);
           vec3 s0 = vec3(0.), s1 = vec3(0.), s2 = vec3(0.), s3 = vec3(0.);
           for (int j = -KR; j <= KR; j++) {
@@ -303,6 +316,12 @@ export class Renderer {
           if (v1 < bv) { bv = v1; c = m1; }
           if (v2 < bv) { bv = v2; c = m2; }
           if (v3 < bv) { bv = v3; c = m3; }
+          // Detalle: se devuelve parte de la imagen nítida (bordes, ojos, letras) sobre la pincelada
+          // y se realza un poco el contraste local (máscara de enfoque sobre el promedio de la ventana).
+          vec3 sharp = toSRGB(texture2D(tDiffuse, vUv).rgb);
+          vec3 avg = (m0 + m1 + m2 + m3) * 0.25;
+          c = mix(c, sharp, 0.35);
+          c += (sharp - avg) * 0.22;
           float l = dot(c, vec3(.299, .587, .114));
           c += vec3(0.0, 0.01, 0.05) * (1.0 - l);                           // sombras hacia azul
           c *= mix(vec3(1.0), vec3(1.07, 1.01, 0.88), smoothstep(.45, 1., l)); // luces doradas
@@ -324,6 +343,35 @@ export class Renderer {
     this.postMat.uniforms.flash.value = v;
   }
 
+  /**
+   * Resolución adaptable: si el equipo no llega a ~45 cuadros por segundo durante un rato, baja la
+   * resolución de a poco (nunca menos de 1×); si va sobrado, la vuelve a subir. Así un celular
+   * potente ve todo nítido y uno modesto sigue fluido. Se desactiva en pruebas automáticas.
+   */
+  adapt(dt: number): void {
+    if (navigator.webdriver || dt <= 0) return;
+    this.frameAvg += (dt - this.frameAvg) * 0.05;
+    if (this.frameAvg > 1 / 45) {
+      this.slowTime += dt;
+      this.fastTime = 0;
+    } else if (this.frameAvg < 1 / 57) {
+      this.fastTime += dt;
+      this.slowTime = 0;
+    } else {
+      this.slowTime = this.fastTime = 0;
+    }
+    if (this.slowTime > 2 && this.dpr > this.minDpr) this.setDpr(this.dpr - 0.25);
+    else if (this.fastTime > 6 && this.dpr < this.maxDpr) this.setDpr(this.dpr + 0.25);
+  }
+
+  private setDpr(v: number): void {
+    this.dpr = Math.min(this.maxDpr, Math.max(this.minDpr, v));
+    this.slowTime = this.fastTime = 0;
+    this.frameAvg = 1 / 52;
+    this.gl.setPixelRatio(this.dpr);
+    this.resize();
+  }
+
   resize(): void {
     const w = window.innerWidth;
     const h = window.innerHeight;
@@ -340,6 +388,8 @@ export class Renderer {
     });
     this.postMat.uniforms.tDiffuse.value = this.target.texture;
     this.postMat.uniforms.res.value.set(W, H);
+    // La pincelada mide lo mismo en pantalla sea cual sea la resolución (~0.8 px de pantalla por paso).
+    this.postMat.uniforms.step.value = Math.max(1, 0.8 * this.dpr);
   }
 
   /** Dibuja la escena al buffer intermedio; `extra` permite pasadas adicionales (silueta) antes del post-proceso. */

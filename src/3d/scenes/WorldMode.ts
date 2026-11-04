@@ -18,7 +18,7 @@ import { Resident3D } from '../entities/Resident3D';
 
 const INTERACT_REACH = 2.2; // metros desde el borde del objeto
 const NEXUS_RADIUS = 0.32;
-const ISO_HALF = 4.8;
+const ISO_HALF = 4.4; // media altura visible (m): más chico = todo se ve más grande
 /** La cámara isométrica mira desde el sureste (+X+Z) hacia el noroeste: ve las fachadas que dan a +X y +Z. */
 const ISO_OFFSET = new THREE.Vector3(20, 22, 20);
 const VIEW_KEY = 'los-nexus-3d-view';
@@ -790,7 +790,9 @@ export class WorldMode {
   render(renderer: Renderer, time: number): void {
     const aspect = renderer.width / renderer.height;
     // En vertical se aleja un poco, para que el ancho visible no quede demasiado angosto
-    const half = aspect < 1 ? Math.min(ISO_HALF / aspect, 11) : ISO_HALF;
+    const half = aspect < 1 ? Math.min(ISO_HALF / aspect, 9) : ISO_HALF;
+    // La sombra cubre justo lo que muestra la cámara isométrica (la vista "detrás" mira más lejos).
+    this.world.setShadowSpan(this.iso ? Math.min(26, half * 2 + 4) : 26);
     this.isoCam.left = -half * aspect;
     this.isoCam.right = half * aspect;
     this.isoCam.top = half;

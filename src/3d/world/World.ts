@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { batchStatic } from '../core/batch';
 import { FOG_COLOR, FOG_FAR, FOG_NEAR, LIFE, box, flat, gradientMap, makeSky, outline, outlineScaled, rounded, sharedOutline, toon, toonUnique, withLife } from '../core/render';
-import { clamp, isTouch, pick, rnd } from '../core/util';
+import { clamp, pick, rnd } from '../core/util';
 
 export interface Rect {
   minX: number;
@@ -86,7 +86,9 @@ export class World {
     s.add(this.hemi);
     this.sun = new THREE.DirectionalLight('#ffd9a0', 2.4);
     this.sun.castShadow = true;
-    const size = isTouch() ? 1024 : 2048;
+    // Sombras de 2048 también en el celular: el área de sombra sigue a la cámara y se ajusta a lo
+    // que se ve (setShadowSpan), así cada texel cubre poco y los bordes salen definidos.
+    const size = 2048;
     this.sun.shadow.mapSize.set(size, size);
     const sc = this.sun.shadow.camera;
     sc.left = -26;
@@ -979,6 +981,19 @@ export class World {
       this.scene.add(g);
       this.butterflies.push({ g, wl, wr, cx: (rnd() * 2 - 1) * 35, cz: (rnd() * 2 - 1) * 28, r: 3 + rnd() * 5, s: 0.25 + rnd() * 0.3, p: rnd() * 10 });
     }
+  }
+
+  private shadowSpan = 26;
+
+  /** Ajusta el área que cubre la sombra del sol (metros desde el foco): más chica = sombras más nítidas. */
+  setShadowSpan(span: number): void {
+    const v = Math.round(span * 2) / 2;
+    if (v === this.shadowSpan) return;
+    this.shadowSpan = v;
+    const sc = this.sun.shadow.camera;
+    sc.left = sc.bottom = -v;
+    sc.right = sc.top = v;
+    sc.updateProjectionMatrix();
   }
 
   /** Ambiente: el sol y el cielo siguen al foco, nubes, viento en árboles, mariposas. */
