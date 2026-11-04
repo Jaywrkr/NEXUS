@@ -369,7 +369,19 @@ export class Fountain extends Connectable {
 
 /* ---------- Antena ---------- */
 
+/** Barra fina entre dos puntos (refuerzos, soportes). */
+function strut(a: THREE.Vector3, b: THREE.Vector3, r: number, mat: THREE.Material): THREE.Mesh {
+  const len = a.distanceTo(b);
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 5), mat);
+  m.position.copy(a).add(b).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
+  m.castShadow = true;
+  return m;
+}
+
 const REQUIRED_BEACON_CONNECTIONS = 2;
+const BEACON_ON = glow('#ff4a3a');
+const BEACON_OFF = toon('#7a2a2a');
 
 /** Torre de antena con plato. Necesita dos conexiones distintas para transmitir. */
 export class Beacon extends Connectable {
@@ -377,10 +389,21 @@ export class Beacon extends Connectable {
   private readonly dish: THREE.Mesh;
   private readonly indicators: THREE.Mesh[] = [];
   private readonly waves: THREE.Mesh[] = [];
+  private readonly beaconLight: THREE.Mesh;
 
   constructor(id: string, x: number, z: number) {
     super(id, 'target', x, z);
     this.collideRadius = 1.0;
+
+    // Base de hormigón con pernos
+    const pad = box(1.9, 0.2, 1.9, '#b9b2a6', { outline: 0.02, brush: 2 });
+    pad.position.y = 0.1;
+    this.group.add(pad);
+    for (const [px, pz] of [[-0.75, -0.75], [0.75, -0.75], [0.75, 0.75], [-0.75, 0.75]]) {
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.06, 6), toon('#c9ccd4'));
+      bolt.position.set(px, 0.23, pz);
+      this.group.add(bolt);
+    }
 
     const legMat = toon('#5a5f6b');
     for (const [lx, lz] of [[-0.7, -0.7], [0.7, -0.7], [0.7, 0.7], [-0.7, 0.7]]) {
@@ -396,6 +419,47 @@ export class Beacon extends Connectable {
       ring.position.y = y;
       this.group.add(ring);
     }
+    // Cruces de refuerzo en las cuatro caras de cada tramo (torre reticulada)
+    const half = (y: number) => 0.625 - 0.09 * y;
+    const levels = [0.2, 1.2, 2.4, 3.5];
+    for (let i = 0; i < levels.length - 1; i += 1) {
+      const y1 = levels[i];
+      const y2 = levels[i + 1];
+      const h1 = half(y1);
+      const h2 = half(y2);
+      for (const [ax, az] of [[1, 0], [0, 1], [-1, 0], [0, -1]]) {
+        const p = (u: number, y: number, hh: number) =>
+          new THREE.Vector3(ax * hh + az * u * hh, y, az * hh - ax * u * hh);
+        this.group.add(strut(p(-1, y1, h1), p(1, y2, h2), 0.022, legMat));
+        this.group.add(strut(p(1, y1, h1), p(-1, y2, h2), 0.022, legMat));
+      }
+    }
+    // Escalera por la cara este (la que mira a la cámara)
+    const ladderMat = toon('#c9ccd4');
+    for (const lz of [-0.18, 0.18]) {
+      this.group.add(strut(new THREE.Vector3(0.72, 0.2, lz), new THREE.Vector3(0.42, 3.5, lz), 0.02, ladderMat));
+    }
+    for (let i = 0; i < 11; i += 1) {
+      const t = (i + 0.5) / 11;
+      const lx = 0.72 - t * 0.3;
+      const ly = 0.2 + t * 3.3;
+      this.group.add(strut(new THREE.Vector3(lx, ly, -0.18), new THREE.Vector3(lx, ly, 0.18), 0.014, ladderMat));
+    }
+    // Cartel de "peligro" amarillo en una pata
+    const warn = new THREE.Mesh(new THREE.CircleGeometry(0.16, 3), toon('#ffd23a'));
+    warn.position.set(0.2, 1.75, 0.6);
+    warn.rotation.z = Math.PI / 2;
+    this.group.add(warn);
+    const warnMark = box(0.03, 0.1, 0.01, '#1d1630', { outline: false });
+    warnMark.position.set(0.2, 1.75, 0.605);
+    this.group.add(warnMark);
+    // Luz roja de aviso en la punta (parpadea cuando transmite)
+    const mast = rounded(new THREE.CylinderGeometry(0.03, 0.03, 0.7, 6), legMat, 0.008);
+    mast.position.set(0, 3.9, -0.25);
+    this.group.add(mast);
+    this.beaconLight = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), toonUnique('#5a2a2a'));
+    this.beaconLight.position.set(0, 4.28, -0.25);
+    this.group.add(this.beaconLight);
 
     const panel = box(0.9, 0.7, 0.14, '#3a3d48', { outline: 0.02 });
     panel.position.set(0, 0.8, 0.62);
@@ -405,7 +469,25 @@ export class Beacon extends Connectable {
       ind.position.set(ix, 0.85, 0.71);
       this.group.add(ind);
       this.indicators.push(ind);
+      // Anillo alrededor de cada luz: "1" y "2" conexiones
+      const bezel = rounded(new THREE.TorusGeometry(0.1, 0.018, 5, 14), toon('#c9ccd4'), 0);
+      bezel.position.set(ix, 0.85, 0.7);
+      this.group.add(bezel);
     }
+    // Tablero: rejilla, perilla y patas
+    for (let i = 0; i < 3; i += 1) {
+      const slot = box(0.5, 0.025, 0.01, '#23262f', { outline: false });
+      slot.position.set(0, 0.6 - i * 0.05, 0.695);
+      this.group.add(slot);
+    }
+    const dial = rounded(new THREE.CylinderGeometry(0.05, 0.05, 0.04, 10), toon('#e0563f'), 0.006);
+    dial.rotation.x = Math.PI / 2;
+    dial.position.set(0.34, 1.05, 0.7);
+    this.group.add(dial);
+    const conduit = box(0.06, 2.4, 0.06, '#3a3d48', { outline: 0.008 });
+    conduit.position.set(-0.36, 2.35, 0.56);
+    conduit.rotation.x = 0.06;
+    this.group.add(conduit);
 
     this.dish = rounded(new THREE.SphereGeometry(0.9, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2.6), toonUnique('#8b8f9a', 2), 0.02);
     this.dish.material = toonUnique('#8b8f9a', 2);
@@ -413,9 +495,23 @@ export class Beacon extends Connectable {
     this.dish.position.set(0, 4.55, 0.1);
     this.dish.rotation.x = Math.PI / 2 + 0.5;
     this.group.add(this.dish);
-    const tip = rounded(new THREE.SphereGeometry(0.1, 8, 6), toon('#3a3d48'), 0.01);
-    tip.position.set(0, 4.6, 0.6);
-    this.group.add(tip);
+    // Receptor en el foco del plato, sostenido por tres brazos (giran con el plato)
+    const feedMat = toon('#3a3d48');
+    const tipPos = new THREE.Vector3(0, -0.05, 0);
+    const tip = rounded(new THREE.SphereGeometry(0.1, 8, 6), feedMat, 0.01);
+    tip.position.copy(tipPos);
+    this.dish.add(tip);
+    for (let i = 0; i < 3; i += 1) {
+      const a = (i / 3) * Math.PI * 2;
+      this.dish.add(strut(new THREE.Vector3(Math.cos(a) * 0.8, 0.34, Math.sin(a) * 0.8), tipPos, 0.018, feedMat));
+    }
+    const dishRim = rounded(new THREE.TorusGeometry(0.84, 0.03, 5, 28), toon('#5a5f6b'), 0);
+    dishRim.rotation.x = Math.PI / 2;
+    dishRim.position.y = 0.33;
+    this.dish.add(dishRim);
+    const mount = box(0.18, 0.5, 0.18, '#3a3d48', { outline: 0.01 });
+    mount.position.set(0, 4.15, -0.05);
+    this.group.add(mount);
 
     for (let i = 0; i < 3; i += 1) {
       const w = new THREE.Mesh(
@@ -462,6 +558,8 @@ export class Beacon extends Connectable {
 
   update(_dt: number, time: number): void {
     if (!this.active_) return;
+    // La luz roja de aviso parpadea mientras transmite
+    this.beaconLight.material = Math.sin(time * 4) > 0.2 ? BEACON_ON : BEACON_OFF;
     this.dish.rotation.z = Math.sin(time * 0.8) * 0.25;
     this.waves.forEach((w, i) => {
       const t = (time * 0.6 + i / 3) % 1;
@@ -480,6 +578,7 @@ export class BridgeLever extends Connectable {
   private readonly lever = new THREE.Group();
   private readonly lamp: THREE.Mesh;
   private readonly planks: THREE.Mesh[] = [];
+  private gear!: THREE.Group;
 
   /** deckFromZ/deckToZ: dónde empieza y termina el tablero (en el eje Z del mundo), centrado en deckX. */
   constructor(id: string, x: number, z: number, deckX: number, deckFromZ: number, deckToZ: number) {
@@ -503,19 +602,76 @@ export class BridgeLever extends Connectable {
     this.group.add(this.lever);
     this.plugAnchor.position.set(0, 0.7, 0.3);
 
+    // Detalle de la palanca: base con pernos, franjas de peligro, rueda dentada, ranura y cartel
+    const plate = box(0.9, 0.08, 0.8, '#3a3d48', { outline: 0.012 });
+    plate.position.y = 0.04;
+    this.group.add(plate);
+    for (const [bx, bz] of [[-0.36, -0.32], [0.36, -0.32], [0.36, 0.32], [-0.36, 0.32]]) {
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.05, 6), toon('#c9ccd4'));
+      bolt.position.set(bx, 0.1, bz);
+      this.group.add(bolt);
+    }
+    for (let i = 0; i < 4; i += 1) {
+      const stripe = box(0.13, 0.5, 0.02, i % 2 ? '#1d1630' : '#ffd23a', { outline: false });
+      stripe.position.set(-0.22 + i * 0.15, 0.32, 0.26);
+      stripe.rotation.z = 0.5;
+      this.group.add(stripe);
+    }
+    const slot = box(0.12, 0.04, 0.4, '#1d1630', { outline: false });
+    slot.position.set(0, 1.005, 0);
+    this.group.add(slot);
+    const gear = new THREE.Group();
+    gear.add(rounded(new THREE.TorusGeometry(0.17, 0.035, 6, 16), toon('#8a8f9a'), 0.008));
+    for (let i = 0; i < 10; i += 1) {
+      const a = (i / 10) * Math.PI * 2;
+      const tooth = box(0.05, 0.06, 0.06, '#8a8f9a', { outline: false });
+      tooth.position.set(Math.cos(a) * 0.21, Math.sin(a) * 0.21, 0);
+      tooth.rotation.z = a;
+      gear.add(tooth);
+    }
+    for (let i = 0; i < 3; i += 1) {
+      const spoke = box(0.3, 0.03, 0.03, '#8a8f9a', { outline: false });
+      spoke.rotation.z = (i / 3) * Math.PI;
+      gear.add(spoke);
+    }
+    gear.rotation.y = Math.PI / 2;
+    gear.position.set(0.32, 0.62, 0);
+    this.group.add(gear);
+    this.gear = gear;
+
     // Tablero: tablones que aparecen uno tras otro
     const len = deckToZ - deckFromZ;
     const n = Math.round(len / 0.55);
     this.deck.position.set(deckX, 0, deckFromZ);
+    const woods = ['#a97a52', '#9b6c45', '#b0855c'];
     for (let i = 0; i < n; i += 1) {
-      const plank = box(3.0, 0.16, 0.5, i % 2 ? '#a97a52' : '#9b6c45', { outline: 0.02, brush: 1 });
-      plank.position.set(0, -0.08, (i + 0.5) * (len / n));
+      // Tablones apenas desparejos: se ven hechos a mano
+      const plank = box(3.0 - (i % 3) * 0.08, 0.16, 0.5, woods[i % 3], { outline: 0.02, brush: 1 });
+      plank.rotation.y = ((i * 37) % 7 - 3) * 0.008;
+      plank.position.set(((i * 13) % 5 - 2) * 0.02, -0.08, (i + 0.5) * (len / n));
+      // Clavos en las puntas
+      for (const nx of [-1.3, 1.3]) {
+        const nail = new THREE.Mesh(new THREE.SphereGeometry(0.03, 5, 4), toon('#5a5f6b'));
+        nail.position.set(nx, 0.08, 0);
+        plank.add(nail);
+      }
       plank.scale.setScalar(0.001);
       plank.visible = false;
       this.deck.add(plank);
       this.planks.push(plank);
     }
     for (const sx of [-1.55, 1.55]) {
+      // Viga lateral que sostiene los tablones
+      const stringer = box(0.22, 0.3, len, '#6b4a33', { outline: 0.015 });
+      stringer.position.set(sx, -0.2, len / 2);
+      stringer.visible = false;
+      stringer.userData.rail = true;
+      this.deck.add(stringer);
+      const midRail = box(0.07, 0.07, len, '#7a5a42', { outline: 0.01 });
+      midRail.position.set(sx, 0.42, len / 2);
+      midRail.visible = false;
+      midRail.userData.rail = true;
+      this.deck.add(midRail);
       const rail = box(0.1, 0.1, len, '#7a5a42', { outline: 0.015 });
       rail.position.set(sx, 0.75, len / 2);
       rail.visible = false;
@@ -527,6 +683,11 @@ export class BridgeLever extends Connectable {
         post2.visible = false;
         post2.userData.rail = true;
         this.deck.add(post2);
+        const capP = rounded(new THREE.SphereGeometry(0.08, 8, 6), toon('#5a4030'), 0.008);
+        capP.position.set(sx, 0.82, (p / 4) * len);
+        capP.visible = false;
+        capP.userData.rail = true;
+        this.deck.add(capP);
       }
     }
   }
@@ -536,6 +697,7 @@ export class BridgeLever extends Connectable {
     this.active_ = true;
     this.lamp.material = glow('#7cf07a');
     tween(0.4, (k) => (this.lever.rotation.x = 0.6 - k * 1.2), { easing: ease.outBack });
+    tween(1.2, (k) => (this.gear.rotation.x = k * Math.PI * 3));
     this.planks.forEach((p, i) => {
       tween(
         0.25,

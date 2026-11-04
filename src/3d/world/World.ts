@@ -312,6 +312,21 @@ export class World {
         this.scene.add(rail);
       }
     }
+    // Pilares de piedra en las dos orillas, donde apoya el puente
+    for (const z of [CANAL_MIN_Z + 0.2, CANAL_MAX_Z - 0.2]) {
+      const pier = box(BRIDGE_HALF * 2 + 0.8, 1.3, 0.7, '#9c938a', { outline: 0.03, brush: 2 });
+      pier.position.set(BRIDGE_X, -0.6, z);
+      this.scene.add(pier);
+      for (const sx of [-1, 1]) {
+        const bollard = box(0.45, 1.1, 0.45, '#b9b2a6', { outline: 0.03, brush: 2 });
+        bollard.position.set(BRIDGE_X + sx * (BRIDGE_HALF + 0.3), 0.55, z + (z < CANAL_MIN_Z + 1 ? -0.5 : 0.5));
+        this.scene.add(bollard);
+        const capB = box(0.55, 0.12, 0.55, '#8a8279', { outline: 0.02 });
+        capB.position.set(BRIDGE_X + sx * (BRIDGE_HALF + 0.3), 1.16, z + (z < CANAL_MIN_Z + 1 ? -0.5 : 0.5));
+        this.scene.add(capB);
+        this.circles.push({ x: BRIDGE_X + sx * (BRIDGE_HALF + 0.3), z: z + (z < CANAL_MIN_Z + 1 ? -0.5 : 0.5), r: 0.3 });
+      }
+    }
     // Bloqueos permanentes: todo el canal menos el hueco del puente (que se abre al conectarlo)
     this.rects.push({ minX: -100, maxX: BRIDGE_X - BRIDGE_HALF, minZ: CANAL_MIN_Z - 0.6, maxZ: CANAL_MAX_Z + 0.6 });
     this.rects.push({ minX: BRIDGE_X + BRIDGE_HALF, maxX: 100, minZ: CANAL_MIN_Z - 0.6, maxZ: CANAL_MAX_Z + 0.6 });

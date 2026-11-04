@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { box, rounded, toon } from '../core/render';
+import { box, glow, rounded, toon } from '../core/render';
 import { damp, dampAngle } from '../core/util';
 
 /** Cómo se ve cada habitante del capítulo 1 en 3D (los textos vienen de src/data/chapter.ts). */
@@ -45,6 +45,10 @@ export class Resident3D {
   private talkT = -1;
   private time = Math.random() * 10;
   private facing = 0;
+  private readonly brows: THREE.Mesh[] = [];
+  private readonly smile: THREE.Mesh;
+  private readonly frown: THREE.Mesh;
+  private readonly g: number;
 
   constructor(id: string, name: string, x: number, z: number, facing: number) {
     this.id = id;
@@ -56,26 +60,52 @@ export class Resident3D {
     this.root.userData.resident = this;
     const look = RESIDENT_LOOKS[id];
     const g = look.girth ?? 1;
+    this.g = g;
     this.root.add(this.body);
 
     for (const lx of [0.08, -0.08]) {
       const leg = rounded(new THREE.CapsuleGeometry(0.065, 0.2, 4, 10), toon(look.pants), 0.014);
       leg.position.set(lx * g, 0.2, 0);
       this.body.add(leg);
-      const shoe = box(0.12, 0.07, 0.2, '#3a2a22', { outline: 0.012 });
-      shoe.position.set(lx * g, 0.035, 0.03);
+      const shoeCol = look.accessory === 'raincoat' ? '#ffd23a' : look.accessory === 'tophat' ? '#1d1630' : '#3a2a22';
+      const shoe = box(0.12, 0.07, 0.2, shoeCol, { outline: 0.012 });
+      shoe.position.set(lx * g, 0.045, 0.03);
       this.body.add(shoe);
+      const sole = box(0.125, 0.025, 0.21, '#f4efe6', { outline: false });
+      sole.position.set(lx * g, 0.0125, 0.03);
+      this.body.add(sole);
     }
     const torso = rounded(new THREE.CapsuleGeometry(0.16, 0.18, 6, 14), toon(look.body, 2), 0.016);
     torso.scale.set(1.05 * g, 1, 0.85 * g);
     torso.position.y = 0.55;
     this.body.add(torso);
+    const front = 0.138 * g;
+    const belt = rounded(new THREE.TorusGeometry(0.155, 0.022, 6, 18), toon('#2a2230'), 0);
+    belt.rotation.x = Math.PI / 2;
+    belt.scale.set(1.06 * g, 0.86 * g, 1);
+    belt.position.y = 0.4;
+    this.body.add(belt);
+    const buckleB = box(0.06, 0.045, 0.02, '#f2c14e', { outline: false });
+    buckleB.position.set(0, 0.4, front + 0.01);
+    this.body.add(buckleB);
+    for (const by of [0.52, 0.6, 0.68]) {
+      const btn = new THREE.Mesh(new THREE.SphereGeometry(0.016, 6, 5), toon('#f4efe6'));
+      btn.position.set(0, by, front + 0.005);
+      this.body.add(btn);
+    }
+    const neck = rounded(new THREE.CylinderGeometry(0.06, 0.07, 0.08, 10), toon(look.skin), 0);
+    neck.position.y = 0.79;
+    this.body.add(neck);
 
     for (const [arm, ax] of [[this.armL, 0.2], [this.armR, -0.2]] as const) {
       arm.position.set(ax * g, 0.68, 0);
       const sleeve = rounded(new THREE.CapsuleGeometry(0.05, 0.18, 4, 10), toon(look.body, 2), 0.012);
       sleeve.position.y = -0.13;
       arm.add(sleeve);
+      const cuff = rounded(new THREE.TorusGeometry(0.048, 0.014, 5, 12), toon('#f4efe6'), 0);
+      cuff.rotation.x = Math.PI / 2;
+      cuff.position.y = -0.235;
+      arm.add(cuff);
       const hand = rounded(new THREE.SphereGeometry(0.055, 10, 8), toon(look.skin), 0.012);
       hand.position.y = -0.29;
       arm.add(hand);
@@ -95,10 +125,34 @@ export class Resident3D {
       eye.scale.set(0.8, 1.2, 0.5);
       eye.position.set(ex, 0.17, 0.185);
       this.head.add(eye);
+      const shine = new THREE.Mesh(new THREE.SphereGeometry(0.008, 5, 4), glow('#ffffff'));
+      shine.position.set(ex - 0.008, 0.182, 0.2);
+      this.head.add(shine);
       const cheek = new THREE.Mesh(new THREE.CircleGeometry(0.03, 10), toon('#ef8f8f'));
       cheek.position.set(ex * 1.45, 0.11, 0.19);
       this.head.add(cheek);
+      // Cejas: se inclinan cuando está triste y se relajan cuando está contento
+      const brow = box(0.06, 0.014, 0.012, look.hair, { outline: false });
+      brow.position.set(ex, 0.225, 0.19);
+      this.head.add(brow);
+      this.brows.push(brow);
+      // Orejas
+      const ear = rounded(new THREE.SphereGeometry(0.04, 8, 6), toon(look.skin), 0.008);
+      ear.scale.set(0.5, 1, 0.8);
+      ear.position.set(ex * 2.85, 0.14, 0);
+      this.head.add(ear);
     }
+    const nose = rounded(new THREE.SphereGeometry(0.026, 8, 6), toon(look.skin), 0.006);
+    nose.position.set(0, 0.13, 0.2);
+    this.head.add(nose);
+    // Boca: sonrisa o boca triste según el ánimo
+    this.smile = new THREE.Mesh(new THREE.TorusGeometry(0.035, 0.009, 4, 10, Math.PI), toon('#7a2a2a'));
+    this.smile.rotation.z = Math.PI;
+    this.smile.position.set(0, 0.085, 0.188);
+    this.head.add(this.smile);
+    this.frown = new THREE.Mesh(new THREE.TorusGeometry(0.028, 0.008, 4, 10, Math.PI), toon('#7a2a2a'));
+    this.frown.position.set(0, 0.06, 0.19);
+    this.head.add(this.frown);
     this.addAccessory(look.accessory);
     this.body.add(this.head);
 
@@ -130,6 +184,26 @@ export class Resident3D {
       wrench.add(jaw);
       wrench.position.set(0, -0.36, 0.06);
       this.armR.add(wrench);
+      // Mameluco: tirantes del color del pantalón y bolsillo; chaleco con banda reflectiva
+      const f = 0.14 * this.g;
+      for (const sx of [-0.07, 0.07]) {
+        const strap = box(0.04, 0.24, 0.015, RESIDENT_LOOKS.miga.pants, { outline: false });
+        strap.position.set(sx, 0.56, f);
+        this.body.add(strap);
+      }
+      const bib = box(0.16, 0.1, 0.015, RESIDENT_LOOKS.miga.pants, { outline: 0.006 });
+      bib.position.set(0, 0.47, f + 0.003);
+      this.body.add(bib);
+      const reflect = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.035, 18, 1, true), toon('#ffd23a'));
+      reflect.scale.set(1.06 * this.g, 1, 0.87 * this.g);
+      reflect.position.y = 0.62;
+      this.body.add(reflect);
+      // Cinturón de herramientas con dos bolsitas
+      for (const sx of [-0.13, 0.13]) {
+        const pouch = box(0.07, 0.08, 0.05, '#8a5a3a', { outline: 0.006 });
+        pouch.position.set(sx * this.g, 0.36, 0.08);
+        this.body.add(pouch);
+      }
     } else if (kind === 'raincoat') {
       const hat = rounded(new THREE.ConeGeometry(0.3, 0.16, 16), toon('#ffd23a'), 0.014);
       hat.position.y = 0.33;
@@ -141,6 +215,28 @@ export class Resident3D {
       const skin = new THREE.Mesh(new THREE.CircleGeometry(0.14, 16), toon('#f4efe6'));
       skin.position.set(0, 0.45, 0.295);
       this.body.add(skin);
+      // Zigzag del tambor, botones grandes del impermeable y palillos
+      const rim = rounded(new THREE.TorusGeometry(0.15, 0.015, 5, 16), toon('#f2c14e'), 0);
+      rim.position.set(0, 0.45, 0.292);
+      this.body.add(rim);
+      for (const by of [0.6, 0.7]) {
+        const btn = new THREE.Mesh(new THREE.SphereGeometry(0.024, 6, 5), toon('#ffd23a'));
+        btn.position.set(0.05, by, 0.14 * this.g + 0.01);
+        this.body.add(btn);
+      }
+      for (const arm of [this.armL, this.armR]) {
+        const stick = rounded(new THREE.CylinderGeometry(0.01, 0.012, 0.24, 6), toon('#d9b27a'), 0.005);
+        stick.position.set(0, -0.36, 0.09);
+        stick.rotation.x = 1.0;
+        arm.add(stick);
+        const tipS = new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 5), toon('#f4efe6'));
+        tipS.position.set(0, -0.3, 0.19);
+        arm.add(tipS);
+      }
+      const hood = rounded(new THREE.SphereGeometry(0.15, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon(RESIDENT_LOOKS.bombo.body), 0.01);
+      hood.rotation.x = -Math.PI / 2 - 0.3;
+      hood.position.set(0, 0.74, -0.12);
+      this.body.add(hood);
     } else if (kind === 'headphones') {
       const band = rounded(new THREE.TorusGeometry(0.22, 0.022, 6, 18, Math.PI), toon('#2c2838'), 0.01);
       band.position.y = 0.15;
@@ -154,6 +250,27 @@ export class Resident3D {
       const mic = rounded(new THREE.SphereGeometry(0.05, 10, 8), toon('#3a3d48'), 0.01);
       mic.position.set(0, -0.33, 0.05);
       this.armR.add(mic);
+      const micGrill = rounded(new THREE.SphereGeometry(0.055, 10, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon('#b8bcc6'), 0);
+      micGrill.position.set(0, -0.33, 0.05);
+      this.armR.add(micGrill);
+      // Luz "AL AIRE" en los auriculares, cola de caballo y bufanda
+      const onAir = new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 5), glow('#ff5a5a'));
+      onAir.position.set(0.25, 0.14, 0);
+      h.add(onAir);
+      const tail = rounded(new THREE.CapsuleGeometry(0.05, 0.14, 4, 8), toon(RESIDENT_LOOKS.vera.hair), 0.01);
+      tail.position.set(0, 0.12, -0.22);
+      tail.rotation.x = 0.5;
+      h.add(tail);
+      const tie = rounded(new THREE.TorusGeometry(0.03, 0.012, 5, 10), toon('#ffd23a'), 0);
+      tie.position.set(0, 0.2, -0.2);
+      h.add(tie);
+      const scarf = rounded(new THREE.TorusGeometry(0.085, 0.03, 6, 14), toon('#ffd23a'), 0.008);
+      scarf.rotation.x = Math.PI / 2;
+      scarf.position.y = 0.77;
+      this.body.add(scarf);
+      const star = new THREE.Mesh(new THREE.CircleGeometry(0.03, 5), toon('#ffd23a'));
+      star.position.set(-0.07, 0.62, 0.14 * this.g + 0.01);
+      this.body.add(star);
     } else if (kind === 'mayor') {
       // Banda cruzada roja con borde dorado
       const sash = box(0.07, 0.5, 0.36, '#c8452f', { outline: false });
@@ -165,6 +282,16 @@ export class Resident3D {
       medal.rotation.x = Math.PI / 2;
       medal.position.set(-0.06, 0.5, 0.16);
       this.body.add(medal);
+      // Cadena del reloj de bolsillo y botones dorados del saco
+      const chain = rounded(new THREE.TorusGeometry(0.06, 0.006, 4, 10, Math.PI), toon('#f2c14e'), 0);
+      chain.rotation.z = Math.PI;
+      chain.position.set(0.07, 0.46, 0.155);
+      this.body.add(chain);
+      for (const by of [0.47, 0.57]) {
+        const btn = new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 5), toon('#f2c14e'));
+        btn.position.set(0.04, by, 0.16);
+        this.body.add(btn);
+      }
       // Bombín
       const bowler = rounded(new THREE.SphereGeometry(0.17, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon('#2c2838'), 0.012);
       bowler.position.y = 0.3;
@@ -211,6 +338,28 @@ export class Resident3D {
       const tie = box(0.12, 0.06, 0.04, '#c8452f', { outline: 0.01 });
       tie.position.set(0, 0.72, 0.13);
       this.body.add(tie);
+      // Solapas oscuras, flor en el ojal y bastón
+      for (const sx of [-1, 1]) {
+        const lapel = box(0.05, 0.2, 0.015, '#1d1630', { outline: false });
+        lapel.position.set(sx * 0.06, 0.62, 0.14 * this.g + 0.004);
+        lapel.rotation.z = sx * 0.3;
+        this.body.add(lapel);
+      }
+      const flower = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), toon('#e0563f'));
+      flower.position.set(-0.1, 0.66, 0.15 * this.g);
+      this.body.add(flower);
+      const cane = new THREE.Group();
+      const shaft = rounded(new THREE.CylinderGeometry(0.012, 0.012, 0.5, 6), toon('#1d1630'), 0.005);
+      shaft.position.y = -0.2;
+      cane.add(shaft);
+      const crook = rounded(new THREE.TorusGeometry(0.04, 0.012, 5, 10, Math.PI), toon('#1d1630'), 0.005);
+      crook.position.set(0.04, 0.05, 0);
+      cane.add(crook);
+      const ferrule = new THREE.Mesh(new THREE.SphereGeometry(0.016, 6, 5), toon('#f2c14e'));
+      ferrule.position.y = -0.45;
+      cane.add(ferrule);
+      cane.position.set(0, -0.3, 0.05);
+      this.armL.add(cane);
     }
   }
 
@@ -256,6 +405,14 @@ export class Resident3D {
     this.armR.rotation.z = -0.08 - 0.25 * k - Math.sin(this.time * 4 + 1) * 0.12 * k;
     this.armL.rotation.x = 0;
     this.armR.rotation.x = 0;
+
+    // Cara: cejas caídas y boca triste → cejas relajadas y sonrisa
+    // (triste = la punta de adentro de cada ceja sube)
+    this.brows[0].rotation.z = 0.4 * (1 - k) - 0.1 * k;
+    this.brows[1].rotation.z = -0.4 * (1 - k) + 0.1 * k;
+    for (const b of this.brows) b.position.y = 0.225 + 0.012 * k;
+    this.smile.visible = k > 0.5;
+    this.frown.visible = !this.smile.visible;
 
     // Al hablar: saluda con un brazo
     if (this.talkT >= 0) {
