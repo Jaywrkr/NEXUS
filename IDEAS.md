@@ -62,3 +62,13 @@ de menor a mayor esfuerzo/riesgo de romper zonas existentes:
 - Cable largo entre zonas: conectar algo en una zona con algo en otra ya
   visitada. La más compleja (cable cruzando cámara/scroll, estado entre zonas
   lejanas) — dejar para el final.
+
+## Los Nexus 3D (juego principal desde 2026-11-04)
+- Probar en el celular de Luca y medir fluidez. Si va lento: bajar el filtro de
+  pincel (Kuwahara) o las sombras en celular, o renderizar a menor resolución.
+- Pasar al 3D lo que ya existe en la 2D, de a una pieza: jardín, taller, faroles
+  + fiesta/confeti y final, habitantes del capítulo con sus encargos, pistas y
+  ayudas visuales, efectos suaves, radio CUAC FM, armario, historias secundarias.
+- Decidir con Luca la cámara final: isométrica o "detrás" del personaje.
+- Que el Nexus mire a la cámara en la pantalla de título (ahora se le ve la espalda).
+- Cable largo entre zonas: en 3D es más simple (un solo barrio, cables ya en el mundo).

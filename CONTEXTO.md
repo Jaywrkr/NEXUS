@@ -1,6 +1,179 @@
-# Contexto para continuar esta fase de Nexus
+# Los Nexus — Contexto completo para continuar con cualquier IA
 
-# Los Nexus — Guía rápida para Claude
+> **Para la IA que lee esto (ChatGPT, Codex u otra):** este archivo es autocontenido.
+> **Desde el 2026-11-04 el juego principal es 3D** (`index.html`, código en `src/3d/`).
+> La versión 2D completa sigue en `2d.html`; su documentación está más abajo, en "Versión 2D completa".
+> Si cambiás algo importante, actualizá este archivo (y `CLAUDE.md`).
+
+## Los Nexus 3D (juego principal)
+
+### 1. Qué es
+
+**Los Nexus** es un juego web que un padre (Jay, Cuenca, Ecuador) construye junto a su hijo **Luca (9 años, TDAH)**.
+No es comercial: el objetivo es que Luca vea que sus ideas se convierten en algo jugable, con ciclos cortos entre idea y resultado.
+
+- **Mecánica única:** el jugador controla al Nexus (criatura humanoide con orejas de conejo, hoodie turquesa y mochila con cable) y **conecta** objetos del barrio con un cable de energía: toca un objeto que tenga energía y luego el que quiere encender. Si la conexión es válida, el mundo cambia.
+- **Nada de** combate, enemigos, inventario, economía, tiendas, multijugador ni login.
+- **Ciclo:** explorar → encontrar algo apagado → conectar → el mundo se transforma → aparece un fragmento → se guarda en el Museo.
+
+Público y filosofía: sesiones cortas, progreso visible en el mundo, aprender probando (sin tutoriales largos), juego justo. Regla permanente: *ninguna idea nueva puede romper la simplicidad del primer minuto.*
+
+### Historia corta
+1. Empezó como juego **2D en Phaser** (scroll lateral). Esa versión creció mucho (7 zonas, capítulo 1 con habitantes, historias secundarias, radio, armario, final, pistas, tests) y sigue completa y jugable en **`2d.html`** — ver la sección "Versión 2D completa" más abajo.
+2. En noviembre de 2026, a pedido de Jay, el juego principal (`index.html`) pasó a **3D** con el estilo visual de otro proyecto suyo, *Calle 85* (un juego de skate 3D en un barrio ochentero): fondo de anime pintado en gouache, toon shading, contornos y filtro de pincel. **El 3D tiene hoy la lógica de las 4 zonas originales** (plaza, fuente, antena, puente) más señuelo y fragmento secreto. Lo demás de la 2D (zonas 5–7, capítulo, habitantes, historias, radio, armario, final, pistas) **todavía no está en 3D**: se va pasando de a una pieza (ver "Qué sigue").
+
+### 2. Stack y cómo correrlo
+
+- **Three.js r187** + **TypeScript 6** + **Vite 8**, sin backend. (Phaser 4 sigue instalado para la versión 2D.)
+- Repo: `github.com/Jaywrkr/NEXUS`.
+- Dos páginas (Vite multipágina, `vite.config.ts`): `index.html` = **Los Nexus 3D** (la actual), `2d.html` = versión 2D original.
+
+```bash
+npm install
+npm run dev              # http://localhost:5173  (3D)  ·  http://localhost:5173/2d.html  (2D)
+npm run dev -- --host    # para probar desde el celular en la misma WiFi
+npm run build            # tsc + vite build — correr SIEMPRE tras cualquier cambio
+npm test                 # pruebas unitarias + E2E (2D en /2d.html y 3D en tests/e2e/nexus3d.spec.js)
+```
+
+Además de los tests, se prueba jugando (Playwright headless con capturas; el usuario prueba en el celular real de Luca).
+
+### 3. Estado actual del juego (3D)
+
+Un **barrio abierto en 3D** (~90 × 90 m) con calles, veredas, casas de estuco con techo de teja, palmeras, árboles, postes con cables, autos, tiendas (HELADOS, PANADERÍA, JUEGOS, TIENDA) y un **canal** que corta el sur del barrio. El Nexus camina libre en cualquier dirección.
+
+| Zona | Dónde | Puzzle |
+|---|---|---|
+| 1. La plaza | noroeste | fuente → **farola** → **puerta** de la casa apagada. Fuente→farola abre el **mini-túnel del cable**. Al encender la farola se ilumina la ventana; al abrir la puerta la plaza recupera el color (piso cálido, casa de estuco y teja, el árbol saca hojas). |
+| 2. La fuente de agua | suroeste | fuente → fuente de agua (un paso). Sube el agua y sale un chorro. |
+| 3. La antena | noreste | fuente A + fuente B → antena (**dos** conexiones). Hay una **fuente señuelo** gris sin brillo que no conecta con nada. |
+| 4. El puente | sureste | fuente → **palanca**. El **canal bloquea el paso** hasta que se despliega el puente de madera; el fragmento está del otro lado. |
+
+Además:
+- **Fragmentos:** estrellas de cristal que aparecen al resolver cada zona; se recogen acercándose y llevan al Museo. Contador `★ n/4`.
+- **Fragmento secreto (dorado):** escondido **detrás de la casa** de la plaza, visible desde el inicio. No cuenta para `★ n/4` ni para "¡Colección completa!", pero tiene vitrina.
+- **Museo Nexus:** sala 3D con 5 vitrinas (en vertical se ordenan en dos filas). Al completar las 4 zonas por primera vez: destello + chispas de colores en el barrio + "¡Colección completa!".
+- **Mini-túnel del cable** (idea de Luca): vamos dentro del tubo, detrás de la chispa, y hay que guiarla (flechas/WASD o joystick) para que no toque las paredes mientras el cable serpentea. La chispa **no** sigue sola el centro del tubo: hay que manejarla. Ganar completa la conexión; perder permite reintentar.
+- **Cables:** mientras hay una fuente elegida, el cable sale de la **mochila del Nexus** y lo sigue. Las conexiones hechas **quedan dibujadas** en el mundo. No se puede repetir una conexión ("¡Eso ya está conectado!"). Al conectar: chispa que recorre el cable, ráfaga de chispas y anillo.
+- **Cámara:** **isométrica** por defecto (ortográfica, mira desde el sureste) con **silueta amarilla** cuando algo tapa al Nexus; tecla **V** o botón **VISTA** cambia a cámara **detrás** del personaje (tercera persona). La elección se recuerda.
+- **Controles:** PC: WASD/flechas, **E/Espacio** para tocar/conectar, **clic** directo sobre un objeto. Celular: joystick a la izquierda, **botón grande** "Tocar/Conectar" (aparece cerca de un objeto) o tocar el objeto en pantalla.
+- **Celular vertical:** la cámara se aleja en vertical para que el ancho visible no quede angosto.
+- **Pantalla de título:** "Jugar", o "Continuar" + "Nueva partida" si hay progreso.
+- **Progreso** en `localStorage`, **separado del 2D** (`src/3d/core/progress.ts`): clave `los-nexus-3d-progress` (`{ fragmentsCollected: string[], seenCompletion: boolean }`). Mute en `los-nexus-muted`, vista en `los-nexus-3d-view`.
+- **Sonido** generado por código (Web Audio), botón 🔊/🔇.
+
+### El Nexus en 3D
+Armado con primitivas (esferas, cápsulas, cajas) y **animación procedural** (no hay modelos ni imágenes): cabeza clara grande, visor oscuro con ojos amarillos que parpadean, orejas de conejo con punta celeste (izq.) y naranja (der.) que rebotan al caminar, hoodie turquesa con cuello naranja, guantes y pantalón azul marino, zapatillas blancas con suela naranja, mochila gris con lente cian y cable verde lima colgando. Camina con piernas/brazos en oposición, festeja con salto y giro, estira el brazo al tocar algo. Está a escala 1.3 para leerse bien en el celular.
+
+### 4. Arquitectura (3D en `src/3d/`)
+
+```
+index.html                 — página 3D: canvas + HUD HTML (título, mensajes, botones, museo, túnel)
+2d.html                    — página 2D original (Phaser, src/main.ts)
+vite.config.ts             — build de las dos páginas
+src/3d/
+  main.ts                  — clase Game: modos (title/world/tunnel/museum), fundidos, loop; expone window.__nexus3d
+  style.css                — UI (tinta #1d1630, crema #fff3dc, sol #ffc23a, teal #2bb3a8; fuentes Bowlby One + DM Mono)
+  core/
+    render.ts              — look gouache: toon 3 bandas, contorno por casco invertido, textura de pincel,
+                             post-proceso Kuwahara + grading + grano + viñeta; Renderer; cielo
+    batch.ts               — junta la escenografía quieta en pocas mallas (rendimiento)
+    input.ts               — teclado + joystick HTML; `move` en coordenadas de pantalla
+    tween.ts               — tweens mínimos (tween, after, ease)
+    util.ts                — clamp/lerp/damp, rnd con semilla 85, isTouch
+  world/World.ts           — el barrio: luz, cielo, calles, canal, casas, tiendas, postes, naturaleza,
+                             escenografía de cada zona, colisiones (rectángulos + círculos)
+  entities/Nexus3D.ts      — el personaje
+  objects/
+    Connectable.ts         — base de todo lo conectable (id, role, group, plugAnchor, activate, restore)
+    objects.ts             — EnergySource ('active'|'dim'), StreetLamp, Door, Fountain, Beacon, BridgeLever, Fragment
+  systems/Connections.ts   — la mecánica de conectar (reglas, cables 3D, partículas)
+  scenes/
+    WorldMode.ts           — el mundo jugable: zonas, reglas, fragmentos, HUD, cámaras, silueta
+    TunnelMode.ts          — mini-túnel 3D
+    MuseumMode.ts          — museo 3D (ZONE_FRAGMENTS, SECRET_FRAGMENT)
+src/3d/core/progress.ts     — progreso del 3D (separado del de la 2D)
+src/systems/AudioSystem.ts — sonidos, compartido con el 2D
+src/scenes, src/objects, src/art, src/zones ... — versión 2D (Phaser)
+tests/e2e/nexus3d.spec.js  — pruebas E2E del 3D (usan window.__nexus3d.step)
+```
+
+### Cómo funciona la conexión (para agregar contenido)
+
+```ts
+// En WorldMode (constructor):
+const src = new EnergySource('mi-fuente', x, z);            // role 'source': puede iniciar
+const obj = new MiObjeto('mi-objeto', x2, z2);               // extiende Connectable, role 'target'
+scene.add(obj.group); this.connections.register(obj);        // (igual con src)
+this.connections.addRule({ sourceId: src.id, targetId: obj.id });   // conexión válida
+// opcional: { ..., useTunnel: true } para pasar por el mini-túnel
+
+// Reacción del mundo: en WorldMode.onConnectionMade(target)
+if (target === obj) { /* revelar fragmento, cambiar el mundo, setMessage(...) */ }
+```
+
+- Primer toque en algo con `canInitiate()` (fuentes; la farola solo cuando está encendida) lo selecciona; segundo toque busca una regla `source→target`.
+- **Sin regla = conexión inválida** (cable rojo que se desvanece, sonido de error, "Esa conexión no encaja, prueba otra"). Un señuelo es solo un objeto registrado sin reglas.
+- Al completar: `source.activate()`, `target.activate()`, efectos, y `onConnectionMade`.
+- Objeto nuevo: extender `Connectable`, dibujarlo con `box()`, `rounded()`, `toon()` dentro de `this.group`, ubicar `this.plugAnchor` (de dónde sale/llega el cable), implementar `activate()` y `restore()` (estado ya resuelto, sin animar), y opcional `update(dt, time)`. `collideRadius` define el bloqueo y el alcance para interactuar.
+- Partida guardada: `WorldMode.restoreProgress()` restaura cada zona resuelta y redibuja sus cables con `connections.restore(a, b)`.
+
+### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
+- Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
+- Inicio del Nexus: (-20, -11).
+- Zona 1: fuente (-24, -15), farola (-13, -18), casa (-18, -31) con puerta en (-15.5, -26.95), fragmento (-15.5, 1, -24.2). **Secreto**: (-18, 1, -39.6), detrás de la casa.
+- Zona 2: fuente (-28.5, 9.5), fuente de agua (-20, 16), fragmento (-20, 1, 20.4).
+- Zona 3: fuente A (15, -23), fuente B (15, -13), señuelo (21, -18), antena (27, -18), fragmento (30.5, 1, -15.2).
+- Zona 4: fuente (10.5, 23.5), palanca (15.6, 27.9), tablero del puente z 29.3 → 36.7, fragmento (18, 1, 40.5).
+
+### 5. Reglas que no hay que romper sin preguntar
+
+1. **Toda mecánica nueva reutiliza la acción de conectar.** Variar el ritmo (secuencia, doble conexión, bloqueo físico, timing), no agregar botones ni acciones.
+2. **El mundo se arma con primitivas de Three.js** (cajas, esferas, cápsulas, extrusiones) con el material toon y contorno — sin modelos 3D, imágenes ni audio externos, salvo que el usuario lo pida. (Las únicas cosas externas: las tipografías de Google Fonts para la UI.)
+3. Nada de combate, inventario complejo, economía, multijugador ni login.
+4. **No ampliar el alcance sin aprobación explícita.** Se avanza de a un paso chico, se prueba, y se pregunta antes del siguiente.
+5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
+6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
+
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–035).
+
+### 6. Trampas técnicas ya conocidas (no repetirlas)
+
+**3D**
+1. **Sin GPU (navegador headless) el juego corre a ~2 fps.** Para probar lógica usar `window.__nexus3d.step(segundos)`, que avanza el juego a 60 Hz sin dibujar; para capturas esperar ~1.3 s a que se dibuje un cuadro. El rendimiento real (Kuwahara: 25 lecturas por píxel en celular, 49 en PC) no se midió en una GPU de verdad.
+2. **Escenografía agrupada (`batchStatic`)**: al final de `new World()` todo lo quieto se fusiona por material y por celda de 24 m. Lo que se anima o cambia de material después debe tener `userData.dynamic = true` (o agregarse después, como los objetos conectables). Cambiar el color de un material agrupado cambia todas sus piezas: para lo que cambia de color usar `toonUnique()`.
+3. `toon()` y `flat()` devuelven materiales **compartidos** (cacheados): nunca mutarlos.
+4. **Color**: Three r187 usa luces físicas (intensidades ~π veces las "viejas") y trabaja en lineal; el post-proceso convierte a sRGB a mano. Un `ShaderMaterial` propio que dibuja la escena (cielo, túnel) tiene que devolver color **lineal** (`pow(c, 2.2)`).
+5. La cámara isométrica mira desde +X+Z: las fachadas importantes (puertas, carteles) tienen que mirar a +Z o +X, si no se ven de espaldas. Lo alto cerca del borde sur de una zona la tapa (por eso los postes van del lado sur de la calle).
+6. `tsconfig` tiene `erasableSyntaxOnly`: nada de `enum` ni propiedades en el constructor (`constructor(readonly x)`).
+7. Durante pruebas con Playwright, editar `index.html` hace que Vite recargue la página.
+8. Las tipografías de Google fallan en el sandbox de pruebas (certificado); en un dispositivo real cargan bien.
+
+**Heredadas del 2D (siguen valiendo para la UI)**
+9. Botones: elementos simples, sin contenedores con hijos interactivos raros; en el 3D la UI es HTML.
+10. CSS: `100dvh` con `100vh` de respaldo; respetar `env(safe-area-inset-*)`.
+11. Detectar celular con `matchMedia('(pointer: coarse)')`, no por ancho de ventana.
+
+### Qué sigue en el 3D
+
+1. **Probarlo en el celular de Luca** y medir si va fluido; si no, bajar el filtro de pincel o las sombras en celular.
+2. **Pasar al 3D lo que ya existe en la 2D**, de a una pieza y en este orden sugerido: zona 5 (jardín), zona 6 (taller), zona 7 (faroles + fiesta/confeti y final), habitantes del capítulo 1 (Miga y compañía) con sus encargos, pistas y ayudas visuales, efectos suaves, radio CUAC FM, armario del Nexus, historias secundarias. La lógica y los textos están en `src/data/*` y `src/scenes/*` de la 2D: reutilizarlos en vez de reescribirlos.
+3. Después, las ideas nuevas del backlog (criatura que sigue al Nexus, objeto en movimiento, energía compartida, cable largo entre zonas).
+4. Decidir con Luca la cámara final (isométrica o detrás).
+
+### Forma de trabajo
+
+- Pasos chicos: proponer → el usuario aprueba → implementar → `npm run build` → `npm test` → probar jugando → actualizar docs → commit.
+- El usuario maneja los PR y merges a mano; las ramas de trabajo salen de la rama por defecto `claude/los-nexus-game-mvp-cppkef`.
+- Idioma: español (código en inglés, comentarios y textos del juego en español).
+
+---
+
+## Versión 2D completa (`2d.html`)
+
+Lo que sigue es la documentación de la versión 2D en Phaser, tal como quedó antes del paso a 3D. Todo sigue funcionando en `2d.html` (las pruebas E2E de la 2D abren esa página).
+
+### Guía de la versión 2D
 
 Este archivo existe para que una sesión nueva de Claude Code entienda el proyecto en segundos, sin tener que releer todo el historial de conversación. Léelo primero.
 

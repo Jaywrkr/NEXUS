@@ -1,6 +1,6 @@
 # Los Nexus
 
-Juego web 2D hecho con Phaser, TypeScript y Vite.
+Juego web **3D** hecho con Three.js, TypeScript y Vite. La versión 2D completa (Phaser) sigue jugable en `2d.html`.
 
 Es un ejercicio creativo para construir junto a Luca (9 años). El jugador controla al Nexus y conecta objetos del escenario entre sí con un cable de energía — esa es la única mecánica de juego.
 
@@ -24,7 +24,7 @@ Documentos de apoyo:
 
 ```bash
 npm ci
-npm run dev              # servidor de desarrollo
+npm run dev              # servidor de desarrollo: 3D en / · 2D en /2d.html
 npm run dev -- --host    # para probar desde el celular (misma red WiFi)
 npm run build            # build de producción
 npm run preview          # previsualizar el build
@@ -32,39 +32,25 @@ npm run preview          # previsualizar el build
 
 ## Pruebas
 
-`npm test` ejecuta las pruebas de guardado y el recorrido en Chromium, en escritorio y móvil vertical. Preparación, cobertura y límites en [tests/README.md](tests/README.md). Ejecutar también `npm run build`.
+`npm test` ejecuta las pruebas de guardado y el recorrido en Chromium, en escritorio y móvil vertical: la 2D en `/2d.html` y el 3D en `tests/e2e/nexus3d.spec.js`. Preparación, cobertura y límites en [tests/README.md](tests/README.md). Ejecutar también `npm run build`.
 
 ## Estructura
 
 ```
-src/
-  main.ts                    — entrada, crea el Phaser.Game
-  config/gameConfig.ts       — resolución dinámica según orientación/puntero
-  scenes/
-    BootScene.ts             — pantalla de título (Jugar / Continuar / Nueva partida)
-    WorldScene.ts            — el mundo (4 zonas), cámara, joystick, botón de interacción
-    MuseumScene.ts           — vitrinas de fragmentos
-    CableTunnelScene.ts      — mini-juego dentro del cable
-  entities/
-    Nexus.ts, nexusAssets.ts — personaje jugable (sprites PNG)
-  systems/
-    ConnectionSystem.ts      — mecánica de conectar
-    ProgressSystem.ts        — wrapper de localStorage
-    AudioSystem.ts           — tonos generados por Web Audio
-  objects/
-    ConnectableObject.ts     — clase base
-    EnergySource.ts, Lamp.ts, Door.ts, Fountain.ts, Beacon.ts, Bridge.ts, Fragment.ts
-  ui/
-    VirtualJoystick.ts, InteractButton.ts
-  data/gameState.ts
-  utils/sceneTransition.ts, utils/uiTextures.ts
-  styles/main.css
-
-public/
-  favicon.svg
-  assets/nexus/              — sprites del personaje
+index.html                   — Los Nexus 3D (juego principal)
+2d.html                      — versión 2D completa (Phaser)
+src/3d/
+  main.ts                    — entrada 3D: modos título / mundo / túnel / museo
+  core/                      — render (look gouache), batch, input, progreso, tween, util
+  world/World.ts             — el barrio
+  entities/Nexus3D.ts        — el personaje
+  objects/                   — objetos conectables y fragmentos
+  systems/Connections.ts     — mecánica de conectar
+  scenes/                    — WorldMode, TunnelMode, MuseumMode
+src/ (resto)                 — versión 2D: scenes, objects, art, zones, data, systems, ui...
+tests/                       — unitarias y E2E (2D y 3D)
 ```
 
 ## Estado actual
 
-4 zonas jugables (plaza, fuente de agua, antena, puente), mini-túnel del cable, fuente señuelo, fragmento secreto, museo con 5 vitrinas, controles táctiles con botón de interacción, adaptación a celular vertical y sonido. Detalle completo en `CONTEXTO.md`.
+**3D (principal):** barrio abierto con estilo de fondo de anime pintado, las 4 zonas originales (plaza, fuente de agua, antena, puente sobre el canal), mini-túnel del cable en 3D, fuente señuelo, fragmento secreto, museo 3D, cámara isométrica o detrás del personaje, controles de PC y celular. **2D (`2d.html`):** 7 zonas, capítulo 1 con habitantes, historias secundarias, radio, armario, final y pistas — se irán pasando al 3D. Detalle completo en `CONTEXTO.md`.

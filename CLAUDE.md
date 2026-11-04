@@ -1,6 +1,47 @@
 # Los Nexus — Guía rápida para Claude
 
-Este archivo existe para que una sesión nueva de Claude Code entienda el proyecto en segundos, sin tener que releer todo el historial de conversación. Léelo primero.
+Este archivo existe para que una sesión nueva de Claude Code entienda el proyecto en segundos. Léelo primero.
+
+> **Desde el 2026-11-04 el juego principal es 3D**: `index.html` → `src/3d/` (Three.js r187, estilo *Calle 85*).
+> La versión 2D completa (Phaser, 7 zonas, capítulo 1, historias, armario...) sigue en `2d.html` y se documenta más abajo, en "Versión 2D".
+> **`CONTEXTO.md` es la fuente principal y autocontenida** (también se usa para seguir en ChatGPT/Codex). Si cambiás algo importante, actualizá **los dos** archivos.
+
+## Los Nexus 3D — lo esencial
+
+- Barrio abierto en 3D con las **4 zonas originales** (plaza con farola y puerta, fuente de agua, antena con dos fuentes + señuelo, puente sobre un canal que bloquea el paso), fragmento secreto detrás de la casa, museo 3D con 5 vitrinas, mini-túnel del cable en 3D, cámara isométrica con silueta + vista "detrás" (V), controles PC y celular, progreso propio (`src/3d/core/progress.ts`, clave `los-nexus-3d-progress`).
+- **Todavía no están en 3D**: zonas 5–7, capítulo y habitantes, historias secundarias, radio, armario, final, pistas, efectos suaves. Se pasan de a una (orden sugerido en `CONTEXTO.md`, "Qué sigue en el 3D"), reutilizando datos y textos de `src/data/*`.
+- Look: toon de 3 bandas + contorno por casco invertido + textura de pincel + post-proceso Kuwahara con grading (`src/3d/core/render.ts`). Todo con primitivas, sin modelos ni imágenes (Decisiones 033–035).
+- Arquitectura, cómo agregar conexiones, coordenadas del barrio: `CONTEXTO.md`.
+
+### Probar el 3D
+
+```bash
+npm run build                                   # siempre
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/opt/pw-browsers/chromium npx playwright test tests/e2e/nexus3d.spec.js
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/opt/pw-browsers/chromium npm test   # todo (2D + 3D), tarda
+```
+
+- **Sin GPU el 3D corre a ~2 fps**: no esperar tiempo real. Hook `window.__nexus3d`:
+  - `__nexus3d.step(seg)` avanza la lógica a 60 Hz sin dibujar (determinista).
+  - `__nexus3d.world` = `WorldMode` (`nexus.position`, `focus`, `connections.all`, `connections.interact(obj)`, `progress`, `world.resolve(...)`); `__nexus3d.tunnel` = túnel (`offset`, `done`).
+  - Teletransportar: `w.nexus.position.set(x,0,z); w.focus.set(x,0,z)`; teclas con `page.keyboard.press('KeyE')` y después `step(0.05)`.
+  - Capturas: esperar ~1.3 s reales tras el cambio para que se dibuje un cuadro. Lanzar Chromium con `--use-angle=swiftshader --enable-unsafe-swiftshader`.
+  - Celular: contexto con `isMobile: true, hasTouch: true` → `pointer: coarse` (joystick + botón grande).
+- Ejemplos completos en `tests/e2e/nexus3d.spec.js`.
+
+### Trampas del 3D (detalle en `CONTEXTO.md` §6)
+- **`batchStatic`** fusiona la escenografía quieta al final de `new World()`: lo que se anima o cambia de material necesita `userData.dynamic = true` o agregarse después. Para cosas que cambian de color, `toonUnique()`; `toon()`/`flat()` son compartidos, nunca mutarlos.
+- **Color**: un `ShaderMaterial` que dibuja la escena devuelve color lineal (`pow(c, 2.2)`); el post-proceso pasa a sRGB. Las luces son físicas (intensidades ~π veces las viejas).
+- **Cámara isométrica desde +X+Z**: puertas y carteles deben mirar a +Z o +X; lo alto al sur/este de una zona la tapa.
+- `tsconfig` con `erasableSyntaxOnly`: sin `enum` ni propiedades en constructor.
+- Editar `index.html` con el dev server abierto recarga la página (rompe un test en curso).
+
+---
+
+## Versión 2D (`2d.html`)
+
+Lo que sigue es la guía de la versión 2D en Phaser tal como quedó antes del paso a 3D. Sus pruebas E2E abren `/2d.html` (ver `tests/e2e/helpers.js`).
+
 
 ## Qué es esto
 

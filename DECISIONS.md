@@ -157,3 +157,12 @@ Se prepara la paleta antes de jugar, y audio/gestos se liberan al salir de escen
 Build, pruebas unitarias, circuito en ambas orientaciones y recorrido completo
 caminando documentan el alcance; rendimiento real en teléfono requiere playtest.
 Rama desde la base integrada, commit y push; PR/merge a cargo del usuario.
+
+**Decisión 033 — Paso a 3D**
+El juego principal pasa a **3D** con el estilo visual de *Calle 85* (otro proyecto de Jay): barrio abierto, toon shading de 3 bandas, contorno por casco invertido, textura de pincel y post-proceso Kuwahara tipo gouache. Pedido explícito del usuario; reemplaza la Decisión 002 ("2D o 2.5D simple") y la línea de `GAME_VISION.md` que descartaba el 3D. Motor: **Three.js en el navegador** (no Godot como Calle 85), porque Luca juega en el celular desde el navegador. El usuario eligió que el 3D sea la página principal (`index.html`) **aunque hoy tenga menos contenido que la 2D** (solo las 4 zonas originales + señuelo + secreto); la 2D completa queda en `2d.html` con sus pruebas, y su contenido se irá pasando al 3D de a una pieza.
+
+**Decisión 034 — El Nexus y el mundo 3D con primitivas**
+El Nexus 3D se arma con primitivas y animación procedural (como Nico en Calle 85), manteniendo la identidad de las Decisiones 012/017: orejas de conejo con puntas celeste y naranja, cabeza clara con visor oscuro y ojos amarillos, hoodie turquesa, mochila con cable. El barrio también se arma con primitivas, sin modelos ni imágenes externas. Los sprites de lápiz quedan para la 2D.
+
+**Decisión 035 — Cámara y cables en 3D**
+Cámara isométrica por defecto (lee mejor el barrio y deja tocar los objetos en el celular) con silueta cuando algo tapa al Nexus; la vista "detrás" del personaje queda disponible con V / botón VISTA. Las conexiones hechas quedan dibujadas en el mundo, el cable "en la mano" sale de la mochila del Nexus mientras hay un origen elegido, y una misma conexión no se puede repetir.

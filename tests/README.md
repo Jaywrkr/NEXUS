@@ -26,6 +26,8 @@ npm test            # ambas suites
 npm run build       # TypeScript y build de producción; check separado
 ```
 
+Las pruebas de la versión 2D abren `/2d.html` (`helpers.js`); las del 3D están en `e2e/nexus3d.spec.js`, abren `/` y avanzan la lógica con `window.__nexus3d.step(segundos)`, porque sin GPU el navegador dibuja ~2 cuadros por segundo.
+
 Playwright inicia y detiene su propio Vite en el puerto 5174. Ese puerto debe
 estar libre; no reutiliza ni detiene un servidor de desarrollo ajeno.
 Cada prueba usa un contexto de navegador nuevo con almacenamiento independiente.

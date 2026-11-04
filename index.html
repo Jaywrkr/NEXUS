@@ -1,13 +1,66 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>Los Nexus</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=DM+Mono:wght@400;500&display=swap" />
   </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+  <body class="mode-title">
+    <canvas id="game" aria-label="Los Nexus, juego de conectar en un barrio 3D"></canvas>
+
+    <!-- HUD del mundo -->
+    <div class="hud world-only" id="msg"></div>
+    <div class="hud world-only" id="stars">★ 0/4</div>
+    <div class="hud world-only" id="toast"></div>
+    <div class="hud world-only" id="help">
+      <kbd>WASD</kbd>/<kbd>flechas</kbd> moverse · <kbd>E</kbd>/<kbd>ESPACIO</kbd> tocar y conectar<br />
+      clic sobre un objeto también sirve · <kbd>V</kbd> cambiar vista
+    </div>
+    <button class="chip world-only" id="muteBtn" type="button" aria-label="Sonido">🔊</button>
+    <button class="chip world-only" id="viewBtn" type="button">VISTA</button>
+    <div id="touch" class="world-only">
+      <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
+    </div>
+    <button class="chip world-only" id="interact" type="button" hidden>Tocar</button>
+
+    <!-- Pantalla de título -->
+    <div id="title">
+      <div class="card">
+        <h1>LOS NEXUS</h1>
+        <div class="tag">conecta el barrio · enciende el mundo</div>
+        <ul>
+          <li class="keys-only"><b>Moverse</b>WASD o flechas</li>
+          <li class="keys-only"><b>Tocar</b>E, ESPACIO o clic en el objeto</li>
+          <li class="touch-only"><b>Moverse</b>joystick a la izquierda</li>
+          <li class="touch-only"><b>Tocar</b>botón grande o tocar el objeto</li>
+          <li><b>Conectar</b>toca algo con energía y después lo que quieras encender</li>
+          <li><b>Objetivo</b>restaura los 4 lugares y junta sus fragmentos</li>
+        </ul>
+        <button class="big-btn" id="play" type="button">JUGAR</button>
+        <button class="big-btn" id="continue" type="button" hidden>CONTINUAR</button>
+        <button class="big-btn alt" id="newGame" type="button" hidden>NUEVA PARTIDA</button>
+      </div>
+    </div>
+
+    <!-- Museo -->
+    <div id="museum" hidden>
+      <h2>Museo Nexus</h2>
+      <div id="museumComplete" hidden>¡Colección completa!</div>
+      <div id="museumLabels"></div>
+      <button class="big-btn" id="museumBack" type="button">VOLVER AL BARRIO</button>
+    </div>
+
+    <!-- Túnel del cable -->
+    <div id="tunnelHud" hidden>
+      <div id="tunnelMsg"></div>
+      <div id="tunnelTrack"><div id="tunnelBar"></div></div>
+    </div>
+
+    <div id="flash"></div>
+    <div id="fade"></div>
+    <script type="module" src="/src/3d/main.ts"></script>
   </body>
 </html>

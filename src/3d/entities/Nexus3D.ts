@@ -1,0 +1,304 @@
+import * as THREE from 'three';
+import { box, glow, rounded, toon } from '../core/render';
+import { clamp, damp, dampAngle } from '../core/util';
+
+const SPEED = 4.6; // m/s
+const ACCEL = 11; // qué tan rápido llega a la velocidad deseada (equivale al ACCEL_MS de 90 ms del 2D)
+
+const C = {
+  head: '#f4ecdc',
+  face: '#1c2240',
+  eye: '#ffd84a',
+  hoodie: '#22b8a8',
+  hoodieDark: '#178c82',
+  collar: '#f2742b',
+  pants: '#24305a',
+  glove: '#24305a',
+  shoe: '#f7f4ee',
+  sole: '#f2742b',
+  shoeAccent: '#2f6fd1',
+  earTipL: '#2ec7e6',
+  earTipR: '#f2742b',
+  pack: '#4a5263',
+  lens: '#5ee7ff',
+  cable: '#b8e04a',
+};
+
+/**
+ * El Nexus en 3D, armado con primitivas (como Nico en Calle 85) y animación procedural.
+ * Mantiene la identidad de la Decisión 012/017: orejas de conejo con puntas de color,
+ * cabeza clara con cara oscura y ojos amarillos, hoodie turquesa y mochila con cable.
+ * El grupo raíz está a la altura de los pies y mira hacia +Z.
+ */
+export class Nexus3D {
+  readonly root = new THREE.Group();
+  readonly velocity = new THREE.Vector3();
+  heading = 0;
+
+  private readonly body = new THREE.Group();
+  private readonly legL = new THREE.Group();
+  private readonly legR = new THREE.Group();
+  private readonly armL = new THREE.Group();
+  private readonly armR = new THREE.Group();
+  private readonly head = new THREE.Group();
+  private readonly earL = new THREE.Group();
+  private readonly earR = new THREE.Group();
+  private readonly lens: THREE.Mesh;
+  private readonly cable: THREE.Mesh;
+  private readonly cableCurve: THREE.CatmullRomCurve3;
+  private phase = 0;
+  private time = 0;
+  private earSwing = 0;
+  private celebrateT = -1;
+  private reachT = -1;
+  private blinkT = 2;
+  private readonly eyes: THREE.Mesh[] = [];
+
+  constructor() {
+    this.root.add(this.body);
+    // Un poco más grande que "a escala": el protagonista tiene que leerse bien en el celular
+    this.root.scale.setScalar(1.3);
+
+    // Piernas (pivote en la cadera) con zapatillas blancas, suela naranja y detalle azul
+    for (const [leg, x] of [[this.legL, 0.08], [this.legR, -0.08]] as const) {
+      leg.position.set(x, 0.34, 0);
+      const thigh = rounded(new THREE.CapsuleGeometry(0.065, 0.18, 4, 10), toon(C.pants), 0.014);
+      thigh.position.y = -0.155;
+      leg.add(thigh);
+      const shoe = new THREE.Group();
+      shoe.position.set(0, -0.3, 0.03);
+      const upper = box(0.13, 0.08, 0.21, C.shoe, { outline: 0.012 });
+      shoe.add(upper);
+      const sole = box(0.135, 0.03, 0.22, C.sole, { outline: false });
+      sole.position.y = -0.05;
+      shoe.add(sole);
+      const accent = box(0.137, 0.035, 0.08, C.shoeAccent, { outline: false });
+      accent.position.set(0, 0.005, -0.03);
+      shoe.add(accent);
+      leg.add(shoe);
+      this.body.add(leg);
+    }
+
+    // Cadera y torso con hoodie
+    const hips = rounded(new THREE.SphereGeometry(0.13, 14, 10), toon(C.pants), 0.014);
+    hips.scale.set(1.2, 0.7, 0.95);
+    hips.position.y = 0.36;
+    this.body.add(hips);
+
+    const torso = rounded(new THREE.CapsuleGeometry(0.155, 0.12, 6, 14), toon(C.hoodie, 2), 0.016);
+    torso.scale.set(1.12, 1, 0.86);
+    torso.position.y = 0.52;
+    this.body.add(torso);
+
+    const pocket = rounded(new THREE.CylinderGeometry(0.15, 0.16, 0.07, 14), toon(C.hoodieDark), 0);
+    pocket.scale.set(1.12, 1, 0.86);
+    pocket.position.y = 0.42;
+    this.body.add(pocket);
+
+    const zip = box(0.018, 0.2, 0.01, '#f4ecdc', { outline: false });
+    zip.position.set(0, 0.52, 0.137);
+    this.body.add(zip);
+
+    for (const sx of [-0.04, 0.04]) {
+      const cord = box(0.012, 0.08, 0.012, '#f4ecdc', { outline: false });
+      cord.position.set(sx, 0.6, 0.14);
+      this.body.add(cord);
+    }
+
+    const collar = rounded(new THREE.TorusGeometry(0.1, 0.035, 8, 16), toon(C.collar), 0.012);
+    collar.rotation.x = Math.PI / 2;
+    collar.position.y = 0.68;
+    this.body.add(collar);
+
+    const hood = rounded(new THREE.SphereGeometry(0.15, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), toon(C.hoodie, 2), 0.014);
+    hood.rotation.x = -Math.PI / 2 - 0.3;
+    hood.position.set(0, 0.68, -0.1);
+    this.body.add(hood);
+
+    // Brazos (pivote en el hombro) con guantes oscuros
+    for (const [arm, x] of [[this.armL, 0.2], [this.armR, -0.2]] as const) {
+      arm.position.set(x, 0.62, 0);
+      const sleeve = rounded(new THREE.CapsuleGeometry(0.056, 0.15, 4, 10), toon(C.hoodie, 2), 0.014);
+      sleeve.position.y = -0.12;
+      arm.add(sleeve);
+      const hand = rounded(new THREE.SphereGeometry(0.066, 12, 8), toon(C.glove), 0.014);
+      hand.position.y = -0.27;
+      arm.add(hand);
+      this.body.add(arm);
+    }
+
+    // Mochila con lente y cable de energía colgando
+    const pack = new THREE.Group();
+    pack.position.set(0, 0.54, -0.2);
+    const packBody = box(0.24, 0.27, 0.13, C.pack, { outline: 0.014 });
+    pack.add(packBody);
+    const lensRim = rounded(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 16), toon('#2a2f3c'), 0.01);
+    lensRim.rotation.x = Math.PI / 2;
+    lensRim.position.z = -0.075;
+    pack.add(lensRim);
+    this.lens = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.045, 16), glow(C.lens));
+    this.lens.rotation.x = Math.PI / 2;
+    this.lens.position.z = -0.08;
+    pack.add(this.lens);
+    this.body.add(pack);
+
+    this.cableCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.08, 0.42, -0.24),
+      new THREE.Vector3(0.12, 0.3, -0.27),
+      new THREE.Vector3(0.1, 0.2, -0.26),
+      new THREE.Vector3(0.06, 0.16, -0.24),
+    ]);
+    this.cable = new THREE.Mesh(new THREE.TubeGeometry(this.cableCurve, 12, 0.014, 6), toon(C.cable));
+    this.cable.castShadow = true;
+    this.body.add(this.cable);
+
+    // Cabeza grande: casco claro, cara oscura tipo visor, ojos amarillos que brillan
+    this.head.position.y = 0.7;
+    const skull = rounded(new THREE.SphereGeometry(0.27, 24, 18), toon(C.head, 2), 0.02);
+    skull.scale.set(1.06, 0.94, 1);
+    skull.position.y = 0.25;
+    this.head.add(skull);
+    const face = new THREE.Mesh(new THREE.SphereGeometry(0.2, 20, 14), toon(C.face));
+    face.scale.set(1.05, 0.74, 0.55);
+    face.position.set(0, 0.22, 0.16);
+    this.head.add(face);
+    for (const ex of [-0.075, 0.075]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.044, 12, 10), glow(C.eye));
+      eye.scale.set(0.78, 1.3, 0.5);
+      eye.position.set(ex, 0.23, 0.258);
+      this.head.add(eye);
+      this.eyes.push(eye);
+    }
+
+    // Orejas de conejo con puntas de color distinto (izq. celeste, der. naranja)
+    for (const [ear, x, tip, tilt] of [
+      [this.earL, 0.11, C.earTipL, -0.2],
+      [this.earR, -0.11, C.earTipR, 0.2],
+    ] as const) {
+      ear.position.set(x, 0.43, -0.02);
+      ear.rotation.z = tilt;
+      const earGeo = new THREE.CapsuleGeometry(0.066, 0.26, 6, 12);
+      earGeo.translate(0, 0.18, 0);
+      const earMesh = rounded(earGeo, toon(C.head, 2), 0.018);
+      earMesh.scale.set(1, 1, 0.8);
+      ear.add(earMesh);
+      const tipGeo = new THREE.CapsuleGeometry(0.068, 0.06, 6, 12);
+      tipGeo.translate(0, 0.33, 0);
+      const tipMesh = new THREE.Mesh(tipGeo, toon(tip));
+      tipMesh.scale.set(1, 1, 0.82);
+      tipMesh.castShadow = true;
+      ear.add(tipMesh);
+      this.head.add(ear);
+    }
+    this.body.add(this.head);
+
+    this.root.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) o.castShadow = true;
+    });
+  }
+
+  /** Punto del que sale el cable de energía (la lente de la mochila), en coordenadas de mundo. */
+  plugPoint(out = new THREE.Vector3()): THREE.Vector3 {
+    return this.lens.getWorldPosition(out);
+  }
+
+  get position(): THREE.Vector3 {
+    return this.root.position;
+  }
+
+  get speed(): number {
+    return Math.hypot(this.velocity.x, this.velocity.z);
+  }
+
+  celebrate(): void {
+    this.celebrateT = 0;
+  }
+
+  /** Gesto corto de "estirar el brazo" al tocar un objeto. */
+  reach(): void {
+    this.reachT = 0;
+  }
+
+  /** dir: dirección deseada en el plano XZ (magnitud 0..1). */
+  move(dirX: number, dirZ: number, dt: number): void {
+    const tx = dirX * SPEED;
+    const tz = dirZ * SPEED;
+    this.velocity.x = damp(this.velocity.x, tx, ACCEL, dt);
+    this.velocity.z = damp(this.velocity.z, tz, ACCEL, dt);
+    this.root.position.x += this.velocity.x * dt;
+    this.root.position.z += this.velocity.z * dt;
+    if (Math.hypot(dirX, dirZ) > 0.15) {
+      this.heading = dampAngle(this.heading, Math.atan2(dirX, dirZ), 12, dt);
+    }
+  }
+
+  animate(dt: number): void {
+    this.time += dt;
+    const speed = this.speed;
+    const k = clamp(speed / SPEED, 0, 1);
+    this.phase += dt * (4 + speed * 2.1);
+    const s = Math.sin(this.phase);
+
+    this.root.rotation.y = this.heading;
+
+    // Caminar: piernas y brazos en oposición, rebote del cuerpo, leve inclinación hacia adelante
+    this.legL.rotation.x = s * 0.75 * k;
+    this.legR.rotation.x = -s * 0.75 * k;
+    this.armL.rotation.x = -s * 0.65 * k;
+    this.armR.rotation.x = s * 0.65 * k;
+    this.armL.rotation.z = 0.12;
+    this.armR.rotation.z = -0.12;
+    const bob = Math.abs(Math.cos(this.phase)) * 0.045 * k;
+    const breathe = Math.sin(this.time * 2.2) * 0.008 * (1 - k);
+    this.body.position.y = bob + breathe;
+    this.body.rotation.x = 0.1 * k;
+
+    // Orejas: se quedan atrás al acelerar y rebotan con el paso
+    this.earSwing = damp(this.earSwing, -0.5 * k, 6, dt);
+    const flop = Math.sin(this.phase * 2) * 0.12 * k + Math.sin(this.time * 1.7) * 0.04;
+    this.earL.rotation.x = this.earSwing + flop;
+    this.earR.rotation.x = this.earSwing - flop * 0.8;
+    this.head.rotation.x = -0.05 * k + Math.sin(this.phase * 2) * 0.03 * k;
+
+    // Parpadeo
+    this.blinkT -= dt;
+    const blink = this.blinkT < 0.12 && this.blinkT > 0 ? 0.15 : 1;
+    if (this.blinkT <= 0) this.blinkT = 2 + Math.random() * 3;
+    for (const eye of this.eyes) eye.scale.y = 1.3 * blink;
+
+    // Cable de la mochila se balancea
+    const sway = Math.sin(this.time * 3 + this.phase) * 0.03 * (0.3 + k);
+    const pts = this.cableCurve.points;
+    pts[1].x = 0.12 + sway;
+    pts[2].x = 0.1 + sway * 1.6;
+    pts[3].x = 0.06 + sway * 2;
+    pts[3].z = -0.24 - k * 0.08;
+    this.cable.geometry.dispose();
+    this.cable.geometry = new THREE.TubeGeometry(this.cableCurve, 12, 0.014, 6);
+
+    // Gesto de alcanzar
+    if (this.reachT >= 0) {
+      this.reachT += dt / 0.35;
+      const r = Math.sin(Math.min(this.reachT, 1) * Math.PI);
+      this.armL.rotation.x = -1.4 * r;
+      if (this.reachT >= 1) this.reachT = -1;
+    }
+
+    // Festejo: salto con giro y brazos arriba
+    if (this.celebrateT >= 0) {
+      this.celebrateT += dt / 0.9;
+      const t = Math.min(this.celebrateT, 1);
+      this.body.position.y += Math.sin(t * Math.PI) * 0.55;
+      this.body.rotation.y = t * Math.PI * 2;
+      this.armL.rotation.x = this.armR.rotation.x = Math.PI * 0.85 * Math.sin(t * Math.PI);
+      this.armL.rotation.z = 0.5 * Math.sin(t * Math.PI);
+      this.armR.rotation.z = -0.5 * Math.sin(t * Math.PI);
+      if (this.celebrateT >= 1) {
+        this.celebrateT = -1;
+        this.body.rotation.y = 0;
+      }
+    }
+
+    (this.lens.material as THREE.MeshBasicMaterial).color.setHSL(0.52, 0.9, 0.62 + Math.sin(this.time * 4) * 0.08);
+  }
+}
