@@ -288,3 +288,6 @@ El Nexus gana detalle (brillo en los ojos, sonrisa, borde del visor, cachetes, i
 
 ## 3D: vecinos, antena y puente con detalle
 Los vecinos tienen cara expresiva (cejas y boca pasan de tristes a contentos cuando su lugar revive), nariz, orejas, brillo en los ojos y ropa con cinturón, botones y puños, más detalles propios: mameluco y herramientas de Miga, capucha, botas y palillos de Bombo, cola de caballo, bufanda y luz "al aire" de Vera, solapas, flor y bastón de Don Paso, botones dorados y reloj de Goteo. La antena es una torre reticulada con base de hormigón, escalera, cartel de peligro, receptor en el plato y luz roja que parpadea al transmitir. El puente suma palanca con franjas de peligro y rueda dentada que gira, tablones con clavos, vigas, baranda doble y pilares de piedra en las orillas.
+
+## 3D: fuente de agua, canal y autos con detalle
+La fuente tiene escalón de piedra, cuatro caños con chorritos, ondas en el agua, pico central, plaqueta y un fondo seco con hojas y monedas; su plaza suma baldosas, bancos y un tacho. El canal tiene cordón de piedra, juntas, caños de desagüe, juncos, nenúfares, corriente animada con hojas que flotan y un bote amarrado que se mece. Los autos tienen vidrios, paragolpes, parrilla, faros, luces traseras, patentes, puertas, manijas, espejos y llantas con taza; las camionetas, caja de carga.

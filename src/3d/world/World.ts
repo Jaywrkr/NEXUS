@@ -76,6 +76,9 @@ export class World {
   private readonly clouds: THREE.Group[] = [];
   private readonly butterflies: { g: THREE.Group; wl: THREE.Mesh; wr: THREE.Mesh; cx: number; cz: number; r: number; s: number; p: number }[] = [];
   private readonly swaying: { g: THREE.Object3D; p: number }[] = [];
+  /** Cosas que flotan en el canal y se mueven con la corriente (vetas de luz, hojas) y el bote. */
+  private readonly drifting: { o: THREE.Object3D; speed: number; p: number }[] = [];
+  private boat: THREE.Group | null = null;
 
   constructor() {
     const s = this.scene;
@@ -327,6 +330,7 @@ export class World {
         this.circles.push({ x: BRIDGE_X + sx * (BRIDGE_HALF + 0.3), z: z + (z < CANAL_MIN_Z + 1 ? -0.5 : 0.5), r: 0.3 });
       }
     }
+    this.buildCanalDetail();
     // Bloqueos permanentes: todo el canal menos el hueco del puente (que se abre al conectarlo)
     this.rects.push({ minX: -100, maxX: BRIDGE_X - BRIDGE_HALF, minZ: CANAL_MIN_Z - 0.6, maxZ: CANAL_MAX_Z + 0.6 });
     this.rects.push({ minX: BRIDGE_X + BRIDGE_HALF, maxX: 100, minZ: CANAL_MIN_Z - 0.6, maxZ: CANAL_MAX_Z + 0.6 });
@@ -344,6 +348,129 @@ export class World {
       stripe.position.set(-ROAD + 1.2 + i * 2, 0.7, CANAL_MIN_Z - 1.0);
       this.scene.add(stripe);
     }
+  }
+
+  /** Detalle del canal: bordes de piedra, juntas, caños, juncos, nenúfares, corriente y un bote. */
+  private buildCanalDetail(): void {
+    const near = (x: number) => Math.abs(x - BRIDGE_X) < BRIDGE_HALF + 0.6;
+    // Cordón de piedra clara sobre los muros y juntas entre bloques
+    for (const [z, dir] of [[CANAL_MIN_Z, -1], [CANAL_MAX_Z, 1]] as const) {
+      const coping = box(130, 0.12, 0.5, '#d6cfc2', { outline: false, cast: false, brush: 6 });
+      coping.position.set(0, 0.03, z + dir * 0.05);
+      this.scene.add(coping);
+      for (let x = -60; x <= 60; x += 2) {
+        if (near(x)) continue;
+        const joint = box(0.05, 1.1, 0.04, '#9c938a', { outline: false, cast: false });
+        joint.position.set(x, -0.55, z - dir * 0.32);
+        this.scene.add(joint);
+      }
+      // Línea de humedad cerca del agua
+      const damp = box(130, 0.25, 0.02, '#7d8a86', { outline: false, cast: false });
+      damp.position.set(0, -0.78, z - dir * 0.32);
+      this.scene.add(damp);
+    }
+    // Caños de desagüe en el muro norte: su cara hacia el agua es la que ve la cámara (mira hacia +Z)
+    for (const x of [-36, -14, 6, 32]) {
+      const pipe = rounded(new THREE.CylinderGeometry(0.22, 0.22, 0.5, 12), toon('#6b6f7a'), 0.02);
+      pipe.rotation.x = Math.PI / 2;
+      pipe.position.set(x, -0.35, CANAL_MIN_Z + 0.45);
+      this.scene.add(pipe);
+      const hole = new THREE.Mesh(new THREE.CircleGeometry(0.15, 12), toon('#1d1630'));
+      hole.position.set(x, -0.35, CANAL_MIN_Z + 0.71);
+      this.scene.add(hole);
+    }
+    for (const x of [-26, -4, 26]) {
+      const ring = rounded(new THREE.TorusGeometry(0.16, 0.035, 6, 12), toon('#5a5f6b'), 0.008);
+      ring.position.set(x, -0.25, CANAL_MIN_Z + 0.32);
+      this.scene.add(ring);
+    }
+    // Juncos en las orillas del agua y nenúfares con alguna flor
+    const reedMat = toon('#5f8a4a');
+    for (let i = 0; i < 26; i += 1) {
+      const x = -55 + i * 4.3 + (rnd() - 0.5) * 1.5;
+      if (near(x)) continue;
+      const z = i % 2 ? CANAL_MIN_Z + 0.55 : CANAL_MAX_Z - 0.55;
+      for (let k = 0; k < 4; k += 1) {
+        const reed = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.9 + rnd() * 0.5, 4), reedMat);
+        reed.position.set(x + (k - 1.5) * 0.12, -0.45, z + (rnd() - 0.5) * 0.2);
+        reed.rotation.z = (rnd() - 0.5) * 0.4;
+        this.scene.add(reed);
+      }
+      if (rnd() < 0.5) {
+        const cat = rounded(new THREE.CapsuleGeometry(0.04, 0.14, 3, 6), toon('#7a4a2e'), 0);
+        cat.position.set(x, 0.0, z);
+        this.scene.add(cat);
+      }
+    }
+    for (let i = 0; i < 14; i += 1) {
+      const x = -50 + i * 7.5 + (rnd() - 0.5) * 3;
+      if (near(x)) continue;
+      const z = CANAL_MIN_Z + 1.2 + rnd() * 3.6;
+      const pad = new THREE.Mesh(new THREE.CircleGeometry(0.35 + rnd() * 0.2, 10, 0.4, Math.PI * 2 - 0.4), toon('#4f8f3a'));
+      pad.rotation.set(-Math.PI / 2, 0, rnd() * 6);
+      pad.position.set(x, -0.88, z);
+      this.scene.add(pad);
+      if (rnd() < 0.35) {
+        const lotus = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), toon('#f4a6c8'));
+        lotus.scale.set(1, 0.6, 1);
+        lotus.position.set(x, -0.82, z);
+        this.scene.add(lotus);
+      }
+    }
+    // Corriente: vetas claras y hojas que viajan por el agua
+    const streakMat = withLife(new THREE.MeshBasicMaterial({ color: '#a9d4f2', transparent: true, opacity: 0.55, depthWrite: false }));
+    for (let i = 0; i < 22; i += 1) {
+      const streak = new THREE.Mesh(new THREE.PlaneGeometry(1.4 + rnd() * 1.6, 0.06), streakMat);
+      streak.rotation.x = -Math.PI / 2;
+      streak.position.set(-60 + rnd() * 120, -0.885, CANAL_MIN_Z + 0.8 + rnd() * 4.4);
+      streak.userData.dynamic = true;
+      this.scene.add(streak);
+      this.drifting.push({ o: streak, speed: 0.9 + rnd() * 0.5, p: rnd() * 10 });
+    }
+    for (let i = 0; i < 6; i += 1) {
+      const leaf = new THREE.Mesh(new THREE.CircleGeometry(0.12, 6), toon(i % 2 ? '#c07a3a' : '#8aa04a'));
+      leaf.scale.set(1.6, 0.8, 1);
+      leaf.rotation.x = -Math.PI / 2;
+      leaf.position.set(-60 + rnd() * 120, -0.875, CANAL_MIN_Z + 1 + rnd() * 4);
+      leaf.userData.dynamic = true;
+      this.scene.add(leaf);
+      this.drifting.push({ o: leaf, speed: 0.7 + rnd() * 0.3, p: rnd() * 10 });
+    }
+    // Botecito de madera amarrado cerca de la orilla norte
+    const boat = new THREE.Group();
+    const hull = box(1.2, 0.35, 2.6, '#b0855c', { outline: 0.03, brush: 1 });
+    boat.add(hull);
+    const inside = box(1.0, 0.05, 2.3, '#7a5a42', { outline: false });
+    inside.position.y = 0.16;
+    boat.add(inside);
+    // Proa: una cuña más angosta al frente
+    const bow = box(0.8, 0.35, 0.5, '#b0855c', { outline: 0.02 });
+    bow.position.set(0, 0.02, 1.5);
+    boat.add(bow);
+    const bowTip = box(0.4, 0.35, 0.35, '#b0855c', { outline: 0.02 });
+    bowTip.position.set(0, 0.04, 1.85);
+    boat.add(bowTip);
+    const seatB = box(1.0, 0.06, 0.3, '#d9b27a', { outline: 0.01 });
+    seatB.position.set(0, 0.2, -0.2);
+    boat.add(seatB);
+    const stripe = box(1.22, 0.08, 2.62, '#e0563f', { outline: false });
+    stripe.position.y = 0.1;
+    boat.add(stripe);
+    for (const sx of [-1, 1]) {
+      const oar = box(0.06, 0.04, 1.8, '#d9b27a', { outline: 0.008 });
+      oar.position.set(sx * 0.45, 0.24, 0.1);
+      oar.rotation.y = sx * 0.15;
+      boat.add(oar);
+    }
+    boat.rotation.y = Math.PI / 2 - 0.15;
+    boat.position.set(-8, -0.75, CANAL_MIN_Z + 1.3);
+    boat.traverse((o) => (o.userData.dynamic = true));
+    this.scene.add(boat);
+    this.boat = boat;
+    const rope = box(0.03, 0.03, 1.0, '#d9c49a', { outline: false });
+    rope.position.set(-6.9, -0.45, CANAL_MIN_Z + 0.75);
+    rope.rotation.set(0.6, -0.5, 0);
+    this.scene.add(rope);
   }
 
   /* ---------- Escenografía de cada zona ---------- */
@@ -490,11 +617,61 @@ export class World {
     ring.rotation.x = Math.PI / 2;
     ring.position.set(-20, 0.1, 16);
     this.scene.add(ring);
+    // Baldosas: anillo interior de otro tono y juntas radiales
+    const inner = new THREE.Mesh(new THREE.CylinderGeometry(3.6, 3.6, 0.11, 40), toon('#d6c9b0', 8));
+    inner.position.set(-20, 0.055, 16);
+    inner.receiveShadow = true;
+    this.scene.add(inner);
+    for (let i = 0; i < 16; i += 1) {
+      const a = (i / 16) * Math.PI * 2;
+      const joint = box(4.3, 0.02, 0.05, '#bfb29c', { outline: false, cast: false });
+      joint.position.set(-20 + Math.cos(a) * 5.8, 0.115, 16 + Math.sin(a) * 5.8);
+      joint.rotation.y = -a;
+      this.scene.add(joint);
+    }
+    // Bancos mirando a la fuente y un tacho de basura
+    for (const a of [1.75, -1.1]) {
+      const bx = -20 + Math.cos(a) * 6.3;
+      const bz = 16 + Math.sin(a) * 6.3;
+      this.bench(bx, bz, Math.atan2(-Math.cos(a), -Math.sin(a)));
+    }
+    const bin = rounded(new THREE.CylinderGeometry(0.3, 0.26, 0.8, 12), toon('#4f8f3a'), 0.02);
+    bin.position.set(-20 + Math.cos(2.3) * 6.6, 0.4, 16 + Math.sin(2.3) * 6.6);
+    this.scene.add(bin);
+    const binLid = rounded(new THREE.CylinderGeometry(0.33, 0.33, 0.08, 12), toon('#3a6f2c'), 0.01);
+    binLid.position.set(bin.position.x, 0.84, bin.position.z);
+    this.scene.add(binLid);
+    this.circles.push({ x: bin.position.x, z: bin.position.z, r: 0.35 });
     for (let i = 0; i < 6; i += 1) {
       const a = (i / 6) * Math.PI * 2 + 0.3;
       if (Math.abs(a - 3.6) < 0.5) continue; // abertura hacia la fuente de energía
       this.bush(-20 + Math.cos(a) * 9.2, 16 + Math.sin(a) * 9.2, 0.8, true);
     }
+  }
+
+  /** Banco de plaza con respaldo; mira hacia +Z antes de girarlo. */
+  private bench(x: number, z: number, rot: number): void {
+    const g = new THREE.Group();
+    const seat = box(2.0, 0.12, 0.6, '#a97a52', { outline: 0.02, brush: 1 });
+    seat.position.y = 0.45;
+    g.add(seat);
+    const back = box(2.0, 0.45, 0.1, '#a97a52', { outline: 0.02, brush: 1 });
+    back.position.set(0, 0.78, -0.28);
+    back.rotation.x = -0.12;
+    g.add(back);
+    for (const sx of [-0.85, 0.85]) {
+      const leg = box(0.1, 0.45, 0.55, '#3a3d48', { outline: 0.012 });
+      leg.position.set(sx, 0.22, 0);
+      g.add(leg);
+      const arm = box(0.08, 0.06, 0.6, '#3a3d48', { outline: 0.01 });
+      arm.position.set(sx * 1.08, 0.66, 0);
+      g.add(arm);
+    }
+    g.position.set(x, 0, z);
+    g.rotation.y = rot;
+    this.scene.add(g);
+    // En diagonal un rectángulo alineado a los ejes no sirve: un círculo cubre el banco
+    this.circles.push({ x, z, r: 0.95 });
   }
 
   private buildAntennaYard(): void {
@@ -1001,28 +1178,130 @@ export class World {
   }
 
   private car(x: number, z: number, rot: number): void {
+    // El frente del auto mira a +Z (capó adelante, baúl o caja de carga atrás)
     const g = new THREE.Group();
     const c = pick(CARS);
+    const dark = `#${new THREE.Color(c).multiplyScalar(0.7).getHexString()}`;
     const pickup = rnd() < 0.4;
     const body = box(2.0, 0.8, 4.6, c, { brush: 2 });
     body.position.y = 0.75;
     g.add(body);
-    const cab = box(1.8, 0.75, pickup ? 1.6 : 2.4, c, { brush: 2 });
-    cab.position.set(0, 1.5, pickup ? 0.4 : -0.2);
+    const cabZ = pickup ? 0.4 : -0.2;
+    const cabD = pickup ? 1.6 : 2.4;
+    const cab = box(1.8, 0.75, cabD, c, { brush: 2 });
+    cab.position.set(0, 1.5, cabZ);
     g.add(cab);
-    const glass = box(1.82, 0.5, pickup ? 1.3 : 2.1, '#3b4f7a', { outline: false });
-    glass.position.set(0, 1.55, pickup ? 0.4 : -0.2);
-    g.add(glass);
+    // Vidrios: parabrisas, luneta y ventanillas con parantes del color del auto
+    const glassCol = '#3b4f7a';
+    const side = box(1.82, 0.5, cabD - 0.3, glassCol, { outline: false });
+    side.position.set(0, 1.55, cabZ);
+    g.add(side);
+    for (const dz of [-1, 1]) {
+      const pane = box(1.6, 0.5, 0.04, glassCol, { outline: false });
+      pane.position.set(0, 1.55, cabZ + dz * (cabD / 2 + 0.01));
+      g.add(pane);
+    }
+    const pillar = box(1.84, 0.52, 0.1, c, { outline: false });
+    pillar.position.set(0, 1.55, cabZ + (pickup ? 0 : 0.2));
+    g.add(pillar);
+    // Reflejo en el parabrisas
+    const shine = box(0.14, 0.4, 0.01, '#7c93c4', { outline: false });
+    shine.position.set(-0.4, 1.56, cabZ + cabD / 2 + 0.035);
+    shine.rotation.z = 0.5;
+    g.add(shine);
+    // Paragolpes, parrilla, faros, luces de atrás y patentes
+    for (const dz of [-1, 1]) {
+      const bumper = box(2.08, 0.22, 0.18, '#d8dbe2', { outline: 0.02 });
+      bumper.position.set(0, 0.45, dz * 2.36);
+      g.add(bumper);
+      const plate = box(0.6, 0.18, 0.03, '#f4efe6', { outline: 0.008 });
+      plate.position.set(0, 0.66, dz * 2.31);
+      g.add(plate);
+      const plateTxt = box(0.42, 0.05, 0.01, '#2f3a6a', { outline: false });
+      plateTxt.position.set(0, 0.66, dz * 2.33);
+      g.add(plateTxt);
+      for (const sx of [-0.72, 0.72]) {
+        const lamp = box(0.36, 0.2, 0.04, dz > 0 ? '#fff4c8' : '#e0453a', { outline: 0.01 });
+        lamp.position.set(sx, 0.9, dz * 2.31);
+        g.add(lamp);
+      }
+    }
+    const grille = box(0.8, 0.22, 0.04, '#2a2733', { outline: false });
+    grille.position.set(0, 0.88, 2.31);
+    g.add(grille);
+    for (let i = 0; i < 3; i += 1) {
+      const bar = box(0.76, 0.025, 0.02, '#8a8f9a', { outline: false });
+      bar.position.set(0, 0.81 + i * 0.07, 2.33);
+      g.add(bar);
+    }
+    // Línea de cintura, puertas, manijas y espejos
+    for (const sx of [-1, 1]) {
+      const belt = box(0.02, 0.05, 4.4, dark, { outline: false });
+      belt.position.set(sx * 1.01, 1.0, 0);
+      g.add(belt);
+      for (const dzz of pickup ? [cabZ - 0.75, cabZ + 0.75] : [cabZ - 1.15, cabZ, cabZ + 1.15]) {
+        const seam = box(0.02, 0.7, 0.03, dark, { outline: false });
+        seam.position.set(sx * 1.01, 0.8, dzz);
+        g.add(seam);
+      }
+      for (const dzz of pickup ? [cabZ] : [cabZ - 0.6, cabZ + 0.55]) {
+        const handle = box(0.03, 0.05, 0.2, '#d8dbe2', { outline: false });
+        handle.position.set(sx * 1.02, 1.05, dzz);
+        g.add(handle);
+      }
+      const mirror = box(0.2, 0.14, 0.12, c, { outline: 0.01 });
+      mirror.position.set(sx * 1.05, 1.35, cabZ + cabD / 2 - 0.15);
+      g.add(mirror);
+    }
+    if (pickup) {
+      // Caja de carga abierta: piso oscuro y borde
+      const bed = box(1.86, 0.06, 2.0, '#2a2733', { outline: false });
+      bed.position.set(0, 1.16, -1.25);
+      g.add(bed);
+      for (const sx of [-0.95, 0.95]) {
+        const wall = box(0.1, 0.32, 2.1, c, { outline: 0.012 });
+        wall.position.set(sx, 1.3, -1.25);
+        g.add(wall);
+      }
+      const gate = box(2.0, 0.32, 0.1, c, { outline: 0.012 });
+      gate.position.set(0, 1.3, -2.25);
+      g.add(gate);
+      if (rnd() < 0.6) {
+        const crate = box(0.7, 0.45, 0.6, '#b0855c', { outline: 0.015, brush: 1 });
+        crate.position.set(0.3, 1.42, -1.4);
+        crate.rotation.y = 0.2;
+        g.add(crate);
+      }
+    } else if (rnd() < 0.4) {
+      // Portaequipaje en el techo
+      for (const sx of [-0.6, 0.6]) {
+        const rail = box(0.06, 0.06, 1.8, '#2a2733', { outline: false });
+        rail.position.set(sx, 1.91, cabZ);
+        g.add(rail);
+      }
+    }
+    // Ruedas con taza, arco de rueda oscuro
     for (const [wx, wz] of [
       [1, 1.5],
       [-1, 1.5],
       [1, -1.5],
       [-1, -1.5],
     ]) {
-      const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 12), toon('#262233'));
+      const arch = box(0.06, 0.5, 1.1, '#2a2733', { outline: false });
+      arch.position.set(wx * 1.0, 0.6, wz);
+      g.add(arch);
+      const wh = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.3, 14), toon('#262233'));
       wh.rotation.z = Math.PI / 2;
       wh.position.set(wx, 0.42, wz);
       g.add(wh);
+      const hub = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.04, 10), toon('#c9ccd4'));
+      hub.rotation.z = Math.PI / 2;
+      hub.position.set(wx * 1.16, 0.42, wz);
+      g.add(hub);
+      const nut = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.05, 6), toon('#8a8f9a'));
+      nut.rotation.z = Math.PI / 2;
+      nut.position.set(wx * 1.18, 0.42, wz);
+      g.add(nut);
     }
     g.position.set(x, 0, z);
     g.rotation.y = rot;
@@ -1204,6 +1483,16 @@ export class World {
     this.hemi.intensity = 1.35 + 0.35 * m;
     this.sun.intensity = 1.9 + 0.5 * m;
     for (const c of this.clouds) c.position.x += dt * 0.6;
+    // Corriente del canal (hacia el este) y el bote que se mece amarrado
+    for (const d of this.drifting) {
+      d.o.position.x += d.speed * dt;
+      if (d.o.position.x > 62) d.o.position.x = -62;
+      d.o.position.z += Math.sin(time * 0.6 + d.p) * 0.002;
+    }
+    if (this.boat) {
+      this.boat.position.y = -0.75 + Math.sin(time * 1.3) * 0.04;
+      this.boat.rotation.z = Math.sin(time * 1.1) * 0.04;
+    }
     for (const s of this.swaying) {
       s.g.rotation.z = Math.sin(time * 0.9 + s.p) * 0.03;
       s.g.rotation.x = Math.sin(time * 0.7 + s.p * 1.3) * 0.02;

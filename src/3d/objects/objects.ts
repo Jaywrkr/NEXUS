@@ -275,10 +275,51 @@ export class Fountain extends Connectable {
   private readonly water: THREE.Mesh;
   private readonly jet: THREE.Group;
   private readonly drops: THREE.Mesh[] = [];
+  private readonly spoutDrops: THREE.Mesh[] = [];
+  private readonly ripples: THREE.Mesh[] = [];
 
   constructor(id: string, x: number, z: number) {
     super(id, 'target', x, z);
     this.collideRadius = 2.5;
+
+    // Escalón de piedra alrededor y bloques marcados en el muro
+    const stepRing = new THREE.Mesh(new THREE.CylinderGeometry(2.85, 2.95, 0.18, 32), toon('#bfb29c', 2));
+    stepRing.position.y = 0.09;
+    stepRing.castShadow = stepRing.receiveShadow = true;
+    outline(stepRing, 0.02);
+    this.group.add(stepRing);
+    for (let i = 0; i < 16; i += 1) {
+      const a = (i / 16) * Math.PI * 2;
+      const joint = box(0.05, 0.5, 0.05, '#a89a84', { outline: false });
+      joint.position.set(Math.cos(a) * 2.47, 0.38, Math.sin(a) * 2.47);
+      joint.rotation.y = -a;
+      this.group.add(joint);
+    }
+    // Plaqueta con una gota al frente (mira a la cámara)
+    const plaque = box(0.6, 0.36, 0.05, '#e6dbc6', { outline: 0.015 });
+    plaque.position.set(Math.sin(Math.PI / 4) * 2.52, 0.38, Math.cos(Math.PI / 4) * 2.52);
+    plaque.rotation.y = Math.PI / 4;
+    this.group.add(plaque);
+    const dropIcon = new THREE.Mesh(new THREE.SphereGeometry(0.08, 10, 8), toon('#4fa8e0'));
+    dropIcon.scale.set(1, 1.3, 0.4);
+    dropIcon.position.set(Math.sin(Math.PI / 4) * 2.56, 0.37, Math.cos(Math.PI / 4) * 2.56);
+    this.group.add(dropIcon);
+    // Fondo seco: hojas caídas y monedas (quedan bajo el agua cuando vuelve)
+    for (let i = 0; i < 9; i += 1) {
+      const a = i * 2.39;
+      const r = 0.9 + ((i * 7) % 5) * 0.25;
+      const leaf = new THREE.Mesh(new THREE.CircleGeometry(0.1, 6), toon(i % 3 ? '#9a6a3a' : '#7a5a2a'));
+      leaf.scale.set(1.6, 0.8, 1);
+      leaf.rotation.set(-Math.PI / 2, 0, a);
+      leaf.position.set(Math.cos(a) * r, 0.09, Math.sin(a) * r);
+      this.group.add(leaf);
+    }
+    for (let i = 0; i < 6; i += 1) {
+      const a = i * 1.7 + 0.4;
+      const coin = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.015, 10), toon('#f2c14e'));
+      coin.position.set(Math.cos(a) * (1.2 + (i % 3) * 0.3), 0.09, Math.sin(a) * (1.2 + (i % 3) * 0.3));
+      this.group.add(coin);
+    }
 
     const ring = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 2.5, 0.65, 28, 1, true), toon('#cfc2ad', 2));
     ring.position.y = 0.32;
@@ -301,6 +342,35 @@ export class Fountain extends Connectable {
     const bowl = rounded(new THREE.CylinderGeometry(0.85, 0.35, 0.3, 16), toon('#e6dbc6', 2), 0.02);
     bowl.position.y = 1.4;
     this.group.add(bowl);
+    const bowlRim = rounded(new THREE.TorusGeometry(0.85, 0.06, 6, 24), toon('#d6c9b0'), 0.01);
+    bowlRim.rotation.x = Math.PI / 2;
+    bowlRim.position.y = 1.55;
+    this.group.add(bowlRim);
+    // Anillos en la columna y pico central del que sale el chorro
+    for (const [y, r] of [[0.2, 0.43], [0.9, 0.33]] as const) {
+      const band = rounded(new THREE.TorusGeometry(r, 0.05, 6, 16), toon('#d6c9b0'), 0.01);
+      band.rotation.x = Math.PI / 2;
+      band.position.y = y;
+      this.group.add(band);
+    }
+    const nozzle = rounded(new THREE.CylinderGeometry(0.06, 0.1, 0.25, 8), toon('#b0855c'), 0.01);
+    nozzle.position.y = 1.62;
+    this.group.add(nozzle);
+    const knob = rounded(new THREE.SphereGeometry(0.09, 8, 6), toon('#b0855c'), 0.01);
+    knob.position.y = 1.76;
+    this.group.add(knob);
+    // Cuatro caños en la columna que echan agua al estanque cuando funciona
+    for (let i = 0; i < 4; i += 1) {
+      const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+      const spout = rounded(new THREE.CylinderGeometry(0.05, 0.07, 0.3, 8), toon('#b0855c'), 0.008);
+      // El caño apunta hacia afuera y un poco hacia abajo
+      spout.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(Math.cos(a), -0.3, Math.sin(a)).normalize());
+      spout.position.set(Math.cos(a) * 0.42, 1.0, Math.sin(a) * 0.42);
+      this.group.add(spout);
+      const face = rounded(new THREE.SphereGeometry(0.1, 8, 6), toon('#e6dbc6'), 0.01);
+      face.position.set(Math.cos(a) * 0.33, 1.05, Math.sin(a) * 0.33);
+      this.group.add(face);
+    }
 
     this.water = new THREE.Mesh(
       new THREE.CircleGeometry(2.33, 28),
@@ -323,6 +393,27 @@ export class Fountain extends Connectable {
       d.userData.offset = i / 14;
       this.drops.push(d);
       this.jet.add(d);
+    }
+    // Chorritos de los cuatro caños y anillos en el agua
+    for (let i = 0; i < 4; i += 1) {
+      for (let k = 0; k < 5; k += 1) {
+        const d = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 4), jetMat);
+        d.userData.angle = (i / 4) * Math.PI * 2 + Math.PI / 4;
+        d.userData.offset = k / 5;
+        this.spoutDrops.push(d);
+        this.jet.add(d);
+      }
+    }
+    for (let i = 0; i < 3; i += 1) {
+      const rip = new THREE.Mesh(
+        new THREE.RingGeometry(0.9, 1.0, 32),
+        new THREE.MeshBasicMaterial({ color: '#d6f0ff', transparent: true, opacity: 0, depthWrite: false }),
+      );
+      rip.rotation.x = -Math.PI / 2;
+      rip.position.y = 0.56;
+      rip.visible = false;
+      this.ripples.push(rip);
+      this.group.add(rip);
     }
     this.jet.scale.setScalar(0.001);
     this.jet.visible = false;
@@ -358,6 +449,19 @@ export class Fountain extends Connectable {
 
   update(_dt: number, time: number): void {
     if (!this.active_) return;
+    // Los chorritos salen de los caños (jet está a 1.5 m de alto) y caen al estanque
+    for (const d of this.spoutDrops) {
+      const t = (time * 1.1 + d.userData.offset) % 1;
+      const a = d.userData.angle as number;
+      const r = 0.55 + t * 0.9;
+      d.position.set(Math.cos(a) * r, -0.5 - t * t * 0.95, Math.sin(a) * r);
+    }
+    this.ripples.forEach((rip, i) => {
+      rip.visible = true;
+      const t = (time * 0.5 + i / 3) % 1;
+      rip.scale.setScalar(0.9 + t * 1.3);
+      (rip.material as THREE.MeshBasicMaterial).opacity = (1 - t) * 0.5;
+    });
     for (const d of this.drops) {
       const t = (time * 0.9 + d.userData.offset) % 1;
       const a = d.userData.angle as number;
