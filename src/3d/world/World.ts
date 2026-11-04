@@ -369,6 +369,26 @@ export class World {
       sh.position.set(-2.4 + sx, h * 0.56, d / 2 + 0.08);
       house.add(sh);
     }
+    // Detalles quietos de la casa de la plaza (marco, alféizar, zócalo, alero, chimenea).
+    // Se apagan/encienden con el círculo de vida como el resto del barrio.
+    const winFrame = box(1.75, 1.55, 0.06, '#e8e2d6', { outline: 0.03 });
+    winFrame.position.set(-2.4, h * 0.56, d / 2 + 0.01);
+    house.add(winFrame);
+    const sill = box(1.95, 0.1, 0.28, '#e2d6c2', { outline: 0.025 });
+    sill.position.set(-2.4, h * 0.56 - 0.8, d / 2 + 0.12);
+    house.add(sill);
+    const plinth = box(w + 0.12, 0.45, d + 0.12, '#9c8f80', { outline: 0.03, brush: 2 });
+    plinth.position.y = 0.225;
+    house.add(plinth);
+    const fascia = box(w + 1.3, 0.16, 0.12, '#efe7da', { outline: 0.02 });
+    fascia.position.set(0, h + 0.02, d / 2 + 0.62);
+    house.add(fascia);
+    const chimney = box(0.7, 1.7, 0.7, '#a85a44', { outline: 0.03, brush: 2 });
+    chimney.position.set(2.6, h + 1.4, -1.5);
+    house.add(chimney);
+    const chCap = box(0.9, 0.12, 0.9, '#5a4a44', { outline: 0.02 });
+    chCap.position.set(2.6, h + 2.28, -1.5);
+    house.add(chCap);
     this.scene.add(house);
     this.addRect(-18, -31, w, d);
 
@@ -657,6 +677,58 @@ export class World {
     return m;
   }
 
+  /** Ventana con marco, cruz, alféizar y postigos (todo quieto: se agrupa con batchStatic). */
+  private windowSet(g: THREE.Group, x: number, y: number, z: number, trim: string, lit: boolean): void {
+    const frame = box(1.7, 1.5, 0.08, '#f4efe6', { outline: 0.04 });
+    frame.position.set(x, y, z);
+    g.add(frame);
+    const glass = box(1.44, 1.24, 0.06, lit ? '#ffd77a' : '#3a4a6a', { outline: false });
+    glass.position.set(x, y, z + 0.03);
+    g.add(glass);
+    // Reflejo en diagonal: la ventana deja de ser un rectángulo plano
+    if (!lit) {
+      const shine = box(0.18, 1.0, 0.01, '#6f86b0', { outline: false });
+      shine.position.set(x - 0.3, y + 0.05, z + 0.065);
+      shine.rotation.z = 0.5;
+      g.add(shine);
+    }
+    const mullV = box(0.07, 1.24, 0.04, '#f4efe6', { outline: false });
+    mullV.position.set(x, y, z + 0.07);
+    g.add(mullV);
+    const mullH = box(1.44, 0.07, 0.04, '#f4efe6', { outline: false });
+    mullH.position.set(x, y, z + 0.07);
+    g.add(mullH);
+    const sill = box(1.95, 0.1, 0.28, '#e2d6c2', { outline: 0.025 });
+    sill.position.set(x, y - 0.8, z + 0.12);
+    g.add(sill);
+    const lintel = box(1.85, 0.12, 0.14, '#e2d6c2', { outline: 0.02 });
+    lintel.position.set(x, y + 0.8, z + 0.05);
+    g.add(lintel);
+    const slatColor = `#${new THREE.Color(trim).multiplyScalar(0.8).getHexString()}`;
+    for (const sx of [-1.08, 1.08]) {
+      const sh = box(0.42, 1.5, 0.08, trim, { outline: 0.03 });
+      sh.position.set(x + sx, y, z + 0.06);
+      g.add(sh);
+      // Tablillas del postigo
+      for (let i = 0; i < 4; i += 1) {
+        const slat = box(0.34, 0.04, 0.03, slatColor, { outline: false });
+        slat.position.set(x + sx, y - 0.5 + i * 0.33, z + 0.11);
+        g.add(slat);
+      }
+    }
+    // Jardinera con flores bajo la ventana
+    if (rnd() < 0.5) {
+      const planter = box(1.4, 0.22, 0.28, '#8a5a3a', { outline: 0.02 });
+      planter.position.set(x, y - 0.97, z + 0.2);
+      g.add(planter);
+      for (let i = 0; i < 5; i += 1) {
+        const f = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 5), toon(pick(['#f06292', '#ffd54f', '#ff8a65', '#ba68c8'])));
+        f.position.set(x - 0.5 + i * 0.25, y - 0.8, z + 0.2);
+        g.add(f);
+      }
+    }
+  }
+
   private house(cx: number, cz: number, rot: number): void {
     const g = new THREE.Group();
     const w = 8.5 + rnd() * 2.5;
@@ -666,29 +738,85 @@ export class World {
     const body = box(w, h, d, pick(WALLS), { brush: 3 });
     body.position.y = h / 2;
     g.add(body);
-    const roof = this.gable(w, d, 1.5 + rnd() * 0.6, toon(pick(ROOFS), 3));
+    // Zócalo más oscuro y esquineros: le dan peso y forma a la casa
+    const plinth = box(w + 0.12, 0.45, d + 0.12, '#9c8f80', { outline: 0.03, brush: 2 });
+    plinth.position.y = 0.225;
+    g.add(plinth);
+    for (const sx of [-1, 1]) {
+      const corner = box(0.22, h, 0.22, '#efe7da', { outline: 0.02 });
+      corner.position.set(sx * (w / 2 + 0.02), h / 2, d / 2 + 0.02);
+      g.add(corner);
+    }
+    const roofH = 1.5 + rnd() * 0.6;
+    const roofColor = pick(ROOFS);
+    const roof = this.gable(w, d, roofH, toon(roofColor, 3));
     roof.position.y = h;
     g.add(roof);
-    const door = box(1.1, 2.1, 0.12, pick(['#7a4a2e', '#5a3a24', '#2d5a4e']), { outline: 0.04 });
-    door.position.set(-w * 0.22, 1.05, d / 2 + 0.04);
+    // Alero (tabla blanca bajo el techo) y cumbrera
+    const fascia = box(w + 1.3, 0.16, 0.12, '#efe7da', { outline: 0.02 });
+    fascia.position.set(0, h + 0.02, d / 2 + 0.62);
+    g.add(fascia);
+    const ridge = box(0.26, 0.2, d + 1.3, new THREE.Color(roofColor).multiplyScalar(0.75).getStyle(), { outline: 0.02 });
+    ridge.position.set(0, h + roofH - 0.02, 0);
+    g.add(ridge);
+    // Chimenea de ladrillo con tapa
+    const chX = w * (rnd() < 0.5 ? -0.25 : 0.25);
+    const chimney = box(0.7, 1.6, 0.7, '#a85a44', { outline: 0.03, brush: 2 });
+    chimney.position.set(chX, h + roofH * 0.55 + 0.4, -d * 0.18);
+    g.add(chimney);
+    const chCap = box(0.9, 0.12, 0.9, '#5a4a44', { outline: 0.02 });
+    chCap.position.set(chX, h + roofH * 0.55 + 1.24, -d * 0.18);
+    g.add(chCap);
+
+    // Puerta: marco, tableros, ventanita, picaporte, escalón y farolito
+    const dx = -w * 0.22;
+    const zf = d / 2;
+    const doorFrame = box(1.4, 2.35, 0.1, '#f4efe6', { outline: 0.04 });
+    doorFrame.position.set(dx, 1.175, zf + 0.03);
+    g.add(doorFrame);
+    const doorCol = pick(['#7a4a2e', '#5a3a24', '#2d5a4e', '#3b4f8a']);
+    const door = box(1.1, 2.1, 0.12, doorCol, { outline: 0.03 });
+    door.position.set(dx, 1.05, zf + 0.07);
     g.add(door);
-    const step = box(1.8, 0.3, 0.9, '#b8573a', { outline: 0.03 });
-    step.position.set(-w * 0.22, 0.15, d / 2 + 0.45);
-    g.add(step);
-    for (const wx of [w * 0.05, w * 0.3]) {
-      const win = box(1.5, 1.3, 0.1, rnd() < 0.3 ? '#ffd77a' : '#3a4a6a', { outline: 0.07 });
-      win.position.set(wx, h * 0.55, d / 2 + 0.04);
-      g.add(win);
-      for (const sx of [-0.95, 0.95]) {
-        const sh = box(0.4, 1.45, 0.08, trim, { outline: 0.03 });
-        sh.position.set(wx + sx, h * 0.55, d / 2 + 0.08);
-        g.add(sh);
-      }
+    const panelCol = new THREE.Color(doorCol).multiplyScalar(0.78).getStyle();
+    for (const py of [0.55, 1.2]) {
+      const panel = box(0.75, 0.5, 0.03, panelCol, { outline: false });
+      panel.position.set(dx, py, zf + 0.14);
+      g.add(panel);
     }
+    const peep = box(0.6, 0.3, 0.03, '#ffd77a', { outline: 0.015 });
+    peep.position.set(dx, 1.78, zf + 0.14);
+    g.add(peep);
+    const knob = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), toon('#f2c14e'));
+    knob.position.set(dx + 0.4, 1.0, zf + 0.17);
+    g.add(knob);
+    const step = box(1.8, 0.3, 0.9, '#b8573a', { outline: 0.03 });
+    step.position.set(dx, 0.15, zf + 0.45);
+    g.add(step);
+    const lampArm = box(0.06, 0.06, 0.3, '#2c3040', { outline: false });
+    lampArm.position.set(dx + 0.95, 2.1, zf + 0.15);
+    g.add(lampArm);
+    const lampBox = box(0.22, 0.32, 0.22, '#2c3040', { outline: 0.015 });
+    lampBox.position.set(dx + 0.95, 2.0, zf + 0.32);
+    g.add(lampBox);
+    const lampGlass = box(0.16, 0.22, 0.24, '#ffe9a8', { outline: false });
+    lampGlass.position.set(dx + 0.95, 1.98, zf + 0.32);
+    g.add(lampGlass);
+    // Número de la casa
+    const plate = box(0.34, 0.24, 0.03, '#2f6fd1', { outline: 0.01 });
+    plate.position.set(dx - 0.95, 1.9, zf + 0.05);
+    g.add(plate);
+
+    for (const wx of [w * 0.05, w * 0.3]) this.windowSet(g, wx, h * 0.55, zf + 0.03, trim, rnd() < 0.3);
     if (rnd() < 0.5) {
       const gar = box(3.0, 2.3, 0.12, '#f4efe6', { outline: 0.04 });
-      gar.position.set(w / 2 - 2, 1.15, d / 2 + 0.04);
+      gar.position.set(w / 2 - 2, 1.15, zf + 0.04);
       g.add(gar);
+      for (let i = 1; i < 5; i += 1) {
+        const groove = box(2.9, 0.04, 0.02, '#d8d0c2', { outline: false });
+        groove.position.set(w / 2 - 2, i * 0.46, zf + 0.11);
+        g.add(groove);
+      }
     }
     g.position.set(cx, 0, cz);
     g.rotation.y = rot;
@@ -763,13 +891,64 @@ export class World {
       const sign = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 1.35), withLife(new THREE.MeshBasicMaterial({ map: this.signTexture(name, col) })));
       sign.position.set(x, 3.4, z + 3.56);
       this.scene.add(sign);
-      const awning = box(6.2, 0.25, 1.6, col, { outline: 0.04 });
-      awning.position.set(x, 2.45, z + 4.2);
-      awning.rotation.x = 0.35;
-      this.scene.add(awning);
-      const win = box(4.6, 1.5, 0.1, '#30406a', { outline: 0.05 });
-      win.position.set(x, 1.2, z + 3.52);
+      // Cornisa arriba del local
+      const cornice = box(8.4, 0.3, 7.4, '#f4efe6', { outline: 0.03 });
+      cornice.position.set(x, 4.3, z);
+      this.scene.add(cornice);
+      // Toldo a rayas con volado
+      const aw = new THREE.Group();
+      aw.position.set(x, 2.45, z + 4.2);
+      aw.rotation.x = 0.35;
+      const awning = box(6.2, 0.22, 1.6, col, { outline: 0.04 });
+      aw.add(awning);
+      for (let k = 0; k < 6; k += 1) {
+        const stripe = box(0.5, 0.03, 1.6, '#fff6e8', { outline: false });
+        stripe.position.set(-2.6 + k * 1.04 + 0.26, 0.12, 0);
+        aw.add(stripe);
+      }
+      for (let k = 0; k < 12; k += 1) {
+        // Media luna colgando del borde (la mitad de abajo de un círculo, mirando hacia afuera)
+        const scallop = new THREE.Mesh(new THREE.CircleGeometry(0.26, 10, Math.PI, Math.PI), toon(k % 2 ? '#fff6e8' : col));
+        scallop.rotation.x = -0.35;
+        scallop.position.set(-2.84 + k * 0.517, -0.1, 0.81);
+        aw.add(scallop);
+      }
+      this.scene.add(aw);
+      // Vidriera con divisiones y zócalo, y puerta vidriada al costado
+      const win = box(4.2, 1.7, 0.1, '#30406a', { outline: 0.05 });
+      win.position.set(x - 1.0, 1.35, z + 3.52);
       this.scene.add(win);
+      for (const mx of [-0.7, 0.7]) {
+        const mull = box(0.08, 1.7, 0.06, '#f4efe6', { outline: false });
+        mull.position.set(x - 1.0 + mx, 1.35, z + 3.59);
+        this.scene.add(mull);
+      }
+      const winShine = box(0.22, 1.3, 0.01, '#5d77a8', { outline: false });
+      winShine.position.set(x - 2.3, 1.4, z + 3.58);
+      winShine.rotation.z = 0.45;
+      this.scene.add(winShine);
+      const base = box(4.4, 0.4, 0.2, '#6b5b52', { outline: 0.02 });
+      base.position.set(x - 1.0, 0.2, z + 3.56);
+      this.scene.add(base);
+      const doorF = box(1.3, 2.3, 0.08, '#f4efe6', { outline: 0.03 });
+      doorF.position.set(x + 2.5, 1.15, z + 3.52);
+      this.scene.add(doorF);
+      const door = box(1.0, 2.1, 0.08, '#30406a', { outline: 0.02 });
+      door.position.set(x + 2.5, 1.05, z + 3.58);
+      this.scene.add(door);
+      const bar = box(0.6, 0.06, 0.06, '#f2c14e', { outline: false });
+      bar.position.set(x + 2.5, 1.05, z + 3.66);
+      this.scene.add(bar);
+      // Macetas en la vereda
+      for (const px of [-3.5, 3.5]) {
+        const pot = rounded(new THREE.CylinderGeometry(0.3, 0.22, 0.45, 10), toon('#b8573a'), 0.02);
+        pot.position.set(x + px, 0.225, z + 4.1);
+        this.scene.add(pot);
+        const plant = rounded(new THREE.IcosahedronGeometry(0.42, 0), toon('#4f9a4a', 1), 0.02);
+        plant.position.set(x + px, 0.75, z + 4.1);
+        this.scene.add(plant);
+        this.addRect(x + px, z + 4.1, 0.6, 0.6);
+      }
       this.addRect(x, z, 8, 7);
     });
   }

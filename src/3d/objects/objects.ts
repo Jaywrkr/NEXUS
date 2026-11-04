@@ -65,6 +65,36 @@ export class EnergySource extends Connectable {
     this.group.add(cap);
 
     const dim = variant === 'dim';
+    // Detalle: placa de piso, pernos, franjas de energía y un conducto que entra al suelo
+    const plate = rounded(new THREE.CylinderGeometry(0.56, 0.6, 0.06, 16), toon('#3a3d48'), 0.012);
+    plate.position.y = 0.03;
+    this.group.add(plate);
+    for (let i = 0; i < 6; i += 1) {
+      const a = (i / 6) * Math.PI * 2;
+      const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.05, 6), toon('#c9ccd4'));
+      bolt.position.set(Math.cos(a) * 0.5, 0.075, Math.sin(a) * 0.5);
+      this.group.add(bolt);
+    }
+    for (const y of [0.18, 0.4]) {
+      const band = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.4 - y * 0.18, 0.4 - y * 0.18, 0.045, 16, 1, true),
+        dim ? toon('#6a6f7c') : glow('#ffd93d'),
+      );
+      band.position.y = y;
+      this.group.add(band);
+    }
+    const prongs = [0, 1, 2].map((i) => {
+      const a = (i / 3) * Math.PI * 2;
+      const prong = box(0.05, 0.28, 0.05, '#2c3040', { outline: 0.008 });
+      prong.position.set(Math.cos(a) * 0.26, 0.74, Math.sin(a) * 0.26);
+      prong.rotation.set(Math.sin(a) * 0.35, 0, -Math.cos(a) * 0.35);
+      return prong;
+    });
+    for (const pr of prongs) this.group.add(pr);
+    const conduit = rounded(new THREE.TorusGeometry(0.22, 0.045, 6, 12, Math.PI / 2), toon('#2c3040'), 0.01);
+    conduit.position.set(0.42, 0.06, 0);
+    conduit.rotation.set(0, 0, Math.PI);
+    this.group.add(conduit);
     this.core = rounded(starGeometry(6, 0.16, 0.32, 0.08), toon(dim ? '#9aa0ad' : '#ffd93d'), 0.015);
     this.core.position.y = 1.0;
     this.group.add(this.core);
@@ -121,6 +151,26 @@ export class StreetLamp extends Connectable {
     const head = rounded(new THREE.ConeGeometry(0.32, 0.3, 10, 1, true), toon('#2c3040'), 0.015);
     head.position.set(0, 3.05, 0.62);
     this.group.add(head);
+    // Detalle: anillos en la base y a media altura, remate arriba, voluta bajo el brazo y placa
+    for (const [y, r] of [[0.34, 0.13], [1.4, 0.1], [2.6, 0.095]] as const) {
+      const ring = rounded(new THREE.TorusGeometry(r, 0.03, 6, 14), toon('#2c3040'), 0.008);
+      ring.rotation.x = Math.PI / 2;
+      ring.position.y = y;
+      this.group.add(ring);
+    }
+    const finial = rounded(new THREE.SphereGeometry(0.07, 8, 6), toon('#2c3040'), 0.01);
+    finial.position.y = 3.27;
+    this.group.add(finial);
+    const scroll = rounded(new THREE.TorusGeometry(0.16, 0.025, 6, 12, Math.PI * 1.3), toon('#2c3040'), 0.008);
+    scroll.position.set(0, 2.98, 0.2);
+    scroll.rotation.y = Math.PI / 2;
+    this.group.add(scroll);
+    const topCap = rounded(new THREE.ConeGeometry(0.12, 0.12, 8), toon('#2c3040'), 0.01);
+    topCap.position.set(0, 3.25, 0.62);
+    this.group.add(topCap);
+    const plaque = box(0.16, 0.22, 0.03, '#f2c14e', { outline: 0.008 });
+    plaque.position.set(0, 0.9, 0.09);
+    this.group.add(plaque);
 
     this.bulb = new THREE.Mesh(new THREE.SphereGeometry(0.15, 12, 10), toonUnique('#5a5f6b'));
     this.bulb.position.set(0, 2.92, 0.62);

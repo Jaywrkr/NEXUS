@@ -21,6 +21,8 @@ const NEXUS_RADIUS = 0.32;
 const ISO_HALF = 4.4; // media altura visible (m): más chico = todo se ve más grande
 /** La cámara isométrica mira desde el sureste (+X+Z) hacia el noroeste: ve las fachadas que dan a +X y +Z. */
 const ISO_OFFSET = new THREE.Vector3(20, 22, 20);
+/** Rumbo que mira hacia la cámara isométrica (que está al sureste, +X+Z). */
+const ISO_FACING = Math.atan2(ISO_OFFSET.x, ISO_OFFSET.z);
 const VIEW_KEY = 'los-nexus-3d-view';
 const START = new THREE.Vector3(-20, 0, -11);
 
@@ -647,6 +649,7 @@ export class WorldMode {
   idle(dt: number): void {
     this.time += dt;
     this.nexus.move(0, 0, dt);
+    this.nexus.idleFacing = ISO_FACING;
     this.nexus.animate(dt);
     for (const obj of this.connections.all) obj.update(dt, this.time);
     for (const f of this.fragments) f.update(this.time);
@@ -679,6 +682,7 @@ export class WorldMode {
       ...this.residents.map((r) => ({ x: r.x, z: r.z, r: 0.4 })),
     ];
     this.world.resolve(this.nexus.position, NEXUS_RADIUS, blockers);
+    this.nexus.idleFacing = this.iso ? ISO_FACING : null;
     this.nexus.animate(dt);
 
     for (const obj of this.connections.all) obj.update(dt, this.time);

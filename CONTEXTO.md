@@ -72,6 +72,7 @@ Además:
 - **Sonido** generado por código (Web Audio), botón 🔊/🔇.
 
 ### El Nexus en 3D
+Con detalle de cerca: brillo en los ojos, sonrisa y borde claro en el visor, cachetes rosados, interior rosado de las orejas, puños naranjas, pulgares, tirantes con hebillas y mochila con manija, bolsillos, rejilla y hebilla. **Cuando se queda quieto ~1 s en la vista isométrica gira hacia la cámara** (`Nexus3D.idleFacing`, que pone `WorldMode`), así se le ve la cara y no la mochila; también en la pantalla de título.
 Armado con primitivas (esferas, cápsulas, cajas) y **animación procedural** (no hay modelos ni imágenes): cabeza clara grande, visor oscuro con ojos amarillos que parpadean, orejas de conejo con punta celeste (izq.) y naranja (der.) que rebotan al caminar, hoodie turquesa con cuello naranja, guantes y pantalón azul marino, zapatillas blancas con suela naranja, mochila gris con lente cian y cable verde lima colgando. Camina con piernas/brazos en oposición, festeja con salto y giro, estira el brazo al tocar algo. Está a escala 1.3 para leerse bien en el celular.
 
 ### 4. Arquitectura (3D en `src/3d/`)
@@ -126,6 +127,8 @@ if (target === obj) { /* revelar fragmento, cambiar el mundo, setMessage(...) */
 - Al completar: `source.activate()`, `target.activate()`, efectos, y `onConnectionMade`.
 - Objeto nuevo: extender `Connectable`, dibujarlo con `box()`, `rounded()`, `toon()` dentro de `this.group`, ubicar `this.plugAnchor` (de dónde sale/llega el cable), implementar `activate()` y `restore()` (estado ya resuelto, sin animar), y opcional `update(dt, time)`. `collideRadius` define el bloqueo y el alcance para interactuar.
 - Partida guardada: `WorldMode.restoreProgress()` restaura cada zona resuelta y redibuja sus cables con `connections.restore(a, b)`.
+
+Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cruz/alféizar/postigos de tablillas (a veces jardinera con flores), puerta con marco, tableros, ventanita, picaporte, farolito y número (`World.house`/`windowSet`). Tiendas con cornisa, toldo a rayas con volado, vidriera con divisiones, puerta vidriada y macetas. Fuente de energía con placa, pernos, franjas de luz, garras y conducto; farola con anillos, voluta, remate y placa. Todo quieto se agrupa con `batchStatic`, así que el detalle extra casi no suma llamadas de dibujo.
 
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.

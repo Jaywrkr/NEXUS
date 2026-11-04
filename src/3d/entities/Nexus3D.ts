@@ -22,6 +22,9 @@ const C = {
   pack: '#4a5263',
   lens: '#5ee7ff',
   cable: '#b8e04a',
+  blush: '#f7a6a0',
+  earInner: '#f3c3c8',
+  strap: '#363c4a',
 };
 
 /**
@@ -34,6 +37,12 @@ export class Nexus3D {
   readonly root = new THREE.Group();
   readonly velocity = new THREE.Vector3();
   heading = 0;
+  /**
+   * Hacia dónde mira cuando se queda quieto (o null para no girar). En la vista isométrica
+   * WorldMode lo apunta a la cámara: así se le ve la cara y no la mochila.
+   */
+  idleFacing: number | null = null;
+  private idleT = 0;
 
   private readonly body = new THREE.Group();
   private readonly legL = new THREE.Group();
@@ -121,9 +130,18 @@ export class Nexus3D {
       const sleeve = rounded(new THREE.CapsuleGeometry(0.056, 0.15, 4, 10), toon(C.hoodie, 2), 0.014);
       sleeve.position.y = -0.12;
       arm.add(sleeve);
+      const cuff = rounded(new THREE.TorusGeometry(0.052, 0.018, 6, 14), toon(C.collar), 0.008);
+      cuff.rotation.x = Math.PI / 2;
+      cuff.position.y = -0.215;
+      arm.add(cuff);
       const hand = rounded(new THREE.SphereGeometry(0.066, 12, 8), toon(C.glove), 0.014);
       hand.position.y = -0.27;
       arm.add(hand);
+      // Pulgar: la mano deja de ser una bolita
+      const thumb = rounded(new THREE.CapsuleGeometry(0.022, 0.03, 3, 6), toon(C.glove), 0.008);
+      thumb.position.set(0, -0.255, 0.05);
+      thumb.rotation.x = 0.7;
+      arm.add(thumb);
       this.body.add(arm);
     }
 
@@ -140,7 +158,41 @@ export class Nexus3D {
     this.lens.rotation.x = Math.PI / 2;
     this.lens.position.z = -0.08;
     pack.add(this.lens);
+    // Detalles de la mochila: manija, bolsillos laterales, rejilla y hebilla
+    const handle = rounded(new THREE.TorusGeometry(0.05, 0.012, 6, 12, Math.PI), toon(C.strap), 0.006);
+    handle.position.set(0, 0.135, 0);
+    pack.add(handle);
+    for (const sx of [-0.135, 0.135]) {
+      const side = box(0.04, 0.14, 0.1, '#3d4453', { outline: 0.008 });
+      side.position.set(sx, -0.05, 0);
+      pack.add(side);
+    }
+    for (let i = 0; i < 3; i += 1) {
+      const vent = box(0.12, 0.012, 0.01, '#2a2f3c', { outline: false });
+      vent.position.set(0, 0.095 - i * 0.022, -0.068);
+      pack.add(vent);
+    }
+    const flap = box(0.2, 0.05, 0.02, '#3d4453', { outline: 0.008 });
+    flap.position.set(0, -0.1, -0.07);
+    pack.add(flap);
+    const buckle = box(0.04, 0.03, 0.012, '#c9ccd4', { outline: false });
+    buckle.position.set(0, -0.1, -0.082);
+    pack.add(buckle);
     this.body.add(pack);
+
+    // Tirantes: pasan por los hombros y bajan por el pecho
+    for (const sx of [-0.1, 0.1]) {
+      const top = box(0.045, 0.02, 0.3, C.strap, { outline: false });
+      top.position.set(sx, 0.665, -0.03);
+      this.body.add(top);
+      const front = box(0.045, 0.2, 0.02, C.strap, { outline: false });
+      front.position.set(sx, 0.56, 0.128);
+      front.rotation.x = -0.12;
+      this.body.add(front);
+      const clip = box(0.05, 0.03, 0.015, '#c9ccd4', { outline: false });
+      clip.position.set(sx, 0.5, 0.14);
+      this.body.add(clip);
+    }
 
     this.cableCurve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(0.08, 0.42, -0.24),
@@ -168,6 +220,29 @@ export class Nexus3D {
       eye.position.set(ex, 0.23, 0.258);
       this.head.add(eye);
       this.eyes.push(eye);
+      // Brillo del ojo: le da mirada
+      const shine = new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 5), glow('#ffffff'));
+      shine.position.set(-0.016, 0.034, 0.03);
+      eye.add(shine);
+    }
+    // Sonrisa chiquita en el visor
+    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.03, 0.008, 4, 10, Math.PI), glow(C.eye));
+    smile.rotation.z = Math.PI;
+    smile.position.set(0, 0.16, 0.262);
+    this.head.add(smile);
+    // Borde del visor (marco claro alrededor de la cara)
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(0.2, 0.014, 6, 28), toon('#c9d3e6'));
+    rim.scale.set(1.05, 0.74, 1);
+    rim.position.set(0, 0.22, 0.225);
+    rim.rotation.x = -0.18;
+    this.head.add(rim);
+    // Cachetes rosados, al costado del visor
+    for (const bx of [-0.17, 0.17]) {
+      const blush = new THREE.Mesh(new THREE.SphereGeometry(0.035, 10, 8), toon(C.blush));
+      blush.scale.set(1.2, 0.7, 0.4);
+      blush.position.set(bx, 0.14, 0.215);
+      blush.rotation.y = bx * 2.6;
+      this.head.add(blush);
     }
 
     // Orejas de conejo con puntas de color distinto (izq. celeste, der. naranja)
@@ -182,6 +257,12 @@ export class Nexus3D {
       const earMesh = rounded(earGeo, toon(C.head, 2), 0.018);
       earMesh.scale.set(1, 1, 0.8);
       ear.add(earMesh);
+      const innerGeo = new THREE.CapsuleGeometry(0.036, 0.2, 4, 10);
+      innerGeo.translate(0, 0.17, 0);
+      const inner = new THREE.Mesh(innerGeo, toon(C.earInner));
+      inner.scale.set(1, 1, 0.5);
+      inner.position.z = 0.03;
+      ear.add(inner);
       const tipGeo = new THREE.CapsuleGeometry(0.068, 0.06, 6, 12);
       tipGeo.translate(0, 0.33, 0);
       const tipMesh = new THREE.Mesh(tipGeo, toon(tip));
@@ -239,6 +320,12 @@ export class Nexus3D {
     this.phase += dt * (4 + speed * 2.1);
     const s = Math.sin(this.phase);
 
+    // Quieto un rato → gira despacio hacia la cámara (se le ve la cara)
+    if (speed < 0.15 && this.celebrateT < 0) this.idleT += dt;
+    else this.idleT = 0;
+    if (this.idleFacing !== null && this.idleT > 0.9) {
+      this.heading = dampAngle(this.heading, this.idleFacing, 3, dt);
+    }
     this.root.rotation.y = this.heading;
 
     // Caminar: piernas y brazos en oposición, rebote del cuerpo, leve inclinación hacia adelante

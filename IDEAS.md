@@ -70,5 +70,4 @@ de menor a mayor esfuerzo/riesgo de romper zonas existentes:
   + fiesta/confeti y final, Pipa y Lucio, pistas y
   ayudas visuales, efectos suaves, radio CUAC FM, armario, historias secundarias.
 - Decidir con Luca la cámara final: isométrica o "detrás" del personaje.
-- Que el Nexus mire a la cámara en la pantalla de título (ahora se le ve la espalda).
 - Cable largo entre zonas: en 3D es más simple (un solo barrio, cables ya en el mundo).

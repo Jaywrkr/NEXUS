@@ -282,3 +282,6 @@ El barrio 3D empieza gris y triste; cada conexión le devuelve el color alrededo
 
 ## 3D: imagen más nítida y definida
 El juego se dibuja a la resolución real de la pantalla (antes el celular dibujaba a 1.25× y estiraba la imagen, por eso se veía borroso y con escalones). La pincelada es más fina y conserva bordes, ojos, letras y piezas chicas; texturas del piso con filtrado anisótropo; sombras más definidas que cubren solo lo que se ve. Si el equipo no da abasto, la resolución baja sola de a poco para mantener la fluidez y vuelve a subir cuando puede. La cámara está un poco más cerca (todo se ve más grande) y en el celular el objetivo ya no queda tapado por el botón VISTA.
+
+## 3D: modelos más detallados
+El Nexus gana detalle (brillo en los ojos, sonrisa, borde del visor, cachetes, interior de las orejas, puños, pulgares, tirantes y una mochila con manija, bolsillos, rejilla y hebilla) y al quedarse quieto gira hacia la cámara para que se le vea la cara (también en el título). Las casas tienen zócalo, alero, cumbrera, chimenea, ventanas con marco, cruz, alféizar, postigos y jardineras, y puertas con marco, ventanita, picaporte, farolito y número. Las tiendas suman cornisa, toldos a rayas con volado, vidrieras, puertas vidriadas y macetas. La fuente de energía y la farola tienen pernos, franjas de luz, anillos y remates.
