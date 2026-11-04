@@ -22,7 +22,7 @@
     </div>
     <button class="chip world-only" id="muteBtn" type="button" aria-label="Sonido">🔊</button>
     <button class="chip world-only" id="viewBtn" type="button">VISTA</button>
-    <div id="touch" class="world-only">
+    <div id="touch" class="play-only">
       <div id="stickZone"><div id="stickBase"><div id="stickKnob"></div></div></div>
     </div>
     <button class="chip world-only" id="interact" type="button" hidden>Tocar</button>
@@ -58,6 +58,12 @@
     <div id="tunnelHud" hidden>
       <div id="tunnelMsg"></div>
       <div id="tunnelTrack"><div id="tunnelBar"></div></div>
+      <div id="tunnelCount"></div>
+      <div id="tunnelPanel" hidden>
+        <p id="tunnelPanelText"></p>
+        <button class="big-btn" id="tunnelGo" type="button">EMPEZAR</button>
+        <button class="big-btn alt" id="tunnelBack" type="button">VOLVER AL BARRIO</button>
+      </div>
     </div>
 
     <div id="flash"></div>

@@ -21,9 +21,15 @@ function center(z: number, out = new THREE.Vector3()): THREE.Vector3 {
   );
 }
 
+type Phase = 'ready' | 'countdown' | 'run' | 'failed' | 'won';
+
 /**
  * Mini-túnel dentro del cable (idea de Luca, Decisión 016) llevado a 3D: vamos dentro del tubo,
  * detrás de la chispa, y hay que mantenerla lejos de las paredes mientras el cable serpentea.
+ *
+ * Fases: práctica (la chispa se mueve pero no avanza ni puede chocar) → EMPEZAR → cuenta 3-2-1 →
+ * carrera → choque (REINTENTAR / VOLVER AL BARRIO) o victoria. En el celular se maneja arrastrando
+ * el dedo en cualquier parte de la pantalla; en PC con flechas/WASD. ESPACIO empieza o reintenta, ESC vuelve.
  */
 export class TunnelMode {
   readonly scene = new THREE.Scene();
@@ -36,11 +42,28 @@ export class TunnelMode {
   private readonly vel = new THREE.Vector2();
   private z = 0;
   private t = 0;
-  private done = true;
+  private phase: Phase = 'won';
+  private countdown = 0;
   private result: ((success: boolean) => void) | null = null;
-  private readonly bar: HTMLElement | null;
-  private readonly hud: HTMLElement | null;
-  private readonly msg: HTMLElement | null;
+  private readonly el = {
+    hud: document.getElementById('tunnelHud'),
+    bar: document.getElementById('tunnelBar'),
+    msg: document.getElementById('tunnelMsg'),
+    count: document.getElementById('tunnelCount'),
+    panel: document.getElementById('tunnelPanel'),
+    panelText: document.getElementById('tunnelPanelText'),
+    go: document.getElementById('tunnelGo'),
+    back: document.getElementById('tunnelBack'),
+  };
+
+  /** Para las pruebas: la partida terminó (ganada, o volviendo al barrio). */
+  get done(): boolean {
+    return this.phase === 'won' || this.result === null;
+  }
+
+  get state(): Phase {
+    return this.phase;
+  }
 
   constructor(input: Input) {
     this.input = input;
@@ -59,10 +82,11 @@ export class TunnelMode {
         void main(){
           float ring = step(fract(vUv.x * 150.0), 0.14);
           float seam = step(fract(vUv.y * 12.0), 0.05);
+          float pulse = step(fract(vUv.x * 6.0 - time * 0.6), 0.04);
           vec3 base = vec3(0.03, 0.07, 0.12);
           vec3 near = vec3(0.25, 0.66, 0.84);
           float fade = 1.0 - smoothstep(4.0, 55.0, vDepth);
-          vec3 c = base + (ring * 0.9 + seam * 0.35) * near * fade;
+          vec3 c = base + (ring * 0.9 + seam * 0.35) * near * fade + pulse * vec3(1.0, 0.85, 0.4) * fade * 0.7;
           c = mix(c, vec3(1.0, 0.3, 0.25) * (0.4 + ring), danger * 0.6);
           gl_FragColor = vec4(pow(c, vec3(2.2)), 1.0);
         }`,
@@ -71,8 +95,7 @@ export class TunnelMode {
 
     // Meta: un disco de luz al final del cable
     const goal = new THREE.Mesh(new THREE.CircleGeometry(RADIUS, 32), new THREE.MeshBasicMaterial({ color: '#ffe066', fog: false }));
-    const gp = center(-LENGTH - 2);
-    goal.position.copy(gp);
+    goal.position.copy(center(-LENGTH - 2));
     this.scene.add(goal);
 
     // La chispa: núcleo blanco + halo cian + estela
@@ -94,44 +117,121 @@ export class TunnelMode {
       this.scene.add(m);
     }
 
-    this.hud = document.getElementById('tunnelHud');
-    this.bar = document.getElementById('tunnelBar');
-    this.msg = document.getElementById('tunnelMsg');
+    this.el.go?.addEventListener('click', () => this.primary());
+    this.el.back?.addEventListener('click', () => this.leave());
+    window.addEventListener('keydown', (e) => {
+      if (!document.body.classList.contains('mode-tunnel') || this.result === null) return;
+      if (e.code === 'Space' || e.code === 'Enter') {
+        e.preventDefault();
+        this.primary();
+      }
+      if (e.code === 'Escape') this.leave();
+    });
   }
 
   start(onDone: (success: boolean) => void): void {
     this.result = onDone;
+    this.reset();
+    this.el.hud?.removeAttribute('hidden');
+    this.showPanel(
+      'Práctica: mueve la chispa arrastrando el dedo por la pantalla (o con las flechas). Cuando estés listo, ¡empieza! No toques las paredes del cable.',
+      'EMPEZAR',
+    );
+    if (this.el.msg) this.el.msg.textContent = 'Dentro del cable';
+  }
+
+  private reset(): void {
     this.z = 0;
     this.t = 0;
-    this.done = false;
+    this.phase = 'ready';
     this.offset.set(0, 0);
     this.vel.set(0, 0);
-    this.hud?.removeAttribute('hidden');
-    if (this.msg) this.msg.textContent = '¡Guía la chispa por el cable sin tocar las paredes!';
+    this.tubeMat.uniforms.danger.value = 0;
+    if (this.el.bar) this.el.bar.style.width = '0%';
+    if (this.el.count) this.el.count.textContent = '';
     const p = center(0);
     this.trail.forEach((m) => m.position.copy(p));
   }
 
-  private finish(success: boolean): void {
-    if (this.done) return;
-    this.done = true;
-    if (this.msg) this.msg.textContent = success ? '¡Lo lograste!' : '¡Tocaste la pared!';
+  private showPanel(text: string, primary: string): void {
+    if (this.el.panelText) this.el.panelText.textContent = text;
+    if (this.el.go) this.el.go.textContent = primary;
+    this.el.panel?.removeAttribute('hidden');
+  }
+
+  private hidePanel(): void {
+    this.el.panel?.setAttribute('hidden', '');
+  }
+
+  /** Botón principal: EMPEZAR desde la práctica, REINTENTAR tras chocar. */
+  primary(): void {
+    if (this.phase === 'ready') {
+      this.hidePanel();
+      this.phase = 'countdown';
+      this.countdown = 3;
+    } else if (this.phase === 'failed') {
+      this.reset();
+      this.hidePanel();
+      this.phase = 'countdown';
+      this.countdown = 3;
+    }
+  }
+
+  /** Volver al barrio sin terminar el cable (sin castigo: se puede intentar de nuevo). */
+  leave(): void {
+    if (this.phase !== 'ready' && this.phase !== 'failed') return;
+    this.close(false);
+  }
+
+  private close(success: boolean): void {
+    const done = this.result;
+    this.result = null;
+    this.hidePanel();
     window.setTimeout(() => {
-      this.hud?.setAttribute('hidden', '');
-      this.result?.(success);
-    }, success ? 700 : 900);
+      this.el.hud?.setAttribute('hidden', '');
+      done?.(success);
+    }, success ? 700 : 150);
+  }
+
+  private steer(dt: number): void {
+    const mv = this.input.move;
+    this.vel.x = damp(this.vel.x, mv.x * STEER, 11, dt);
+    this.vel.y = damp(this.vel.y, mv.y * STEER, 11, dt);
   }
 
   update(dt: number): void {
     this.t += dt;
-    if (this.done) return;
+    if (this.phase === 'ready') {
+      // Práctica: la chispa se mueve, pero no avanza ni puede chocar
+      this.steer(dt);
+      this.offset.x += this.vel.x * dt;
+      this.offset.y += this.vel.y * dt;
+      const max = RADIUS * DANGER;
+      if (this.offset.length() > max) this.offset.setLength(max);
+      return;
+    }
+    if (this.phase === 'countdown') {
+      this.steer(dt);
+      const before = Math.ceil(this.countdown);
+      this.countdown -= dt;
+      const now = Math.ceil(this.countdown);
+      if (this.el.count) this.el.count.textContent = this.countdown > 0 ? String(now) : '¡YA!';
+      if (now !== before && navigator.vibrate) navigator.vibrate(15);
+      if (this.countdown <= 0) {
+        this.phase = 'run';
+        this.t = 0;
+        window.setTimeout(() => {
+          if (this.el.count && this.phase === 'run') this.el.count.textContent = '';
+        }, 500);
+      }
+      return;
+    }
+    if (this.phase !== 'run') return;
+
     // Arranque suave durante el primer segundo
     const speed = SPEED * clamp(this.t / 1.0, 0.15, 1);
     this.z -= speed * dt;
-
-    const mv = this.input.move;
-    this.vel.x = damp(this.vel.x, mv.x * STEER, 11, dt);
-    this.vel.y = damp(this.vel.y, mv.y * STEER, 11, dt);
+    this.steer(dt);
 
     // La chispa mantiene su posición lateral en el mundo; el tubo se mueve debajo de ella
     const prevC = center(this.z + speed * dt);
@@ -141,9 +241,18 @@ export class TunnelMode {
 
     const dist = this.offset.length();
     this.tubeMat.uniforms.danger.value = damp(this.tubeMat.uniforms.danger.value, dist > RADIUS * DANGER ? 1 : 0, 10, dt);
-    if (dist > RADIUS - SPARK_R) this.finish(false);
-    if (-this.z >= LENGTH) this.finish(true);
-    if (this.bar) this.bar.style.width = `${clamp(-this.z / LENGTH, 0, 1) * 100}%`;
+    if (this.el.bar) this.el.bar.style.width = `${clamp(-this.z / LENGTH, 0, 1) * 100}%`;
+    if (dist > RADIUS - SPARK_R) {
+      this.phase = 'failed';
+      if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+      this.showPanel('¡Tocaste la pared del cable! Puedes intentarlo otra vez ahora mismo.', 'REINTENTAR');
+      return;
+    }
+    if (-this.z >= LENGTH) {
+      this.phase = 'won';
+      if (this.el.count) this.el.count.textContent = '¡LO LOGRASTE!';
+      this.close(true);
+    }
   }
 
   render(renderer: Renderer, time: number): void {

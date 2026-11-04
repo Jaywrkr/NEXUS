@@ -46,6 +46,7 @@ canvas#game {
 
 /* Lo que se muestra en cada modo */
 body:not(.mode-world) .world-only,
+body:not(.mode-world):not(.mode-tunnel) .play-only,
 body:not(.mode-title) #title,
 body:not(.mode-museum) #museum,
 body:not(.mode-tunnel) #tunnelHud {
@@ -447,4 +448,45 @@ body:not(.touch) .touch-only {
   #title h1 {
     transform: none;
   }
+}
+
+/* Túnel: en el celular se maneja arrastrando el dedo en cualquier parte de la pantalla */
+body.mode-tunnel #stickZone {
+  width: 100%;
+  height: 100%;
+}
+body.mode-tunnel #stickBase {
+  opacity: 0.55;
+}
+#tunnelCount {
+  position: absolute;
+  top: 38%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--display);
+  font-size: clamp(56px, 16vw, 120px);
+  color: var(--sun);
+  text-shadow: 5px 5px 0 var(--ink);
+  pointer-events: none;
+}
+#tunnelPanel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  width: min(90vw, 440px);
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px 16px;
+  border-radius: 12px;
+  background: rgba(29, 22, 48, 0.82);
+  text-align: center;
+  pointer-events: auto;
+  z-index: 9;
+}
+#tunnelPanel p {
+  margin: 0 0 4px;
+  font-size: 14px;
+  line-height: 1.45;
 }

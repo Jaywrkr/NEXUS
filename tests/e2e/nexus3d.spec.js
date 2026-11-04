@@ -33,19 +33,21 @@ async function connect(page, from, to) {
   await touch(page);
 }
 
-/** Pasa el túnel manteniendo la chispa en el centro (o sin manejarla, para perder). */
-async function rideTunnel(page, steer) {
+/** Entra al túnel, toca EMPEZAR y lo recorre manteniendo la chispa centrada (o sin manejarla, para chocar). */
+async function rideTunnel(page, steer, { backToWorld = true } = {}) {
   await expect.poll(() => mode(page)).toContain('mode-tunnel');
-  for (let i = 0; i < 110; i += 1) {
-    const done = await page.evaluate((steer) => {
+  await expect.poll(() => page.evaluate(() => window.__nexus3d.tunnel.state)).toMatch(/ready|failed/);
+  await page.keyboard.press('Space');
+  for (let i = 0; i < 160; i += 1) {
+    const state = await page.evaluate((steer) => {
       const g = window.__nexus3d;
       if (steer) g.tunnel.offset.set(0, 0);
       g.step(0.1);
-      return g.tunnel.done;
+      return g.tunnel.state;
     }, steer);
-    if (done) break;
+    if (state === 'won' || state === 'failed') break;
   }
-  await expect.poll(() => mode(page), { timeout: 15_000 }).toContain('mode-world');
+  if (steer && backToWorld) await expect.poll(() => mode(page), { timeout: 15_000 }).toContain('mode-world');
 }
 
 async function leaveMuseum(page) {
@@ -170,12 +172,36 @@ test('3D: el señuelo no encaja y una conexión no se repite', async ({ page }) 
   expect(await page.evaluate(() => window.__nexus3d.world.connections.all.find((o) => o.id === 'beacon').connectionCount)).toBe(1);
 });
 
-test('3D: el túnel sin manejar falla y deja reintentar', async ({ page }) => {
+test('3D: el túnel tiene práctica, se puede reintentar ahí mismo o volver al barrio', async ({ page, isMobile }) => {
+  await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
+  await expect.poll(() => mode(page)).toContain('mode-tunnel');
+  // Práctica: la chispa se mueve pero no avanza ni choca
+  await expect(page.locator('#tunnelGo')).toHaveText('EMPEZAR');
+  // En el celular el control táctil sigue disponible dentro del cable (y ocupa toda la pantalla)
+  if (isMobile) {
+    await expect(page.locator('#stickZone')).toBeVisible();
+    const box = await page.locator('#stickZone').boundingBox();
+    expect(box.width).toBeGreaterThan(500);
+  }
+  await page.keyboard.down('ArrowRight');
+  await step(page, 3);
+  await page.keyboard.up('ArrowRight');
+  expect(await page.evaluate(() => window.__nexus3d.tunnel.state)).toBe('ready');
+
+  // Sin manejar: choca y ofrece reintentar
+  await rideTunnel(page, false);
+  expect(await page.evaluate(() => window.__nexus3d.tunnel.state)).toBe('failed');
+  await expect(page.locator('#tunnelGo')).toHaveText('REINTENTAR');
+
+  // Volver al barrio: sin castigo, se puede intentar otra vez
+  await page.keyboard.press('Escape');
+  await expect.poll(() => mode(page), { timeout: 15_000 }).toContain('mode-world');
+  expect(await text(page, 'toast')).toContain('El cable quedó sin terminar');
+  expect(await text(page, 'msg')).toBe('El barrio está triste y sin color. Conecta la fuente con la farola');
+
+  // De nuevo: chocar, reintentar en el mismo túnel y ganar
   await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
   await rideTunnel(page, false);
-  expect(await text(page, 'toast')).toContain('Perdiste el control en el túnel');
-  expect(await text(page, 'msg')).toBe('El barrio está triste y sin color. Conecta la fuente con la farola');
-  await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
   await rideTunnel(page, true);
   expect(await text(page, 'msg')).toContain('La farola se encendió');
 });

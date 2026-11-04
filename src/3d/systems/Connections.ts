@@ -133,8 +133,7 @@ export class Connections {
       return;
     }
     this.drawCable(source, target, false);
-    this.events.feedback('Perdiste el control en el túnel, ¡inténtalo de nuevo!', 'error');
-    this.audio.playError();
+    this.events.feedback('El cable quedó sin terminar. Puedes intentarlo otra vez cuando quieras', 'info');
   }
 
   /** Dibuja una conexión ya hecha en una partida guardada, sin efectos. */
