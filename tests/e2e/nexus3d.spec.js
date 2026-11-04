@@ -77,14 +77,22 @@ test.afterEach(async ({ page }) => {
 
 test('3D: las cuatro zonas, el museo y el progreso guardado', async ({ page }) => {
   test.setTimeout(240_000);
-  expect(await text(page, 'msg')).toBe('Conecta la fuente con la farola');
+  expect(await text(page, 'msg')).toBe('El barrio está triste y sin color. Conecta la fuente con la farola');
 
   // Plaza: fuente → farola (túnel) → puerta
   await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
   await rideTunnel(page, true);
   expect(await text(page, 'msg')).toContain('La farola se encendió');
   await connect(page, [-14.3, -16.5], [-15.2, -25.6]);
-  expect(await text(page, 'msg')).toContain('La puerta se abrió');
+  expect(await text(page, 'msg')).toContain('La plaza volvió a la vida');
+  // El color vuelve alrededor de la plaza, pero no en el resto del barrio
+  await step(page, 3);
+  const life = await page.evaluate(() => {
+    const w = window.__nexus3d.world;
+    return { plaza: w.lifeAt(-18, -22), antena: w.lifeAt(22, -18) };
+  });
+  expect(life.plaza).toBeGreaterThan(0.95);
+  expect(life.antena).toBeLessThan(0.05);
   await collect(page, -15.5, -24.2);
   await leaveMuseum(page);
   expect(await text(page, 'stars')).toBe('★ 1/4');
@@ -127,8 +135,10 @@ test('3D: las cuatro zonas, el museo y el progreso guardado', async ({ page }) =
   });
   expect(await page.evaluate(() => window.__nexus3d.world.nexus.position.z)).toBeGreaterThan(36);
   await collect(page, 18, 40.5);
-  expect(await text(page, 'msg')).toBe('¡Restauraste todo el barrio!');
-  await step(page, 2.4);
+  expect(await text(page, 'msg')).toBe('¡El barrio entero volvió a la vida!');
+  await step(page, 4);
+  // Con las cuatro zonas, el color vuelve a todo el pueblo (también lejos de las zonas)
+  expect(await page.evaluate(() => window.__nexus3d.world.lifeAt(-40, 40))).toBeGreaterThan(0.99);
   await expect.poll(() => mode(page), { timeout: 15_000 }).toContain('mode-museum');
   await expect(page.locator('#museumComplete')).toBeVisible();
   await leaveMuseum(page);
@@ -146,7 +156,7 @@ test('3D: las cuatro zonas, el museo y el progreso guardado', async ({ page }) =
   await expect(page.locator('#play')).toBeHidden();
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
-  expect(await text(page, 'msg')).toBe('Ya restauraste todo el barrio');
+  expect(await text(page, 'msg')).toBe('Ya le devolviste la vida a todo el barrio');
   expect(await text(page, 'stars')).toBe('★ 4/4');
 });
 
@@ -164,7 +174,7 @@ test('3D: el túnel sin manejar falla y deja reintentar', async ({ page }) => {
   await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
   await rideTunnel(page, false);
   expect(await text(page, 'toast')).toContain('Perdiste el control en el túnel');
-  expect(await text(page, 'msg')).toBe('Conecta la fuente con la farola');
+  expect(await text(page, 'msg')).toBe('El barrio está triste y sin color. Conecta la fuente con la farola');
   await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
   await rideTunnel(page, true);
   expect(await text(page, 'msg')).toContain('La farola se encendió');

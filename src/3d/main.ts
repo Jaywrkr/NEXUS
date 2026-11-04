@@ -72,7 +72,7 @@ class Game {
   }
 
   private setupTitle(): void {
-    const has = this.world.progress.getCollectedFragments().length > 0;
+    const has = this.world.progress.hasProgress();
     const play = document.getElementById('play')!;
     const cont = document.getElementById('continue')!;
     const fresh = document.getElementById('newGame')!;

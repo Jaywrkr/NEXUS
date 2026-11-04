@@ -1,13 +1,22 @@
+import type { GameState, SavedConnection } from '../../data/gameState';
+
 const KEY = 'los-nexus-3d-progress';
 
 interface State3D {
   fragmentsCollected: string[];
   seenCompletion: boolean;
+  /** Conexiones hechas (para restaurar trabajos a medias y para lo que dicen los habitantes). */
+  connections: SavedConnection[];
+  /** Habitantes (y la intro) que ya hablaron. */
+  heard: string[];
 }
 
+const empty = (): State3D => ({ fragmentsCollected: [], seenCompletion: false, connections: [], heard: [] });
+
 /**
- * Progreso guardado de la versión 3D, separado del de la 2D (que guarda mucho más:
- * capítulo, conexiones, posición...). Misma idea: qué fragmentos hay y si ya se vio el festejo final.
+ * Progreso guardado de la versión 3D, separado del de la 2D. Guarda fragmentos, festejo final,
+ * conexiones hechas y habitantes escuchados. `snapshot()` lo expone con la forma del GameState de la 2D
+ * para reutilizar su lógica de capítulo (`src/data/chapter.ts`).
  */
 export class Progress3D {
   private state: State3D;
@@ -19,9 +28,19 @@ export class Progress3D {
   private static load(): State3D {
     try {
       const parsed = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<State3D> | null;
-      return { fragmentsCollected: parsed?.fragmentsCollected ?? [], seenCompletion: parsed?.seenCompletion ?? false };
+      if (!parsed) return empty();
+      const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string') : []);
+      const connections = Array.isArray(parsed.connections)
+        ? parsed.connections.filter((c): c is SavedConnection => typeof c?.sourceId === 'string' && typeof c?.targetId === 'string')
+        : [];
+      return {
+        fragmentsCollected: strings(parsed.fragmentsCollected),
+        seenCompletion: parsed.seenCompletion === true,
+        connections,
+        heard: strings(parsed.heard),
+      };
     } catch {
-      return { fragmentsCollected: [], seenCompletion: false };
+      return empty();
     }
   }
 
@@ -47,6 +66,10 @@ export class Progress3D {
     return [...this.state.fragmentsCollected];
   }
 
+  hasProgress(): boolean {
+    return this.state.fragmentsCollected.length > 0 || this.state.connections.length > 0;
+  }
+
   hasSeenCompletion(): boolean {
     return this.state.seenCompletion;
   }
@@ -54,6 +77,41 @@ export class Progress3D {
   markCompletionSeen(): void {
     this.state.seenCompletion = true;
     this.save();
+  }
+
+  saveConnection(sourceId: string, targetId: string): void {
+    if (this.hasConnection(sourceId, targetId)) return;
+    this.state.connections.push({ sourceId, targetId });
+    this.save();
+  }
+
+  hasConnection(sourceId: string, targetId: string): boolean {
+    return this.state.connections.some((c) => c.sourceId === sourceId && c.targetId === targetId);
+  }
+
+  getConnections(): SavedConnection[] {
+    return this.state.connections.map((c) => ({ ...c }));
+  }
+
+  markHeard(id: string): void {
+    if (this.hasHeard(id)) return;
+    this.state.heard.push(id);
+    this.save();
+  }
+
+  hasHeard(id: string): boolean {
+    return this.state.heard.includes(id);
+  }
+
+  /** Vista compatible con el GameState de la 2D (para `residentLine`, `hasChapterConnection`...). */
+  snapshot(): GameState {
+    return {
+      fragmentsCollected: [...this.state.fragmentsCollected],
+      seenCompletion: this.state.seenCompletion,
+      connections: this.getConnections(),
+      position: null,
+      story: { heard: [...this.state.heard], discoveries: [], chapterSeen: false },
+    };
   }
 
   resetProgress(): void {

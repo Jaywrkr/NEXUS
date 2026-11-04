@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { AudioSystem } from '../../systems/AudioSystem';
 import type { Input } from '../core/input';
 import { Progress3D } from '../core/progress';
+import { LIFE, LIFE_SPOTS, keepVivid } from '../core/render';
 import type { Renderer } from '../core/render';
 import { after, tween } from '../core/tween';
 import { damp, dampAngle } from '../core/util';
@@ -82,7 +83,10 @@ export class WorldMode {
 
     this.connections = new Connections(scene, this.audio, {
       feedback: (m, k) => this.toast(m, k),
-      made: (_s, t) => this.onConnectionMade(t),
+      made: (s, t) => {
+        this.progress.saveConnection(s.id, t.id);
+        this.applyConnection(t, true);
+      },
       tunnel: (s, t) => this.cb.tunnel(s, t),
     });
 
@@ -105,6 +109,8 @@ export class WorldMode {
     scene.add(this.bridge.deck);
 
     for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge]) {
+      // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
+      keepVivid(obj.group);
       scene.add(obj.group);
       this.connections.register(obj);
     }
@@ -124,12 +130,14 @@ export class WorldMode {
       [SECRET_FRAGMENT.id, -18, 1.0, -39.6],
     ] as const) {
       const f = new Fragment(id, x, y, z);
+      keepVivid(f.group);
       scene.add(f.group);
       this.fragments.push(f);
       this.fragmentById.set(id, f);
     }
 
-    this.restoreProgress(source, fountainSource, beaconA, beaconB, bridgeSource);
+    LIFE.reset();
+    this.restoreProgress({ source, fountainSource, beaconA, beaconB, bridgeSource });
     this.setView(this.iso);
 
     this.el.interact?.addEventListener('click', () => this.input.queueInteract());
@@ -140,72 +148,138 @@ export class WorldMode {
 
   /* ---------- Progreso guardado ---------- */
 
-  private restoreProgress(source: Connectable, fountainSource: Connectable, a: Connectable, b: Connectable, bridgeSource: Connectable): void {
+  private restoreProgress(srcs: Record<'source' | 'fountainSource' | 'beaconA' | 'beaconB' | 'bridgeSource', Connectable>): void {
     const p = this.progress;
-    if (p.hasFragment(PLAZA_ID)) {
-      this.lamp.restore();
-      this.door.restore();
-      source.activate();
-      this.connections.restore(source, this.lamp);
-      this.connections.restore(this.lamp, this.door);
-      this.lightWindow();
-      this.transformPlaza(false);
+    // Partidas anteriores a guardar conexiones: si hay fragmento pero no conexiones, se deducen
+    const legacy: [string, Connectable, Connectable][] = [
+      [PLAZA_ID, srcs.source, this.lamp],
+      [PLAZA_ID, this.lamp, this.door],
+      [FOUNTAIN_ID, srcs.fountainSource, this.fountain],
+      [BEACON_ID, srcs.beaconA, this.beacon],
+      [BEACON_ID, srcs.beaconB, this.beacon],
+      [BRIDGE_ID, srcs.bridgeSource, this.bridge],
+    ];
+    for (const [fragment, s, t] of legacy) if (p.hasFragment(fragment)) p.saveConnection(s.id, t.id);
+
+    // Rehacer cada conexión guardada, sin animación (también los trabajos a medias)
+    const byId = (id: string) => this.connections.all.find((o) => o.id === id);
+    for (const c of p.getConnections()) {
+      const s = byId(c.sourceId);
+      const t = byId(c.targetId);
+      if (!s || !t) continue;
+      s.activate();
+      if (t === this.beacon) this.beacon.activate();
+      else t.restore();
+      this.connections.restore(s, t);
+      this.applyConnection(t, false);
     }
-    if (p.hasFragment(FOUNTAIN_ID)) {
-      this.fountain.restore();
-      this.connections.restore(fountainSource, this.fountain);
-    }
-    if (p.hasFragment(BEACON_ID)) {
-      this.beacon.restore();
-      this.connections.restore(a, this.beacon);
-      this.connections.restore(b, this.beacon);
-    }
-    if (p.hasFragment(BRIDGE_ID)) {
-      this.bridge.restore();
-      this.connections.restore(bridgeSource, this.bridge);
-      this.world.openBridgeGap();
-    }
-    if (p.hasFragment(SECRET_FRAGMENT.id)) this.fragmentById.get(SECRET_FRAGMENT.id)!.collect();
-    else this.fragmentById.get(SECRET_FRAGMENT.id)!.reveal(false);
+
+    for (const f of this.fragments) if (p.hasFragment(f.id)) f.collect();
+    if (!p.hasFragment(SECRET_FRAGMENT.id)) this.fragmentById.get(SECRET_FRAGMENT.id)!.reveal(false);
     this.updateHud();
     this.setMessage(this.statusMessage());
   }
 
   private statusMessage(): string {
-    const done = ZONE_FRAGMENTS.filter((f) => this.progress.hasFragment(f.id)).length;
-    if (done === 4) return 'Ya restauraste todo el barrio';
-    if (done === 0) return 'Conecta la fuente con la farola';
-    return `Restauraste ${done} de 4 lugares — sigue explorando`;
+    const done = this.zonesDone();
+    if (done === 4) return 'Ya le devolviste la vida a todo el barrio';
+    if (done === 0) return 'El barrio está triste y sin color. Conecta la fuente con la farola';
+    return `Le devolviste la vida a ${done} de 4 lugares — sigue explorando`;
+  }
+
+  /** Zonas resueltas (no hace falta haber juntado el fragmento). */
+  private zonesDone(): number {
+    return [this.door.isActive, this.fountain.isActive, this.beacon.isFullyActive, this.bridge.isActive].filter(Boolean).length;
+  }
+
+  /* ---------- Vida del barrio ---------- */
+
+  /** Círculos de color que crecen en el mundo (ver LIFE en core/render.ts). */
+  private readonly lifeSpots: { x: number; z: number; current: number; target: number }[] = [];
+
+  private addLife(x: number, z: number, radius: number, animate: boolean): void {
+    if (this.lifeSpots.length >= LIFE_SPOTS) {
+      // Sin lugar: agrandar el más cercano en vez de perder la vida nueva
+      const near = this.lifeSpots.reduce((a, b) => (Math.hypot(a.x - x, a.z - z) < Math.hypot(b.x - x, b.z - z) ? a : b));
+      near.target = Math.max(near.target, radius);
+      return;
+    }
+    this.lifeSpots.push({ x, z, current: animate ? 0.5 : radius, target: radius });
+  }
+
+  private updateLife(dt: number): void {
+    this.lifeSpots.forEach((spot, i) => {
+      // La ola de color avanza rápido al principio y se frena al llegar
+      spot.current += (spot.target - spot.current) * Math.min(1, dt * 1.6);
+      LIFE.spots[i].set(spot.x, spot.z, spot.current, 0);
+    });
+    this.world.mood = this.zonesDone() / 4;
+  }
+
+  /** Vida (0..1) en un punto del barrio (también lo usan las pruebas). */
+  lifeAt(x: number, z: number): number {
+    return LIFE.at(x, z);
+  }
+
+  /** Cuando las cuatro zonas tienen vida, el color vuelve a todo el pueblo. */
+  private reviveWholeTown(animate: boolean): void {
+    if (!animate) {
+      LIFE.global = 1;
+      return;
+    }
+    const from = LIFE.global;
+    tween(3.0, (k) => (LIFE.global = from + (1 - from) * k), { delay: 0.6 });
   }
 
   /* ---------- Reacciones del mundo ---------- */
 
-  private onConnectionMade(target: Connectable): void {
+  /**
+   * Lo que cambia en el barrio con cada conexión. `animate` = en vivo (mensajes, olas de color);
+   * sin animar = restaurando una partida guardada.
+   */
+  private applyConnection(target: Connectable, animate: boolean): void {
+    const reveal = (id: string) => {
+      if (!this.progress.hasFragment(id)) this.fragmentById.get(id)!.reveal(animate);
+    };
+    const say = (m: string) => {
+      if (animate) this.setMessage(m);
+    };
+    const zoneLife = (x: number, z: number, r: number) => {
+      this.addLife(x, z, r, animate);
+      if (this.zonesDone() === 4) this.reviveWholeTown(animate);
+    };
+    // Cada conexión devuelve un poco de color alrededor de lo que se encendió
+    this.addLife(target.x, target.z, target === this.fountain ? 6 : 4.5, animate);
+
     if (target === this.lamp) {
       this.lightWindow();
-      this.setMessage('¡La farola se encendió! Ahora llévale energía a la puerta');
+      say('¡La farola se encendió! Ahora llévale energía a la puerta');
     }
     if (target === this.door) {
-      this.fragmentById.get(PLAZA_ID)!.reveal();
-      this.transformPlaza(true);
-      this.setMessage('¡La puerta se abrió! Acércate al fragmento');
+      reveal(PLAZA_ID);
+      this.transformPlaza(animate);
+      zoneLife(-18, -22, 19);
+      say('¡La plaza volvió a la vida! Acércate al fragmento');
     }
     if (target === this.fountain) {
-      this.fragmentById.get(FOUNTAIN_ID)!.reveal();
-      this.setMessage('¡La fuente volvió a fluir! Acércate al fragmento');
+      reveal(FOUNTAIN_ID);
+      zoneLife(-20, 15, 17);
+      say('¡La fuente volvió a fluir y el color con ella! Acércate al fragmento');
     }
     if (target === this.beacon) {
       if (this.beacon.isFullyActive) {
-        this.fragmentById.get(BEACON_ID)!.reveal();
-        this.setMessage('¡La antena transmite! Acércate al fragmento');
+        reveal(BEACON_ID);
+        zoneLife(22, -18, 17);
+        say('¡La antena transmite! Acércate al fragmento');
       } else {
-        this.setMessage('La antena necesita otra conexión más');
+        say('La antena necesita otra conexión más');
       }
     }
     if (target === this.bridge) {
       this.world.openBridgeGap();
-      this.fragmentById.get(BRIDGE_ID)!.reveal();
-      this.setMessage('¡El puente se abrió! Cruza y busca el fragmento');
+      reveal(BRIDGE_ID);
+      zoneLife(16, 33, 17);
+      say('¡El puente se abrió! Cruza y busca el fragmento');
     }
   }
 
@@ -267,7 +341,7 @@ export class WorldMode {
     const allDone = ZONE_FRAGMENTS.every((z) => this.progress.hasFragment(z.id));
     if (allDone && !this.progress.hasSeenCompletion()) {
       this.progress.markCompletionSeen();
-      this.setMessage('¡Restauraste todo el barrio!');
+      this.setMessage('¡El barrio entero volvió a la vida!');
       this.audio.playSuccess();
       this.celebrateWorld();
       after(2.2, () => this.goMuseum());
@@ -385,6 +459,7 @@ export class WorldMode {
     for (const obj of this.connections.all) obj.update(dt, this.time);
     for (const f of this.fragments) f.update(this.time);
     this.updateCameras(dt);
+    this.updateLife(dt);
     this.world.update(dt, this.time, this.nexus.position, this.camera.position);
   }
 
@@ -427,6 +502,7 @@ export class WorldMode {
     }
 
     this.updateCameras(dt);
+    this.updateLife(dt);
     this.connections.update(dt, this.camera, this.nexus.plugPoint());
     this.world.update(dt, this.time, this.nexus.position, this.camera.position);
   }

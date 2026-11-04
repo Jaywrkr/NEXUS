@@ -53,6 +53,84 @@ const brushTexture = (() => {
   return tex;
 })();
 
+/* ---------- Vida del barrio ----------
+ * El pueblo empieza triste y sin color. Cada conexión abre un "círculo de vida" en el mundo
+ * (x, z, radio) donde vuelve el color; al resolver una zona el círculo es grande, y al terminar
+ * todo el barrio recupera el color entero. Se hace en el shader de los materiales del mundo
+ * (toon() y flat()); el Nexus y los objetos conectables usan copias sin este efecto: ellos
+ * traen el color y se distinguen como lo que se puede tocar.
+ */
+export const LIFE_SPOTS = 16;
+const lifeUniforms = {
+  lifeSpots: { value: Array.from({ length: LIFE_SPOTS }, () => new THREE.Vector4(0, 0, 0, 0)) },
+  lifeGlobal: { value: 0 },
+};
+
+export const LIFE = {
+  spots: lifeUniforms.lifeSpots.value,
+  get global(): number {
+    return lifeUniforms.lifeGlobal.value;
+  },
+  set global(v: number) {
+    lifeUniforms.lifeGlobal.value = v;
+  },
+  /** Cuánta vida (0..1) hay en un punto del barrio; misma cuenta que el shader. */
+  at(x: number, z: number): number {
+    let l = lifeUniforms.lifeGlobal.value;
+    for (const s of lifeUniforms.lifeSpots.value) {
+      if (s.z <= 0) continue;
+      const d = Math.hypot(x - s.x, z - s.y);
+      const t = Math.min(1, Math.max(0, (d - s.z * 0.75) / (s.z * 0.25)));
+      l = Math.max(l, 1 - t * t * (3 - 2 * t));
+    }
+    return l;
+  },
+  reset(): void {
+    lifeUniforms.lifeGlobal.value = 0;
+    for (const s of lifeUniforms.lifeSpots.value) s.set(0, 0, 0, 0);
+  },
+};
+
+const LIFE_GLSL = `
+  float lifeAmount = lifeGlobal;
+  for (int i = 0; i < ${LIFE_SPOTS}; i++) {
+    vec4 s = lifeSpots[i];
+    if (s.z > 0.0) lifeAmount = max(lifeAmount, 1.0 - smoothstep(s.z * 0.75, s.z, distance(vLifePos.xz, s.xy)));
+  }
+  float lifeGray = dot(outgoingLight, vec3(0.299, 0.587, 0.114));
+  vec3 gloom = mix(vec3(lifeGray), outgoingLight, 0.12) * vec3(0.9, 0.94, 1.03) * 0.86;
+  outgoingLight = mix(gloom, outgoingLight, lifeAmount);
+`;
+
+/** Aplica el efecto "pueblo triste → con vida" a un material del mundo. */
+export function withLife<T extends THREE.Material>(mat: T): T {
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.lifeSpots = lifeUniforms.lifeSpots;
+    shader.uniforms.lifeGlobal = lifeUniforms.lifeGlobal;
+    shader.vertexShader = 'varying vec3 vLifePos;\n' + shader.vertexShader.replace(
+      '#include <project_vertex>',
+      '#include <project_vertex>\n  vLifePos = (modelMatrix * vec4(transformed, 1.0)).xyz;',
+    );
+    shader.fragmentShader =
+      `varying vec3 vLifePos;\nuniform vec4 lifeSpots[${LIFE_SPOTS}];\nuniform float lifeGlobal;\n` +
+      shader.fragmentShader.replace('#include <opaque_fragment>', LIFE_GLSL + '#include <opaque_fragment>');
+  };
+  return mat;
+}
+
+/**
+ * Copia los materiales de un objeto para que NO se apaguen con el pueblo (el Nexus, los objetos
+ * conectables, los fragmentos). `clone()` no copia el onBeforeCompile, así que la copia queda "viva".
+ */
+export function keepVivid(root: THREE.Object3D): void {
+  root.traverse((o) => {
+    const m = o as THREE.Mesh;
+    if (!m.isMesh || Array.isArray(m.material)) return;
+    const mat = m.material as THREE.Material;
+    if (mat.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile) m.material = mat.clone();
+  });
+}
+
 const toonCache = new Map<string, THREE.MeshToonMaterial>();
 
 /** Material toon compartido. `brush` = cuántas veces se repite la textura de pincel (0 = liso). */
@@ -67,14 +145,14 @@ export function toon(color: THREE.ColorRepresentation, brush = 0): THREE.MeshToo
     t.repeat.set(brush, brush);
     params.map = t;
   }
-  const mat = new THREE.MeshToonMaterial(params);
+  const mat = withLife(new THREE.MeshToonMaterial(params));
   toonCache.set(key, mat);
   return mat;
 }
 
 /** Material toon propio (no compartido), para objetos que cambian de color al conectarse. */
 export function toonUnique(color: THREE.ColorRepresentation, brush = 0): THREE.MeshToonMaterial {
-  return toon(color, brush).clone();
+  return withLife(toon(color, brush).clone());
 }
 
 const flatCache = new Map<string, THREE.MeshBasicMaterial>();
@@ -84,7 +162,7 @@ export function flat(color: THREE.ColorRepresentation): THREE.MeshBasicMaterial 
   const key = new THREE.Color(color).getHexString();
   let m = flatCache.get(key);
   if (!m) {
-    m = new THREE.MeshBasicMaterial({ color });
+    m = withLife(new THREE.MeshBasicMaterial({ color }));
     flatCache.set(key, m);
   }
   return m;
@@ -284,11 +362,14 @@ export function makeSky(): THREE.Mesh {
       fog: false,
       depthWrite: false,
       vertexShader: `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      fragmentShader: `varying vec3 vP;
+      uniforms: { skyLife: { value: 0 } },
+      fragmentShader: `varying vec3 vP; uniform float skyLife;
         vec3 toLinear(vec3 c){ return pow(c, vec3(2.2)); }
         void main(){ float h = vP.y; vec3 top = vec3(0.08, 0.20, 0.58); vec3 mid = vec3(0.16, 0.36, 0.78); vec3 hor = vec3(0.58, 0.70, 0.90);
           vec3 c = mix(hor, mid, smoothstep(0.0, 0.18, h)); c = mix(c, top, smoothstep(0.18, 0.7, h));
           c = mix(c, vec3(0.62, 0.72, 0.86), smoothstep(0.0, -0.2, h));
+          float g = dot(c, vec3(0.299, 0.587, 0.114));
+          c = mix(vec3(g) * vec3(0.92, 0.95, 1.0), c, 0.25 + 0.75 * skyLife);
           gl_FragColor = vec4(toLinear(c), 1.0); }`,
     }),
   );

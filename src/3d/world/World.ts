@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { batchStatic } from '../core/batch';
-import { FOG_COLOR, FOG_FAR, FOG_NEAR, box, flat, gradientMap, makeSky, outline, outlineScaled, rounded, sharedOutline, toon, toonUnique } from '../core/render';
+import { FOG_COLOR, FOG_FAR, FOG_NEAR, LIFE, box, flat, gradientMap, makeSky, outline, outlineScaled, rounded, sharedOutline, toon, toonUnique, withLife } from '../core/render';
 import { clamp, isTouch, pick, rnd } from '../core/util';
 
 export interface Rect {
@@ -58,6 +58,14 @@ export class World {
   readonly circles: Circle[] = [];
   readonly sun: THREE.DirectionalLight;
   readonly sky: THREE.Mesh;
+  private readonly hemi: THREE.HemisphereLight;
+  /** Ánimo del barrio (0 = triste y gris, 1 = todo restaurado): cielo, niebla y luz. Lo fija WorldMode. */
+  mood = 0;
+  private moodShown = 0;
+  private static readonly FOG_ALIVE = new THREE.Color('#9fbbe6');
+  private static readonly FOG_GLOOM = new THREE.Color('#a9adb4');
+  private static readonly BG_ALIVE = new THREE.Color('#2a4fb0');
+  private static readonly BG_GLOOM = new THREE.Color('#5d636e');
   readonly bridgeGap: Rect = { minX: BRIDGE_X - BRIDGE_HALF, maxX: BRIDGE_X + BRIDGE_HALF, minZ: CANAL_MIN_Z - 0.6, maxZ: CANAL_MAX_Z + 0.6 };
   plaza!: PlazaRefs;
   private readonly clouds: THREE.Group[] = [];
@@ -69,8 +77,8 @@ export class World {
     s.fog = new THREE.Fog(FOG_COLOR, FOG_NEAR, FOG_FAR);
     s.background = new THREE.Color('#2a4fb0');
 
-    const hemi = new THREE.HemisphereLight('#a8c0f0', '#a07a52', 1.7);
-    s.add(hemi);
+    this.hemi = new THREE.HemisphereLight('#a8c0f0', '#a07a52', 1.7);
+    s.add(this.hemi);
     this.sun = new THREE.DirectionalLight('#ffd9a0', 2.4);
     this.sun.castShadow = true;
     const size = isTouch() ? 1024 : 2048;
@@ -266,7 +274,7 @@ export class World {
     const mid = (CANAL_MIN_Z + CANAL_MAX_Z) / 2;
     const water = new THREE.Mesh(
       new THREE.PlaneGeometry(800, width),
-      new THREE.MeshToonMaterial({ color: '#3f86c8', gradientMap }),
+      withLife(new THREE.MeshToonMaterial({ color: '#3f86c8', gradientMap })),
     );
     water.rotation.x = -Math.PI / 2;
     water.position.set(0, -0.9, mid);
@@ -594,7 +602,7 @@ export class World {
       const b = box(8, 4.2, 7, pick(['#efe6d6', '#f6d9b0', '#e7c9c0']), { brush: 3 });
       b.position.set(x, 2.1, z);
       this.scene.add(b);
-      const sign = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 1.35), new THREE.MeshBasicMaterial({ map: this.signTexture(name, col) }));
+      const sign = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 1.35), withLife(new THREE.MeshBasicMaterial({ map: this.signTexture(name, col) })));
       sign.position.set(x, 3.4, z + 3.56);
       this.scene.add(sign);
       const awning = box(6.2, 0.25, 1.6, col, { outline: 0.04 });
@@ -822,6 +830,14 @@ export class World {
     this.sun.position.set(focus.x + 26, 40, focus.z + 12);
     this.sun.target.position.set(focus.x, 0, focus.z);
     this.sky.position.set(camPos.x, 0, camPos.z);
+    this.moodShown += (this.mood - this.moodShown) * Math.min(1, dt * 1.2);
+    const m = this.moodShown;
+    (this.sky.material as THREE.ShaderMaterial).uniforms.skyLife.value = m;
+    FOG_COLOR.copy(World.FOG_GLOOM).lerp(World.FOG_ALIVE, m);
+    (this.scene.fog as THREE.Fog).color.copy(FOG_COLOR);
+    (this.scene.background as THREE.Color).copy(World.BG_GLOOM).lerp(World.BG_ALIVE, m);
+    this.hemi.intensity = 1.35 + 0.35 * m;
+    this.sun.intensity = 1.9 + 0.5 * m;
     for (const c of this.clouds) c.position.x += dt * 0.6;
     for (const s of this.swaying) {
       s.g.rotation.z = Math.sin(time * 0.9 + s.p) * 0.03;
@@ -830,6 +846,10 @@ export class World {
     for (const b of this.butterflies) {
       const t = time * b.s + b.p;
       b.g.position.set(b.cx + Math.cos(t) * b.r, 1.2 + Math.sin(t * 2.3) * 0.5, b.cz + Math.sin(t * 1.3) * b.r);
+      // Las mariposas solo vuelan donde el barrio ya tiene vida
+      const alive = LIFE.at(b.g.position.x, b.g.position.z);
+      b.g.visible = alive > 0.3;
+      b.g.scale.setScalar(Math.min(1, alive * 1.5));
       b.g.rotation.y = -t;
       const flap = Math.sin(time * 18 + b.p) * 0.9;
       b.wl.rotation.y = flap;
