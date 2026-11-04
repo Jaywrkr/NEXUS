@@ -105,10 +105,13 @@ test('3D: las cuatro zonas, el museo y el progreso guardado', async ({ page }) =
 
   // Puente: el canal bloquea hasta desplegarlo
   await tp(page, 18, 27.5);
+  // Avanzar hacia el sur de a pasos chicos, como al caminar (un salto grande atravesaría el bloqueo)
   await page.evaluate(() => {
     const w = window.__nexus3d.world;
-    w.nexus.position.z += 6;
-    w.world.resolve(w.nexus.position, 0.32);
+    for (let i = 0; i < 40; i += 1) {
+      w.nexus.position.z += 0.3;
+      w.world.resolve(w.nexus.position, 0.32);
+    }
   });
   expect(await page.evaluate(() => window.__nexus3d.world.nexus.position.z)).toBeLessThan(30);
   await connect(page, [11.9, 24.6], [15.2, 26.5]);
