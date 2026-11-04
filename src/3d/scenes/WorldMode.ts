@@ -13,6 +13,8 @@ import { Connections } from '../systems/Connections';
 import type { FeedbackKind } from '../systems/Connections';
 import { World } from '../world/World';
 import { SECRET_FRAGMENT, ZONE_FRAGMENTS } from './MuseumMode';
+import { RESIDENTS, residentLine } from '../../data/chapter';
+import { Resident3D } from '../entities/Resident3D';
 
 const INTERACT_REACH = 2.2; // metros desde el borde del objeto
 const NEXUS_RADIUS = 0.32;
@@ -51,6 +53,10 @@ export class WorldMode {
   private readonly raycaster = new THREE.Raycaster();
   private readonly fragments: Fragment[] = [];
   private nearest: Connectable | null = null;
+  private nearestResident: Resident3D | null = null;
+  private readonly residents: Resident3D[] = [];
+  private storyTimer = 0;
+  private introShown = false;
   private time = 0;
   private busy = false;
 
@@ -67,6 +73,9 @@ export class WorldMode {
     toast: document.getElementById('toast'),
     interact: document.getElementById('interact') as HTMLButtonElement | null,
     view: document.getElementById('viewBtn'),
+    story: document.getElementById('story'),
+    storyWho: document.getElementById('storyWho'),
+    storyText: document.getElementById('storyText'),
   };
   private toastTimer = 0;
 
@@ -138,7 +147,9 @@ export class WorldMode {
 
     LIFE.reset();
     this.restoreProgress({ source, fountainSource, beaconA, beaconB, bridgeSource });
+    this.placeResidents();
     this.setView(this.iso);
+    this.el.story?.addEventListener('click', () => this.hideStory());
 
     this.el.interact?.addEventListener('click', () => this.input.queueInteract());
     this.el.view?.addEventListener('click', () => this.input.queueView());
@@ -248,6 +259,7 @@ export class WorldMode {
       this.addLife(x, z, r, animate);
       if (this.zonesDone() === 4) this.reviveWholeTown(animate);
     };
+    if (animate) after(0.8, () => this.updateResidentMoods());
     // Cada conexión devuelve un poco de color alrededor de lo que se encendió
     this.addLife(target.x, target.z, target === this.fountain ? 6 : 4.5, animate);
 
@@ -411,6 +423,95 @@ export class WorldMode {
     return this.iso ? this.isoCam : this.chaseCam;
   }
 
+  /* ---------- Habitantes (capítulo 1 de la 2D, ver src/data/chapter.ts) ---------- */
+
+  /** Dónde está cada vecino en el barrio 3D y qué zona lo pone contento. */
+  private static readonly RESIDENT_SPOTS: Record<string, { x: number; z: number; faceX: number; faceZ: number }> = {
+    miga: { x: -16.5, z: -12.8, faceX: -20, faceZ: -11 },
+    bombo: { x: -13.6, z: 19.5, faceX: -20, faceZ: 16 },
+    vera: { x: 31.5, z: -21, faceX: 27, faceZ: -18 },
+    'don-paso': { x: 21.5, z: 27, faceX: 18, faceZ: 29 },
+  };
+
+  private placeResidents(): void {
+    for (const info of RESIDENTS) {
+      const spot = WorldMode.RESIDENT_SPOTS[info.id];
+      if (!spot) continue; // Goteo, Pipa y Lucio llegan con sus zonas
+      const r = new Resident3D(info.id, info.name, spot.x, spot.z, Math.atan2(spot.faceX - spot.x, spot.faceZ - spot.z));
+      r.setHeard(this.progress.hasHeard(info.id));
+      this.world.scene.add(r.root);
+      this.residents.push(r);
+    }
+    this.updateResidentMoods(true);
+  }
+
+  /** Cada vecino está triste hasta que su lugar recupera la vida. */
+  private updateResidentMoods(instant = false): void {
+    const restored: Record<string, boolean> = {
+      miga: this.door.isActive,
+      bombo: this.fountain.isActive,
+      vera: this.beacon.isFullyActive,
+      'don-paso': this.bridge.isActive,
+    };
+    for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
+  }
+
+  private residentText(r: Resident3D): string {
+    const info = RESIDENTS.find((i) => i.id === r.id)!;
+    // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
+    if (r.id === 'bombo' && !this.fountain.isActive) {
+      return 'Mi fuente se quedó sin agua y el barrio sin ritmo. Llévale energía desde la estrella de al lado.';
+    }
+    return residentLine(info, this.progress.snapshot());
+  }
+
+  private speak(r: Resident3D): void {
+    this.progress.markHeard(r.id);
+    r.setHeard(true);
+    r.talk();
+    this.showStory(r.name, this.residentText(r));
+  }
+
+  private showStory(who: string, text: string): void {
+    if (!this.el.story) return;
+    if (this.el.storyWho) this.el.storyWho.textContent = who;
+    if (this.el.storyText) this.el.storyText.textContent = text;
+    this.el.story.hidden = false;
+    this.storyTimer = 6.5;
+  }
+
+  private hideStory(): void {
+    if (this.el.story) this.el.story.hidden = true;
+    this.storyTimer = 0;
+  }
+
+  private findNearestResident(): Resident3D | null {
+    const p = this.nexus.position;
+    let best: Resident3D | null = null;
+    let bestD = INTERACT_REACH + 0.4;
+    for (const r of this.residents) {
+      const d = Math.hypot(r.x - p.x, r.z - p.z);
+      if (d < bestD) {
+        best = r;
+        bestD = d;
+      }
+    }
+    return best;
+  }
+
+  private updateResidents(dt: number): void {
+    for (const r of this.residents) r.update(dt, this.nexus.position);
+    // La primera vez que el Nexus se acerca, el vecino habla solo
+    const p = this.nexus.position;
+    for (const r of this.residents) {
+      if (!this.progress.hasHeard(r.id) && Math.hypot(r.x - p.x, r.z - p.z) < 2.6) this.speak(r);
+    }
+    if (this.storyTimer > 0) {
+      this.storyTimer -= dt;
+      if (this.storyTimer <= 0) this.hideStory();
+    }
+  }
+
   /* ---------- Interacción ---------- */
 
   private findNearest(): Connectable | null {
@@ -438,10 +539,15 @@ export class WorldMode {
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     const ndc = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.camera);
-    const hits = this.raycaster.intersectObjects(this.connections.all.map((c) => c.group), true);
+    const targets = [...this.connections.all.map((c) => c.group), ...this.residents.map((r) => r.root)];
+    const hits = this.raycaster.intersectObjects(targets, true);
     for (const h of hits) {
       let o: THREE.Object3D | null = h.object;
-      while (o && !o.userData.connectable) o = o.parent;
+      while (o && !o.userData.connectable && !o.userData.resident) o = o.parent;
+      if (o?.userData.resident) {
+        this.speak(o.userData.resident as Resident3D);
+        return;
+      }
       if (o) {
         this.interact(o.userData.connectable as Connectable);
         return;
@@ -458,6 +564,7 @@ export class WorldMode {
     this.nexus.animate(dt);
     for (const obj of this.connections.all) obj.update(dt, this.time);
     for (const f of this.fragments) f.update(this.time);
+    for (const r of this.residents) r.update(dt, this.nexus.position);
     this.updateCameras(dt);
     this.updateLife(dt);
     this.world.update(dt, this.time, this.nexus.position, this.camera.position);
@@ -481,18 +588,38 @@ export class WorldMode {
     const dirX = fx * mv.y + -fz * mv.x;
     const dirZ = fz * mv.y + fx * mv.x;
     this.nexus.move(this.busy ? 0 : dirX, this.busy ? 0 : dirZ, dt);
-    const blockers = this.connections.all.map((c) => ({ x: c.x, z: c.z, r: c.collideRadius }));
+    const blockers = [
+      ...this.connections.all.map((c) => ({ x: c.x, z: c.z, r: c.collideRadius })),
+      ...this.residents.map((r) => ({ x: r.x, z: r.z, r: 0.4 })),
+    ];
     this.world.resolve(this.nexus.position, NEXUS_RADIUS, blockers);
     this.nexus.animate(dt);
 
     for (const obj of this.connections.all) obj.update(dt, this.time);
     for (const f of this.fragments) f.update(this.time);
 
+    if (!this.introShown) {
+      this.introShown = true;
+      if (!this.progress.hasHeard('intro')) {
+        this.progress.markHeard('intro');
+        this.showStory('Miga · La ciudad al revés', 'El barrio se quedó sin color y sin ganas de fiesta. El manual lo escribió un pato. Empieza por la luz de la plaza.');
+      }
+    }
+    this.updateResidents(dt);
+
     this.nearest = this.findNearest();
-    if (this.input.consumeInteract() && this.nearest && !this.busy) this.interact(this.nearest);
+    // Si un vecino está más cerca que cualquier objeto (y no hay un cable en la mano), el botón sirve para hablar
+    const resident = this.findNearestResident();
+    const p = this.nexus.position;
+    const objD = this.nearest ? Math.hypot(this.nearest.x - p.x, this.nearest.z - p.z) - this.nearest.collideRadius : Infinity;
+    this.nearestResident = resident && !this.connections.hasSelection() && Math.hypot(resident.x - p.x, resident.z - p.z) < objD ? resident : null;
+    if (this.input.consumeInteract() && !this.busy) {
+      if (this.nearestResident) this.speak(this.nearestResident);
+      else if (this.nearest) this.interact(this.nearest);
+    }
     if (this.el.interact) {
-      this.el.interact.hidden = !this.nearest || this.busy;
-      this.el.interact.textContent = this.connections.hasSelection() ? 'Conectar' : 'Tocar';
+      this.el.interact.hidden = (!this.nearest && !this.nearestResident) || this.busy;
+      this.el.interact.textContent = this.nearestResident ? 'Hablar' : this.connections.hasSelection() ? 'Conectar' : 'Tocar';
     }
     this.checkFragments();
 

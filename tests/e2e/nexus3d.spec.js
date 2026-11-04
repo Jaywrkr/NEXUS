@@ -179,3 +179,33 @@ test('3D: el túnel sin manejar falla y deja reintentar', async ({ page }) => {
   await rideTunnel(page, true);
   expect(await text(page, 'msg')).toContain('La farola se encendió');
 });
+
+test('3D: los vecinos hablan, recuerdan la visita y se alegran cuando su lugar revive', async ({ page }) => {
+  const story = () => page.evaluate(() => (document.getElementById('story').hidden ? '' : document.getElementById('storyText').textContent));
+  const happy = (id) => page.evaluate((id) => window.__nexus3d.world.residents.find((r) => r.id === id).targetHappy, id);
+  await step(page, 0.1);
+  expect(await story()).toContain('El barrio se quedó sin color');
+
+  // Miga habla sola la primera vez que el Nexus se acerca
+  expect(await happy('miga')).toBe(0);
+  await tp(page, -17.5, -11.2);
+  await step(page, 0.2);
+  expect(await story()).toBe('El manual lo escribió un pato. Empecemos por dar luz a la plaza.');
+  expect(await text(page, 'interact')).toBe('Hablar');
+
+  // Restaurar la plaza: Miga cambia de frase y se pone contenta
+  await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
+  await rideTunnel(page, true);
+  await connect(page, [-14.3, -16.5], [-15.2, -25.6]);
+  await step(page, 1.5);
+  expect(await happy('miga')).toBe(1);
+  expect(await happy('bombo')).toBe(0);
+  await tp(page, -17.5, -11.2);
+  await touch(page);
+  expect(await story()).toContain('Una puerta que abre');
+
+  // La visita queda guardada
+  await page.goto('/');
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('los-nexus-3d-progress')).heard)).toEqual(expect.arrayContaining(['intro', 'miga']));
+});

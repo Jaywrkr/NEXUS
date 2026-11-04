@@ -104,6 +104,34 @@ body:not(.mode-tunnel) #tunnelHud {
   padding: 8px 10px;
 }
 
+/* Lo que dicen los habitantes: no frena el juego; se cierra al tocarlo o solo */
+#story {
+  position: fixed;
+  z-index: 6;
+  top: calc(64px + env(safe-area-inset-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(88vw, 560px);
+  padding: 10px 16px 12px;
+  border-radius: 10px;
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  pointer-events: auto;
+  cursor: pointer;
+}
+#story b {
+  font-family: var(--display);
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  color: #2b8f86;
+}
+#story p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
 #toast {
   bottom: calc(96px + env(safe-area-inset-bottom, 0px));
   left: 50%;

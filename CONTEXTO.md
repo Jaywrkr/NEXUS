@@ -7,6 +7,12 @@
 
 ## Los Nexus 3D (juego principal)
 
+> **Idea central (Decisión 036):** el pueblo empieza **triste y sin color**, y el Nexus le devuelve la vida conectando cosas: cada conexión abre un círculo de color, cada zona resuelta colorea su lugar, y al terminar vuelve el color a todo el pueblo. **Mundo abierto (Decisión 037):** un solo barrio, sin niveles, lugares en cualquier orden. Todo lo nuevo tiene que respetar estas dos ideas.
+>
+> **Vecinos (Decisión 038):** Miga, Bombo, Vera y Don Paso ya están en 3D (`src/3d/entities/Resident3D.ts`), con los textos de `src/data/chapter.ts`. Están grises y cabizbajos hasta que su lugar revive.
+>
+> **Vida en el código:** `LIFE`, `withLife()` y `keepVivid()` en `src/3d/core/render.ts`; los círculos se manejan en `WorldMode.addLife()` / `applyConnection()`. Un material nuevo del mundo hecho con `toon()`/`flat()` ya se apaga solo; un objeto que deba quedar con color usa `keepVivid(grupo)`. El progreso 3D guarda fragmentos, conexiones y vecinos escuchados (`src/3d/core/progress.ts`).
+
 ### 1. Qué es
 
 **Los Nexus** es un juego web que un padre (Jay, Cuenca, Ecuador) construye junto a su hijo **Luca (9 años, TDAH)**.
@@ -157,7 +163,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–035).
 ### Qué sigue en el 3D
 
 1. **Probarlo en el celular de Luca** y medir si va fluido; si no, bajar el filtro de pincel o las sombras en celular.
-2. **Pasar al 3D lo que ya existe en la 2D**, de a una pieza y en este orden sugerido: zona 5 (jardín), zona 6 (taller), zona 7 (faroles + fiesta/confeti y final), habitantes del capítulo 1 (Miga y compañía) con sus encargos, pistas y ayudas visuales, efectos suaves, radio CUAC FM, armario del Nexus, historias secundarias. La lógica y los textos están en `src/data/*` y `src/scenes/*` de la 2D: reutilizarlos en vez de reescribirlos.
+2. **Pasar al 3D lo que ya existe en la 2D**, de a una pieza y en este orden sugerido (los vecinos Miga, Bombo, Vera y Don Paso ya están): zona 5 (jardín) con Goteo, zona 6 (taller) con Pipa, zona 7 (faroles + fiesta/confeti y final) con Lucio, objetivo del capítulo y pistas/ayudas visuales, efectos suaves, radio CUAC FM, armario del Nexus, historias secundarias. La lógica y los textos están en `src/data/*` y `src/scenes/*` de la 2D: reutilizarlos en vez de reescribirlos.
 3. Después, las ideas nuevas del backlog (criatura que sigue al Nexus, objeto en movimiento, energía compartida, cable largo entre zonas).
 4. Decidir con Luca la cámara final (isométrica o detrás).
 

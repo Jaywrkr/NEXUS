@@ -166,3 +166,12 @@ El Nexus 3D se arma con primitivas y animación procedural (como Nico en Calle 8
 
 **Decisión 035 — Cámara y cables en 3D**
 Cámara isométrica por defecto (lee mejor el barrio y deja tocar los objetos en el celular) con silueta cuando algo tapa al Nexus; la vista "detrás" del personaje queda disponible con V / botón VISTA. Las conexiones hechas quedan dibujadas en el mundo, el cable "en la mano" sale de la mochila del Nexus mientras hay un origen elegido, y una misma conexión no se puede repetir.
+
+**Decisión 036 — El pueblo empieza triste y sin color**
+Objetivo central del juego, pedido por el usuario: el mundo arranca gris y triste, y el Nexus le devuelve la vida conectando cosas. En 3D se implementa en el shader de los materiales del mundo (`withLife` en `src/3d/core/render.ts`): fuera de los "círculos de vida" todo se ve desaturado y frío. Cada conexión abre un círculo de color alrededor de lo que se encendió; resolver una zona lo agranda a toda la zona; con todas las zonas, el color vuelve al pueblo entero. Cielo, niebla y luz también pasan de gris a cobalto. El Nexus, los objetos conectables y los fragmentos mantienen su color (`keepVivid`): traen la vida y se leen como "lo que se puede tocar". Los vecinos están grises y cabizbajos hasta que su lugar revive. Todo contenido nuevo tiene que sumarse a esta idea: algo apagado que, al conectarlo, devuelve color y vida.
+
+**Decisión 037 — Mundo abierto, no niveles**
+El usuario quiere un mundo abierto, no puntos fijos ni niveles. El barrio 3D es un solo mapa sin cargas, por donde se camina libre, y los lugares se pueden restaurar en cualquier orden (salvo lo que esté físicamente del otro lado de un obstáculo, como el canal). Lo nuevo (zonas de la 2D que se pasen, ideas futuras) se agrega como partes del mismo barrio, no como pantallas o niveles aparte. Los mensajes y pistas orientan pero no imponen un orden.
+
+**Decisión 038 — Los vecinos del capítulo 1 en 3D**
+Miga, Bombo, Vera y Don Paso ya viven en el barrio 3D, armados con primitivas (cada uno con su accesorio: casco y llave, impermeable y tambor, auriculares y micrófono, galera y lentes). Usan los mismos textos de la 2D (`src/data/chapter.ts`, `residentLine`), salvo el pedido de Bombo, porque en 3D la fuente todavía no tiene bomba ni válvulas. Hablan solos la primera vez que el Nexus se acerca, después con el botón "Hablar" o tocándolos; las visitas se guardan. Goteo, Pipa y Lucio llegan cuando se pasen sus zonas.
