@@ -28,6 +28,7 @@ export class MuseumMode {
   private readonly cases: Case[] = [];
   private readonly overlay: HTMLElement | null;
   private portrait = false;
+  private rug!: THREE.Object3D;
 
   constructor() {
     const s = this.scene;
@@ -42,7 +43,7 @@ export class MuseumMode {
     sc.right = sc.top = 8;
     s.add(key);
 
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 20), toon('#7a5236', 12));
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 44), toon('#7a5236', 12));
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     s.add(floor);
@@ -53,6 +54,7 @@ export class MuseumMode {
     const rug = box(16, 0.03, 3.4, '#8c3b3b', { outline: false, cast: false, brush: 4 });
     rug.position.set(0, 0.015, 0.4);
     s.add(rug);
+    this.rug = rug;
 
     this.overlay = document.getElementById('museum');
     const labels = document.getElementById('museumLabels');
@@ -81,22 +83,31 @@ export class MuseumMode {
     });
   }
 
-  /** Acomoda las vitrinas: una fila en horizontal, filas de 3 en vertical (sirve para cualquier cantidad). */
+  /** Acomoda las vitrinas: una fila en horizontal, filas de 2 en vertical (sirve para cualquier cantidad). */
   private layout(aspect: number): void {
     this.portrait = aspect < 1;
     const n = this.cases.length;
     if (this.portrait) {
-      const rows = Math.ceil(n / 3);
+      // Filas de 2, bien separadas y vistas desde arriba: así ninguna vitrina
+      // tapa a la de atrás ni su nombre se pisa con el de al lado.
+      const perRow = 2;
+      const rows = Math.ceil(n / perRow);
       this.cases.forEach((c, i) => {
-        const row = Math.floor(i / 3);
-        const inRow = Math.min(3, n - row * 3);
-        const col = (i % 3) - (inRow - 1) / 2;
-        c.group.position.set(col * 2.0, 0, (row - (rows - 1) / 2) * 2.6);
+        const row = Math.floor(i / perRow);
+        const inRow = Math.min(perRow, n - row * perRow);
+        const col = (i % perRow) - (inRow - 1) / 2;
+        // La pared del fondo está en z = -3: las filas empiezan delante de ella.
+        c.group.position.set(col * 3.0, 0, -1.6 + row * 3.6);
       });
+      const cz = -1.6 + (rows - 1) * 1.8;
+      this.rug.scale.set(0.42, 1, (rows * 3.6) / 3.4);
+      this.rug.position.set(0, 0.015, cz + 0.3);
       this.camera.fov = 50;
-      this.camera.position.set(0, 6.5 + rows, 12 + rows);
-      this.camera.lookAt(0, 0.8, 0);
+      this.camera.position.set(0, 9 + rows * 2.6, cz + 5 + rows * 1.4);
+      this.camera.lookAt(0, 0.4, cz + 0.6);
     } else {
+      this.rug.scale.set(1, 1, 1);
+      this.rug.position.set(0, 0.015, 0.4);
       const spacing = Math.min(2.4, 13 / Math.max(1, n - 1));
       this.cases.forEach((c, i) => c.group.position.set((i - (n - 1) / 2) * spacing, 0, 0));
       this.camera.fov = 38;

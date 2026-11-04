@@ -77,7 +77,7 @@ test.afterEach(async ({ page }) => {
   expect(page.__errors, 'sin errores de ejecución').toEqual([]);
 });
 
-test('3D: las cuatro zonas, el museo y el progreso guardado', async ({ page }) => {
+test('3D: los cinco lugares, el museo y el progreso guardado', async ({ page }) => {
   test.setTimeout(240_000);
   expect(await text(page, 'msg')).toBe('El barrio está triste y sin color. Conecta la fuente con la farola');
 
@@ -97,7 +97,7 @@ test('3D: las cuatro zonas, el museo y el progreso guardado', async ({ page }) =
   expect(life.antena).toBeLessThan(0.05);
   await collect(page, -15.5, -24.2);
   await leaveMuseum(page);
-  expect(await text(page, 'stars')).toBe('★ 1/4');
+  expect(await text(page, 'stars')).toBe('★ 1/5');
 
   // Fuente de agua
   await connect(page, [-27.2, 10.6], [-22.4, 13.2]);
@@ -137,9 +137,19 @@ test('3D: las cuatro zonas, el museo y el progreso guardado', async ({ page }) =
   });
   expect(await page.evaluate(() => window.__nexus3d.world.nexus.position.z)).toBeGreaterThan(36);
   await collect(page, 18, 40.5);
+  await leaveMuseum(page);
+  // Con cuatro de cinco lugares, lejos de las zonas sigue gris
+  expect(await page.evaluate(() => window.__nexus3d.world.lifeAt(-40, 40))).toBeLessThan(0.05);
+
+  // Jardín (al otro lado del canal): energía → aspersor → flores
+  await connect(page, [0.3, 50.8], [-4.2, 53.4]);
+  expect(await text(page, 'msg')).toContain('El aspersor despertó');
+  await connect(page, [-4.2, 53.4], [-8.6, 54.2]);
+  expect(await text(page, 'msg')).toContain('El jardín volvió a florecer');
+  await collect(page, -13, 58.2);
   expect(await text(page, 'msg')).toBe('¡El barrio entero volvió a la vida!');
   await step(page, 4);
-  // Con las cuatro zonas, el color vuelve a todo el pueblo (también lejos de las zonas)
+  // Con los cinco lugares, el color vuelve a todo el pueblo (también lejos de las zonas)
   expect(await page.evaluate(() => window.__nexus3d.world.lifeAt(-40, 40))).toBeGreaterThan(0.99);
   await expect.poll(() => mode(page), { timeout: 15_000 }).toContain('mode-museum');
   await expect(page.locator('#museumComplete')).toBeVisible();
@@ -149,7 +159,7 @@ test('3D: las cuatro zonas, el museo y el progreso guardado', async ({ page }) =
   await collect(page, -18, -39.6);
   expect(await text(page, 'msg')).toBe('¡Encontraste un fragmento secreto!');
   await leaveMuseum(page);
-  expect(await text(page, 'stars')).toBe('★ 4/4');
+  expect(await text(page, 'stars')).toBe('★ 5/5');
 
   // Recargar: Continuar restaura todo
   await page.goto('/');
@@ -159,7 +169,7 @@ test('3D: las cuatro zonas, el museo y el progreso guardado', async ({ page }) =
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
   expect(await text(page, 'msg')).toBe('Ya le devolviste la vida a todo el barrio');
-  expect(await text(page, 'stars')).toBe('★ 4/4');
+  expect(await text(page, 'stars')).toBe('★ 5/5');
 });
 
 test('3D: el señuelo no encaja y una conexión no se repite', async ({ page }) => {
@@ -234,4 +244,36 @@ test('3D: los vecinos hablan, recuerdan la visita y se alegran cuando su lugar r
   await page.goto('/');
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem('los-nexus-3d-progress')).heard)).toEqual(expect.arrayContaining(['intro', 'miga']));
+});
+
+test('3D: el jardín: la broma de Goteo, el aspersor que pasa el agua y las flores que reviven', async ({ page }) => {
+  const story = () => page.evaluate(() => (document.getElementById('story').hidden ? '' : document.getElementById('storyText').textContent));
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Antes de regar, el aspersor apagado no puede iniciar un cable
+  await tp(page, -4.2, 53.4);
+  await touch(page);
+  expect(await text(page, 'toast')).toBe('Primero toca algo que tenga energía');
+
+  // Energía directo a las flores: broma del Alcalde (descubrimiento de la 2D)
+  await connect(page, [0.3, 50.8], [-8.6, 54.2]);
+  expect(await story()).toBe('¡No electrifiques la ensalada! Enciende el aspersor primero.');
+
+  // Energía → aspersor → flores
+  await connect(page, [0.3, 50.8], [-4.2, 53.4]);
+  await connect(page, [-4.2, 53.4], [-8.6, 54.2]);
+  await step(page, 3);
+  const life = await page.evaluate(() => window.__nexus3d.world.lifeAt(-13, 54));
+  expect(life).toBeGreaterThan(0.95);
+  expect(await page.evaluate(() => window.__nexus3d.world.residents.find((r) => r.id === 'goteo').targetHappy)).toBe(1);
+
+  // Al recargar, el jardín sigue florecido y el aspersor sigue andando
+  await page.goto('/');
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  const restored = await page.evaluate(() => {
+    const all = window.__nexus3d.world.connections.all;
+    return [all.find((o) => o.id === 'garden-sprinkler').isActive, all.find((o) => o.id === 'garden-bed').isActive];
+  });
+  expect(restored).toEqual([true, true]);
 });

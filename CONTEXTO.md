@@ -54,12 +54,15 @@ Un **barrio abierto en 3D** (~90 × 90 m) con calles, veredas, casas de estuco c
 | 2. La fuente de agua | suroeste | fuente → fuente de agua (un paso). Sube el agua y sale un chorro. |
 | 3. La antena | noreste | fuente A + fuente B → antena (**dos** conexiones). Hay una **fuente señuelo** gris sin brillo que no conecta con nada. |
 | 4. El puente | sureste | fuente → **palanca**. El **canal bloquea el paso** hasta que se despliega el puente de madera; el fragmento está del otro lado. |
+| 5. El jardín municipal | sur, del otro lado del canal | fuente → **aspersor** → **cantero de flores** (cadena de dos pasos: el aspersor solo puede iniciar un cable cuando ya está encendido). El cantero arranca con tierra seca y agrietada y flores grises caídas; al regarlo la tierra se oscurece, los tallos se enderezan y abren 24 flores. Ahí vive el **Alcalde Goteo** (banda, medalla, sombrero y regadera), triste hasta que el jardín florece. Hay setos con dos entradas (norte y este, con arco y cartel «JARDÍN MUNICIPAL»), glorieta, bebedero de pájaros, bancos y faroles. Solo se llega cruzando el puente. |
 
 Además:
-- **Fragmentos:** estrellas de cristal que aparecen al resolver cada zona; se recogen acercándose y llevan al Museo. Contador `★ n/4`.
-- **Fragmento secreto (dorado):** escondido **detrás de la casa** de la plaza, visible desde el inicio. No cuenta para `★ n/4` ni para "¡Colección completa!", pero tiene vitrina.
-- **Museo Nexus:** sala 3D con 5 vitrinas (en vertical se ordenan en dos filas). Al completar las 4 zonas por primera vez: destello + chispas de colores en el barrio + "¡Colección completa!".
-- **Mini-túnel del cable** (idea de Luca): vamos dentro del tubo, detrás de la chispa, y hay que guiarla (flechas/WASD o joystick) para que no toque las paredes mientras el cable serpentea. La chispa **no** sigue sola el centro del tubo: hay que manejarla. Ganar completa la conexión; perder permite reintentar.
+- **Fragmentos:** estrellas de cristal que aparecen al resolver cada zona; se recogen acercándose y llevan al Museo. Contador `★ n/5`.
+- **Fragmento secreto (dorado):** escondido **detrás de la casa** de la plaza, visible desde el inicio. No cuenta para `★ n/5` ni para "¡Colección completa!", pero tiene vitrina.
+- **Museo Nexus:** sala 3D con 6 vitrinas (una fila en horizontal; filas de 2 en vertical, separadas para que ninguna tape a la de atrás). Al completar las 5 zonas por primera vez: destello + chispas de colores en el barrio + "¡Colección completa!".
+- **Mini-túnel del cable** (idea de Luca): vamos dentro del tubo, detrás de la chispa, y hay que guiarla (flechas/WASD o joystick) para que no toque las paredes mientras el cable serpentea. La chispa **no** sigue sola el centro del tubo: hay que manejarla. Tiene fases: **práctica** (se mueve sin avanzar ni chocar, botón EMPEZAR), **cuenta 3-2-1-¡YA!** (vibra en el celular), **carrera**, y al fallar un panel con **REINTENTAR** / **VOLVER**. Espacio/Enter = empezar o reintentar, Esc = volver. Volver sin terminar avisa que el cable quedó sin terminar y se puede intentar de nuevo. **En el celular** el joystick se muestra también en el túnel y toda la pantalla sirve para manejar (antes estaba oculto y no se podía controlar).
+- **Carteles flotantes:** al acercarse (≤ 5 m) aparece el nombre de cada objeto conectable sobre él (HTML proyectado, no texto en 3D, para que el filtro de pincel no lo borronee).
+- **Sorpresas:** las parejas inválidas pero graciosas (de `connectionSurprise`) muestran una tarjeta con la broma y hacen tambalear el objeto, en vez del error genérico.
 - **Cables:** mientras hay una fuente elegida, el cable sale de la **mochila del Nexus** y lo sigue. Las conexiones hechas **quedan dibujadas** en el mundo. No se puede repetir una conexión ("¡Eso ya está conectado!"). Al conectar: chispa que recorre el cable, ráfaga de chispas y anillo.
 - **Cámara:** **isométrica** por defecto (ortográfica, mira desde el sureste) con **silueta amarilla** cuando algo tapa al Nexus; tecla **V** o botón **VISTA** cambia a cámara **detrás** del personaje (tercera persona). La elección se recuerda.
 - **Controles:** PC: WASD/flechas, **E/Espacio** para tocar/conectar, **clic** directo sobre un objeto. Celular: joystick a la izquierda, **botón grande** "Tocar/Conectar" (aparece cerca de un objeto) o tocar el objeto en pantalla.
@@ -131,6 +134,7 @@ if (target === obj) { /* revelar fragmento, cambiar el mundo, setMessage(...) */
 - Zona 2: fuente (-28.5, 9.5), fuente de agua (-20, 16), fragmento (-20, 1, 20.4).
 - Zona 3: fuente A (15, -23), fuente B (15, -13), señuelo (21, -18), antena (27, -18), fragmento (30.5, 1, -15.2).
 - Zona 4: fuente (10.5, 23.5), palanca (15.6, 27.9), tablero del puente z 29.3 → 36.7, fragmento (18, 1, 40.5).
+- Zona 5 (jardín, rectángulo x −26..4, z 47..61.5; el límite sur del barrio se extiende a z = 63): fuente (1.6, 50.6) junto a la entrada este, aspersor (−5.6, 54.2), cantero (−13, 54), fragmento (−13, 1, 58.2) — el cantero ocupa x −16.7..−9.3, z 52.3..55.7 y su distancia se mide al rectángulo (`distanceFrom`), Goteo (−1.6, 55.6), glorieta (−20.5, 57.5), bebedero (−20.5, 50.2). Entradas: norte x −3.2..1.2, este z 50.4..53.2. Círculo de vida del jardín: centro (−11, 54), radio 16. Valores exactos en `WorldMode.ts`/`World.ts`.
 
 ### 5. Reglas que no hay que romper sin preguntar
 
@@ -154,6 +158,10 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–035).
 6. `tsconfig` tiene `erasableSyntaxOnly`: nada de `enum` ni propiedades en el constructor (`constructor(readonly x)`).
 7. Durante pruebas con Playwright, editar `index.html` hace que Vite recargue la página.
 8. Las tipografías de Google fallan en el sandbox de pruebas (certificado); en un dispositivo real cargan bien.
+9. **Lo que se muestra en el túnel** (joystick, botón) usa la clase `play-only`, no `world-only`: si no, en el celular no hay control dentro del túnel.
+10. **Objetos grandes** (como el cantero) se alcanzan por su borde, no por su centro: sobrescribir `distanceFrom(x, z)` en `Connectable` y usar `collideRadius = 0` + un rectángulo en `WorldMode` para chocar.
+11. **Texto sobre objetos 3D**: usar HTML proyectado (`makeLabels`/`updateLabels`); los sprites de texto quedan ilegibles con el Kuwahara.
+12. En la vista isométrica, un árbol al sureste de un objeto lo tapa: usar arbustos bajos en esos lugares.
 
 **Heredadas del 2D (siguen valiendo para la UI)**
 9. Botones: elementos simples, sin contenedores con hijos interactivos raros; en el 3D la UI es HTML.
@@ -163,7 +171,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–035).
 ### Qué sigue en el 3D
 
 1. **Probarlo en el celular de Luca** y medir si va fluido; si no, bajar el filtro de pincel o las sombras en celular.
-2. **Pasar al 3D lo que ya existe en la 2D**, de a una pieza y en este orden sugerido (los vecinos Miga, Bombo, Vera y Don Paso ya están): zona 5 (jardín) con Goteo, zona 6 (taller) con Pipa, zona 7 (faroles + fiesta/confeti y final) con Lucio, objetivo del capítulo y pistas/ayudas visuales, efectos suaves, radio CUAC FM, armario del Nexus, historias secundarias. La lógica y los textos están en `src/data/*` y `src/scenes/*` de la 2D: reutilizarlos en vez de reescribirlos.
+2. **Pasar al 3D lo que ya existe en la 2D**, de a una pieza y en este orden sugerido (los vecinos Miga, Bombo, Vera y Don Paso ya están): ~~zona 5 (jardín) con Goteo~~ (hecho), zona 6 (taller) con Pipa, zona 7 (faroles + fiesta/confeti y final) con Lucio, objetivo del capítulo y pistas/ayudas visuales, efectos suaves, radio CUAC FM, armario del Nexus, historias secundarias. La lógica y los textos están en `src/data/*` y `src/scenes/*` de la 2D: reutilizarlos en vez de reescribirlos.
 3. Después, las ideas nuevas del backlog (criatura que sigue al Nexus, objeto en movimiento, energía compartida, cable largo entre zonas).
 4. Decidir con Luca la cámara final (isométrica o detrás).
 

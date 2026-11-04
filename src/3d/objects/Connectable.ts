@@ -38,6 +38,11 @@ export abstract class Connectable {
     return this.group.position.z;
   }
 
+  /** Distancia en el piso desde un punto hasta el borde del objeto (para el botón de interacción). */
+  distanceFrom(x: number, z: number): number {
+    return Math.hypot(this.x - x, this.z - z) - this.collideRadius;
+  }
+
   /** Primer toque: ¿puede iniciar una conexión? Por defecto, solo las fuentes. */
   canInitiate(): boolean {
     return this.role === 'source';

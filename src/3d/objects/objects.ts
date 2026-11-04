@@ -691,9 +691,13 @@ export class FlowerBed extends Connectable {
   private readonly soil: THREE.MeshToonMaterial;
   private readonly flowers: { stem: THREE.Group; bloom: THREE.Group; bud: THREE.Mesh; tilt: number; dir: number }[] = [];
   private readonly cracks: THREE.Mesh[] = [];
+  private readonly halfW: number;
+  private readonly halfD: number;
 
   constructor(id: string, x: number, z: number, width = 7, depth = 3) {
     super(id, 'target', x, z);
+    this.halfW = width / 2;
+    this.halfD = depth / 2;
     this.collideRadius = 0; // el bloqueo es un rectángulo que agrega WorldMode
 
     // Borde de madera
@@ -747,14 +751,14 @@ export class FlowerBed extends Connectable {
         bloom.position.y = h;
         const color = PETALS[(r * cols + c) % PETALS.length];
         for (let p = 0; p < 5; p += 1) {
-          const petal = new THREE.Mesh(new THREE.SphereGeometry(0.075, 8, 6), toon(color));
+          const petal = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 6), toon(color));
           const a = (p / 5) * Math.PI * 2;
           petal.scale.set(1, 0.35, 0.65);
-          petal.position.set(Math.cos(a) * 0.08, 0, Math.sin(a) * 0.08);
+          petal.position.set(Math.cos(a) * 0.11, 0, Math.sin(a) * 0.11);
           petal.rotation.y = -a;
           bloom.add(petal);
         }
-        const center = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), toon('#ffb52e'));
+        const center = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), toon('#ffb52e'));
         bloom.add(center);
         bloom.scale.setScalar(0.001);
         bloom.visible = false;
@@ -767,6 +771,13 @@ export class FlowerBed extends Connectable {
       }
     }
     this.plugAnchor.position.set(width / 2 + 0.1, 0.5, 0);
+  }
+
+  /** El parterre es largo: la distancia se mide hasta su borde, no hasta el centro. */
+  distanceFrom(x: number, z: number): number {
+    const dx = Math.max(Math.abs(x - this.x) - this.halfW, 0);
+    const dz = Math.max(Math.abs(z - this.z) - this.halfD, 0);
+    return Math.hypot(dx, dz);
   }
 
   /** Orienta el enchufe hacia quien le lleva el agua. */

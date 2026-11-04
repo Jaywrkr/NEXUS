@@ -490,3 +490,28 @@ body.mode-tunnel #stickBase {
   font-size: 14px;
   line-height: 1.45;
 }
+
+/* Nombres de los objetos conectables (aparecen al acercarse) */
+#labels {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+}
+.obj-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 3px 10px 4px;
+  border-radius: 8px;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  box-shadow: 2px 2px 0 var(--ink);
+  opacity: 0;
+  will-change: transform, opacity;
+}

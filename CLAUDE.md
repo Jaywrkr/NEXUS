@@ -9,10 +9,10 @@ Este archivo existe para que una sesión nueva de Claude Code entienda el proyec
 ## Los Nexus 3D — lo esencial
 
 - **Idea central:** el pueblo empieza **triste y gris** y el Nexus le devuelve la vida conectando (Decisión 036: `LIFE`/`withLife`/`keepVivid` en `render.ts`, círculos en `WorldMode.addLife`). **Mundo abierto**, sin niveles (Decisión 037). Lo nuevo tiene que sumarse a esto.
-- Vecinos en 3D: Miga, Bombo, Vera, Don Paso (`entities/Resident3D.ts`, textos de `src/data/chapter.ts`, Decisión 038).
+- Vecinos en 3D: Miga, Bombo, Vera, Don Paso y el Alcalde Goteo (`entities/Resident3D.ts`, textos de `src/data/chapter.ts`, Decisión 038).
 
-- Barrio abierto en 3D con las **4 zonas originales** (plaza con farola y puerta, fuente de agua, antena con dos fuentes + señuelo, puente sobre un canal que bloquea el paso), fragmento secreto detrás de la casa, museo 3D con 5 vitrinas, mini-túnel del cable en 3D, cámara isométrica con silueta + vista "detrás" (V), controles PC y celular, progreso propio (`src/3d/core/progress.ts`, clave `los-nexus-3d-progress`).
-- **Todavía no están en 3D**: zonas 5–7, capítulo y habitantes, historias secundarias, radio, armario, final, pistas, efectos suaves. Se pasan de a una (orden sugerido en `CONTEXTO.md`, "Qué sigue en el 3D"), reutilizando datos y textos de `src/data/*`.
+- Barrio abierto en 3D con **5 lugares** (plaza con farola y puerta, fuente de agua, antena con dos fuentes + señuelo, puente sobre un canal que bloquea el paso, y el **jardín municipal** al otro lado del canal: fuente → aspersor → cantero, Decisión 039), fragmento secreto detrás de la casa, museo 3D con 6 vitrinas, carteles con el nombre de cada objeto al acercarse, sorpresas en parejas graciosas, mini-túnel del cable en 3D con práctica, cuenta 3-2-1 y panel Reintentar/Volver (joystick también en el túnel en celular: clase `play-only`), cámara isométrica con silueta + vista "detrás" (V), controles PC y celular, progreso propio (`src/3d/core/progress.ts`, clave `los-nexus-3d-progress`).
+- **Todavía no están en 3D**: zonas 6–7 (taller con Pipa, faroles/fiesta con Lucio), objetivo del capítulo, historias secundarias, radio, armario, final, pistas, efectos suaves. Se pasan de a una (orden sugerido en `CONTEXTO.md`, "Qué sigue en el 3D"), reutilizando datos y textos de `src/data/*`.
 - Look: toon de 3 bandas + contorno por casco invertido + textura de pincel + post-proceso Kuwahara con grading (`src/3d/core/render.ts`). Todo con primitivas, sin modelos ni imágenes (Decisiones 033–035).
 - Arquitectura, cómo agregar conexiones, coordenadas del barrio: `CONTEXTO.md`.
 
@@ -37,6 +37,7 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/opt/pw-browsers/chromium npm test   # todo 
 - **Color**: un `ShaderMaterial` que dibuja la escena devuelve color lineal (`pow(c, 2.2)`); el post-proceso pasa a sRGB. Las luces son físicas (intensidades ~π veces las viejas).
 - **Cámara isométrica desde +X+Z**: puertas y carteles deben mirar a +Z o +X; lo alto al sur/este de una zona la tapa.
 - `tsconfig` con `erasableSyntaxOnly`: sin `enum` ni propiedades en constructor.
+- Objetos grandes se alcanzan por su borde: `distanceFrom()` en `Connectable` (ej. el cantero). Texto sobre objetos: HTML proyectado, no sprites (el Kuwahara los borronea).
 - Editar `index.html` con el dev server abierto recarga la página (rompe un test en curso).
 
 ---

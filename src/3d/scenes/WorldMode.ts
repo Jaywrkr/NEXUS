@@ -69,7 +69,7 @@ export class WorldMode {
   private readonly bridge: BridgeLever;
   private readonly sprinkler: Sprinkler;
   private readonly flowerBed: FlowerBed;
-  private readonly labels: { obj: Connectable; sprite: THREE.Sprite }[] = [];
+  private readonly labels: { obj: Connectable; el: HTMLElement; alpha: number }[] = [];
   private readonly fragmentById = new Map<string, Fragment>();
 
   private readonly el = {
@@ -474,31 +474,36 @@ export class WorldMode {
 
   /* ---------- Nombres flotantes sobre los objetos ---------- */
 
+  /**
+   * Etiquetas HTML (no sprites): así no las borronea el filtro de pincel y se leen nítidas en el celular.
+   * Aparecen al acercarse y siguen al objeto en pantalla.
+   */
   private makeLabels(): void {
+    const layer = document.getElementById('labels');
+    if (!layer) return;
     for (const obj of this.connections.all) {
       if (!obj.label) continue;
-      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(obj.label), transparent: true, depthTest: false, fog: false, opacity: 0 }));
-      const tex = (sprite.material as THREE.SpriteMaterial).map!;
-      const img = tex.image as HTMLCanvasElement;
-      const aspect = img.width / img.height;
-      sprite.scale.set(0.55 * aspect, 0.55, 1);
-      sprite.renderOrder = 10;
-      this.world.scene.add(sprite);
-      this.labels.push({ obj, sprite });
+      const el = document.createElement('div');
+      el.className = 'obj-label';
+      el.textContent = obj.label;
+      layer.appendChild(el);
+      this.labels.push({ obj, el, alpha: 0 });
     }
   }
 
   private updateLabels(dt: number): void {
     const p = this.nexus.position;
     const v = new THREE.Vector3();
-    for (const { obj, sprite } of this.labels) {
-      const d = Math.hypot(obj.x - p.x, obj.z - p.z);
-      const mat = sprite.material as THREE.SpriteMaterial;
-      const target = d < 7 ? 1 : 0;
-      mat.opacity += (target - mat.opacity) * Math.min(1, dt * 6);
-      sprite.visible = mat.opacity > 0.02;
-      obj.plugPoint(v);
-      sprite.position.set(obj.x, Math.max(v.y, 1) + 1.0, obj.z);
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    for (const label of this.labels) {
+      const near = label.obj.distanceFrom(p.x, p.z) < 5 && !this.busy;
+      label.alpha += ((near ? 1 : 0) - label.alpha) * Math.min(1, dt * 8);
+      label.obj.plugPoint(v);
+      v.set(label.obj.x, Math.max(v.y, 1) + 1.0, label.obj.z).project(this.camera);
+      const visible = label.alpha > 0.02 && v.z < 1;
+      label.el.style.opacity = visible ? label.alpha.toFixed(2) : '0';
+      if (visible) label.el.style.transform = `translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px) translate(-50%, -100%)`;
     }
   }
 
@@ -600,7 +605,7 @@ export class WorldMode {
     let bestD = Infinity;
     const p = this.nexus.position;
     for (const obj of this.connections.all) {
-      const d = Math.hypot(obj.x - p.x, obj.z - p.z) - obj.collideRadius;
+      const d = obj.distanceFrom(p.x, p.z);
       if (d < INTERACT_REACH && d < bestD) {
         best = obj;
         bestD = d;
@@ -692,7 +697,7 @@ export class WorldMode {
     // Si un vecino está más cerca que cualquier objeto (y no hay un cable en la mano), el botón sirve para hablar
     const resident = this.findNearestResident();
     const p = this.nexus.position;
-    const objD = this.nearest ? Math.hypot(this.nearest.x - p.x, this.nearest.z - p.z) - this.nearest.collideRadius : Infinity;
+    const objD = this.nearest ? this.nearest.distanceFrom(p.x, p.z) : Infinity;
     this.nearestResident = resident && !this.connections.hasSelection() && Math.hypot(resident.x - p.x, resident.z - p.z) < objD ? resident : null;
     if (this.input.consumeInteract() && !this.busy) {
       if (this.nearestResident) this.speak(this.nearestResident);
@@ -797,36 +802,4 @@ export class WorldMode {
     this.world.sky.visible = !this.iso;
     renderer.render(this.world.scene, this.camera, time, this.iso ? () => this.renderSilhouette(renderer) : undefined);
   }
-}
-
-const labelCache = new Map<string, THREE.CanvasTexture>();
-
-/** Cartelito crema con borde oscuro, como el resto de la interfaz. */
-function labelTexture(text: string): THREE.CanvasTexture {
-  const cached = labelCache.get(text);
-  if (cached) return cached;
-  const c = document.createElement('canvas');
-  const g = c.getContext('2d')!;
-  const font = 'bold 40px "Bowlby One", "Arial Black", Impact, sans-serif';
-  g.font = font;
-  const w = Math.ceil(g.measureText(text).width) + 44;
-  c.width = w;
-  c.height = 72;
-  g.font = font;
-  g.fillStyle = '#1d1630';
-  g.beginPath();
-  g.roundRect(6, 8, w - 8, 60, 14);
-  g.fill();
-  g.fillStyle = '#fff3dc';
-  g.beginPath();
-  g.roundRect(2, 2, w - 8, 60, 14);
-  g.fill();
-  g.fillStyle = '#1d1630';
-  g.textAlign = 'center';
-  g.textBaseline = 'middle';
-  g.fillText(text, (w - 6) / 2, 34);
-  const tex = new THREE.CanvasTexture(c);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  labelCache.set(text, tex);
-  return tex;
 }

@@ -633,7 +633,7 @@ export class World {
 
     // Árboles ornamentales y macizos a lo largo del cerco
     this.tree(-24, 60);
-    this.tree(2.2, 60.2);
+    this.bush(2.0, 60.0, 0.8, true); // arbusto (un árbol acá tapaba el aspersor en la vista isométrica)
     for (let i = 0; i < 6; i += 1) this.bush(-24 + i * 4.4, 47.9, 0.55, true);
   }
 
