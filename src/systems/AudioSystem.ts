@@ -72,6 +72,34 @@ export class AudioSystem {
     oscillator.stop(startTime + duration + 0.02);
   }
 
+  /** Nota suelta para efectos de los objetos 3D (bocina, campanita, canto...). */
+  tone(freq: number, delay: number, duration: number, type: OscillatorType = 'sine', gain = 0.12): void {
+    this.playTone(freq, delay, duration, type, gain);
+  }
+
+  /** Ruido corto filtrado (salpicón, soplido, motor). */
+  noise(delay: number, duration: number, gain = 0.12, lowpass = 1800): void {
+    if (this.disposed || AudioSystem.isMuted()) return;
+    let ctx: AudioContext;
+    try { ctx = this.getContext(); } catch { return; }
+    const frames = Math.max(1, Math.floor(ctx.sampleRate * duration));
+    const buffer = ctx.createBuffer(1, frames, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < frames; i += 1) data[i] = (Math.random() * 2 - 1) * (1 - i / frames);
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = lowpass;
+    const g = ctx.createGain();
+    g.gain.value = gain;
+    src.connect(filter);
+    filter.connect(g);
+    g.connect(ctx.destination);
+    src.onended = () => { src.disconnect(); filter.disconnect(); g.disconnect(); };
+    src.start(ctx.currentTime + delay);
+  }
+
   /** Conexión correcta: dos notas ascendentes. */
   playSuccess(): void {
     this.playTone(520, 0, 0.12, 'sine');

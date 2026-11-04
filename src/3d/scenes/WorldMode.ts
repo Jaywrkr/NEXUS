@@ -15,6 +15,10 @@ import { World } from '../world/World';
 import { SECRET_FRAGMENT, ZONE_FRAGMENTS } from './MuseumMode';
 import { RESIDENTS, connectionSurprise, residentLine } from '../../data/chapter';
 import { Resident3D } from '../entities/Resident3D';
+import { SLEEPER_INFO, Sleeper, Spark } from '../objects/sleepers';
+import type { SleeperKind } from '../objects/sleepers';
+import { Playground } from '../systems/Playground';
+import { CANAL_MIN_Z } from '../world/World';
 
 const INTERACT_REACH = 2.2; // metros desde el borde del objeto
 const NEXUS_RADIUS = 0.32;
@@ -73,10 +77,15 @@ export class WorldMode {
   private readonly flowerBed: FlowerBed;
   private readonly labels: { obj: Connectable; el: HTMLElement; alpha: number }[] = [];
   private readonly fragmentById = new Map<string, Fragment>();
+  /** Chisperos y cosas dormidas repartidos por el barrio (despertarlas es opcional). */
+  private readonly sparks: Spark[] = [];
+  readonly sleepers: Sleeper[] = [];
+  readonly playground: Playground;
 
   private readonly el = {
     msg: document.getElementById('msg'),
     stars: document.getElementById('stars'),
+    awake: document.getElementById('awake'),
     toast: document.getElementById('toast'),
     interact: document.getElementById('interact') as HTMLButtonElement | null,
     view: document.getElementById('viewBtn'),
@@ -102,7 +111,8 @@ export class WorldMode {
       invalid: (s, t) => this.onSurprise(s, t),
       made: (s, t) => {
         this.progress.saveConnection(s.id, t.id);
-        this.applyConnection(t, true);
+        if (t instanceof Sleeper) this.onWake(t, true);
+        else this.applyConnection(t, true);
       },
       tunnel: (s, t) => this.cb.tunnel(s, t),
     });
@@ -171,6 +181,9 @@ export class WorldMode {
       this.fragmentById.set(id, f);
     }
 
+    this.buildSleepers();
+    this.playground = new Playground(scene, this.world, this.audio);
+
     LIFE.reset();
     this.restoreProgress({ source, fountainSource, beaconA, beaconB, bridgeSource, gardenSource });
     this.makeLabels();
@@ -207,6 +220,12 @@ export class WorldMode {
       const s = byId(c.sourceId);
       const t = byId(c.targetId);
       if (!s || !t) continue;
+      if (t instanceof Sleeper) {
+        t.restore();
+        this.connections.restore(s, t);
+        this.onWake(t, false);
+        continue;
+      }
       s.activate();
       if (t === this.beacon) this.beacon.activate();
       else t.restore();
@@ -448,6 +467,131 @@ export class WorldMode {
   private updateHud(): void {
     const n = ZONE_FRAGMENTS.filter((f) => this.progress.hasFragment(f.id)).length;
     if (this.el.stars) this.el.stars.textContent = `★ ${n}/${ZONE_COUNT}`;
+    if (this.el.awake) this.el.awake.textContent = `✦ ${this.awakeCount()}/${this.sleepers.length}`;
+  }
+
+  /* ---------- Cosas dormidas (chisperos + objetos chicos para despertar) ---------- */
+
+  awakeCount(): number {
+    return this.sleepers.filter((s) => s.isActive).length;
+  }
+
+  /**
+   * Ubica los chisperos y las cosas dormidas. Las coordenadas son aproximadas: si el lugar
+   * está ocupado, se busca uno libre en espiral alrededor (no quedan dentro de casas ni objetos).
+   */
+  private buildSleepers(): void {
+    const scene = this.world.scene;
+    const taken: { x: number; z: number }[] = [
+      ...this.connections.all.map((o) => ({ x: o.x, z: o.z })),
+      ...Object.values(WorldMode.RESIDENT_SPOTS),
+    ];
+    const place = (x: number, z: number): [number, number] => {
+      for (let ring = 0; ring <= 10; ring += 1) {
+        const steps = ring === 0 ? 1 : 10;
+        for (let i = 0; i < steps; i += 1) {
+          const a = (i / steps) * Math.PI * 2;
+          const px = x + Math.cos(a) * ring * 0.5;
+          const pz = z + Math.sin(a) * ring * 0.5;
+          if (this.world.isWalkable(px, pz, 0.8) && taken.every((t) => Math.hypot(t.x - px, t.z - pz) > 1.8)) {
+            taken.push({ x: px, z: pz });
+            return [px, pz];
+          }
+        }
+      }
+      taken.push({ x, z });
+      return [x, z];
+    };
+    const addObj = (o: Spark | Sleeper) => {
+      keepVivid(o.group);
+      scene.add(o.group);
+      this.connections.register(o);
+    };
+
+    for (const [id, x, z] of [
+      ['spark-plaza', -10.5, -11.5],
+      ['spark-fountain', -29, 17.5],
+      ['spark-shops', 26, 17.5],
+      ['spark-ne', 35, -7.5],
+      ['spark-canal', -4, 26],
+      ['spark-garden', -22, 49.5],
+    ] as const) {
+      const [px, pz] = place(x, z);
+      const sp = new Spark(id, px, pz);
+      addObj(sp);
+      this.sparks.push(sp);
+    }
+
+    const free: [SleeperKind, number, number][] = [
+      ['mailbox', -7.5, -15],
+      ['birdhouse', -25, -9.5],
+      ['trash', -12, -7.5],
+      ['hydrant', -27.5, 6],
+      ['balloons', -13, 24.5],
+      ['icecream', 16.5, 17],
+      ['bike', 35.5, 17],
+      ['radio', 21, 17.5],
+      ['clothes', 33, -6.5],
+      ['birdhouse', 14, -8.5],
+      ['gnome', -24.5, 54],
+      ['pinwheel', -8, 50],
+    ];
+    let n = 0;
+    const make = (kind: SleeperKind, x: number, z: number, rot = 0) => {
+      const sl = new Sleeper(`sleeper-${kind}-${n++}`, kind, x, z, rot);
+      addObj(sl);
+      this.sleepers.push(sl);
+    };
+    for (const [kind, x, z] of free) {
+      const [px, pz] = place(x, z);
+      make(kind, px, pz, Math.PI / 4);
+    }
+    // Fijos: el cartel en la vidriera de la heladería, el pato sobre el borde de la fuente,
+    // las luces de cuatro autos y dos caños del canal
+    make('neon', 12, 14.02, 0);
+    make('duck', -20 + 2.42 * Math.SQRT1_2, 16 + 2.42 * Math.SQRT1_2, Math.PI / 4);
+    for (const i of [0, 1, 2, 4]) {
+      const c = this.world.carSpots[i];
+      if (!c) continue;
+      make('car', c.x + Math.sin(c.rot) * 2.36, c.z + Math.cos(c.rot) * 2.36, c.rot);
+    }
+    for (const x of [-14, 6]) make('drain', x, CANAL_MIN_Z - 0.8, 0);
+
+    // Cada cosa dormida se despierta desde cualquier chispero cercano (el cable se desvanece después)
+    for (const sl of this.sleepers) {
+      for (const sp of this.sparks) {
+        if (Math.hypot(sp.x - sl.x, sp.z - sl.z) < 22) this.connections.addRule({ sourceId: sp.id, targetId: sl.id, ephemeral: true });
+      }
+    }
+    Sleeper.audio = this.audio;
+  }
+
+  /** La primera vez que el Nexus pasa junto a un chispero, se explica para qué sirve. */
+  private sparkTip(): void {
+    if (this.progress.hasHeard('sparks')) return;
+    const p = this.nexus.position;
+    if (!this.sparks.some((s) => Math.hypot(s.x - p.x, s.z - p.z) < 3.5)) return;
+    this.progress.markHeard('sparks');
+    this.showStory('Chispero', 'Los chisperos tienen energía para despertar las cosas dormidas del barrio (las que tienen «Zzz»). Tócalo y después toca algo dormido.');
+  }
+
+  /** Una cosa dormida se despertó: un poquito de color alrededor y el contador. */
+  private onWake(sl: Sleeper, animate: boolean): void {
+    this.addLife(sl.x, sl.z, 3.2, animate);
+    this.updateHud();
+    if (!animate) return;
+    this.setMessage(SLEEPER_INFO[sl.kind].wake);
+    const n = this.awakeCount();
+    if (n === this.sleepers.length) {
+      after(1.2, () => {
+        this.setMessage('¡Despertaste todas las cosas del barrio!');
+        this.audio.playCollect();
+        this.nexus.celebrate();
+        const at = this.nexus.position.clone();
+        at.y = 1.5;
+        this.connections.celebrate(at);
+      });
+    }
   }
 
   private setView(iso: boolean): void {
@@ -684,6 +828,8 @@ export class WorldMode {
     this.world.resolve(this.nexus.position, NEXUS_RADIUS, blockers);
     this.nexus.idleFacing = this.iso ? ISO_FACING : null;
     this.nexus.animate(dt);
+    this.playground.update(dt, this.time, this.nexus.position, this.nexus.velocity, blockers);
+    this.sparkTip();
 
     for (const obj of this.connections.all) obj.update(dt, this.time);
     for (const f of this.fragments) f.update(this.time);

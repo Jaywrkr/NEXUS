@@ -291,3 +291,6 @@ Los vecinos tienen cara expresiva (cejas y boca pasan de tristes a contentos cua
 
 ## 3D: fuente de agua, canal y autos con detalle
 La fuente tiene escalón de piedra, cuatro caños con chorritos, ondas en el agua, pico central, plaqueta y un fondo seco con hojas y monedas; su plaza suma baldosas, bancos y un tacho. El canal tiene cordón de piedra, juntas, caños de desagüe, juncos, nenúfares, corriente animada con hojas que flotan y un bote amarrado que se mece. Los autos tienen vidrios, paragolpes, parrilla, faros, luces traseras, patentes, puertas, manijas, espejos y llantas con taza; las camionetas, caja de carga.
+
+## 3D: cosas dormidas y un barrio que reacciona
+Seis chisperos y veinte cosas dormidas por todo el barrio (buzón, tacho con ojos, hidrante, radio, cartel de la heladería, carrito de helados, bici, tendedero, pato de goma, globos, enano, molinete, casitas de pájaros, luces de los autos y desagües del canal). Se despiertan con un cable desde un chispero, reaccionan con animación y sonido, devuelven un poco de color y se pueden volver a tocar. Contador ✦ n/20 y celebración al despertarlas todas. Además, palomas que se espantan, charcos que salpican, hojas que vuelan al correr y pelotas para patear. Prueba nueva: se despiertan las 20 caminando, quedan guardadas y la pelota se patea. Decisión 040.

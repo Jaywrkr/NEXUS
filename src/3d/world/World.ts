@@ -79,6 +79,10 @@ export class World {
   /** Cosas que flotan en el canal y se mueven con la corriente (vetas de luz, hojas) y el bote. */
   private readonly drifting: { o: THREE.Object3D; speed: number; p: number }[] = [];
   private boat: THREE.Group | null = null;
+  /** Autos estacionados (para ubicar sus luces como cosas para despertar). */
+  readonly carSpots: { x: number; z: number; rot: number }[] = [];
+  /** Caños de desagüe del canal (x sobre el muro norte). */
+  readonly drainXs = [-36, -14, 6, 32];
 
   constructor() {
     const s = this.scene;
@@ -170,7 +174,17 @@ export class World {
     this.rects.push({ minX: cx - W / 2, maxX: cx + W / 2, minZ: cz - D / 2, maxZ: cz + D / 2 });
   }
 
-  private isFree(x: number, z: number, margin: number): boolean {
+  /** ¿Se puede pisar este punto? Solo mira obstáculos reales (paredes, canal, objetos), no zonas reservadas. */
+  isWalkable(x: number, z: number, margin: number): boolean {
+    for (const r of this.rects) {
+      if (x > r.minX - margin && x < r.maxX + margin && z > r.minZ - margin && z < r.maxZ + margin) return false;
+    }
+    for (const c of this.circles) if (Math.hypot(x - c.x, z - c.z) < c.r + margin) return false;
+    return Math.abs(x) < BOUNDS - margin && z > -BOUNDS + margin && z < BOUNDS_MAX_Z - margin;
+  }
+
+  /** Lugar libre para decoración (árboles, arbustos): además evita calles y zonas reservadas. */
+  isFree(x: number, z: number, margin: number): boolean {
     if (Math.abs(x) < ROAD + WALK + margin || Math.abs(z) < ROAD + WALK + margin) return false;
     if (z > CANAL_MIN_Z - 1.5 - margin && z < CANAL_MAX_Z + 1.5 + margin) return false;
     for (const r of [...RESERVED, ...this.rects]) {
@@ -370,7 +384,7 @@ export class World {
       this.scene.add(damp);
     }
     // Caños de desagüe en el muro norte: su cara hacia el agua es la que ve la cámara (mira hacia +Z)
-    for (const x of [-36, -14, 6, 32]) {
+    for (const x of this.drainXs) {
       const pipe = rounded(new THREE.CylinderGeometry(0.22, 0.22, 0.5, 12), toon('#6b6f7a'), 0.02);
       pipe.rotation.x = Math.PI / 2;
       pipe.position.set(x, -0.35, CANAL_MIN_Z + 0.45);
@@ -1307,6 +1321,7 @@ export class World {
     g.rotation.y = rot;
     this.scene.add(g);
     this.addRect(x, z, 2.1, 4.8, rot);
+    this.carSpots.push({ x, z, rot });
   }
 
   private buildPolesAndCars(): void {

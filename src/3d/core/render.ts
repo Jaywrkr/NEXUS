@@ -62,7 +62,7 @@ const brushTexture = (() => {
  * (toon() y flat()); el Nexus y los objetos conectables usan copias sin este efecto: ellos
  * traen el color y se distinguen como lo que se puede tocar.
  */
-export const LIFE_SPOTS = 16;
+export const LIFE_SPOTS = 32;
 const lifeUniforms = {
   lifeSpots: { value: Array.from({ length: LIFE_SPOTS }, () => new THREE.Vector4(0, 0, 0, 0)) },
   lifeGlobal: { value: 0 },

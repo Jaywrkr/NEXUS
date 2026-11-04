@@ -134,6 +134,16 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 
 **Fuente de agua**: escalón de piedra, juntas en el muro, anillos en la columna, pico central, cuatro caños que echan chorritos al estanque, ondas en el agua, plaqueta con una gota, y en el fondo seco hojas caídas y monedas (quedan bajo el agua). La plaza de la fuente tiene anillo de baldosas, juntas radiales, dos bancos (`World.bench`, con colisión circular porque están en diagonal) y un tacho. **Canal** (`World.buildCanalDetail`): cordón de piedra, juntas y línea de humedad en la cara del muro norte (la única que ve la cámara), caños de desagüe, anillas de amarre, juncos con totoras, nenúfares con flores, vetas de corriente y hojas que viajan hacia el este (`drifting`, animadas en `World.update`) y un bote amarrado que se mece. **Autos**: el frente mira a +Z; parabrisas y luneta, parantes, paragolpes, parrilla, faros, luces traseras, patentes, puertas, manijas, espejos, llantas con taza y tuerca; las camionetas tienen caja de carga (a veces con un cajón) y algunos autos portaequipaje.
 
+### Cosas dormidas y barrio que reacciona (Decisión 040)
+
+- **Chisperos** (`Spark` en `src/3d/objects/sleepers.ts`): 6 postes de energía chiquitos, siempre con carga, repartidos por el barrio (plaza, fuente, tiendas, noreste, canal, jardín).
+- **Cosas dormidas** (`Sleeper`): 20 objetos opcionales con un «Zzz» encima: buzón, casitas de pájaros, tacho (con ojos), hidrante, radio, cartel ABIERTO de la heladería, carrito de helados, bici, tendedero, pato de goma (en el borde de la fuente), globos, enano de jardín, molinete, luces de 4 autos estacionados y 2 desagües del canal. Se despiertan con la misma acción: tocar un chispero y después la cosa (cualquier chispero a menos de 22 m sirve). Cada una tiene una reacción corta con sonido propio (`AudioSystem.tone`/`noise`), devuelve un círculo de color chico y, ya despierta, **se puede volver a tocar para repetir la reacción** (`Connectable.poke`). No pueden conectarse dos veces (`onceOnly`).
+- El cable de estas conexiones **se desvanece** (`ConnectionRule.ephemeral`) para no llenar el barrio de cables. Se guardan como conexiones normales; al continuar vuelven despiertas.
+- Contador **✦ n/20** arriba a la izquierda (`#awake`). Con las 20 hay celebración. La primera vez que el Nexus pasa junto a un chispero, una tarjeta explica para qué sirve (`heard: 'sparks'`).
+- Ubicación: `WorldMode.buildSleepers` usa coordenadas aproximadas y busca en espiral un lugar pisable (`World.isWalkable`, que mira solo obstáculos reales; `isFree` es para decoración y además evita calles y zonas reservadas). El cartel, el pato, los autos y los desagües van en lugares fijos.
+- **Barrio que reacciona** (`src/3d/systems/Playground.ts`): 5 bandadas de palomas que picotean y se espantan al acercarse (vuelan, dan vueltas y vuelven), 6 charcos que salpican al pasar corriendo, 5 montoncitos de hojas que vuelan al correr encima y 3 pelotas que se patean, ruedan, rebotan contra paredes y objetos (`world.resolve`).
+- Los círculos de vida del shader pasaron de 16 a 32 (`LIFE_SPOTS`).
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).

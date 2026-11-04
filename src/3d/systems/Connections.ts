@@ -11,6 +11,8 @@ export interface ConnectionRule {
   targetId: string;
   /** Antes de completarse hay que superar el mini-túnel del cable (Decisión 016). */
   useTunnel?: boolean;
+  /** El cable se desvanece después de conectar (cosas chicas: no llenan el barrio de cables). */
+  ephemeral?: boolean;
 }
 
 export type FeedbackKind = 'info' | 'ok' | 'error';
@@ -86,6 +88,7 @@ export class Connections {
   /** Tocar el objeto directamente o con el botón de interacción hace lo mismo. */
   interact(obj: Connectable): void {
     if (!this.selected) {
+      if (obj.poke()) return;
       if (!obj.canInitiate()) {
         this.events.feedback(obj.role === 'target' ? 'Primero toca algo que tenga energía' : '', 'info');
         return;
@@ -104,6 +107,12 @@ export class Connections {
     const target = obj;
     this.clearPending();
     this.selected = null;
+
+    if (target.onceOnly && target.isActive) {
+      target.poke();
+      this.events.feedback('¡Eso ya está despierto!', 'info');
+      return;
+    }
 
     if (this.made.has(`${source.id}>${target.id}`)) {
       this.events.feedback('¡Eso ya está conectado!', 'info');
@@ -124,7 +133,7 @@ export class Connections {
       return;
     }
 
-    this.complete(source, target);
+    this.complete(source, target, rule.ephemeral);
   }
 
   cancel(): void {
@@ -145,12 +154,13 @@ export class Connections {
   /** Dibuja una conexión ya hecha en una partida guardada, sin efectos. */
   restore(source: Connectable, target: Connectable): void {
     this.made.add(`${source.id}>${target.id}`);
-    this.drawCable(source, target, true, false);
+    const rule = this.rules.find((r) => r.sourceId === source.id && r.targetId === target.id);
+    if (!rule?.ephemeral) this.drawCable(source, target, true, false);
   }
 
-  private complete(source: Connectable, target: Connectable): void {
+  private complete(source: Connectable, target: Connectable, ephemeral = false): void {
     this.made.add(`${source.id}>${target.id}`);
-    this.drawCable(source, target, true);
+    this.drawCable(source, target, true, true, ephemeral);
     source.activate();
     target.activate();
     this.events.feedback('¡Conexión correcta!', 'ok');
@@ -167,15 +177,17 @@ export class Connections {
     return new THREE.QuadraticBezierCurve3(a.clone(), mid, b.clone());
   }
 
-  private drawCable(from: Connectable, to: Connectable, valid: boolean, effects = true): void {
+  private drawCable(from: Connectable, to: Connectable, valid: boolean, effects = true, ephemeral = false): void {
     const curve = this.curveBetween(from.plugPoint(), to.plugPoint());
-    const mat = new THREE.MeshBasicMaterial({ color: valid ? CABLE_COLOR : CABLE_COLOR_INVALID, transparent: !valid, fog: false });
+    const mat = new THREE.MeshBasicMaterial({ color: valid ? CABLE_COLOR : CABLE_COLOR_INVALID, transparent: !valid || ephemeral, fog: false });
     const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 40, valid ? 0.06 : 0.05, 8), mat);
     this.scene.add(tube);
     if (!valid) {
       this.fading.push({ mesh: tube, life: 0.7 });
-      return;
+    } else if (ephemeral) {
+      this.fading.push({ mesh: tube, life: 1.4 });
     }
+    if (!valid) return;
     if (effects) {
       const pulse = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 8), new THREE.MeshBasicMaterial({ color: '#ffffff', fog: false }));
       this.scene.add(pulse);

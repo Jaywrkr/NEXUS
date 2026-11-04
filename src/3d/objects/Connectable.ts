@@ -12,6 +12,8 @@ export abstract class Connectable {
   readonly group = new THREE.Group();
   /** Nombre corto que flota sobre el objeto cuando el Nexus se acerca ("Farola", "Aspersor"...). */
   label = '';
+  /** Solo se conecta una vez (las cosas dormidas): ya despierto, tocarlo repite su reacción. */
+  onceOnly = false;
   /** Radio para colisión con el Nexus (0 = se puede atravesar). */
   collideRadius = 0.6;
   protected active_ = false;
@@ -50,6 +52,11 @@ export abstract class Connectable {
 
   plugPoint(out = new THREE.Vector3()): THREE.Vector3 {
     return this.plugAnchor.getWorldPosition(out);
+  }
+
+  /** Toque sin cable sobre algo ya activo. Devuelve true si respondió (ej. una cosa despierta). */
+  poke(): boolean {
+    return false;
   }
 
   /** Se llama al quedar conectado correctamente. */

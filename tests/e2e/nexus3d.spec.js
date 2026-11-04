@@ -277,3 +277,63 @@ test('3D: el jardín: la broma de Goteo, el aspersor que pasa el agua y las flor
   });
   expect(restored).toEqual([true, true]);
 });
+
+test('3D: las cosas dormidas se despiertan desde los chisperos, se guardan y la pelota se patea', async ({ page }) => {
+  const info = await page.evaluate(() => {
+    const w = window.__nexus3d.world;
+    const sparks = w.connections.all.filter((o) => o.id.startsWith('spark-')).map((s) => ({ id: s.id, x: s.x, z: s.z }));
+    return { sparks, sleepers: w.sleepers.map((s) => ({ id: s.id, x: s.x, z: s.z })) };
+  });
+  expect(info.sparks.length).toBe(6);
+  expect(info.sleepers.length).toBe(20);
+  expect(await text(page, 'awake')).toBe('✦ 0/20');
+
+  // Cada cosa dormida se despierta caminando hasta un chispero cercano y después hasta ella
+  let woken = 0;
+  for (const sl of info.sleepers) {
+    const sp = info.sparks.reduce((a, b) => (Math.hypot(a.x - sl.x, a.z - sl.z) < Math.hypot(b.x - sl.x, b.z - sl.z) ? a : b));
+    await tp(page, sp.x + 0.7, sp.z + 0.7);
+    await touch(page);
+    expect(await page.evaluate(() => window.__nexus3d.world.connections.selection?.id), `chispero para ${sl.id}`).toBe(sp.id);
+    // El pato está sobre el borde de la fuente: se llega desde afuera, del lado del pato
+    const duck = sl.id.includes('duck');
+    const dx = duck ? 1 : sp.x - sl.x;
+    const dz = duck ? 1 : sp.z - sl.z;
+    const d = Math.hypot(dx, dz) || 1;
+    await tp(page, sl.x + (dx / d) * 0.9, sl.z + (dz / d) * 0.9);
+    await touch(page);
+    woken += 1;
+    expect(await page.evaluate((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, sl.id), `despierta ${sl.id}`).toBe(true);
+    expect(await text(page, 'awake')).toBe(`✦ ${woken}/20`);
+  }
+  await step(page, 1.5);
+  await expect.poll(() => text(page, 'msg')).toContain('todas las cosas');
+
+  // Ya despierta: tocarla repite la reacción, sin cable y sin errores
+  const last = info.sleepers[info.sleepers.length - 1];
+  await page.evaluate((id) => {
+    const c = window.__nexus3d.world.connections;
+    c.interact(c.all.find((o) => o.id === id));
+  }, last.id);
+  expect(await page.evaluate(() => window.__nexus3d.world.connections.selection)).toBe(null);
+
+  // Las cosas despiertas se guardan y vuelven despiertas al continuar
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  await page.evaluate(() => document.getElementById('continue').click());
+  await expect.poll(() => mode(page)).toContain('mode-world');
+  expect(await text(page, 'awake')).toBe('✦ 20/20');
+
+  // La pelota de la plaza se patea al pasar corriendo
+  const ball0 = await page.evaluate(() => window.__nexus3d.world.playground.balls[0].g.position.toArray());
+  await tp(page, ball0[0] - 1.2, ball0[2]);
+  // En la vista isométrica D + S camina hacia +X (directo hacia la pelota)
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  await step(page, 0.6);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  await step(page, 1.0);
+  const ball1 = await page.evaluate(() => window.__nexus3d.world.playground.balls[0].g.position.toArray());
+  expect(Math.hypot(ball1[0] - ball0[0], ball1[2] - ball0[2])).toBeGreaterThan(0.5);
+});

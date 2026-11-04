@@ -67,6 +67,16 @@ body:not(.mode-tunnel) #tunnelHud {
   text-wrap: balance;
 }
 
+/* Cosas dormidas que ya se despertaron */
+#awake {
+  top: calc(60px + env(safe-area-inset-top, 0px));
+  left: max(14px, env(safe-area-inset-left, 0px));
+  font-family: var(--display);
+  font-size: 18px;
+  color: #9be7ff;
+  text-shadow: 2px 2px 0 var(--ink);
+}
+
 #stars {
   top: calc(12px + env(safe-area-inset-top, 0px));
   right: max(14px, env(safe-area-inset-right, 0px));
