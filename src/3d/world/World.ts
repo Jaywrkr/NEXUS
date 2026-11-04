@@ -19,6 +19,10 @@ export interface Circle {
 /* Medidas del barrio (metros). +X = este, +Z = sur. La cámara isométrica mira desde +X+Z hacia el noroeste,
    así que las fachadas importantes miran a +Z o +X. */
 export const BOUNDS = 45;
+/** El barrio crece hacia el sur (distrito del jardín, al otro lado del canal). */
+export const BOUNDS_MAX_Z = 63;
+/** Jardín municipal (zona 5): borde de cercos, entradas al norte y al este. */
+export const GARDEN = { minX: -26, maxX: 4, minZ: 47, maxZ: 61.5 };
 const ROAD = 4; // media calzada
 const WALK = 2.4; // ancho de vereda
 export const CANAL_MIN_Z = 30;
@@ -37,6 +41,7 @@ const RESERVED: Rect[] = [
   { minX: -30, maxX: -10, minZ: 6, maxZ: 26 }, // fuente de agua
   { minX: 10, maxX: 33, minZ: -28, maxZ: -8 }, // antena
   { minX: 6, maxX: 24, minZ: 18, maxZ: 44 }, // puente
+  { minX: -28, maxX: 6, minZ: 45.5, maxZ: 64 }, // jardín municipal
 ];
 
 /** Lo que cambia de color cuando se resuelve la plaza (el mundo empieza "apagado"). */
@@ -104,6 +109,7 @@ export class World {
     this.buildPlazaSet();
     this.buildFountainPlaza();
     this.buildAntennaYard();
+    this.buildGardenSet();
     this.buildHouses();
     this.buildShops();
     this.buildPolesAndCars();
@@ -144,7 +150,7 @@ export class World {
       }
     }
     pos.x = clamp(pos.x, -BOUNDS, BOUNDS);
-    pos.z = clamp(pos.z, -BOUNDS, BOUNDS);
+    pos.z = clamp(pos.z, -BOUNDS, BOUNDS_MAX_Z);
   }
 
   openBridgeGap(): void {
@@ -479,6 +485,156 @@ export class World {
     hutRoof.position.set(31, 2.5, -24.5);
     this.scene.add(hutRoof);
     this.addRect(31, -24.5, 3, 2.6);
+  }
+
+  /* ---------- Distrito del jardín (zona 5) ---------- */
+
+  /**
+   * Jardín municipal al sur del canal: cercos de arbustos con dos entradas, caminos de grava,
+   * glorieta, bancas, bebedero de pájaros, faroles de jardín y el cartel del Alcalde Goteo.
+   * El parterre y el aspersor son objetos conectables (los pone WorldMode).
+   */
+  private buildGardenSet(): void {
+    const g = GARDEN;
+    const cx = (g.minX + g.maxX) / 2;
+    const cz = (g.minZ + g.maxZ) / 2;
+    // Césped propio del jardín y caminos de grava en cruz
+    const lawn = box(g.maxX - g.minX, 0.06, g.maxZ - g.minZ, '#7fae4a', { brush: 30, outline: false, cast: false });
+    lawn.position.set(cx, 0.03, cz);
+    this.scene.add(lawn);
+    const gravel = toon('#d8ccb4', 18);
+    const pathNS = box(2.2, 0.08, g.maxZ - g.minZ, '', { mat: gravel, outline: false, cast: false });
+    pathNS.position.set(-1, 0.04, cz);
+    this.scene.add(pathNS);
+    const pathEW = box(g.maxX - g.minX, 0.08, 2.0, '', { mat: gravel, outline: false, cast: false });
+    pathEW.position.set(cx, 0.045, 51.8);
+    this.scene.add(pathEW);
+    // Camino desde el puente hasta la entrada este
+    const fromBridge = box(2.0, 0.08, 15, '', { mat: gravel, outline: false, cast: false });
+    fromBridge.position.set(18, 0.04, 44);
+    this.scene.add(fromBridge);
+    const toGarden = box(14, 0.08, 2.0, '', { mat: gravel, outline: false, cast: false });
+    toGarden.position.set(11, 0.045, 51.8);
+    this.scene.add(toGarden);
+
+    // Cercos de arbustos recortados (con huecos para entrar)
+    const hedge = toon('#3f6e34', 6);
+    const hedgeRun = (x1: number, z1: number, x2: number, z2: number) => {
+      const w = Math.max(Math.abs(x2 - x1), 0.9);
+      const d = Math.max(Math.abs(z2 - z1), 0.9);
+      const m = box(w, 1.0, d, '', { mat: hedge, outline: 0.05 });
+      m.position.set((x1 + x2) / 2, 0.5, (z1 + z2) / 2);
+      this.scene.add(m);
+      this.addRect((x1 + x2) / 2, (z1 + z2) / 2, w, d);
+    };
+    hedgeRun(g.minX, g.minZ, -3.2, g.minZ); // norte (entrada en x -3..1)
+    hedgeRun(1.2, g.minZ, g.maxX, g.minZ);
+    hedgeRun(g.minX, g.maxZ, g.maxX, g.maxZ); // sur
+    hedgeRun(g.minX, g.minZ, g.minX, g.maxZ); // oeste
+    hedgeRun(g.maxX, g.minZ, g.maxX, 50.4); // este (entrada en z 50.4..53.2)
+    hedgeRun(g.maxX, 53.2, g.maxX, g.maxZ);
+    for (const [x, z] of [
+      [g.minX, g.minZ],
+      [g.maxX, g.minZ],
+      [g.minX, g.maxZ],
+      [g.maxX, g.maxZ],
+    ]) {
+      const ball = rounded(new THREE.IcosahedronGeometry(0.75, 1), toon('#4f7f3a', 2), 0.04);
+      ball.position.set(x, 1.15, z);
+      this.scene.add(ball);
+    }
+
+    // Arco de la entrada este con el cartel del jardín
+    const archMat = toon('#f4efe6', 2);
+    for (const z of [50.2, 53.4]) {
+      const post = box(0.25, 2.6, 0.25, '', { mat: archMat, outline: 0.03 });
+      post.position.set(g.maxX + 0.2, 1.3, z);
+      this.scene.add(post);
+      this.circles.push({ x: g.maxX + 0.2, z, r: 0.2 });
+    }
+    const beam = box(0.3, 0.3, 3.6, '', { mat: archMat, outline: 0.03 });
+    beam.position.set(g.maxX + 0.2, 2.65, 51.8);
+    this.scene.add(beam);
+    const sign = new THREE.Mesh(
+      new THREE.PlaneGeometry(3.0, 0.75),
+      withLife(new THREE.MeshBasicMaterial({ map: this.signTexture('JARDÍN MUNICIPAL', '#5f7f5a') })),
+    );
+    sign.rotation.y = Math.PI / 2;
+    sign.position.set(g.maxX + 0.38, 2.65, 51.8);
+    this.scene.add(sign);
+
+    // Glorieta (kiosco) en la esquina suroeste
+    const gz = { x: -20.5, z: 57.5 };
+    const floor = rounded(new THREE.CylinderGeometry(2.4, 2.5, 0.3, 8), toon('#e6dbc6', 3), 0.03);
+    floor.position.set(gz.x, 0.15, gz.z);
+    this.scene.add(floor);
+    for (let i = 0; i < 8; i += 1) {
+      const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+      const col = rounded(new THREE.CylinderGeometry(0.09, 0.09, 2.4, 8), toon('#f4efe6'), 0.015);
+      col.position.set(gz.x + Math.cos(a) * 2.1, 1.5, gz.z + Math.sin(a) * 2.1);
+      this.scene.add(col);
+    }
+    const roof = rounded(new THREE.ConeGeometry(2.9, 1.5, 8), toon('#c4643e', 3), 0.04);
+    roof.position.set(gz.x, 3.4, gz.z);
+    roof.rotation.y = Math.PI / 8;
+    this.scene.add(roof);
+    const finial = rounded(new THREE.SphereGeometry(0.16, 8, 6), toon('#f2c14e'), 0.015);
+    finial.position.set(gz.x, 4.25, gz.z);
+    this.scene.add(finial);
+    this.circles.push({ x: gz.x, z: gz.z, r: 2.4 });
+
+    // Bebedero de pájaros (seco hasta que el jardín revive: lo maneja el color del barrio)
+    const bath = new THREE.Group();
+    const foot = rounded(new THREE.CylinderGeometry(0.18, 0.28, 0.9, 10), toon('#cfc2ad', 2), 0.02);
+    foot.position.y = 0.45;
+    bath.add(foot);
+    const bowl = rounded(new THREE.CylinderGeometry(0.75, 0.3, 0.28, 16), toon('#e6dbc6', 2), 0.02);
+    bowl.position.y = 1.0;
+    bath.add(bowl);
+    bath.position.set(-20.5, 0, 50.2);
+    this.scene.add(bath);
+    this.circles.push({ x: -20.5, z: 50.2, r: 0.75 });
+
+    // Bancas y faroles de jardín
+    for (const [bx, bz, rot] of [
+      [-6, 58.8, Math.PI],
+      [-14, 49.2, 0],
+    ] as const) {
+      const bench = new THREE.Group();
+      const seat = box(2, 0.12, 0.6, '#a97a52', { outline: 0.02 });
+      seat.position.y = 0.5;
+      bench.add(seat);
+      const back = box(2, 0.5, 0.1, '#a97a52', { outline: 0.02 });
+      back.position.set(0, 0.85, -0.28);
+      bench.add(back);
+      for (const lx of [-0.8, 0.8]) {
+        const leg = box(0.1, 0.5, 0.5, '#3a3d48', { outline: 0.012 });
+        leg.position.set(lx, 0.25, 0);
+        bench.add(leg);
+      }
+      bench.position.set(bx, 0, bz);
+      bench.rotation.y = rot;
+      this.scene.add(bench);
+      this.addRect(bx, bz, 2.1, 0.7, rot);
+    }
+    for (const [lx, lz] of [
+      [1.6, 48.6],
+      [-24.4, 48.6],
+      [1.6, 60.2],
+    ]) {
+      const post = rounded(new THREE.CylinderGeometry(0.05, 0.07, 2.0, 8), toon('#2c3040'), 0.012);
+      post.position.set(lx, 1.0, lz);
+      this.scene.add(post);
+      const lantern = box(0.28, 0.32, 0.28, '#f2c14e', { outline: 0.015 });
+      lantern.position.set(lx, 2.1, lz);
+      this.scene.add(lantern);
+      this.circles.push({ x: lx, z: lz, r: 0.15 });
+    }
+
+    // Árboles ornamentales y macizos a lo largo del cerco
+    this.tree(-24, 60);
+    this.tree(2.2, 60.2);
+    for (let i = 0; i < 6; i += 1) this.bush(-24 + i * 4.4, 47.9, 0.55, true);
   }
 
   /* ---------- Casas ---------- */

@@ -10,6 +10,8 @@ export abstract class Connectable {
   readonly id: string;
   readonly role: Role;
   readonly group = new THREE.Group();
+  /** Nombre corto que flota sobre el objeto cuando el Nexus se acerca ("Farola", "Aspersor"...). */
+  label = '';
   /** Radio para colisión con el Nexus (0 = se puede atravesar). */
   collideRadius = 0.6;
   protected active_ = false;

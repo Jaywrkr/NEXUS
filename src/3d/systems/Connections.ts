@@ -19,6 +19,11 @@ export interface ConnectionEvents {
   feedback: (message: string, kind: FeedbackKind) => void;
   made: (source: Connectable, target: Connectable) => void;
   tunnel: (source: Connectable, target: Connectable) => void;
+  /**
+   * Conexión que no encaja. Si devuelve true, ya se respondió con algo especial
+   * (una broma de los vecinos) y no se muestra el aviso genérico.
+   */
+  invalid?: (source: Connectable, target: Connectable) => boolean;
 }
 
 interface Particle {
@@ -108,6 +113,7 @@ export class Connections {
     const rule = this.rules.find((r) => r.sourceId === source.id && r.targetId === target.id);
     if (!rule) {
       this.drawCable(source, target, false);
+      if (this.events.invalid?.(source, target)) return;
       this.events.feedback('Esa conexión no encaja, prueba otra', 'error');
       this.audio.playError();
       return;

@@ -571,3 +571,255 @@ export class Fragment {
     (this.halo.material as THREE.MeshBasicMaterial).opacity = 0.15 + k * 0.25;
   }
 }
+
+/* ---------- Jardín: aspersor ---------- */
+
+/**
+ * Aspersor del jardín municipal. Recibe energía y, ya encendido, puede iniciar el cable de agua
+ * hacia las flores (como la farola con la puerta). Al activarse gira y reparte agua en círculo.
+ */
+export class Sprinkler extends Connectable {
+  private readonly head = new THREE.Group();
+  private readonly nozzleGlow: THREE.Mesh;
+  private readonly drops: THREE.Mesh[] = [];
+  private readonly ring: THREE.Mesh;
+  private spin = 0;
+
+  constructor(id: string, x: number, z: number) {
+    super(id, 'target', x, z);
+    this.collideRadius = 0.5;
+
+    const plate = rounded(new THREE.CylinderGeometry(0.45, 0.5, 0.12, 16), toon('#4166c6'), 0.015);
+    plate.position.y = 0.06;
+    this.group.add(plate);
+    const valve = box(0.3, 0.22, 0.3, '#2f4a96', { outline: 0.012 });
+    valve.position.y = 0.23;
+    this.group.add(valve);
+    const wheel = rounded(new THREE.TorusGeometry(0.11, 0.025, 6, 14), toon('#c8452f'), 0.008);
+    wheel.position.set(0, 0.3, 0.17);
+    this.group.add(wheel);
+    const pipe = rounded(new THREE.CylinderGeometry(0.05, 0.06, 0.75, 10), toon('#67b7fa'), 0.012);
+    pipe.position.y = 0.7;
+    this.group.add(pipe);
+
+    this.head.position.y = 1.1;
+    const hub = rounded(new THREE.SphereGeometry(0.13, 14, 10), toon('#91a6bf'), 0.012);
+    this.head.add(hub);
+    for (let i = 0; i < 3; i += 1) {
+      const arm = new THREE.Group();
+      arm.rotation.y = (i / 3) * Math.PI * 2;
+      const tube = box(0.36, 0.05, 0.05, '#67b7fa', { outline: 0.008 });
+      tube.position.x = 0.2;
+      arm.add(tube);
+      const tip = rounded(new THREE.SphereGeometry(0.045, 8, 6), toon('#2f4a96'), 0.006);
+      tip.position.x = 0.38;
+      arm.add(tip);
+      this.head.add(arm);
+    }
+    this.nozzleGlow = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), toonUnique('#5a6577'));
+    this.nozzleGlow.position.y = 0.12;
+    this.head.add(this.nozzleGlow);
+    this.group.add(this.head);
+
+    // Agua: gotas que salen en abanico y caen alrededor
+    const dropMat = new THREE.MeshBasicMaterial({ color: '#8fd3ff', transparent: true, opacity: 0.9 });
+    const dropGeo = new THREE.SphereGeometry(0.05, 6, 4);
+    for (let i = 0; i < 36; i += 1) {
+      const d = new THREE.Mesh(dropGeo, dropMat);
+      d.userData.arm = i % 3;
+      d.userData.offset = (i / 36) * 3;
+      d.visible = false;
+      this.group.add(d);
+      this.drops.push(d);
+    }
+    this.ring = new THREE.Mesh(
+      new THREE.RingGeometry(2.3, 2.6, 40),
+      new THREE.MeshBasicMaterial({ color: '#8fd3ff', transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }),
+    );
+    this.ring.rotation.x = -Math.PI / 2;
+    this.ring.position.y = 0.04;
+    this.group.add(this.ring);
+
+    this.plugAnchor.position.set(0, 1.05, 0);
+  }
+
+  canInitiate(): boolean {
+    return this.active_;
+  }
+
+  activate(): void {
+    if (this.active_) return;
+    this.active_ = true;
+    this.nozzleGlow.material = glow('#5ee7ff');
+    this.drops.forEach((d) => (d.visible = true));
+    tween(1.2, (k) => {
+      this.spin = k;
+    });
+  }
+
+  restore(): void {
+    this.active_ = true;
+    this.nozzleGlow.material = glow('#5ee7ff');
+    this.drops.forEach((d) => (d.visible = true));
+    this.spin = 1;
+  }
+
+  update(dt: number, time: number): void {
+    if (!this.active_) return;
+    this.head.rotation.y += dt * 2.4 * this.spin;
+    for (const d of this.drops) {
+      // Cada gota recorre un arco parabólico desde la punta de un brazo
+      const t = (time * 0.9 + d.userData.offset) % 1;
+      const a = this.head.rotation.y + (d.userData.arm / 3) * Math.PI * 2 - t * 0.6;
+      const r = 0.38 + t * 2.2;
+      d.position.set(Math.cos(a) * r, 1.1 + t * 0.9 - t * t * 1.9, -Math.sin(a) * r);
+      d.scale.setScalar(this.spin * (1 - t * 0.4));
+    }
+    (this.ring.material as THREE.MeshBasicMaterial).opacity = (0.18 + Math.sin(time * 3) * 0.06) * this.spin;
+  }
+}
+
+/* ---------- Jardín: parterre de flores ---------- */
+
+const PETALS = ['#ff7aa8', '#ffd23a', '#b48cff', '#ff8a5b', '#ffffff', '#e8327f'];
+
+/**
+ * Parterre del jardín: tierra agrietada y flores marchitas, caídas y grises. Al recibir el agua del
+ * aspersor la tierra se oscurece (mojada), los tallos se enderezan y las flores abren una a una.
+ */
+export class FlowerBed extends Connectable {
+  private readonly soil: THREE.MeshToonMaterial;
+  private readonly flowers: { stem: THREE.Group; bloom: THREE.Group; bud: THREE.Mesh; tilt: number; dir: number }[] = [];
+  private readonly cracks: THREE.Mesh[] = [];
+
+  constructor(id: string, x: number, z: number, width = 7, depth = 3) {
+    super(id, 'target', x, z);
+    this.collideRadius = 0; // el bloqueo es un rectángulo que agrega WorldMode
+
+    // Borde de madera
+    const wood = '#8a5a3a';
+    for (const [w, d, px, pz] of [
+      [width + 0.3, 0.2, 0, depth / 2],
+      [width + 0.3, 0.2, 0, -depth / 2],
+      [0.2, depth, width / 2, 0],
+      [0.2, depth, -width / 2, 0],
+    ] as const) {
+      const plank = box(w, 0.35, d, wood, { outline: 0.015, brush: 1 });
+      plank.position.set(px, 0.17, pz);
+      this.group.add(plank);
+    }
+    this.soil = toonUnique('#9a8064', 4);
+    const soil = new THREE.Mesh(new THREE.BoxGeometry(width, 0.3, depth), this.soil);
+    soil.position.y = 0.15;
+    soil.receiveShadow = true;
+    this.group.add(soil);
+    // Grietas de tierra seca
+    const crackMat = new THREE.MeshBasicMaterial({ color: '#5e4a38' });
+    for (let i = 0; i < 9; i += 1) {
+      const c = new THREE.Mesh(new THREE.PlaneGeometry(0.6 + Math.random() * 0.6, 0.04), crackMat);
+      c.rotation.x = -Math.PI / 2;
+      c.rotation.z = Math.random() * Math.PI;
+      c.position.set((Math.random() - 0.5) * (width - 0.8), 0.305, (Math.random() - 0.5) * (depth - 0.6));
+      this.group.add(c);
+      this.cracks.push(c);
+    }
+
+    // Flores marchitas
+    const cols = 8;
+    const rows = 3;
+    for (let r = 0; r < rows; r += 1) {
+      for (let c = 0; c < cols; c += 1) {
+        const stem = new THREE.Group();
+        stem.position.set(-width / 2 + 0.55 + c * ((width - 1.1) / (cols - 1)) + (r % 2) * 0.2, 0.3, -depth / 2 + 0.6 + r * ((depth - 1.2) / (rows - 1)));
+        const h = 0.45 + Math.random() * 0.25;
+        const stalk = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.025, h, 5), toonUnique('#7b8170'));
+        stalk.position.y = h / 2;
+        stem.add(stalk);
+        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.07, 6, 4), toonUnique('#7b8170'));
+        leaf.scale.set(1.4, 0.3, 0.6);
+        leaf.position.set(0.06, h * 0.35, 0);
+        stem.add(leaf);
+        const bud = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), toonUnique('#8a8070'));
+        bud.position.y = h;
+        stem.add(bud);
+        // Flor abierta (escondida hasta que llega el agua)
+        const bloom = new THREE.Group();
+        bloom.position.y = h;
+        const color = PETALS[(r * cols + c) % PETALS.length];
+        for (let p = 0; p < 5; p += 1) {
+          const petal = new THREE.Mesh(new THREE.SphereGeometry(0.075, 8, 6), toon(color));
+          const a = (p / 5) * Math.PI * 2;
+          petal.scale.set(1, 0.35, 0.65);
+          petal.position.set(Math.cos(a) * 0.08, 0, Math.sin(a) * 0.08);
+          petal.rotation.y = -a;
+          bloom.add(petal);
+        }
+        const center = new THREE.Mesh(new THREE.SphereGeometry(0.045, 8, 6), toon('#ffb52e'));
+        bloom.add(center);
+        bloom.scale.setScalar(0.001);
+        bloom.visible = false;
+        stem.add(bloom);
+        const tilt = 0.7 + Math.random() * 0.5;
+        const dir = Math.random() * Math.PI * 2;
+        stem.rotation.set(Math.cos(dir) * tilt, 0, Math.sin(dir) * tilt);
+        this.group.add(stem);
+        this.flowers.push({ stem, bloom, bud, tilt, dir });
+      }
+    }
+    this.plugAnchor.position.set(width / 2 + 0.1, 0.5, 0);
+  }
+
+  /** Orienta el enchufe hacia quien le lleva el agua. */
+  facePlug(towardX: number, towardZ: number): void {
+    const dx = towardX - this.x;
+    const dz = towardZ - this.z;
+    this.plugAnchor.position.set(Math.sign(dx) * 3.6, 0.5, Math.abs(dz) > 1.6 ? Math.sign(dz) * 1.6 : 0);
+  }
+
+  private bloomAll(animate: boolean): void {
+    this.soil.color.set('#5a3e2a');
+    this.cracks.forEach((c) => (c.visible = false));
+    this.flowers.forEach((f, i) => {
+      const greens = ['#4f8f3a', '#5fa34a'];
+      (f.stem.children[0] as THREE.Mesh).material = toon(greens[i % 2]);
+      (f.stem.children[1] as THREE.Mesh).material = toon(greens[(i + 1) % 2]);
+      if (!animate) {
+        f.stem.rotation.set(0, 0, 0);
+        f.bud.visible = false;
+        f.bloom.visible = true;
+        f.bloom.scale.setScalar(1);
+        return;
+      }
+      const delay = 0.2 + i * 0.05;
+      tween(0.6, (k) => f.stem.rotation.set(Math.cos(f.dir) * f.tilt * (1 - k), 0, Math.sin(f.dir) * f.tilt * (1 - k)), { delay, easing: ease.outBack });
+      tween(
+        0.45,
+        (k) => {
+          f.bud.visible = false;
+          f.bloom.visible = true;
+          f.bloom.scale.setScalar(Math.max(k, 0.001));
+        },
+        { delay: delay + 0.35, easing: ease.outBack },
+      );
+    });
+  }
+
+  activate(): void {
+    if (this.active_) return;
+    this.active_ = true;
+    this.bloomAll(true);
+  }
+
+  restore(): void {
+    this.active_ = true;
+    this.bloomAll(false);
+  }
+
+  update(_dt: number, time: number): void {
+    if (!this.active_) return;
+    this.flowers.forEach((f, i) => {
+      f.bloom.rotation.y = Math.sin(time * 1.3 + i) * 0.25;
+      f.stem.rotation.z = Math.sin(time * 1.1 + i * 0.7) * 0.05;
+    });
+  }
+}

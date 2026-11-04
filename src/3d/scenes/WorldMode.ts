@@ -8,12 +8,12 @@ import { after, tween } from '../core/tween';
 import { damp, dampAngle } from '../core/util';
 import { Nexus3D } from '../entities/Nexus3D';
 import type { Connectable } from '../objects/Connectable';
-import { Beacon, BridgeLever, Door, EnergySource, Fountain, Fragment, StreetLamp } from '../objects/objects';
+import { Beacon, BridgeLever, Door, EnergySource, FlowerBed, Fountain, Fragment, Sprinkler, StreetLamp } from '../objects/objects';
 import { Connections } from '../systems/Connections';
 import type { FeedbackKind } from '../systems/Connections';
 import { World } from '../world/World';
 import { SECRET_FRAGMENT, ZONE_FRAGMENTS } from './MuseumMode';
-import { RESIDENTS, residentLine } from '../../data/chapter';
+import { RESIDENTS, connectionSurprise, residentLine } from '../../data/chapter';
 import { Resident3D } from '../entities/Resident3D';
 
 const INTERACT_REACH = 2.2; // metros desde el borde del objeto
@@ -24,7 +24,9 @@ const ISO_OFFSET = new THREE.Vector3(20, 22, 20);
 const VIEW_KEY = 'los-nexus-3d-view';
 const START = new THREE.Vector3(-20, 0, -11);
 
-const [PLAZA_ID, FOUNTAIN_ID, BEACON_ID, BRIDGE_ID] = ZONE_FRAGMENTS.map((f) => f.id);
+const [PLAZA_ID, FOUNTAIN_ID, BEACON_ID, BRIDGE_ID, GARDEN_ID] = ZONE_FRAGMENTS.map((f) => f.id);
+/** Lugares que se pueden devolver a la vida (uno por fragmento de zona). */
+const ZONE_COUNT = ZONE_FRAGMENTS.length;
 
 export interface WorldCallbacks {
   /** Pide abrir el mini-túnel; debe llamar a `finishTunnel` al terminar. */
@@ -65,6 +67,9 @@ export class WorldMode {
   private readonly fountain: Fountain;
   private readonly beacon: Beacon;
   private readonly bridge: BridgeLever;
+  private readonly sprinkler: Sprinkler;
+  private readonly flowerBed: FlowerBed;
+  private readonly labels: { obj: Connectable; sprite: THREE.Sprite }[] = [];
   private readonly fragmentById = new Map<string, Fragment>();
 
   private readonly el = {
@@ -92,6 +97,7 @@ export class WorldMode {
 
     this.connections = new Connections(scene, this.audio, {
       feedback: (m, k) => this.toast(m, k),
+      invalid: (s, t) => this.onSurprise(s, t),
       made: (s, t) => {
         this.progress.saveConnection(s.id, t.id);
         this.applyConnection(t, true);
@@ -116,8 +122,23 @@ export class WorldMode {
     const bridgeSource = new EnergySource('bridge-source', 10.5, 23.5);
     this.bridge = new BridgeLever('bridge', 15.6, 27.9, 18, 29.3, 36.7);
     scene.add(this.bridge.deck);
+    // Zona 5: el jardín municipal, al otro lado del canal (fuente → aspersor → flores)
+    const gardenSource = new EnergySource('garden-source', 1.6, 50.6);
+    this.sprinkler = new Sprinkler('garden-sprinkler', -5.6, 54.2);
+    this.flowerBed = new FlowerBed('garden-bed', -13, 54);
+    this.flowerBed.facePlug(-5.6, 54.2);
+    this.world.rects.push({ minX: -16.7, maxX: -9.3, minZ: 52.3, maxZ: 55.7 });
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge]) {
+    const labels: [Connectable, string][] = [
+      [source, 'Energía'], [this.lamp, 'Farola'], [this.door, 'Puerta'],
+      [fountainSource, 'Energía'], [this.fountain, 'Fuente'],
+      [beaconA, 'Energía'], [beaconB, 'Energía'], [decoy, 'Energía'], [this.beacon, 'Antena'],
+      [bridgeSource, 'Energía'], [this.bridge, 'Palanca del puente'],
+      [gardenSource, 'Energía'], [this.sprinkler, 'Aspersor'], [this.flowerBed, 'Flores'],
+    ];
+    for (const [obj, label] of labels) obj.label = label;
+
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -129,6 +150,8 @@ export class WorldMode {
     this.connections.addRule({ sourceId: beaconA.id, targetId: this.beacon.id });
     this.connections.addRule({ sourceId: beaconB.id, targetId: this.beacon.id });
     this.connections.addRule({ sourceId: bridgeSource.id, targetId: this.bridge.id });
+    this.connections.addRule({ sourceId: gardenSource.id, targetId: this.sprinkler.id });
+    this.connections.addRule({ sourceId: this.sprinkler.id, targetId: this.flowerBed.id });
 
     // Fragmentos: uno por zona + el secreto detrás de la casa (Decisión 019), que ya está visible
     for (const [id, x, y, z] of [
@@ -136,6 +159,7 @@ export class WorldMode {
       [FOUNTAIN_ID, -20, 1.0, 20.4],
       [BEACON_ID, 30.5, 1.0, -15.2],
       [BRIDGE_ID, 18, 1.0, 40.5],
+      [GARDEN_ID, -13, 1.0, 58.2],
       [SECRET_FRAGMENT.id, -18, 1.0, -39.6],
     ] as const) {
       const f = new Fragment(id, x, y, z);
@@ -146,7 +170,8 @@ export class WorldMode {
     }
 
     LIFE.reset();
-    this.restoreProgress({ source, fountainSource, beaconA, beaconB, bridgeSource });
+    this.restoreProgress({ source, fountainSource, beaconA, beaconB, bridgeSource, gardenSource });
+    this.makeLabels();
     this.placeResidents();
     this.setView(this.iso);
     this.el.story?.addEventListener('click', () => this.hideStory());
@@ -159,7 +184,7 @@ export class WorldMode {
 
   /* ---------- Progreso guardado ---------- */
 
-  private restoreProgress(srcs: Record<'source' | 'fountainSource' | 'beaconA' | 'beaconB' | 'bridgeSource', Connectable>): void {
+  private restoreProgress(srcs: Record<'source' | 'fountainSource' | 'beaconA' | 'beaconB' | 'bridgeSource' | 'gardenSource', Connectable>): void {
     const p = this.progress;
     // Partidas anteriores a guardar conexiones: si hay fragmento pero no conexiones, se deducen
     const legacy: [string, Connectable, Connectable][] = [
@@ -169,6 +194,8 @@ export class WorldMode {
       [BEACON_ID, srcs.beaconA, this.beacon],
       [BEACON_ID, srcs.beaconB, this.beacon],
       [BRIDGE_ID, srcs.bridgeSource, this.bridge],
+      [GARDEN_ID, srcs.gardenSource, this.sprinkler],
+      [GARDEN_ID, this.sprinkler, this.flowerBed],
     ];
     for (const [fragment, s, t] of legacy) if (p.hasFragment(fragment)) p.saveConnection(s.id, t.id);
 
@@ -193,14 +220,14 @@ export class WorldMode {
 
   private statusMessage(): string {
     const done = this.zonesDone();
-    if (done === 4) return 'Ya le devolviste la vida a todo el barrio';
+    if (done === ZONE_COUNT) return 'Ya le devolviste la vida a todo el barrio';
     if (done === 0) return 'El barrio está triste y sin color. Conecta la fuente con la farola';
-    return `Le devolviste la vida a ${done} de 4 lugares — sigue explorando`;
+    return `Le devolviste la vida a ${done} de ${ZONE_COUNT} lugares — sigue explorando`;
   }
 
   /** Zonas resueltas (no hace falta haber juntado el fragmento). */
   private zonesDone(): number {
-    return [this.door.isActive, this.fountain.isActive, this.beacon.isFullyActive, this.bridge.isActive].filter(Boolean).length;
+    return [this.door.isActive, this.fountain.isActive, this.beacon.isFullyActive, this.bridge.isActive, this.flowerBed.isActive].filter(Boolean).length;
   }
 
   /* ---------- Vida del barrio ---------- */
@@ -224,7 +251,7 @@ export class WorldMode {
       spot.current += (spot.target - spot.current) * Math.min(1, dt * 1.6);
       LIFE.spots[i].set(spot.x, spot.z, spot.current, 0);
     });
-    this.world.mood = this.zonesDone() / 4;
+    this.world.mood = this.zonesDone() / ZONE_COUNT;
   }
 
   /** Vida (0..1) en un punto del barrio (también lo usan las pruebas). */
@@ -257,7 +284,7 @@ export class WorldMode {
     };
     const zoneLife = (x: number, z: number, r: number) => {
       this.addLife(x, z, r, animate);
-      if (this.zonesDone() === 4) this.reviveWholeTown(animate);
+      if (this.zonesDone() === ZONE_COUNT) this.reviveWholeTown(animate);
     };
     if (animate) after(0.8, () => this.updateResidentMoods());
     // Cada conexión devuelve un poco de color alrededor de lo que se encendió
@@ -286,6 +313,14 @@ export class WorldMode {
       } else {
         say('La antena necesita otra conexión más');
       }
+    }
+    if (target === this.sprinkler) {
+      say('¡El aspersor despertó! Ahora el agua tiene que llegar a las flores');
+    }
+    if (target === this.flowerBed) {
+      reveal(GARDEN_ID);
+      zoneLife(-11, 54, 16);
+      say('¡El jardín volvió a florecer! Acércate al fragmento');
     }
     if (target === this.bridge) {
       this.world.openBridgeGap();
@@ -374,6 +409,7 @@ export class WorldMode {
       new THREE.Vector3(-20, 3, 16),
       new THREE.Vector3(27, 5, -18),
       new THREE.Vector3(18, 2, 33),
+      new THREE.Vector3(-13, 2, 54),
       this.nexus.position.clone().setY(1.5),
     ];
     spots.forEach((s, i) => after(i * 0.2, () => this.connections.celebrate(s)));
@@ -409,7 +445,7 @@ export class WorldMode {
 
   private updateHud(): void {
     const n = ZONE_FRAGMENTS.filter((f) => this.progress.hasFragment(f.id)).length;
-    if (this.el.stars) this.el.stars.textContent = `★ ${n}/4`;
+    if (this.el.stars) this.el.stars.textContent = `★ ${n}/${ZONE_COUNT}`;
   }
 
   private setView(iso: boolean): void {
@@ -423,6 +459,49 @@ export class WorldMode {
     return this.iso ? this.isoCam : this.chaseCam;
   }
 
+  /* ---------- Bromas de conexiones equivocadas (CONNECTION_SURPRISES de la 2D) ---------- */
+
+  private onSurprise(source: Connectable, target: Connectable): boolean {
+    const surprise = connectionSurprise(source.id, target.id);
+    if (!surprise) return false;
+    this.showStory(surprise.speaker, surprise.line);
+    // El objeto "se queja" con un temblor corto
+    const g = target.group;
+    const base = g.rotation.z;
+    tween(0.5, (k) => (g.rotation.z = base + Math.sin(k * Math.PI * 6) * 0.06 * (1 - k)), { easing: (t) => t });
+    return true;
+  }
+
+  /* ---------- Nombres flotantes sobre los objetos ---------- */
+
+  private makeLabels(): void {
+    for (const obj of this.connections.all) {
+      if (!obj.label) continue;
+      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: labelTexture(obj.label), transparent: true, depthTest: false, fog: false, opacity: 0 }));
+      const tex = (sprite.material as THREE.SpriteMaterial).map!;
+      const img = tex.image as HTMLCanvasElement;
+      const aspect = img.width / img.height;
+      sprite.scale.set(0.55 * aspect, 0.55, 1);
+      sprite.renderOrder = 10;
+      this.world.scene.add(sprite);
+      this.labels.push({ obj, sprite });
+    }
+  }
+
+  private updateLabels(dt: number): void {
+    const p = this.nexus.position;
+    const v = new THREE.Vector3();
+    for (const { obj, sprite } of this.labels) {
+      const d = Math.hypot(obj.x - p.x, obj.z - p.z);
+      const mat = sprite.material as THREE.SpriteMaterial;
+      const target = d < 7 ? 1 : 0;
+      mat.opacity += (target - mat.opacity) * Math.min(1, dt * 6);
+      sprite.visible = mat.opacity > 0.02;
+      obj.plugPoint(v);
+      sprite.position.set(obj.x, Math.max(v.y, 1) + 1.0, obj.z);
+    }
+  }
+
   /* ---------- Habitantes (capítulo 1 de la 2D, ver src/data/chapter.ts) ---------- */
 
   /** Dónde está cada vecino en el barrio 3D y qué zona lo pone contento. */
@@ -431,6 +510,7 @@ export class WorldMode {
     bombo: { x: -13.6, z: 19.5, faceX: -20, faceZ: 16 },
     vera: { x: 31.5, z: -21, faceX: 27, faceZ: -18 },
     'don-paso': { x: 21.5, z: 27, faceX: 18, faceZ: 29 },
+    goteo: { x: -1.6, z: 55.6, faceX: -6, faceZ: 54 },
   };
 
   private placeResidents(): void {
@@ -452,6 +532,7 @@ export class WorldMode {
       bombo: this.fountain.isActive,
       vera: this.beacon.isFullyActive,
       'don-paso': this.bridge.isActive,
+      goteo: this.flowerBed.isActive,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
@@ -630,6 +711,7 @@ export class WorldMode {
 
     this.updateCameras(dt);
     this.updateLife(dt);
+    this.updateLabels(dt);
     this.connections.update(dt, this.camera, this.nexus.plugPoint());
     this.world.update(dt, this.time, this.nexus.position, this.camera.position);
   }
@@ -715,4 +797,36 @@ export class WorldMode {
     this.world.sky.visible = !this.iso;
     renderer.render(this.world.scene, this.camera, time, this.iso ? () => this.renderSilhouette(renderer) : undefined);
   }
+}
+
+const labelCache = new Map<string, THREE.CanvasTexture>();
+
+/** Cartelito crema con borde oscuro, como el resto de la interfaz. */
+function labelTexture(text: string): THREE.CanvasTexture {
+  const cached = labelCache.get(text);
+  if (cached) return cached;
+  const c = document.createElement('canvas');
+  const g = c.getContext('2d')!;
+  const font = 'bold 40px "Bowlby One", "Arial Black", Impact, sans-serif';
+  g.font = font;
+  const w = Math.ceil(g.measureText(text).width) + 44;
+  c.width = w;
+  c.height = 72;
+  g.font = font;
+  g.fillStyle = '#1d1630';
+  g.beginPath();
+  g.roundRect(6, 8, w - 8, 60, 14);
+  g.fill();
+  g.fillStyle = '#fff3dc';
+  g.beginPath();
+  g.roundRect(2, 2, w - 8, 60, 14);
+  g.fill();
+  g.fillStyle = '#1d1630';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(text, (w - 6) / 2, 34);
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  labelCache.set(text, tex);
+  return tex;
 }

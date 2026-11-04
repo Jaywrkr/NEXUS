@@ -9,6 +9,7 @@ export const ZONE_FRAGMENTS = [
   { id: 'fountain-fragment', label: 'Fragmento de la fuente' },
   { id: 'beacon-fragment', label: 'Fragmento de la antena' },
   { id: 'bridge-fragment', label: 'Fragmento del puente' },
+  { id: 'garden-fragment', label: 'Flor del jardín' },
 ];
 /** No cuenta para "¡Colección completa!" (Decisión 019). */
 export const SECRET_FRAGMENT = { id: 'secret-fragment', label: 'Fragmento secreto' };
@@ -49,7 +50,7 @@ export class MuseumMode {
     wall.position.set(0, 7, -3);
     wall.receiveShadow = true;
     s.add(wall);
-    const rug = box(13, 0.03, 3.4, '#8c3b3b', { outline: false, cast: false, brush: 4 });
+    const rug = box(16, 0.03, 3.4, '#8c3b3b', { outline: false, cast: false, brush: 4 });
     rug.position.set(0, 0.015, 0.4);
     s.add(rug);
 
@@ -80,22 +81,26 @@ export class MuseumMode {
     });
   }
 
+  /** Acomoda las vitrinas: una fila en horizontal, filas de 3 en vertical (sirve para cualquier cantidad). */
   private layout(aspect: number): void {
     this.portrait = aspect < 1;
+    const n = this.cases.length;
     if (this.portrait) {
-      // Dos filas: 3 arriba (atrás) y 2 abajo (adelante)
+      const rows = Math.ceil(n / 3);
       this.cases.forEach((c, i) => {
-        const row = i < 3 ? 0 : 1;
-        const col = row === 0 ? i - 1 : i - 3.5;
-        c.group.position.set(col * 2.0, 0, row === 0 ? -1.2 : 1.4);
+        const row = Math.floor(i / 3);
+        const inRow = Math.min(3, n - row * 3);
+        const col = (i % 3) - (inRow - 1) / 2;
+        c.group.position.set(col * 2.0, 0, (row - (rows - 1) / 2) * 2.6);
       });
       this.camera.fov = 50;
-      this.camera.position.set(0, 6.5, 12);
+      this.camera.position.set(0, 6.5 + rows, 12 + rows);
       this.camera.lookAt(0, 0.8, 0);
     } else {
-      this.cases.forEach((c, i) => c.group.position.set((i - 2) * 2.4, 0, 0));
+      const spacing = Math.min(2.4, 13 / Math.max(1, n - 1));
+      this.cases.forEach((c, i) => c.group.position.set((i - (n - 1) / 2) * spacing, 0, 0));
       this.camera.fov = 38;
-      this.camera.position.set(0, 4.2, 13);
+      this.camera.position.set(0, 4.2, 11 + n * 0.45);
       this.camera.lookAt(0, 1.0, 0);
     }
   }

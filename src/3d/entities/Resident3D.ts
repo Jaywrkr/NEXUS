@@ -10,7 +10,7 @@ export interface ResidentLook {
   hair: string;
   /** 1 = normal; >1 = más ancho (Bombo). */
   girth?: number;
-  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat';
+  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor';
 }
 
 export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
@@ -22,6 +22,8 @@ export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
   vera: { body: '#e77fa6', pants: '#4a3a6a', skin: '#f0c39a', hair: '#7b4fb0', accessory: 'headphones' },
   // Don Paso: se cree celebridad; galera, lentes oscuros y moño
   'don-paso': { body: '#f2c14e', pants: '#3a3d48', skin: '#d9a77e', hair: '#d8d8d8', accessory: 'tophat' },
+  // Alcalde Goteo: confunde tener un aspersor con gobernar; banda de alcalde, bombín, bigote y regadera
+  goteo: { body: '#4d6b8a', pants: '#2c3040', skin: '#e3a986', hair: '#bdbdbd', girth: 1.15, accessory: 'mayor' },
 };
 
 /**
@@ -152,6 +154,45 @@ export class Resident3D {
       const mic = rounded(new THREE.SphereGeometry(0.05, 10, 8), toon('#3a3d48'), 0.01);
       mic.position.set(0, -0.33, 0.05);
       this.armR.add(mic);
+    } else if (kind === 'mayor') {
+      // Banda cruzada roja con borde dorado
+      const sash = box(0.07, 0.5, 0.36, '#c8452f', { outline: false });
+      sash.position.set(0, 0.56, 0);
+      sash.rotation.z = 0.75;
+      sash.scale.z = 1.05;
+      this.body.add(sash);
+      const medal = rounded(new THREE.CylinderGeometry(0.05, 0.05, 0.02, 12), toon('#f2c14e'), 0.008);
+      medal.rotation.x = Math.PI / 2;
+      medal.position.set(-0.06, 0.5, 0.16);
+      this.body.add(medal);
+      // Bombín
+      const bowler = rounded(new THREE.SphereGeometry(0.17, 14, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon('#2c2838'), 0.012);
+      bowler.position.y = 0.3;
+      h.add(bowler);
+      const brim = rounded(new THREE.CylinderGeometry(0.24, 0.24, 0.025, 18), toon('#2c2838'), 0.01);
+      brim.position.y = 0.3;
+      h.add(brim);
+      // Bigote
+      for (const side of [-1, 1]) {
+        const tuft = rounded(new THREE.SphereGeometry(0.06, 8, 6), toon('#d8d8d8'), 0.006);
+        tuft.scale.set(1.4, 0.55, 0.6);
+        tuft.position.set(side * 0.055, 0.09, 0.19);
+        tuft.rotation.z = side * -0.3;
+        h.add(tuft);
+      }
+      // Regadera verde en la mano
+      const can = new THREE.Group();
+      const tank = rounded(new THREE.CylinderGeometry(0.09, 0.1, 0.16, 12), toon('#4f8f3a'), 0.01);
+      can.add(tank);
+      const spout = rounded(new THREE.CylinderGeometry(0.015, 0.025, 0.22, 6), toon('#4f8f3a'), 0.006);
+      spout.rotation.z = -1.0;
+      spout.position.set(0.13, 0.05, 0);
+      can.add(spout);
+      const handle = rounded(new THREE.TorusGeometry(0.07, 0.014, 6, 12, Math.PI), toon('#3a6f2c'), 0.006);
+      handle.position.y = 0.08;
+      can.add(handle);
+      can.position.set(0.02, -0.38, 0.06);
+      this.armR.add(can);
     } else {
       const crown = rounded(new THREE.CylinderGeometry(0.15, 0.15, 0.24, 16), toon('#1d1630'), 0.014);
       crown.position.y = 0.42;
