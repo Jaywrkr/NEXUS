@@ -61,6 +61,7 @@ class Game {
     return new WorldMode(this.input, {
       tunnel: (s, t) => this.openTunnel(s, t),
       museum: () => this.transition(() => this.enterMuseum()),
+      card: (id) => this.showCard(id),
     });
   }
 
@@ -149,6 +150,7 @@ class Game {
     $('optBack').addEventListener('click', () => this.showSheet('menuMain'));
     $('mTitle').addEventListener('click', () => {
       this.closeMenu();
+      this.world.exitVoltio();
       this.transition(() => {
         this.setMode('title');
         const has = this.world.progress.hasProgress();
@@ -158,6 +160,10 @@ class Game {
       });
     });
     $('mapBack').addEventListener('click', () => this.closeMenu());
+    $('cardOk').addEventListener('click', () => {
+      $('cardPop').hidden = true;
+      this.closeMenu();
+    });
     // Tocar fuera de la hoja cierra
     for (const id of ['menu', 'mapPanel']) {
       $(id).addEventListener('click', (e) => {
@@ -215,6 +221,7 @@ class Game {
     this.paused = false;
     this.mapOpen = false;
     $('menu').hidden = true;
+    $('cardPop').hidden = true;
     $('mapPanel').hidden = true;
     document.body.classList.remove('paused');
     this.input.flush();
@@ -246,7 +253,28 @@ class Game {
     });
   }
 
+  /** Carta del Chispi rescatado: pausa el mundo hasta tocar «¡Genial!». */
+  private showCard(id: string): void {
+    const cards: Record<string, { name: string; type: string; text: string }> = {
+      rueditas: {
+        name: 'Rueditas',
+        type: 'Chispi de Ruedas · ★',
+        text: 'Le encanta la velocidad y hacer chispas al frenar. Lo encontraste en el Skatepark, atrapado por la Estática.',
+      },
+    };
+    const c = cards[id] ?? { name: id, type: 'Chispi', text: '' };
+    $('cardName').textContent = c.name;
+    $('cardType').textContent = c.type;
+    $('cardText').textContent = c.text;
+    drawChispiCard($('cardArt') as HTMLCanvasElement);
+    this.paused = true;
+    document.body.classList.add('paused');
+    $('cardPop').hidden = false;
+    this.input.flush();
+  }
+
   private enterMuseum(): void {
+    this.world.exitVoltio();
     this.setMode('museum');
     this.museum.enter(this.world.progress);
   }
@@ -297,6 +325,61 @@ class Game {
         break;
     }
   }
+}
+
+/** Dibujo de Rueditas para la carta (bolita de luz con ruedas, criatura original). */
+function drawChispiCard(canvas: HTMLCanvasElement): void {
+  const g = canvas.getContext('2d');
+  if (!g) return;
+  const W = canvas.width;
+  const H = canvas.height;
+  g.clearRect(0, 0, W, H);
+  for (let i = 0; i < 18; i += 1) {
+    g.fillStyle = i % 2 ? '#ffe066' : '#7dffef';
+    g.globalAlpha = 0.5;
+    g.fillRect((i * 53) % W, (i * 37) % H, 4, 4);
+  }
+  g.globalAlpha = 1;
+  const glowG = g.createRadialGradient(W / 2, 92, 10, W / 2, 92, 80);
+  glowG.addColorStop(0, 'rgba(155,231,255,0.9)');
+  glowG.addColorStop(1, 'rgba(155,231,255,0)');
+  g.fillStyle = glowG;
+  g.fillRect(0, 0, W, H);
+  g.fillStyle = '#9be7ff';
+  g.strokeStyle = '#1d1630';
+  g.lineWidth = 5;
+  g.beginPath();
+  g.arc(W / 2, 92, 50, 0, Math.PI * 2);
+  g.fill();
+  g.stroke();
+  g.fillStyle = '#1d1630';
+  g.beginPath();
+  g.ellipse(W / 2 - 17, 86, 7, 11, 0, 0, Math.PI * 2);
+  g.ellipse(W / 2 + 17, 86, 7, 11, 0, 0, Math.PI * 2);
+  g.fill();
+  g.lineWidth = 4;
+  g.beginPath();
+  g.arc(W / 2, 104, 12, 0.15 * Math.PI, 0.85 * Math.PI);
+  g.stroke();
+  for (const dx of [-32, 32]) {
+    g.fillStyle = '#ff9f43';
+    g.beginPath();
+    g.arc(W / 2 + dx, 154, 17, 0, Math.PI * 2);
+    g.fill();
+    g.stroke();
+    g.fillStyle = '#1d1630';
+    g.beginPath();
+    g.arc(W / 2 + dx, 154, 5, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.fillStyle = '#ffe066';
+  g.beginPath();
+  for (let i = 0; i < 8; i += 1) {
+    const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
+    const r = i % 2 ? 6 : 14;
+    g.lineTo(W / 2 + Math.cos(a) * r, 30 + Math.sin(a) * r);
+  }
+  g.fill();
 }
 
 new Game();

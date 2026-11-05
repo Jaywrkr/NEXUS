@@ -47,6 +47,7 @@ export const TUNNEL_THEMES: Record<string, TunnelTheme> = {
   fountain: { name: 'Cable de agua', base: '#04121f', near: '#5ec8ff', pulse: '#d6f4ff', spark: '#8fe3ff', bg: '#031019', deco: 'burbujas' },
   beacon: { name: 'Cable de radio', base: '#0f0820', near: '#b77cff', pulse: '#ffd1ff', spark: '#e0b0ff', bg: '#0a0516', deco: 'ondas' },
   bridge: { name: 'Cable del bosque', base: '#06150a', near: '#7be07a', pulse: '#e8ffb0', spark: '#b6ff8a', bg: '#041008', deco: 'hojas' },
+  skate: { name: 'Cable grafiti', base: '#140a04', near: '#ff9f43', pulse: '#d8ff6a', spark: '#7dff8a', bg: '#0d0703', deco: 'estrellas' },
   garden: { name: 'Cable de flores', base: '#1a0712', near: '#ff8fc8', pulse: '#fff0a8', spark: '#ffb3da', bg: '#12040c', deco: 'petalos' },
 };
 
@@ -58,13 +59,15 @@ export interface TunnelPlan {
   seed: number;
 }
 
-/** Arma una carrera nueva para un lugar: forma al azar (distinta a la anterior) y la dificultad pedida. */
-let lastShape: TunnelShape | null = null;
+/** Arma una carrera nueva para un lugar: forma al azar (distinta a las dos anteriores) y la dificultad pedida. */
+// Las dos últimas formas (una carrera que se rearma más fácil tras dos choques también cuenta)
+const recentShapes: TunnelShape[] = [];
 export function planTunnel(zone: string, difficulty: number, seed = Math.floor(Math.random() * 1e9)): TunnelPlan {
   const rng = mulberry(seed);
-  let shape = SHAPES[Math.floor(rng() * SHAPES.length)];
-  if (shape === lastShape) shape = SHAPES[(SHAPES.indexOf(shape) + 1 + Math.floor(rng() * 3)) % SHAPES.length];
-  lastShape = shape;
+  const options = SHAPES.filter((sh) => !recentShapes.includes(sh));
+  const shape = options[Math.floor(rng() * options.length)];
+  recentShapes.push(shape);
+  if (recentShapes.length > 2) recentShapes.shift();
   return { theme: TUNNEL_THEMES[zone] ?? TUNNEL_THEMES.plaza, shape, difficulty: clamp(difficulty, 0, 1), seed };
 }
 

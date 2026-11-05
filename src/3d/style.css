@@ -924,3 +924,109 @@ body.calm #title h1 {
     transform: none;
   }
 }
+
+/* ---------- Fase 1: Mundo Voltio y cartas ---------- */
+#volt {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  color: #7dffef;
+}
+body.voltio #volt {
+  display: flex;
+}
+#voltTrack {
+  width: 92px;
+  height: 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+#voltFill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ff4fd8, #7dffef);
+  transition: width 0.2s linear;
+}
+#voltFill.low {
+  background: #ff4f6a;
+}
+.volt-btn {
+  display: none;
+  gap: 2px;
+  place-items: center;
+  padding: 10px 16px;
+  font-size: 22px;
+  color: #7dffef;
+  background: #1d1630;
+  border: 3px solid #7dffef;
+  box-shadow: 4px 4px 0 #ff4fd8;
+}
+.volt-btn small {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+body.has-hood .volt-btn {
+  display: grid;
+}
+body.voltio .volt-btn {
+  background: #7dffef;
+  color: #1d1630;
+}
+body.touch .volt-btn {
+  width: calc(72px * var(--btn-scale));
+  height: calc(72px * var(--btn-scale));
+  border-radius: 50%;
+  padding: 0;
+}
+body.voltio .objective {
+  border: 3px solid #7dffef;
+  box-shadow: 0 0 0 2px rgba(125, 255, 239, 0.35);
+}
+.chispi-card {
+  width: min(84vw, 320px);
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 16px 16px 18px;
+  border-radius: 22px;
+  border: 6px solid #ffc23a;
+  background: linear-gradient(160deg, #2a2146, #1d1630 60%, #3a1f5a);
+  color: var(--cream);
+  box-shadow: 0 0 0 3px var(--ink), 8px 8px 0 var(--ink), 0 0 40px rgba(125, 255, 239, 0.45);
+  animation: card-in 0.5s cubic-bezier(0.2, 1.4, 0.4, 1);
+  text-align: center;
+}
+@keyframes card-in {
+  from {
+    transform: rotateY(90deg) scale(0.6);
+    opacity: 0;
+  }
+}
+.chispi-card h2 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 30px;
+  color: var(--sun);
+}
+.chispi-card canvas {
+  width: 100%;
+  max-width: 240px;
+  border-radius: 14px;
+  background: radial-gradient(circle at 50% 45%, #3c6a8a, #1d1630 70%);
+}
+.card-kicker {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 15px;
+  color: #7dffef;
+}
+.card-type {
+  margin: 0;
+  font-weight: 800;
+  color: #ff9f43;
+}
+.card-text {
+  margin: 0 0 6px;
+  font-size: 15px;
+}

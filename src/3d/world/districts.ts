@@ -21,7 +21,7 @@ export interface District {
 export const DISTRICTS: District[] = [
   { id: 'centro', name: 'Centro', minX: -45, maxX: 46, minZ: -45, maxZ: 63, open: true, color: '#7bd389' },
   { id: 'camino-skate', name: 'Camino al Skatepark', minX: 46, maxX: 62, minZ: -8, maxZ: 8, open: true, color: '#c9b37a' },
-  { id: 'skatepark', name: 'Skatepark', minX: 62, maxX: 120, minZ: -30, maxZ: 30, open: false, color: '#ff9f43' },
+  { id: 'skatepark', name: 'Skatepark', minX: 62, maxX: 120, minZ: -30, maxZ: 30, open: true, color: '#ff9f43' },
   { id: 'parque', name: 'Parque de diversiones', minX: -40, maxX: 40, minZ: -110, maxZ: -45, open: false, color: '#ff6b81' },
   { id: 'cerro', name: 'Cerro y cascada', minX: -110, maxX: -45, minZ: -40, maxZ: 40, open: false, color: '#7ed6df' },
   { id: 'estacion', name: 'Estación de tren', minX: 46, maxX: 110, minZ: 30, maxZ: 70, open: false, color: '#c7a17a' },

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { makeBoard } from '../objects/skate';
 import { box, glow, rounded, toon } from '../core/render';
 import { clamp, damp, dampAngle } from '../core/util';
 
@@ -66,6 +67,17 @@ export class Nexus3D {
   charge = 0;
   private chargePulse = 0;
   private readonly packGlow: THREE.Mesh;
+  private hoodBack!: THREE.Mesh;
+  private readonly hoodUp = new THREE.Group();
+  readonly board = makeBoard();
+  /** Multiplica la velocidad al caminar (Mundo Voltio: más rápido). */
+  speedScale = 1;
+  /** Andando en patineta. */
+  riding = false;
+  /** Deslizando por una baranda. */
+  grinding = false;
+  /** Cuánto se inclina la patineta al doblar (−1..1). */
+  lean = 0;
   /** En el aire (saltando o cayendo): piernas recogidas y brazos abiertos. */
   airborne = false;
   /** Colgado de la tirolesa: brazos arriba, piernas colgando. */
@@ -134,6 +146,7 @@ export class Nexus3D {
     hood.rotation.x = -Math.PI / 2 - 0.3;
     hood.position.set(0, 0.68, -0.1);
     this.body.add(hood);
+    this.hoodBack = hood;
 
     // Brazos (pivote en el hombro) con guantes oscuros
     for (const [arm, x] of [[this.armL, 0.2], [this.armR, -0.2]] as const) {
@@ -290,6 +303,29 @@ export class Nexus3D {
     }
     this.body.add(this.head);
 
+    // Capucha puesta (Modo Voltio): cubre la cabeza dejando la cara al aire, con costuras de neón
+    const hoodGeo = new THREE.SphereGeometry(0.31, 22, 14, Math.PI / 2 + 1.0, Math.PI * 2 - 2.0, 0, Math.PI * 0.7);
+    const hoodUp = rounded(hoodGeo, toon(C.hoodie, 2), 0.016);
+    hoodUp.scale.set(1.08, 0.98, 1.05);
+    hoodUp.position.y = 0.25;
+    this.hoodUp.add(hoodUp);
+    for (const side of [-1, 1]) {
+      const seam = new THREE.Mesh(new THREE.TorusGeometry(0.315, 0.012, 4, 24, Math.PI * 0.62), glow('#5ee7ff'));
+      seam.rotation.set(0, side * 0.55, Math.PI * 0.19);
+      seam.position.y = 0.25;
+      this.hoodUp.add(seam);
+    }
+    const crest = new THREE.Mesh(new THREE.TorusGeometry(0.32, 0.014, 4, 24, Math.PI * 0.9), glow('#ff4fd8'));
+    crest.rotation.set(0, Math.PI / 2, Math.PI * 0.05);
+    crest.position.y = 0.25;
+    this.hoodUp.add(crest);
+    this.hoodUp.visible = false;
+    this.head.add(this.hoodUp);
+
+    // Patineta (se ve solo al andar en ella)
+    this.board.visible = false;
+    this.root.add(this.board);
+
     this.root.traverse((o) => {
       if ((o as THREE.Mesh).isMesh) o.castShadow = true;
     });
@@ -306,6 +342,16 @@ export class Nexus3D {
 
   get speed(): number {
     return Math.hypot(this.velocity.x, this.velocity.z);
+  }
+
+  /** Capucha arriba (Modo Voltio) o abajo. */
+  setHood(up: boolean): void {
+    this.hoodUp.visible = up;
+    this.hoodBack.visible = !up;
+  }
+
+  get hoodIsUp(): boolean {
+    return this.hoodUp.visible;
   }
 
   /** Baile corto (unos 2,4 s). */
@@ -343,8 +389,8 @@ export class Nexus3D {
 
   /** dir: dirección deseada en el plano XZ (magnitud 0..1). */
   move(dirX: number, dirZ: number, dt: number): void {
-    const tx = dirX * SPEED;
-    const tz = dirZ * SPEED;
+    const tx = dirX * SPEED * this.speedScale;
+    const tz = dirZ * SPEED * this.speedScale;
     this.velocity.x = damp(this.velocity.x, tx, ACCEL, dt);
     this.velocity.z = damp(this.velocity.z, tz, ACCEL, dt);
     this.root.position.x += this.velocity.x * dt;
@@ -405,7 +451,7 @@ export class Nexus3D {
     this.cable.geometry = new THREE.TubeGeometry(this.cableCurve, 12, 0.014, 6);
 
     // En el aire: piernas recogidas, brazos abiertos (parece que vuela)
-    if (this.airborne && !this.hanging) {
+    if (this.airborne && !this.hanging && !this.riding) {
       this.legL.rotation.x = 0.7;
       this.legR.rotation.x = -0.25;
       this.armL.rotation.z = 0.9;
@@ -413,6 +459,27 @@ export class Nexus3D {
       this.armL.rotation.x = this.armR.rotation.x = -0.3;
       this.body.rotation.x = -0.05;
       this.earL.rotation.x = this.earR.rotation.x = -0.9;
+    }
+    // En patineta: de costado, un pie adelante y otro atrás, brazos abiertos para el equilibrio
+    this.board.visible = this.riding;
+    if (this.riding) {
+      const crouch = this.grinding ? 0.12 : this.airborne ? 0.08 : 0.03;
+      this.body.position.y = 0.15 - crouch + Math.sin(this.time * 3) * 0.008;
+      this.body.rotation.y = 0.9;
+      this.body.rotation.z = this.lean * 0.25;
+      this.legL.rotation.set(0.45, 0, 0.12);
+      this.legR.rotation.set(-0.4, 0, -0.12);
+      this.armL.rotation.set(-0.2, 0, 1.0 + this.lean * 0.3);
+      this.armR.rotation.set(0.2, 0, -1.0 + this.lean * 0.3);
+      this.head.rotation.y = -0.8;
+      this.board.rotation.z = -this.lean * 0.12;
+      this.board.rotation.x = this.airborne && !this.grinding ? -0.15 : 0;
+      this.earL.rotation.x = this.earR.rotation.x = -0.4 - Math.min(1, this.speed / 8) * 0.6;
+    } else {
+      this.body.rotation.z = 0;
+      this.body.rotation.y = 0;
+      this.head.rotation.y = 0;
+      this.legL.rotation.z = this.legR.rotation.z = 0;
     }
     // Colgado de la tirolesa: las dos manos arriba en el cable, piernas que se mecen
     if (this.hanging) {

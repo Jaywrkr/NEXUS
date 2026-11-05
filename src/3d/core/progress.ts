@@ -15,12 +15,16 @@ interface State3D {
   sparks: string[];
   /** Qué tan difícil sale la próxima carrera de luz (0..1): sube al ganar y baja al fallar. */
   tunnelSkill: number;
+  /** Cosas destrabadas (patineta, capucha, trucos, circuitos del Mundo Voltio...). */
+  flags: string[];
+  /** Chispis rescatados en el Mundo Voltio (serán cartas). */
+  chispis: string[];
 }
 
 /** Cuántas chispitas entran en la mochila. */
 export const MAX_CHARGE = 5;
 
-const empty = (): State3D => ({ fragmentsCollected: [], seenCompletion: false, connections: [], heard: [], charge: 0, sparks: [], tunnelSkill: 0.15 });
+const empty = (): State3D => ({ fragmentsCollected: [], seenCompletion: false, connections: [], heard: [], charge: 0, sparks: [], tunnelSkill: 0.15, flags: [], chispis: [] });
 
 /**
  * Progreso guardado de la versión 3D, separado del de la 2D. Guarda fragmentos, festejo final,
@@ -50,6 +54,8 @@ export class Progress3D {
         charge: typeof parsed.charge === 'number' ? Math.max(0, Math.min(MAX_CHARGE, Math.floor(parsed.charge))) : 0,
         sparks: strings(parsed.sparks),
         tunnelSkill: typeof parsed.tunnelSkill === 'number' ? Math.max(0, Math.min(1, parsed.tunnelSkill)) : 0.15,
+        flags: strings(parsed.flags),
+        chispis: strings(parsed.chispis),
       };
     } catch {
       return empty();
@@ -79,7 +85,7 @@ export class Progress3D {
   }
 
   hasProgress(): boolean {
-    return this.state.fragmentsCollected.length > 0 || this.state.connections.length > 0;
+    return this.state.fragmentsCollected.length > 0 || this.state.connections.length > 0 || this.state.flags.length > 0;
   }
 
   hasSeenCompletion(): boolean {
@@ -146,6 +152,32 @@ export class Progress3D {
   set tunnelSkill(v: number) {
     this.state.tunnelSkill = Math.max(0, Math.min(1, v));
     this.save();
+  }
+
+  /* ---------- Cosas destrabadas y Chispis ---------- */
+
+  hasFlag(id: string): boolean {
+    return this.state.flags.includes(id);
+  }
+
+  setFlag(id: string): void {
+    if (this.hasFlag(id)) return;
+    this.state.flags.push(id);
+    this.save();
+  }
+
+  hasChispi(id: string): boolean {
+    return this.state.chispis.includes(id);
+  }
+
+  rescueChispi(id: string): void {
+    if (this.hasChispi(id)) return;
+    this.state.chispis.push(id);
+    this.save();
+  }
+
+  get chispis(): string[] {
+    return [...this.state.chispis];
   }
 
   /** Vista compatible con el GameState de la 2D (para `residentLine`, `hasChapterConnection`...). */

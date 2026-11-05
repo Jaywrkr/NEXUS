@@ -10,7 +10,7 @@ export interface ResidentLook {
   hair: string;
   /** 1 = normal; >1 = más ancho (Bombo). */
   girth?: number;
-  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor';
+  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor' | 'skater';
 }
 
 export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
@@ -23,6 +23,8 @@ export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
   // Don Paso: se cree celebridad; galera, lentes oscuros y moño
   'don-paso': { body: '#f2c14e', pants: '#3a3d48', skin: '#d9a77e', hair: '#d8d8d8', accessory: 'tophat' },
   // Alcalde Goteo: confunde tener un aspersor con gobernar; banda de alcalde, bombín, bigote y regadera
+  // Rulo: patinador del Skatepark (Fase 1); gorra al revés, rodilleras y muñequeras
+  rulo: { body: '#ff9f43', pants: '#2c3f66', skin: '#b9825f', hair: '#1d1630', accessory: 'skater' },
   goteo: { body: '#4d6b8a', pants: '#2c3040', skin: '#e3a986', hair: '#bdbdbd', girth: 1.15, accessory: 'mayor' },
 };
 
@@ -271,6 +273,30 @@ export class Resident3D {
       const star = new THREE.Mesh(new THREE.CircleGeometry(0.03, 5), toon('#ffd23a'));
       star.position.set(-0.07, 0.62, 0.14 * this.g + 0.01);
       this.body.add(star);
+    } else if (kind === 'skater') {
+      // Gorra al revés (la visera mira hacia atrás)
+      const cap = rounded(new THREE.SphereGeometry(0.235, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon('#7dff8a'), 0.014);
+      cap.position.y = 0.2;
+      h.add(cap);
+      const visor = box(0.24, 0.025, 0.18, '#3d3550', { outline: 0.01 });
+      visor.position.set(0, 0.22, -0.26);
+      h.add(visor);
+      // Remera con raya, rodilleras y muñequeras
+      const stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.168, 0.168, 0.05, 18, 1, true), toon('#fff3dc'));
+      stripe.scale.set(1.06, 1, 0.87);
+      stripe.position.y = 0.58;
+      this.body.add(stripe);
+      for (const lx of [0.08, -0.08]) {
+        const pad = rounded(new THREE.SphereGeometry(0.06, 10, 8), toon('#3d3550'), 0.008);
+        pad.scale.set(1, 0.8, 0.7);
+        pad.position.set(lx, 0.22, 0.05);
+        this.body.add(pad);
+      }
+      for (const arm of [this.armL, this.armR]) {
+        const band = rounded(new THREE.CylinderGeometry(0.045, 0.045, 0.06, 10), toon('#7dff8a'), 0.006);
+        band.position.y = -0.28;
+        arm.add(band);
+      }
     } else if (kind === 'mayor') {
       // Banda cruzada roja con borde dorado
       const sash = box(0.07, 0.5, 0.36, '#c8452f', { outline: false });

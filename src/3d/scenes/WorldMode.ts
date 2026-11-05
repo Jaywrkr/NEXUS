@@ -27,6 +27,10 @@ import type { MapData } from '../ui/MapView';
 import { districtAt } from '../world/districts';
 import { BRIDGE_X, CANAL_MAX_Z } from '../world/World';
 import { CANAL_MIN_Z, ZIP_SAG } from '../world/World';
+import { SkateRamp, makeBoard } from '../objects/skate';
+import { Skate, type Trick } from '../systems/Skate';
+import { MAX_VOLT, Voltio } from '../systems/Voltio';
+import type { InteriorInfo } from '../world/MigaHouse';
 
 const INTERACT_REACH = 2.2; // metros desde el borde del objeto
 const NEXUS_RADIUS = 0.32;
@@ -53,7 +57,22 @@ export interface WorldCallbacks {
   tunnel: (source: Connectable, target: Connectable) => void;
   /** Ir al museo (tras recoger un fragmento). */
   museum: () => void;
+  /** Mostrar la carta de un Chispi rescatado (pausa el mundo hasta cerrarla). */
+  card?: (id: string) => void;
 }
+
+/** Una habitación que se visita: dónde está su puerta afuera y cuándo se abre. */
+interface Interior {
+  id: string;
+  info: InteriorInfo;
+  door: { x: number; z: number };
+  out: { x: number; z: number };
+  open: () => boolean;
+  story: [string, string];
+}
+
+const TRICKS: Trick[] = ['ollie', 'air', 'grind'];
+const TRICK_NAMES: Record<Trick, string> = { ollie: 'Ollie', air: '¡Vuelo!', grind: 'Grind' };
 
 /**
  * El mundo jugable: el barrio, el Nexus, las 4 zonas con sus reglas de conexión,
@@ -87,10 +106,18 @@ export class WorldMode {
   private hintRing: THREE.Mesh | null = null;
   private hintTimer = 0;
   private hintTarget = new THREE.Vector3();
-  /** Adentro de la casa de Miga (Fase 0: primer interior). */
-  private inside = false;
+  /** Habitación en la que está el Nexus (null = afuera). */
+  private inside: Interior | null = null;
+  private interiors: Interior[] = [];
+  /* Fase 1: Skatepark, patineta y Mundo Voltio */
+  private readonly skate = new Skate();
+  private readonly ramp: SkateRamp;
+  private readonly voltio: Voltio;
+  private boardPickup: THREE.Group | null = null;
+  private nearBoard = false;
+  private boardToggle: 'on' | 'off' | null = null;
   private isoOutside = true;
-  private doorway: 'enter' | 'exit' | null = null;
+  private doorway: { kind: 'enter' | 'exit'; room: Interior } | null = null;
   private introShown = false;
   private time = 0;
   private busy = false;
@@ -180,6 +207,10 @@ export class WorldMode {
     this.flowerBed = new FlowerBed('garden-bed', -13, 54);
     this.flowerBed.facePlug(-5.6, 54.2);
     this.world.rects.push({ minX: -16.7, maxX: -9.3, minZ: 52.3, maxZ: 55.7 });
+    // Skatepark (Fase 1): la rampa grande revive con cable desde su fuente
+    const sk = this.world.skate;
+    const skateSource = new EnergySource('skate-source', sk.source.x, sk.source.z);
+    this.ramp = new SkateRamp('skate-ramp', sk.ramp.x, sk.ramp.z);
 
     const labels: [Connectable, string][] = [
       [source, 'Energía'], [this.lamp, 'Farola'], [this.door, 'Puerta'],
@@ -187,10 +218,11 @@ export class WorldMode {
       [beaconA, 'Energía'], [beaconB, 'Energía'], [decoy, 'Energía'], [this.beacon, 'Antena'],
       [bridgeSource, 'Energía'], [this.bridge, 'Palanca del puente'],
       [gardenSource, 'Energía'], [this.sprinkler, 'Aspersor'], [this.flowerBed, 'Flores'],
+      [skateSource, 'Energía'], [this.ramp, 'Rampa'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -204,6 +236,7 @@ export class WorldMode {
     this.connections.addRule({ sourceId: bridgeSource.id, targetId: this.bridge.id, useTunnel: true });
     this.connections.addRule({ sourceId: gardenSource.id, targetId: this.sprinkler.id, useTunnel: true });
     this.connections.addRule({ sourceId: this.sprinkler.id, targetId: this.flowerBed.id, useTunnel: true });
+    this.connections.addRule({ sourceId: skateSource.id, targetId: this.ramp.id, useTunnel: true });
     this.bigSteps = [
       { s: source, t: this.lamp, sName: 'la energía de la plaza', tName: 'la farola' },
       { s: this.lamp, t: this.door, sName: 'la farola', tName: 'la puerta de la casa' },
@@ -213,6 +246,7 @@ export class WorldMode {
       { s: bridgeSource, t: this.bridge, sName: 'la energía junto al canal', tName: 'la palanca del puente' },
       { s: gardenSource, t: this.sprinkler, sName: 'la energía del jardín', tName: 'el aspersor' },
       { s: this.sprinkler, t: this.flowerBed, sName: 'el aspersor', tName: 'las flores' },
+      { s: skateSource, t: this.ramp, sName: 'la energía del skatepark', tName: 'la rampa grande' },
     ];
 
     // Fragmentos: uno por zona + el secreto detrás de la casa (Decisión 019), que ya está visible
@@ -234,11 +268,14 @@ export class WorldMode {
     this.pickups = new SparkPickups(scene, this.world);
     this.buildSleepers();
     this.playground = new Playground(scene, this.world, this.audio);
+    this.voltio = this.makeVoltio();
+    this.setupSkatepark();
 
     LIFE.reset();
     this.restoreProgress({ source, fountainSource, beaconA, beaconB, bridgeSource, gardenSource });
     this.makeLabels();
     this.placeResidents();
+    this.setupInteriors();
     this.setView(this.iso);
     this.el.story?.addEventListener('click', () => this.hideStory());
 
@@ -297,6 +334,8 @@ export class WorldMode {
   }
 
   private statusMessage(): string {
+    const st = this.skateStep();
+    if (st) return st.text;
     const done = this.zonesDone();
     if (done === ZONE_COUNT) return 'Ya le devolviste la vida a todo el barrio';
     if (done === 0) return 'El barrio está triste y sin color. Conecta la fuente con la farola';
@@ -401,6 +440,11 @@ export class WorldMode {
       reveal(GARDEN_ID);
       zoneLife(-11, 54, 16);
       say('¡El jardín volvió a florecer! Acércate al fragmento');
+    }
+    if (target === this.ramp) {
+      this.addLife(80, 0, 24, animate);
+      if (animate) after(0.6, () => this.pickups.burst(4, target.x, target.z + 1.5, 1.6));
+      say('¡El Skatepark volvió a la vida! Las rampas brillan otra vez');
     }
     if (target === this.bridge) {
       this.world.openBridgeGap();
@@ -513,7 +557,13 @@ export class WorldMode {
     let where: { x: number; z: number } | null = null;
     if (this.inside) {
       this.showStory('Pista', 'Para volver al barrio, pisá el felpudo amarillo de la puerta.');
-      this.pointTo(this.world.interior.exit.x, this.world.interior.exit.z);
+      this.pointTo(this.inside.info.exit.x, this.inside.info.exit.z);
+      return;
+    }
+    const st = this.skateStep();
+    if (st) {
+      this.showStory('Pista', st.text);
+      if (st.at) this.pointTo(st.at.x, st.at.z);
       return;
     }
     const sel = this.connections.selection;
@@ -592,20 +642,52 @@ export class WorldMode {
   /* ---------- Interiores: la casa de Miga ---------- */
 
   get isInside(): boolean {
-    return this.inside;
+    return this.inside !== null;
+  }
+
+  /** Las habitaciones que se visitan: la casa de Miga (Fase 0) y la sala del skatepark (Fase 1). */
+  private setupInteriors(): void {
+    const sala = this.world.skate.sala;
+    this.interiors = [
+      {
+        id: 'casa-miga',
+        info: this.world.interior,
+        door: { x: this.door.x, z: this.door.z + 0.9 },
+        out: { x: this.door.x, z: this.door.z + 1.6 },
+        open: () => this.door.isActive,
+        story: [
+          'Miga · Mi casa',
+          '¡Bienvenido a mi casa! Fue lo primero que volvió a tener color. En ese banco arreglo cosas… y dicen que arriba se escondió una chispita. ¿Llegás saltando?',
+        ],
+      },
+      {
+        id: 'sala-skate',
+        info: this.world.skate.room,
+        door: { x: sala.doorX, z: sala.doorZ + 0.9 },
+        out: { x: sala.doorX, z: sala.doorZ + 1.8 },
+        open: () => this.progress.hasFlag('sala-open'),
+        story: [
+          'Rulo · La sala',
+          '¡Abriste mi sala! Acá guardo los trofeos y practico en la mini rampa. Arriba de las cajas brilla algo… ¿una chispita?',
+        ],
+      },
+    ];
   }
 
   /** ¿El Nexus está en una puerta que se puede cruzar? (más cerca que cualquier objeto) */
-  private findDoorway(objD: number): 'enter' | 'exit' | null {
-    if (this.busy || this.zip || this.connections.hasSelection()) return null;
+  private findDoorway(objD: number): { kind: 'enter' | 'exit'; room: Interior } | null {
+    if (this.busy || this.zip || this.connections.hasSelection() || this.voltio.active) return null;
     const p = this.nexus.position;
     if (this.inside) {
-      const e = this.world.interior.exit;
-      return Math.hypot(p.x - e.x, p.z - e.z) < 1.4 ? 'exit' : null;
+      const e = this.inside.info.exit;
+      return Math.hypot(p.x - e.x, p.z - e.z) < 1.4 ? { kind: 'exit', room: this.inside } : null;
     }
-    if (!this.door.isActive) return null;
-    const d = Math.hypot(p.x - this.door.x, p.z - (this.door.z + 0.9));
-    return d < 1.7 && d <= objD + 0.6 ? 'enter' : null;
+    for (const room of this.interiors) {
+      if (!room.open()) continue;
+      const d = Math.hypot(p.x - room.door.x, p.z - room.door.z);
+      if (d < 1.7 && d <= objD + 0.6) return { kind: 'enter', room };
+    }
+    return null;
   }
 
   /** Fundido corto y el Nexus aparece del otro lado de la puerta. */
@@ -624,36 +706,35 @@ export class WorldMode {
     }, 280);
   }
 
-  enterHouse(): void {
+  enterHouse(room = this.interiors[0]): void {
     if (this.inside) return;
+    this.dismount();
     this.crossDoor(() => {
-      this.inside = true;
+      this.inside = room;
       this.isoOutside = this.iso;
       this.iso = true;
-      const sp = this.world.interior.spawn;
+      const sp = room.info.spawn;
       this.nexus.position.set(sp.x, 0, sp.z);
       this.nexus.velocity.set(0, 0, 0);
       this.nexus.heading = Math.PI;
       this.hintTimer = 0;
       document.body.classList.add('inside');
-      if (!this.progress.hasHeard('casa-miga')) {
-        this.progress.markHeard('casa-miga');
-        this.showStory(
-          'Miga · Mi casa',
-          '¡Bienvenido a mi casa! Fue lo primero que volvió a tener color. En ese banco arreglo cosas… y dicen que arriba se escondió una chispita. ¿Llegás saltando?',
-        );
+      if (!this.progress.hasHeard(room.id)) {
+        this.progress.markHeard(room.id);
+        this.showStory(room.story[0], room.story[1]);
       } else {
-        this.toast('Casa de Miga', 'info');
+        this.toast(room.story[0].split(' · ')[1] ?? room.story[0], 'info');
       }
     });
   }
 
   leaveHouse(): void {
-    if (!this.inside) return;
+    const room = this.inside;
+    if (!room) return;
     this.crossDoor(() => {
-      this.inside = false;
+      this.inside = null;
       this.iso = this.isoOutside;
-      this.nexus.position.set(this.door.x, 0, this.door.z + 1.6);
+      this.nexus.position.set(room.out.x, 0, room.out.z);
       this.nexus.velocity.set(0, 0, 0);
       this.nexus.heading = 0;
       this.camYaw = 0;
@@ -668,10 +749,11 @@ export class WorldMode {
     const d = districtAt(p.x, p.z);
     if (!d || d.id === this.districtId) return;
     this.districtId = d.id;
+    if (this.eventTimer <= 0) this.showObjective();
     const banner = document.getElementById('districtBanner');
     if (!banner) return;
     banner.hidden = false;
-    banner.innerHTML = `${d.name}${d.id === 'camino-skate' ? '<small>el skatepark abre muy pronto</small>' : ''}`;
+    banner.innerHTML = `${d.name}${d.id === 'camino-skate' ? '<small>las rampas te esperan</small>' : ''}`;
     // reiniciar la animación
     banner.style.animation = 'none';
     void banner.offsetWidth;
@@ -680,13 +762,14 @@ export class WorldMode {
 
   /** Datos para dibujar el mapa. */
   mapData(): MapData {
-    const n = this.inside ? { x: this.door.x, z: this.door.z + 1 } : this.nexus.position;
+    const n = this.inside ? this.inside.out : this.nexus.position;
     const places = [
       { name: 'Plaza', x: -18, z: -22, alive: this.door.isActive },
       { name: 'Fuente', x: -20, z: 16, alive: this.fountain.isActive },
       { name: 'Antena', x: 27, z: -18, alive: this.beacon.isFullyActive },
       { name: 'Puente', x: 17, z: 30, alive: this.bridge.isActive },
       { name: 'Jardín', x: -11, z: 54, alive: this.flowerBed.isActive },
+      { name: 'Skatepark', x: 82, z: -12, alive: this.ramp.isActive },
     ];
     return {
       life: (x, z) => LIFE.at(x, z),
@@ -701,6 +784,7 @@ export class WorldMode {
 
   /** Gestos desde el menú. */
   dance(): void {
+    this.dismount();
     if (!this.zip && this.grounded) this.danceParty();
   }
 
@@ -709,14 +793,281 @@ export class WorldMode {
     this.audio.tone(880, 0, 0.1, 'triangle', 0.06);
   }
 
+  /* ---------- Fase 1: Skatepark, patineta y Mundo Voltio (PLAN_MAESTRO.md) ---------- */
+
+  private makeVoltio(): Voltio {
+    return new Voltio(
+      this.world.scene,
+      this.world.skate,
+      {
+        rescue: (id, x, z) => this.onRescue(id, x, z),
+        circuit: () => {
+          this.progress.setFlag('sala-open');
+          this.openShutter(true);
+          this.audio.playSuccess();
+          this.setMessage('¡Circuito cerrado! Afuera se abrió la sala del skatepark');
+          this.refreshObjectiveSoon();
+        },
+        zap: () => {
+          this.audio.tone(90, 0, 0.25, 'sawtooth', 0.08);
+          this.audio.noise(0, 0.3, 0.08, 1800);
+          this.exitVoltio('¡Bzzzt! Una Estática te tocó y volviste al mundo normal');
+        },
+        staticBroken: (x, z) => {
+          this.pickups.burst(3, x, z, 1.2);
+          this.audio.tone(1320, 0, 0.1, 'square', 0.05);
+          this.setMessage('¡Rompiste una Estática! Se volvió chispitas');
+        },
+        loop: () => {
+          this.audio.tone(660, 0, 0.08, 'sine', 0.07);
+          this.audio.tone(990, 0.06, 0.1, 'sine', 0.07);
+        },
+        node: (n, total) => {
+          this.audio.tone(520 + n * 160, 0, 0.14, 'triangle', 0.08);
+          this.toast(`Nodo ${n} de ${total}`, 'ok');
+        },
+      },
+      { rescued: this.progress.hasChispi('rueditas'), circuit: this.progress.hasFlag('sala-open') },
+    );
+  }
+
+  private setupSkatepark(): void {
+    const sk = this.world.skate;
+    if (!this.progress.hasFlag('board')) {
+      const b = makeBoard();
+      b.position.set(sk.board.x, 0.1, sk.board.z);
+      b.rotation.set(0, 0.6, 0.12);
+      keepVivid(b);
+      this.world.scene.add(b);
+      this.boardPickup = b;
+    }
+    if (this.progress.hasFlag('sala-open')) this.openShutter(false);
+    const rs = sk.room.spark;
+    if (!this.progress.hasSpark(rs.id)) this.pickups.addHidden(rs.id, rs.x, rs.z, rs.y);
+    document.body.classList.toggle('has-hood', this.progress.hasFlag('hood'));
+    document.getElementById('voltBtn')?.addEventListener('click', () => this.input.queueVolt());
+  }
+
+  /** La persiana de la sala sube (o ya está arriba al cargar). */
+  private openShutter(animate: boolean): void {
+    const sh = this.world.skate.sala.shutter;
+    if (!animate) {
+      sh.position.y = 2.5;
+      sh.scale.y = 0.15;
+      return;
+    }
+    const y0 = sh.position.y;
+    tween(1.2, (k) => {
+      sh.position.y = y0 + (2.5 - y0) * k;
+      sh.scale.y = 1 - 0.85 * k;
+    });
+  }
+
+  get hasBoard(): boolean {
+    return this.progress.hasFlag('board');
+  }
+
+  get riding(): boolean {
+    return this.nexus.riding;
+  }
+
+  /** Subirse a la patineta. */
+  mount(): void {
+    if (!this.hasBoard || this.nexus.riding || this.inside || this.zip) return;
+    this.nexus.riding = true;
+    this.skate.reset();
+    this.skate.speed = Math.min(this.nexus.speed, 4);
+    this.audio.tone(330, 0, 0.08, 'triangle', 0.06);
+    this.audio.tone(440, 0.05, 0.08, 'triangle', 0.06);
+  }
+
+  /** Bajarse de la patineta (la lleva en la mochila). */
+  dismount(): void {
+    if (!this.nexus.riding) return;
+    this.nexus.riding = false;
+    this.nexus.grinding = false;
+    this.nexus.lean = 0;
+    this.skate.reset();
+  }
+
+  private takeBoard(): void {
+    if (this.hasBoard) return;
+    this.progress.setFlag('board');
+    if (this.boardPickup) {
+      this.world.scene.remove(this.boardPickup);
+      this.boardPickup = null;
+    }
+    this.nexus.reach();
+    this.audio.playCollect();
+    this.showStory('Rulo', '¡Es tuya! Andá con el joystick y saltá con SALTAR. Mostrame tres trucos: un ollie, un vuelo en una rampita y un grind en una baranda.');
+    this.mount();
+    this.refreshObjectiveSoon();
+  }
+
+  /** Un truco en patineta: los tres de Rulo destraban la capucha. */
+  private onTrick(kind: Trick): void {
+    this.audio.tone(880, 0, 0.08, 'square', 0.04);
+    this.audio.tone(1175, 0.06, 0.1, 'square', 0.04);
+    const flag = `trick-${kind}`;
+    if (this.progress.hasFlag(flag)) return;
+    this.progress.setFlag(flag);
+    const done = TRICKS.filter((t) => this.progress.hasFlag(`trick-${t}`)).length;
+    this.toast(`${TRICK_NAMES[kind]} — truco ${done} de 3`, 'ok');
+    this.nexus.sparkle();
+    if (done === TRICKS.length && !this.progress.hasFlag('hood')) {
+      this.progress.setFlag('hood');
+      document.body.classList.add('has-hood');
+      this.audio.playSuccess();
+      after(0.6, () => {
+        this.nexus.celebrate();
+        this.showStory(
+          'Rulo',
+          '¡Qué estilo! … Ey, ¿qué le pasa a tu capucha? ¡Está brillando! Ponétela con ⚡ (Q): dicen que con ella se ven los cables de la ciudad… y que la Estática atrapó a un Chispi acá.',
+        );
+      });
+    }
+    this.refreshObjectiveSoon();
+  }
+
+  get voltioActive(): boolean {
+    return this.voltio.active;
+  }
+
+  toggleVoltio(): void {
+    if (this.voltio.active) this.exitVoltio();
+    else this.enterVoltio();
+  }
+
+  enterVoltio(): void {
+    if (!this.progress.hasFlag('hood') || this.voltio.active) return;
+    if (this.inside) {
+      this.toast('Acá adentro no hay cables: probá afuera', 'info');
+      return;
+    }
+    if (this.busy || this.zip) return;
+    if (this.voltio.voltage < 3) {
+      this.toast('Tu capucha se está recargando…', 'info');
+      return;
+    }
+    this.connections.cancel();
+    this.voltio.enter();
+    this.nexus.setHood(true);
+    this.nexus.speedScale = 1.5;
+    document.body.classList.add('voltio');
+    this.audio.tone(220, 0, 0.3, 'sawtooth', 0.05);
+    this.audio.tone(440, 0.12, 0.25, 'sawtooth', 0.05);
+    this.audio.tone(880, 0.24, 0.2, 'triangle', 0.06);
+    if (!this.progress.hasFlag('voltio-seen')) {
+      this.progress.setFlag('voltio-seen');
+      this.showStory(
+        'Voltio',
+        '¡Estás adentro de los cables! Corré y vas a dejar una estela de luz. Si cerrás un círculo, rompés la Estática que quede adentro. ¡No dejes que te toque! La barra ⚡ dice cuánto podés quedarte.',
+      );
+    }
+    this.showObjective();
+  }
+
+  exitVoltio(reason?: string): void {
+    if (!this.voltio.active) return;
+    this.voltio.exit();
+    this.nexus.setHood(false);
+    this.nexus.speedScale = 1;
+    document.body.classList.remove('voltio');
+    this.audio.tone(660, 0, 0.15, 'triangle', 0.05);
+    this.audio.tone(330, 0.1, 0.2, 'triangle', 0.05);
+    if (reason) this.setMessage(reason);
+    else this.showObjective();
+  }
+
+  private onRescue(id: string, x: number, z: number): void {
+    this.progress.rescueChispi(id);
+    this.audio.playSuccess();
+    this.connections.celebrate(new THREE.Vector3(x, 1.2, z));
+    this.pickups.burst(3, x, z, 1.2);
+    this.setMessage('¡Rescataste a Rueditas, un Chispi de Ruedas!');
+    this.cb.card?.(id);
+    this.refreshObjectiveSoon();
+  }
+
+  private refreshObjectiveSoon(): void {
+    if (this.eventTimer <= 0) this.showObjective();
+    after(5.2, () => {
+      if (this.eventTimer <= 0) this.showObjective();
+    });
+  }
+
+  private get inSkatepark(): boolean {
+    return this.districtId === 'skatepark' || this.districtId === 'camino-skate';
+  }
+
+  /** Lo que conviene hacer en el skatepark (o en el Mundo Voltio), en orden. */
+  private skateStep(): { text: string; at: { x: number; z: number } | null } | null {
+    const p = this.progress;
+    const sk = this.world.skate;
+    if (this.voltio.active) {
+      if (this.voltio.chispiCaged) return { text: 'Cerrá un círculo con tu estela alrededor de la jaula del Chispi', at: sk.chispi };
+      if (!p.hasFlag('sala-open')) {
+        const n = this.voltio.litNodes;
+        return { text: `Tocá los tres nodos del circuito frente a la sala (${n}/3)`, at: sk.nodes[Math.min(n, 2)] };
+      }
+      return { text: 'Encerrá Estáticas con tu estela: se vuelven chispitas', at: null };
+    }
+    if (!this.inSkatepark) return null;
+    if (!p.hasFlag('board')) return { text: 'Hablá con Rulo y agarrá su patineta', at: sk.board };
+    if (!p.hasFlag('hood')) {
+      const done = TRICKS.filter((t) => p.hasFlag(`trick-${t}`)).length;
+      const next = TRICKS.find((t) => !p.hasFlag(`trick-${t}`));
+      const at = next === 'air' ? sk.kickers[0] : next === 'grind' ? { x: sk.rails[0].ax + 4, z: sk.rails[0].az } : null;
+      return { text: `Trucos para Rulo (${done}/3): ollie, volar en una rampita y grindar una baranda`, at };
+    }
+    if (!p.hasFlag('voltio-seen')) return { text: '¡Tu capucha brilla! Apretá ⚡ para entrar al Mundo Voltio', at: null };
+    if (!p.hasChispi('rueditas')) return { text: 'Entrá al Mundo Voltio ⚡ y rescatá al Chispi atrapado', at: sk.chispi };
+    if (!p.hasFlag('sala-open')) return { text: 'En el Mundo Voltio ⚡, cerrá el circuito de la sala', at: sk.nodes[0] };
+    if (!this.ramp.isActive) return { text: 'Conectá la energía del skatepark con la rampa grande', at: sk.source };
+    return { text: '¡El Skatepark volvió! Probá trucos y visitá la sala', at: null };
+  }
+
+  private ruloText(): string {
+    const p = this.progress;
+    if (!p.hasFlag('board')) {
+      return '¡Ey! Soy Rulo. Desde que se apagó la Gran Chispa, el Skatepark está muerto… Mi patineta vieja está ahí al lado: ¡agarrala y mostrame qué sabés hacer!';
+    }
+    if (!p.hasFlag('hood')) {
+      const done = TRICKS.filter((t) => p.hasFlag(`trick-${t}`)).length;
+      return `Tres trucos: un ollie (saltá andando), volar en una rampita y grindar una baranda (caé sobre ella yendo a lo largo). Llevás ${done} de 3.`;
+    }
+    if (!p.hasChispi('rueditas')) return 'Con la capucha puesta (⚡) vas a ver la jaula de Estática. Corré a su alrededor: si cerrás el círculo con tu estela, se rompe.';
+    if (!p.hasFlag('sala-open')) return 'Mi sala está cerrada desde el apagón. En el Mundo Voltio hay tres nodos frente a la puerta… tocalos todos.';
+    if (!this.ramp.isActive) return 'Falta lo más importante: llevá la energía de la estrella hasta la rampa grande.';
+    return '¡El Skatepark volvió! Sos el mejor patinador del barrio.';
+  }
+
   /* ---------- Saltar, tirolesa y bailar (Decisión 042) ---------- */
 
   /** Gravedad, salto y plataformas (bancos, tachos, autos). */
   private updateVertical(dt: number): void {
     const p = this.nexus.position;
+    // Grindando una baranda: no hay gravedad hasta llegar a la punta (o saltar)
+    if (this.skate.grinding) {
+      if (this.input.consumeJump()) {
+        this.skate.leaveGrind();
+        this.vy = JUMP_V;
+        this.grounded = false;
+      } else if (this.skate.updateGrind(this.nexus, dt)) {
+        this.vy = 3.5;
+        this.grounded = false;
+      } else {
+        this.nexus.airborne = false;
+        this.nexus.grinding = true;
+        this.audio.noise(0, 0.05, 0.015, 4000);
+        return;
+      }
+      this.nexus.grinding = false;
+    }
     if (this.input.consumeJump() && this.grounded && !this.busy && !this.nexus.dancing) {
-      this.vy = JUMP_V;
+      this.vy = JUMP_V * (this.voltio.active ? 1.2 : 1);
       this.grounded = false;
+      if (this.nexus.riding) this.onTrick('ollie');
       this.audio.tone(520, 0, 0.12, 'triangle', 0.06);
       this.audio.tone(780, 0.05, 0.1, 'triangle', 0.05);
     }
@@ -734,6 +1085,25 @@ export class WorldMode {
       this.grounded = true;
     } else {
       this.grounded = false;
+    }
+    // Patineta: rampitas que hacen volar y barandas para grindar
+    if (this.nexus.riding) {
+      const sk = this.world.skate;
+      if (this.grounded) {
+        const v = this.skate.kick(this.nexus, sk.kickers);
+        if (v > 0) {
+          this.vy = v;
+          this.grounded = false;
+          this.audio.tone(392, 0, 0.1, 'triangle', 0.06);
+          this.audio.tone(784, 0.08, 0.16, 'triangle', 0.06);
+          this.onTrick('air');
+        }
+      } else if (this.vy < 0 && this.skate.tryGrind(this.nexus, sk.rails, this.vy)) {
+        this.vy = 0;
+        this.nexus.grinding = true;
+        this.audio.noise(0, 0.25, 0.05, 3500);
+        this.onTrick('grind');
+      }
     }
     this.nexus.airborne = !this.grounded;
   }
@@ -1074,7 +1444,9 @@ export class WorldMode {
             ? 'beacon'
             : target === this.bridge
               ? 'bridge'
-              : 'garden';
+              : target === this.ramp
+                ? 'skate'
+                : 'garden';
     return planTunnel(zone, this.progress.tunnelSkill);
   }
 
@@ -1184,6 +1556,12 @@ export class WorldMode {
       this.world.scene.add(r.root);
       this.residents.push(r);
     }
+    // Rulo, el patinador del Skatepark (Fase 1)
+    const rs = this.world.skate.rulo;
+    const rulo = new Resident3D('rulo', 'Rulo', rs.x, rs.z, Math.atan2(rs.faceX - rs.x, rs.faceZ - rs.z));
+    rulo.setHeard(this.progress.hasHeard('rulo'));
+    this.world.scene.add(rulo.root);
+    this.residents.push(rulo);
     this.updateResidentMoods(true);
   }
 
@@ -1195,11 +1573,13 @@ export class WorldMode {
       vera: this.beacon.isFullyActive,
       'don-paso': this.bridge.isActive,
       goteo: this.flowerBed.isActive,
+      rulo: this.ramp.isActive,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
 
   private residentText(r: Resident3D): string {
+    if (r.id === 'rulo') return this.ruloText();
     const info = RESIDENTS.find((i) => i.id === r.id)!;
     // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
     if (r.id === 'bombo' && !this.fountain.isActive) {
@@ -1230,6 +1610,8 @@ export class WorldMode {
         ['Nido', '✨', '#ffe066'],
         ['Mochila', '🎒', '#ffc23a'],
         ['Pista', '💡', '#ffc23a'],
+        ['Rulo', '🛹', '#ff9f43'],
+        ['Voltio', '⚡', '#7dffef'],
       ];
       const f = faces.find(([k]) => who.includes(k));
       face.textContent = f ? f[1] : '💬';
@@ -1301,7 +1683,7 @@ export class WorldMode {
 
   /** Tocar/clic directo sobre un objeto (a cualquier distancia, como en el 2D). */
   private onTap(e: PointerEvent): void {
-    if (this.busy || !document.body.classList.contains('mode-world')) return;
+    if (this.busy || this.voltio.active || !document.body.classList.contains('mode-world')) return;
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     const ndc = new THREE.Vector2(((e.clientX - rect.left) / rect.width) * 2 - 1, -((e.clientY - rect.top) / rect.height) * 2 + 1);
     this.raycaster.setFromCamera(ndc, this.camera);
@@ -1334,12 +1716,14 @@ export class WorldMode {
     for (const r of this.residents) r.update(dt, this.nexus.position);
     this.updateCameras(dt);
     this.updateLife(dt);
+    this.voltio.update(dt, this.time, this.nexus.position);
     this.world.update(dt, this.time, this.nexus.position, this.camera.position);
   }
 
   update(dt: number): void {
     this.time += dt;
     if (this.input.consumeView() && !this.inside) this.setView(!this.iso);
+    if (this.input.consumeVolt()) this.toggleVoltio();
 
     // Movimiento relativo a la cámara
     const mv = this.input.move;
@@ -1362,11 +1746,21 @@ export class WorldMode {
       this.updateZip(dt);
     } else {
       const still = this.busy || this.nexus.dancing;
-      this.nexus.move(still ? 0 : dirX, still ? 0 : dirZ, dt);
-      this.world.resolve(this.nexus.position, NEXUS_RADIUS, blockers, this.nexus.position.y);
+      if (this.nexus.riding) {
+        if (!this.skate.grinding) {
+          this.skate.move(this.nexus, still ? 0 : dirX, still ? 0 : dirZ, dt, !this.grounded, this.voltio.active ? 1.25 : 1);
+          const wantX = this.nexus.position.x;
+          const wantZ = this.nexus.position.z;
+          this.world.resolve(this.nexus.position, NEXUS_RADIUS, blockers, this.nexus.position.y);
+          if (Math.hypot(this.nexus.position.x - wantX, this.nexus.position.z - wantZ) > 0.03) this.skate.bonk();
+        }
+      } else {
+        this.nexus.move(still ? 0 : dirX, still ? 0 : dirZ, dt);
+        this.world.resolve(this.nexus.position, NEXUS_RADIUS, blockers, this.nexus.position.y);
+      }
       this.updateVertical(dt);
     }
-    if (this.input.consumeDance() && !this.busy && !this.zip && this.grounded) this.danceParty();
+    if (this.input.consumeDance() && !this.busy && !this.zip && this.grounded && !this.nexus.riding) this.danceParty();
     this.nexus.idleFacing = this.iso ? ISO_FACING : null;
     this.nexus.animate(dt);
     this.playground.update(dt, this.time, this.nexus.position, this.nexus.velocity, blockers);
@@ -1403,24 +1797,48 @@ export class WorldMode {
     const objD = this.nearest ? this.nearest.distanceFrom(p.x, p.z) : Infinity;
     this.nearestResident = resident && !this.connections.hasSelection() && Math.hypot(resident.x - p.x, resident.z - p.z) < objD ? resident : null;
     // Poste de luz cerca (y nada más cerca): el botón engancha la tirolesa
-    this.nearestPole = !this.zip && this.grounded && !this.nearestResident && !this.connections.hasSelection() ? this.findNearestPole(objD) : null;
+    this.nearestPole = !this.zip && this.grounded && !this.nexus.riding && !this.nearestResident && !this.connections.hasSelection() ? this.findNearestPole(objD) : null;
     this.doorway = this.findDoorway(objD);
     if (this.doorway) {
       this.nearestResident = null;
       this.nearestPole = null;
     }
+    // En el Mundo Voltio no se conecta ni se habla: solo se dibuja con la estela
+    if (this.voltio.active) {
+      this.nearest = null;
+      this.nearestResident = null;
+      this.nearestPole = null;
+    }
+    const sk = this.world.skate;
+    const boardD = Math.hypot(p.x - sk.board.x, p.z - sk.board.z);
+    const residentD = this.nearestResident ? Math.hypot(this.nearestResident.x - p.x, this.nearestResident.z - p.z) : Infinity;
+    this.nearBoard = !this.hasBoard && !this.voltio.active && !this.doorway && boardD < 1.8 && boardD < residentD;
+    if (this.nearBoard) this.nearestResident = null;
+    this.boardToggle = null;
+    if (this.hasBoard && !this.inside && !this.zip && !this.busy && this.grounded && !this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway && !this.connections.hasSelection()) {
+      this.boardToggle = this.nexus.riding ? 'off' : 'on';
+    }
     if (this.input.consumeInteract() && !this.busy && !this.zip) {
-      if (this.doorway === 'enter') this.enterHouse();
-      else if (this.doorway === 'exit') this.leaveHouse();
+      if (this.doorway?.kind === 'enter') this.enterHouse(this.doorway.room);
+      else if (this.doorway?.kind === 'exit') this.leaveHouse();
+      else if (this.nearBoard) this.takeBoard();
       else if (this.nearestResident) this.speak(this.nearestResident);
       else if (this.nearestPole) this.startZip(this.nearestPole);
       else if (this.nearest) this.interact(this.nearest);
+      else if (this.boardToggle === 'on') this.mount();
+      else if (this.boardToggle === 'off') this.dismount();
     }
     if (this.el.interact) {
-      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway) || this.busy || !!this.zip;
-      this.el.interact.textContent = this.doorway === 'enter'
+      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway && !this.nearBoard && !this.boardToggle) || this.busy || !!this.zip;
+      this.el.interact.textContent = this.nearBoard
+        ? 'Patineta'
+        : this.boardToggle && !this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway
+          ? this.boardToggle === 'on'
+            ? '🛹 Subir'
+            : 'Bajar'
+          : this.doorway?.kind === 'enter'
         ? 'Entrar'
-        : this.doorway === 'exit'
+        : this.doorway?.kind === 'exit'
           ? 'Salir'
           : this.nearestResident
         ? 'Hablar'
@@ -1431,6 +1849,16 @@ export class WorldMode {
             : 'Tocar';
     }
     this.checkFragments();
+
+    // Mundo Voltio
+    this.voltio.update(dt, this.time, this.nexus.position);
+    if (this.voltio.active && this.voltio.voltage <= 0) this.exitVoltio('Se acabó el voltaje ⚡: volviste al mundo normal');
+    const fill = document.getElementById('voltFill');
+    if (fill) {
+      const k = this.voltio.voltage / MAX_VOLT;
+      fill.style.width = `${Math.round(k * 100)}%`;
+      fill.classList.toggle('low', k < 0.25);
+    }
 
     if (this.eventTimer > 0) {
       this.eventTimer -= dt;
@@ -1537,6 +1965,7 @@ export class WorldMode {
     this.chaseCam.fov = aspect < 1 ? 70 : 55;
     this.chaseCam.updateProjectionMatrix();
     this.world.sky.visible = !this.iso;
+    renderer.voltio = this.voltio.amount;
     renderer.render(this.world.scene, this.camera, time, this.iso ? () => this.renderSilhouette(renderer) : undefined);
   }
 }

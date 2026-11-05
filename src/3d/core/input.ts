@@ -11,6 +11,7 @@ export class Input {
   private viewQueued = false;
   private jumpQueued = false;
   private danceQueued = false;
+  private voltQueued = false;
   readonly touch = isTouch();
 
   constructor() {
@@ -22,6 +23,7 @@ export class Input {
       if (e.code === 'Space') this.jumpQueued = true;
       if (e.code === 'KeyB') this.danceQueued = true;
       if (e.code === 'KeyV') this.viewQueued = true;
+      if (e.code === 'KeyQ') this.voltQueued = true;
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
     window.addEventListener('blur', () => this.keys.clear());
@@ -92,6 +94,16 @@ export class Input {
 
   queueInteract(): void {
     this.interactQueued = true;
+  }
+
+  queueVolt(): void {
+    this.voltQueued = true;
+  }
+
+  consumeVolt(): boolean {
+    const v = this.voltQueued;
+    this.voltQueued = false;
+    return v;
   }
 
   queueView(): void {

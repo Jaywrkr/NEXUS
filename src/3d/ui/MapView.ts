@@ -1,4 +1,5 @@
 import { DISTRICTS } from '../world/districts';
+import { SKATE_REGION } from '../world/Skatepark';
 
 /*
  * Mapa de la ciudad visto desde arriba (menú → Mapa, o tecla M). Muestra dónde volvió el color,
@@ -17,7 +18,7 @@ export interface MapData {
 }
 
 // Ventana del mapa: el Centro con un borde para asomar los distritos que vienen
-const VIEW = { minX: -70, maxX: 88, minZ: -68, maxZ: 90 };
+const VIEW = { minX: -70, maxX: 100, minZ: -72, maxZ: 98 };
 
 export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number): void {
   const ctx = canvas.getContext('2d');
@@ -55,15 +56,22 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
   }
   ctx.restore();
 
-  // Suelo del Centro: gris donde falta vida, verde donde volvió el color
+  // Suelo del Centro y del Skatepark: gris donde falta vida, verde (o naranja) donde volvió el color
   const step = 2;
   const center = DISTRICTS[0];
-  for (let x = center.minX; x < center.maxX; x += step) {
-    for (let z = center.minZ; z < center.maxZ; z += step) {
-      const l = data.life(x + 1, z + 1);
-      const g = 70 + l * 40;
-      ctx.fillStyle = `rgb(${Math.round(78 + l * 20)}, ${Math.round(g + l * 60)}, ${Math.round(88 - l * 20)})`;
-      ctx.fillRect(px(x), pz(z), step * sx + 0.5, step * sz + 0.5);
+  for (const [area, alive] of [
+    [center, [98, 170, 68]],
+    [SKATE_REGION, [200, 150, 90]],
+  ] as [{ minX: number; maxX: number; minZ: number; maxZ: number }, number[]][]) {
+    for (let x = area.minX; x < area.maxX; x += step) {
+      for (let z = area.minZ; z < area.maxZ; z += step) {
+        const l = data.life(x + 1, z + 1);
+        const r = Math.round(78 + (alive[0] - 78) * l);
+        const g = Math.round(70 + (alive[1] - 70) * l);
+        const b = Math.round(88 + (alive[2] - 88) * l);
+        ctx.fillStyle = `rgb(${r}, ${g}, ${b})`;
+        ctx.fillRect(px(x), pz(z), step * sx + 0.5, step * sz + 0.5);
+      }
     }
   }
   // Camino al skatepark

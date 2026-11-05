@@ -27,50 +27,92 @@ export interface InteriorInfo {
   spark: { id: string; x: number; z: number; y: number };
 }
 
-export function buildMigaHouse(scene: THREE.Scene, rects: Rect[]): InteriorInfo {
+export interface RoomSpec {
+  cx: number;
+  cz: number;
+  w: number;
+  d: number;
+  wall: string;
+  low: string;
+  trim: string;
+  floor: string[];
+  base: string;
+  /** Hueco de la puerta en la pared sur: x desde..hasta. */
+  doorFrom: number;
+  doorTo: number;
+}
+
+export interface RoomKit {
+  g: THREE.Group;
+  x0: number;
+  x1: number;
+  z0: number;
+  z1: number;
+  add: <T extends THREE.Object3D>(m: T, x: number, y: number, z: number) => T;
+  solid: (cx: number, cz: number, w: number, d: number, h?: number) => void;
+}
+
+/**
+ * Caja de una habitación "maqueta": fondo oscuro, piso de tablas, paredes altas al norte y al oeste,
+ * bajitas al sur (con hueco de puerta) y al este, para que la cámara isométrica vea adentro.
+ */
+export function roomShell(rects: Rect[], r: RoomSpec): RoomKit {
   const g = new THREE.Group();
-  const x0 = ROOM_X - W / 2;
-  const x1 = ROOM_X + W / 2;
-  const z0 = ROOM_Z - D / 2;
-  const z1 = ROOM_Z + D / 2;
-  const add = (m: THREE.Object3D, x: number, y: number, z: number) => {
+  const x0 = r.cx - r.w / 2;
+  const x1 = r.cx + r.w / 2;
+  const z0 = r.cz - r.d / 2;
+  const z1 = r.cz + r.d / 2;
+  const add = <T extends THREE.Object3D>(m: T, x: number, y: number, z: number): T => {
     m.position.set(x, y, z);
     g.add(m);
     return m;
   };
-  const solid = (cx: number, cz: number, w: number, d: number, h?: number) =>
+  const solid = (cx: number, cz: number, w: number, d: number, h?: number) => {
     rects.push({ minX: cx - w / 2, maxX: cx + w / 2, minZ: cz - d / 2, maxZ: cz + d / 2, h });
+  };
 
-  // Fondo oscuro alrededor: la casa flota como una maqueta
+  // Fondo oscuro alrededor: la habitación flota como una maqueta
   const voidPlane = new THREE.Mesh(new THREE.PlaneGeometry(240, 240), new THREE.MeshBasicMaterial({ color: '#211a38', fog: false }));
   voidPlane.rotation.x = -Math.PI / 2;
-  add(voidPlane, ROOM_X, 0.012, ROOM_Z);
+  add(voidPlane, r.cx, 0.012, r.cz);
 
-  // Piso de tablas
-  const base = box(W + 0.8, 0.4, D + 0.8, '#5b3b2a', { outline: 0.04, cast: false });
-  add(base, ROOM_X, -0.2, ROOM_Z);
-  const planks = ['#c98f5a', '#b97f4d', '#d29a63'];
-  for (let i = 0; i < 12; i += 1) {
-    const p = box(W / 12 - 0.03, 0.04, D, planks[i % 3], { outline: false, cast: false, brush: 2 });
-    add(p, x0 + (i + 0.5) * (W / 12), 0.02, ROOM_Z);
+  add(box(r.w + 0.8, 0.4, r.d + 0.8, r.base, { outline: 0.04, cast: false }), r.cx, -0.2, r.cz);
+  const n = Math.round(r.w);
+  for (let i = 0; i < n; i += 1) {
+    const p = box(r.w / n - 0.03, 0.04, r.d, r.floor[i % r.floor.length], { outline: false, cast: false, brush: 2 });
+    add(p, x0 + (i + 0.5) * (r.w / n), 0.02, r.cz);
   }
 
-  // Paredes: altas al norte y al oeste, bajitas al sur y al este
-  const wallMat = toon('#f3d9b1', 3);
+  const wallMat = toon(r.wall, 3);
+  const trim = toon(r.trim);
+  add(box(r.w + 0.8, WALL, 0.4, '', { mat: wallMat, outline: 0.04 }), r.cx, WALL / 2, z0 - 0.2);
+  add(box(0.4, WALL, r.d + 0.8, '', { mat: wallMat, outline: 0.04 }), x0 - 0.2, WALL / 2, r.cz);
+  add(box(r.w + 0.8, 0.18, 0.08, '', { mat: trim, outline: false }), r.cx, 0.5, z0 + 0.02);
+  add(box(0.08, 0.18, r.d + 0.8, '', { mat: trim, outline: false }), x0 + 0.02, 0.5, r.cz);
+  const low = toon(r.low, 3);
+  add(box(r.doorFrom - x0 + 0.4, 0.55, 0.4, '', { mat: low, outline: 0.04 }), (x0 - 0.4 + r.doorFrom) / 2, 0.27, z1 + 0.2);
+  add(box(x1 + 0.4 - r.doorTo, 0.55, 0.4, '', { mat: low, outline: 0.04 }), (r.doorTo + x1 + 0.4) / 2, 0.27, z1 + 0.2);
+  add(box(0.4, 0.55, r.d + 0.8, '', { mat: low, outline: 0.04 }), x1 + 0.2, 0.27, r.cz);
+  // Felpudo de salida (brilla)
+  add(box(r.doorTo - r.doorFrom - 0.2, 0.04, 0.9, '', { mat: flat('#ffc23a'), outline: 0.02, cast: false }), (r.doorFrom + r.doorTo) / 2, 0.04, z1 - 0.3);
+  return { g, x0, x1, z0, z1, add, solid };
+}
+
+export function buildMigaHouse(scene: THREE.Scene, rects: Rect[]): InteriorInfo {
+  const { g, x0, x1, z0, z1, add, solid } = roomShell(rects, {
+    cx: ROOM_X,
+    cz: ROOM_Z,
+    w: W,
+    d: D,
+    wall: '#f3d9b1',
+    low: '#e7c79c',
+    trim: '#2bb3a8',
+    floor: ['#c98f5a', '#b97f4d', '#d29a63'],
+    base: '#5b3b2a',
+    doorFrom: 302,
+    doorTo: 304,
+  });
   const trim = toon('#2bb3a8');
-  const north = box(W + 0.8, WALL, 0.4, '', { mat: wallMat, outline: 0.04 });
-  add(north, ROOM_X, WALL / 2, z0 - 0.2);
-  const west = box(0.4, WALL, D + 0.8, '', { mat: wallMat, outline: 0.04 });
-  add(west, x0 - 0.2, WALL / 2, ROOM_Z);
-  for (const [m, x, z] of [
-    [box(W + 0.8, 0.18, 0.08, '', { mat: trim, outline: false }), ROOM_X, z0 + 0.02],
-    [box(0.08, 0.18, D + 0.8, '', { mat: trim, outline: false }), x0 + 0.02, ROOM_Z],
-  ] as [THREE.Mesh, number, number][]) add(m, x, 0.5, z);
-  const low = toon('#e7c79c', 3);
-  // Sur: con un hueco para la puerta de salida (x 302..304)
-  add(box(302 - x0 + 0.4, 0.55, 0.4, '', { mat: low, outline: 0.04 }), (x0 - 0.4 + 302) / 2, 0.27, z1 + 0.2);
-  add(box(x1 + 0.4 - 304, 0.55, 0.4, '', { mat: low, outline: 0.04 }), (304 + x1 + 0.4) / 2, 0.27, z1 + 0.2);
-  add(box(0.4, 0.55, D + 0.8, '', { mat: low, outline: 0.04 }), x1 + 0.2, 0.27, ROOM_Z);
 
   // Ventana al norte con luz de día
   add(box(2.6, 1.6, 0.1, '#ffffff', { mat: flat('#bfe6ff'), outline: false }), ROOM_X - 1.5, 1.9, z0 + 0.03);
@@ -169,10 +211,6 @@ export function buildMigaHouse(scene: THREE.Scene, rects: Rect[]): InteriorInfo 
     add(leaf, x0 + 0.6 + Math.cos(i * 1.3) * 0.18, 0.85 + (i % 2) * 0.25, z1 - 0.7 + Math.sin(i * 1.3) * 0.18);
   }
   rects.push({ minX: x0 + 0.25, maxX: x0 + 0.95, minZ: z1 - 1.05, maxZ: z1 - 0.35 });
-
-  // Felpudo de salida (brilla)
-  const mat = box(1.8, 0.04, 0.9, '#ffc23a', { mat: flat('#ffc23a'), outline: 0.02, cast: false });
-  add(mat, 303, 0.04, z1 - 0.3);
 
   keepVivid(g);
   scene.add(g);

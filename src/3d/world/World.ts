@@ -3,6 +3,7 @@ import { batchStatic } from '../core/batch';
 import { FOG_COLOR, FOG_FAR, FOG_NEAR, LIFE, box, flat, gradientMap, makeSky, outline, outlineScaled, rounded, sharedOutline, toon, toonUnique, withLife } from '../core/render';
 import { clamp, pick, rnd } from '../core/util';
 import { buildMigaHouse, type InteriorInfo } from './MigaHouse';
+import { SKATE_REGION, buildSkatepark, type SkateparkInfo } from './Skatepark';
 
 export interface Rect {
   minX: number;
@@ -31,9 +32,15 @@ const ON_TOP = 0.05;
 export const BOUNDS = 45;
 /** El barrio crece hacia el sur (distrito del jardín, al otro lado del canal). */
 export const BOUNDS_MAX_Z = 63;
-/** La calle este-oeste sigue más allá del Centro hasta el portón del Skatepark (Fase 0). */
-export const EAST_ROAD_END = 57.5;
-export const SKATE_GATE_X = 61.5;
+/**
+ * Por dónde se puede caminar afuera: el Centro, la calle del este y el Skatepark (Fase 1).
+ * Fuera de estas zonas el resolve empuja al Nexus al punto más cercano de alguna.
+ */
+const REGIONS: Rect[] = [
+  { minX: -BOUNDS, maxX: BOUNDS, minZ: -BOUNDS, maxZ: BOUNDS_MAX_Z },
+  { minX: BOUNDS - 1, maxX: SKATE_REGION.minX + 1, minZ: -(4 + 2.4 - 0.3), maxZ: 4 + 2.4 - 0.3 },
+  SKATE_REGION,
+];
 /** Jardín municipal (zona 5): borde de cercos, entradas al norte y al este. */
 export const GARDEN = { minX: -26, maxX: 4, minZ: 47, maxZ: 61.5 };
 const ROAD = 4; // media calzada
@@ -75,6 +82,10 @@ export class World {
   readonly rects: Rect[] = [];
   /** Interiores que se pueden visitar (por ahora, la casa de Miga). */
   readonly interior: InteriorInfo;
+  /** Todas las habitaciones visitables (casa de Miga, sala del skatepark...). */
+  readonly rooms: InteriorInfo[] = [];
+  /** Skatepark: rampitas, barandas, sala, nodos del circuito... */
+  readonly skate: SkateparkInfo;
   readonly circles: Circle[] = [];
   readonly sun: THREE.DirectionalLight;
   readonly sky: THREE.Mesh;
@@ -138,12 +149,13 @@ export class World {
     this.buildGardenSet();
     this.buildHouses();
     this.buildShops();
-    this.buildSkateGate();
     this.buildPolesAndCars();
     this.scatterNature();
     this.buildButterflies();
     this.rects.push(this.bridgeGap);
     this.interior = buildMigaHouse(s, this.rects);
+    this.skate = buildSkatepark(s, this.rects);
+    this.rooms.push(this.interior, this.skate.room);
 
     // Rendimiento: toda la escenografía quieta se junta en pocas mallas.
     // Lo que se anima (árbol de la plaza, ventana, mariposas, nubes) queda marcado como dinámico.
@@ -179,23 +191,40 @@ export class World {
         pos.z = c.z + (dz / d) * min;
       }
     }
-    const room = this.interior.room;
-    if (pos.x > room.minX - 8) {
-      // Adentro de una casa: las paredes son el límite
-      pos.x = clamp(pos.x, room.minX + r, room.maxX - r);
-      pos.z = clamp(pos.z, room.minZ + r, room.maxZ - r);
-      return;
+    for (const { room } of this.rooms) {
+      if (pos.x > room.minX - 8 && pos.x < room.maxX + 8) {
+        // Adentro de una casa: las paredes son el límite
+        pos.x = clamp(pos.x, room.minX + r, room.maxX - r);
+        pos.z = clamp(pos.z, room.minZ + r, room.maxZ - r);
+        return;
+      }
     }
-    pos.x = clamp(pos.x, -BOUNDS, EAST_ROAD_END);
-    pos.z = clamp(pos.z, -BOUNDS, BOUNDS_MAX_Z);
-    // Más allá del borde este solo existe el camino: si se sale por los dos lados, empuja por el más corto
-    const half = ROAD + WALK - 0.3;
-    const ex = pos.x - BOUNDS;
-    const ez = Math.abs(pos.z) - half;
-    if (ex > 0 && ez > 0) {
-      if (ex < ez) pos.x = BOUNDS;
-      else pos.z = Math.sign(pos.z) * half;
+    World.keepInRegions(pos);
+  }
+
+  /** Lleva un punto al lugar caminable más cercano (Centro, calle del este o Skatepark). */
+  static keepInRegions(pos: { x: number; z: number }): void {
+    let bx = pos.x;
+    let bz = pos.z;
+    let best = Infinity;
+    for (const g of REGIONS) {
+      const x = clamp(pos.x, g.minX, g.maxX);
+      const z = clamp(pos.z, g.minZ, g.maxZ);
+      const d = (x - pos.x) ** 2 + (z - pos.z) ** 2;
+      if (d < best) {
+        best = d;
+        bx = x;
+        bz = z;
+      }
+      if (d === 0) break;
     }
+    pos.x = bx;
+    pos.z = bz;
+  }
+
+  /** ¿El punto está en alguna zona caminable (con margen)? */
+  static inRegions(x: number, z: number, margin = 0): boolean {
+    return REGIONS.some((g) => x > g.minX + margin && x < g.maxX - margin && z > g.minZ + margin && z < g.maxZ - margin);
   }
 
   openBridgeGap(): void {
@@ -233,7 +262,7 @@ export class World {
       if (x > r.minX - margin && x < r.maxX + margin && z > r.minZ - margin && z < r.maxZ + margin) return false;
     }
     for (const c of this.circles) if (Math.hypot(x - c.x, z - c.z) < c.r + margin) return false;
-    return Math.abs(x) < BOUNDS - margin && z > -BOUNDS + margin && z < BOUNDS_MAX_Z - margin;
+    return World.inRegions(x, z, margin);
   }
 
   /** Lugar libre para decoración (árboles, arbustos): además evita calles y zonas reservadas. */
@@ -1132,60 +1161,6 @@ export class World {
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
-  }
-
-  /** Final del camino al este: portón cerrado del Skatepark, con cartel "¡muy pronto!". */
-  private buildSkateGate(): void {
-    const x = SKATE_GATE_X;
-    const half = ROAD + WALK;
-    const steel = toon('#3d3550');
-    const orange = toon('#ff9f43');
-    // Dos columnas y el arco
-    for (const side of [-1, 1]) {
-      const col = box(0.8, 4.4, 0.8, '', { mat: steel, outline: 0.03 });
-      col.position.set(x, 2.2, side * (half + 0.3));
-      this.scene.add(col);
-      const cap = box(1.2, 0.3, 1.2, '', { mat: orange, outline: 0.03 });
-      cap.position.set(x, 4.5, side * (half + 0.3));
-      this.scene.add(cap);
-      this.rects.push({ minX: x - 0.5, maxX: x + 0.5, minZ: side * (half + 0.3) - 0.5, maxZ: side * (half + 0.3) + 0.5 });
-    }
-    const beam = box(0.7, 0.9, half * 2 + 1.6, '', { mat: orange, outline: 0.03 });
-    beam.position.set(x, 4.8, 0);
-    this.scene.add(beam);
-    // Rampa de skate asomando detrás del portón
-    const ramp = new THREE.Mesh(new THREE.CylinderGeometry(3, 3, 9, 20, 1, true, Math.PI, Math.PI / 2), toon('#d9c7a4', 8));
-    ramp.rotation.x = Math.PI / 2;
-    ramp.position.set(x + 4.6, 3, -1.5);
-    ramp.material.side = THREE.DoubleSide;
-    this.scene.add(ramp);
-    // Valla a rayas que cierra el paso
-    const stripes: string[] = ['#f4efe6', '#e0563f'];
-    for (let i = 0; i < 9; i += 1) {
-      const seg = box(0.25, 0.5, (half * 2) / 9, stripes[i % 2], { outline: 0.015 });
-      seg.position.set(x - 0.2, 0.95, -half + (i + 0.5) * ((half * 2) / 9));
-      this.scene.add(seg);
-    }
-    for (const z of [-half + 0.6, 0, half - 0.6]) {
-      const leg = box(0.12, 0.7, 0.12, '', { mat: steel, outline: 0.01 });
-      leg.position.set(x - 0.2, 0.35, z);
-      this.scene.add(leg);
-    }
-    // Cartel al costado del camino, mirando a +Z (la cámara isométrica lo ve de frente)
-    const signX = x - 6;
-    const signZ = -half - 0.8;
-    for (const dx of [-2.2, 2.2]) {
-      const post = box(0.16, 2.4, 0.16, '', { mat: steel, outline: 0.012 });
-      post.position.set(signX + dx, 1.2, signZ);
-      this.scene.add(post);
-    }
-    const board = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 1.3), withLife(new THREE.MeshBasicMaterial({ map: this.signTexture('SKATEPARK', '#ff9f43') })));
-    board.position.set(signX, 2.5, signZ + 0.1);
-    this.scene.add(board);
-    const soon = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 0.9), withLife(new THREE.MeshBasicMaterial({ map: this.signTexture('¡MUY PRONTO!', '#3d3550') })));
-    soon.position.set(signX, 1.45, signZ + 0.1);
-    soon.rotation.z = -0.06;
-    this.scene.add(soon);
   }
 
   private buildShops(): void {

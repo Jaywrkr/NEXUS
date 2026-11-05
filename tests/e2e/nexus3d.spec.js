@@ -497,7 +497,7 @@ test('3D: menú de pausa, opciones, mapa y pista del objetivo', async ({ page })
   expect(await w(() => window.__nexus3d.world.nexus.position.toArray())).not.toEqual(before);
 });
 
-test('3D: la casa de Miga se visita y el camino llega al portón del skatepark', async ({ page }) => {
+test('3D: la casa de Miga se visita y la calle del este llega al skatepark', async ({ page }) => {
   const w = (fn, arg) => page.evaluate(fn, arg);
   await step(page, 0.1);
   await page.evaluate(() => document.getElementById('story').click());
@@ -529,7 +529,7 @@ test('3D: la casa de Miga se visita y el camino llega al portón del skatepark',
   const charge0 = await w(() => window.__nexus3d.world.charge);
   await tp(page, spark.x, spark.z + 1.2);
   await page.keyboard.down('KeyW');
-  await page.keyboard.press('Space');
+  await w(() => window.__nexus3d.world.jump());
   await step(page, 0.5);
   await page.keyboard.up('KeyW');
   await step(page, 1.5);
@@ -553,8 +553,8 @@ test('3D: la casa de Miga se visita y el camino llega al portón del skatepark',
   await page.keyboard.up('KeyD');
   await page.keyboard.up('KeyS');
   const end = await w(() => window.__nexus3d.world.nexus.position.toArray());
-  expect(end[0]).toBeGreaterThan(50);
-  expect(end[0]).toBeLessThan(58);
+  expect(end[0]).toBeGreaterThan(55);
+  expect(Math.abs(end[2])).toBeLessThan(6.5);
   expect(await text(page, 'districtBanner')).toContain('Skatepark');
   await tp(page, 43, -20);
   await page.keyboard.down('KeyD');
@@ -563,4 +563,159 @@ test('3D: la casa de Miga se visita y el camino llega al portón del skatepark',
   await page.keyboard.up('KeyD');
   await page.keyboard.up('KeyS');
   expect(await w(() => window.__nexus3d.world.nexus.position.x)).toBeLessThanOrEqual(45);
+});
+
+test('3D: skatepark — patineta, trucos de Rulo, capucha, Mundo Voltio, Chispi y circuito', async ({ page }) => {
+  test.setTimeout(300_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const flag = (f) => w((f) => window.__nexus3d.world.progress.hasFlag(f), f);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Por la calle del este se llega caminando al Skatepark
+  await tp(page, 56, 0);
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  await step(page, 2.2);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  expect(await w(() => window.__nexus3d.world.nexus.position.x)).toBeGreaterThan(62);
+  await step(page, 0.6);
+  expect(await text(page, 'districtBanner')).toContain('Skatepark');
+  expect(await text(page, 'msg')).toContain('Rulo');
+
+  // La patineta de Rulo
+  const board = await w(() => window.__nexus3d.world.world.skate.board);
+  await tp(page, board.x - 0.8, board.z + 0.4);
+  expect(await text(page, 'interact')).toBe('Patineta');
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.riding)).toBe(true);
+  expect(await flag('board')).toBe(true);
+  // Andar en patineta es más rápido que caminar
+  await tp(page, 66, 0);
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  await step(page, 1.6);
+  expect(await w(() => window.__nexus3d.world.nexus.speed)).toBeGreaterThan(6);
+  // Truco 1: ollie
+  await page.keyboard.press('Space');
+  await step(page, 0.1);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  await step(page, 1);
+  expect(await flag('trick-ollie')).toBe(true);
+
+  // Truco 2: volar en la rampita
+  const k = await w(() => window.__nexus3d.world.world.skate.kickers[0]);
+  await w(([x, z]) => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(x - 3, 0, z);
+    g.nexus.heading = Math.PI / 2;
+    g.skate.speed = 8;
+  }, [k.x, k.z]);
+  await step(page, 0.5);
+  expect(await flag('trick-air')).toBe(true);
+  await step(page, 1.5);
+
+  // Truco 3: grind en la baranda (cayendo sobre ella a lo largo)
+  const r = await w(() => window.__nexus3d.world.world.skate.rails[0]);
+  await w(([x, z, h]) => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(x + 2, h + 0.4, z);
+    g.nexus.heading = Math.PI / 2;
+    g.skate.speed = 7;
+    g.grounded = false;
+    g.vy = -1;
+  }, [r.ax, r.az, r.h]);
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.skate.grinding)).toBe(true);
+  expect(await flag('trick-grind')).toBe(true);
+  await step(page, 2.5);
+  expect(await w(() => window.__nexus3d.world.skate.grinding)).toBe(false);
+
+  // Los tres trucos destraban la capucha
+  expect(await flag('hood')).toBe(true);
+  expect(await mode(page)).toContain('has-hood');
+  await page.keyboard.press('KeyE'); // bajarse
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.riding)).toBe(false);
+
+  // Mundo Voltio
+  const sk = await w(() => {
+    const s = window.__nexus3d.world.world.skate;
+    return { chispi: s.chispi, nodes: s.nodes, door: [s.sala.doorX, s.sala.doorZ] };
+  });
+  // Las Estáticas se van lejos para que no molesten (después se prueba que tocan)
+  const parkStatics = () =>
+    w(() => window.__nexus3d.world.voltio.statics.forEach((s) => Object.assign(s, { x: 93, z: 11, tx: 93, tz: 11 })));
+  await tp(page, sk.chispi.x - 5, sk.chispi.z);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.voltioActive)).toBe(true);
+  expect(await mode(page)).toContain('voltio');
+  expect(await text(page, 'storyWho')).toBe('Voltio');
+  await page.evaluate(() => document.getElementById('story').click());
+  await parkStatics();
+
+  // Rescatar al Chispi: dar una vuelta completa alrededor de la jaula con la estela
+  for (let i = 0; i <= 22; i += 1) {
+    const a = (i / 20) * Math.PI * 2 + Math.PI;
+    await tp(page, sk.chispi.x + Math.cos(a) * 2.6, sk.chispi.z + Math.sin(a) * 2.6);
+  }
+  expect(await w(() => window.__nexus3d.world.progress.hasChispi('rueditas'))).toBe(true);
+  await expect.poll(() => w(() => document.getElementById('cardPop').hidden)).toBe(false);
+  expect(await text(page, 'cardName')).toBe('Rueditas');
+  await page.evaluate(() => document.getElementById('cardOk').click());
+  expect(await mode(page)).not.toContain('paused');
+
+  // Circuito: tocar los tres nodos abre la sala del skatepark
+  await parkStatics();
+  for (const n of sk.nodes) await tp(page, n.x, n.z);
+  await step(page, 0.1);
+  expect(await flag('sala-open')).toBe(true);
+  expect(await text(page, 'msg')).toContain('Circuito cerrado');
+
+  // Una Estática que toca al Nexus lo saca del Mundo Voltio
+  const st = await w(() => window.__nexus3d.world.voltio.staticSpots[0]);
+  await tp(page, st.x, st.z);
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.voltioActive)).toBe(false);
+  expect(await text(page, 'msg')).toContain('Bzzzt');
+
+  // La sala ya se puede visitar
+  await tp(page, sk.door[0], sk.door[1] + 1.4);
+  expect(await text(page, 'interact')).toBe('Entrar');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  expect(await text(page, 'storyWho')).toContain('Rulo');
+  const exit = await w(() => window.__nexus3d.world.world.skate.room.exit);
+  await tp(page, exit.x, exit.z - 0.3);
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(false);
+
+  // La rampa grande revive con su carrera de luz (tema grafiti) y Rulo se alegra
+  const src = await w(() => window.__nexus3d.world.world.skate.source);
+  const ramp = await w(() => window.__nexus3d.world.world.skate.ramp);
+  await connect(page, [src.x + 1, src.z], [ramp.x, ramp.z + 1]);
+  expect(await w(() => window.__nexus3d.world.connections.all.find((o) => o.id === 'skate-ramp').isActive)).toBe(true);
+  await step(page, 3);
+  expect(await w(() => window.__nexus3d.world.lifeAt(80, 0))).toBeGreaterThan(0.5);
+
+  // El voltaje se acaba y vuelve solo al mundo normal
+  await tp(page, 70, 10);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.voltioActive)).toBe(true);
+  await parkStatics();
+  await step(page, 31);
+  expect(await w(() => window.__nexus3d.world.voltioActive)).toBe(false);
+
+  // Todo queda guardado
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  const saved = await w(() => {
+    const p = window.__nexus3d.world.progress;
+    return [p.hasFlag('board'), p.hasFlag('hood'), p.hasFlag('sala-open'), p.hasChispi('rueditas')];
+  });
+  expect(saved).toEqual([true, true, true, true]);
 });

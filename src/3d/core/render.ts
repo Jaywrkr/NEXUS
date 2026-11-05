@@ -288,9 +288,10 @@ export class Renderer {
         res: { value: new THREE.Vector2(1, 1) },
         flash: { value: 0 },
         step: { value: 1.5 },
+        voltio: { value: 0 },
       },
       vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
-      fragmentShader: `uniform sampler2D tDiffuse; uniform float time; uniform vec2 res; uniform float flash; uniform float step; varying vec2 vUv;
+      fragmentShader: `uniform sampler2D tDiffuse; uniform float time; uniform vec2 res; uniform float flash; uniform float step; uniform float voltio; varying vec2 vUv;
         float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         vec3 toSRGB(vec3 c){ return pow(max(c, 0.0), vec3(1.0 / 2.2)); }
         void main(){
@@ -330,6 +331,24 @@ export class Renderer {
           float g = hash(floor(vUv * res / 1.5) + fract(time * 7.0) * 91.0) - .5;
           c += g * 0.02;                                                     // grano
           vec2 q = vUv - .5; c *= 1.0 - dot(q, q) * 0.35;                    // viñeta
+          // Mundo Voltio: todo oscuro y las formas dibujadas con líneas de neón (bordes de la imagen);
+          // lo que ya brilla (chispitas, nodos, estela, Estática) se queda encendido.
+          if (voltio > 0.001) {
+            vec2 o = px * 1.5;
+            float lc = dot(sharp, vec3(.299, .587, .114));
+            float lx = dot(toSRGB(texture2D(tDiffuse, vUv + vec2(o.x, 0.)).rgb), vec3(.299, .587, .114));
+            float ly = dot(toSRGB(texture2D(tDiffuse, vUv + vec2(0., o.y)).rgb), vec3(.299, .587, .114));
+            float lx2 = dot(toSRGB(texture2D(tDiffuse, vUv - vec2(o.x, 0.)).rgb), vec3(.299, .587, .114));
+            float ly2 = dot(toSRGB(texture2D(tDiffuse, vUv - vec2(0., o.y)).rgb), vec3(.299, .587, .114));
+            float edge = smoothstep(0.09, 0.26, abs(lx - lx2) + abs(ly - ly2));
+            vec3 neon = mix(vec3(0.15, 0.95, 1.0), vec3(1.0, 0.3, 0.85), smoothstep(0.35, 0.75, vUv.y + sin(vUv.x * 6.0 + time * 0.6) * 0.08));
+            vec3 v = vec3(0.025, 0.02, 0.08) + vec3(0.03, 0.02, 0.09) * lc;
+            v += neon * edge * 0.95;
+            float bright = smoothstep(0.78, 0.95, max(max(sharp.r, sharp.g), sharp.b));
+            v = mix(v, sharp * 1.15, bright);
+            v *= 1.0 - dot(q, q) * 0.6;
+            c = mix(c, v, voltio);
+          }
           c = mix(c, vec3(1.0, 0.95, 0.75), flash);                          // destello de celebración
           gl_FragColor = vec4(c, 1.0);
         }`,
@@ -341,6 +360,11 @@ export class Renderer {
 
   set flash(v: number) {
     this.postMat.uniforms.flash.value = v;
+  }
+
+  /** 0 = mundo normal, 1 = Mundo Voltio (bordes de neón sobre negro). */
+  set voltio(v: number) {
+    this.postMat.uniforms.voltio.value = v;
   }
 
   /**
