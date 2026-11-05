@@ -1340,3 +1340,17 @@ body.voltio #labels {
 .travel-stop.here {
   opacity: 0.55;
 }
+
+/* ---------- Fase 8: la cueva oscura ---------- */
+#caveDark {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  background: radial-gradient(circle at 50% 52%, rgba(6, 4, 14, 0.25) 0, rgba(6, 4, 14, 0.9) 120px, #06040e 260px);
+}
+body.cave-dark #caveDark {
+  opacity: 1;
+}

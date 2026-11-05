@@ -324,3 +324,6 @@ Nuevo distrito al norte: calesita, vuelta al mundo y montaña rusa que se revive
 
 ## 3D: Fase 7 — Estación y tren
 Nuevo distrito al sureste: la Estación, con andén, vías, hall con reloj y un tren dormido. Su motor se destraba con un circuito del Mundo Voltio y se despierta con cable (carrera de luz «cable de vías»). Despierto, cada distrito tiene una parada 🚂 para viajar al instante (también desde el mapa). Jefa de estación Nora, rescate de Rielito y un sobre más. Cada carrera de luz usa el tema de su lugar. Pruebas 3D: 32 escenarios. Decisión 050.
+
+## 3D: Fase 8 — Cerro, cascada y cueva
+Nuevo distrito al oeste: el Cerro. La cascada congelada se descongela con cable (carrera «cable de hielo»); siete rocas se suben saltando hasta el mirador (premio: una carta) y desde arriba baja la tirolesa más larga del barrio. La cueva oscura solo se ve con la capucha ⚡: sus cristales son el circuito del Mundo Voltio que la ilumina. Guardaparque Lalo, rescates de Ventarrón y Musguito, parada del tren. La cámara sigue al Nexus cuando está muy alto. Pruebas 3D: 34 escenarios. Decisión 051.

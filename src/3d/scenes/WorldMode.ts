@@ -40,6 +40,8 @@ import { Carousel, Coaster, FerrisWheel, MirrorBall, type Ride } from '../object
 import { PARK } from '../world/Park';
 import { STATION, TRAIN_STOPS } from '../world/Station';
 import { Train, makeStop } from '../objects/train';
+import { Cascade } from '../objects/cascade';
+import { CERRO, TOP_H } from '../world/Cerro';
 import type { CageSpot } from '../systems/Voltio';
 import { Companion } from '../entities/Companion';
 import type { ChispiType } from '../data/chispis';
@@ -106,6 +108,8 @@ const CAGES: { id: string; x: number; z: number }[] = [
   { id: 'globin', x: 22, z: 44 },
   { id: 'pochoclin', x: PARK.chispi.x, z: PARK.chispi.z },
   { id: 'rielito', x: STATION.chispi.x, z: STATION.chispi.z },
+  { id: 'ventarron', x: CERRO.chispi.x, z: CERRO.chispi.z },
+  { id: 'musguito', x: CERRO.caveChispi.x, z: CERRO.caveChispi.z },
 ];
 
 /** Sobres escondidos por el mundo (x, z, altura). */
@@ -204,6 +208,7 @@ export class WorldMode {
   private readonly mirrorBall: MirrorBall;
   /** Juego en el que está subido el Nexus. */
   private readonly train: Train;
+  private readonly cascade: Cascade;
   /** Paradas del tren construidas (Fase 7). */
   private readonly stops: { id: string; name: string; x: number; z: number }[] = [];
   private stopSpot: { id: string; name: string; x: number; z: number } | null = null;
@@ -341,6 +346,13 @@ export class WorldMode {
     this.train.unlocked = this.progress.hasFlag('train-open');
     this.world.rects.push({ minX: STATION.train.x - 10.6, maxX: STATION.train.x + 3.3, minZ: STATION.train.z - 1.1, maxZ: STATION.train.z + 1.1 });
     this.buildStops();
+    // Fase 8: Cerro y cascada
+    const cascadeSource = new EnergySource('cerro-cascade-source', CERRO.cascadeSource.x, CERRO.cascadeSource.z);
+    this.cascade = new Cascade('cerro-cascade', CERRO.cascade.x, CERRO.cascade.z);
+    if (this.progress.hasFlag('cave-lit')) {
+      this.world.cerro.cave.light();
+      this.world.cerro.cave.gray.revive(false);
+    }
 
     const labels: [Connectable, string][] = [
       [source, 'Energía'], [this.lamp, 'Farola'], [this.door, 'Puerta'],
@@ -354,10 +366,11 @@ export class WorldMode {
       [tallerSource, 'Energía'], [lanternSource, 'Energía'],
       [carouselSource, 'Energía'], [wheelSource, 'Energía'], [coasterSource, 'Energía'], [espejosSource, 'Energía'],
       [stationSource, 'Energía'],
+      [cascadeSource, 'Energía'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -423,6 +436,7 @@ export class WorldMode {
       available: () => this.train.unlocked,
       blockedMessage: 'El tren tiene el motor trabado: mirá sus cables con la capucha ⚡',
     });
+    this.connections.addRule({ sourceId: cascadeSource.id, targetId: this.cascade.id, useTunnel: true });
     this.bigSteps = [
       { s: source, t: this.lamp, sName: 'la energía de la plaza', tName: 'la farola' },
       { s: this.lamp, t: this.door, sName: 'la farola', tName: 'la puerta de la casa' },
@@ -443,6 +457,7 @@ export class WorldMode {
       { s: wheelSource, t: this.wheel, sName: 'la energía de la vuelta al mundo', tName: 'la vuelta al mundo', when: () => this.wheel.unlocked },
       { s: coasterSource, t: this.coaster, sName: 'la energía de la montaña rusa', tName: 'la montaña rusa', when: () => this.coaster.unlocked },
       { s: stationSource, t: this.train, sName: 'la energía de la estación', tName: 'el tren', when: () => this.train.unlocked },
+      { s: cascadeSource, t: this.cascade, sName: 'la energía del cerro', tName: 'la cascada congelada' },
     ];
 
     // Fragmentos: uno por zona + el secreto detrás de la casa (Decisión 019), que ya está visible
@@ -633,6 +648,7 @@ export class WorldMode {
       [this.coaster, 'montana', true],
       [this.mirrorBall, 'espejos', true],
       [this.train, 'estacion', true],
+      [this.cascade, 'cascada', true],
     ];
     for (const [obj, id, ok] of packFor) {
       if (target !== obj || !ok) continue;
@@ -728,6 +744,12 @@ export class WorldMode {
       } else {
         say(`¡${name} revivió! Acercate y subite`);
       }
+    }
+    // Fase 8: la cascada se descongela
+    if (target === this.cascade) {
+      this.addLife(-74, -22, 18, animate);
+      say('¡La cascada se descongeló! El agua vuelve a correr por el cerro');
+      if (animate) after(0.8, () => this.updateResidentMoods());
     }
     // Fase 7: el tren despierta y las paradas sirven para viajar
     if (target === this.train) {
@@ -1007,6 +1029,14 @@ export class WorldMode {
         target: this.mirrorBall,
       },
       {
+        id: 'cueva',
+        info: this.world.cerro.cave,
+        door: { x: CERRO.cave.doorX, z: CERRO.cave.z + 0.9 },
+        out: { x: CERRO.cave.doorX, z: CERRO.cave.z + 1.7 },
+        open: () => true,
+        story: ['Lalo · La cueva', '¡Qué oscuro! Acá adentro duermen los cristales del cerro. Dicen que con la capucha ⚡ se ven sus cables de energía…'],
+      },
+      {
         id: 'sala-skate',
         info: this.world.skate.room,
         door: { x: sala.doorX, z: sala.doorZ + 0.9 },
@@ -1125,6 +1155,9 @@ export class WorldMode {
       { name: 'Vuelta al mundo', x: PARK.wheel.x, z: PARK.wheel.z, alive: this.wheel.isActive },
       { name: 'Montaña rusa', x: -20, z: -85, alive: this.coaster.isActive },
       { name: 'Estación', x: STATION.train.x - 4, z: STATION.train.z, alive: this.train.isActive },
+      { name: 'Cascada', x: CERRO.cascade.x, z: CERRO.cascade.z + 2, alive: this.cascade.isActive },
+      { name: 'Mirador', x: CERRO.mirador.x, z: CERRO.mirador.z + 4, alive: this.progress.hasFlag('cerro-top') },
+      { name: 'Cueva', x: CERRO.cave.doorX, z: CERRO.cave.z + 1, alive: this.progress.hasFlag('cave-lit') },
     ];
     return {
       life: (x, z) => LIFE.at(x, z),
@@ -1162,6 +1195,7 @@ export class WorldMode {
         { id: 'wheel-open', nodes: PARK.wheelNodes, door: { x: PARK.wheel.x, z: PARK.wheel.z } },
         { id: 'coaster-open', nodes: PARK.coasterNodes, door: { x: PARK.coasterStation.x, z: PARK.coasterStation.z } },
         { id: 'train-open', nodes: STATION.nodes, door: { x: STATION.train.x, z: STATION.train.z } },
+        { id: 'cave-lit', nodes: CERRO.caveNodes, door: CERRO.caveNodes[1] },
       ],
       {
         rescue: (id, x, z) => this.onRescue(id, x, z),
@@ -1183,6 +1217,8 @@ export class WorldMode {
           } else if (id === 'train-open') {
             this.train.unlocked = true;
             this.setMessage('¡Circuito cerrado! El motor del tren se destrabó');
+          } else if (id === 'cave-lit') {
+            this.lightCave(true);
           }
           this.refreshObjectiveSoon();
         },
@@ -1209,7 +1245,7 @@ export class WorldMode {
         cages: [{ id: 'rueditas', ...this.world.skate.chispi }, ...CAGES]
           .filter((c) => !this.progress.hasChispi(c.id))
           .map((c): CageSpot => ({ ...c, color: TYPES[CARD_BY_ID.get(c.id)!.type].color })),
-        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open'].filter((f) => this.progress.hasFlag(f)),
+        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit'].filter((f) => this.progress.hasFlag(f)),
       },
     );
   }
@@ -1355,7 +1391,7 @@ export class WorldMode {
 
   enterVoltio(): void {
     if (!this.progress.hasFlag('hood') || this.voltio.active) return;
-    if (this.inside) {
+    if (this.inside && this.inside.id !== 'cueva') {
       this.toast('Acá adentro no hay cables: probá afuera', 'info');
       return;
     }
@@ -1430,12 +1466,21 @@ export class WorldMode {
       }
       return { text: 'El pato y la campana tienen que llegar los dos al desfile', at: tal.parade };
     }
+    if (this.inside?.id === 'cueva' && !this.progress.hasFlag('cave-lit')) {
+      if (!this.progress.hasFlag('hood')) return { text: 'Está muy oscuro… Con la capucha ⚡ de Rulo se verían los cristales', at: null };
+      if (!this.voltio.active) return { text: 'Ponete la capucha ⚡ para ver los cristales', at: null };
+      const lit = this.voltio.litNodes('cave-lit');
+      if (lit < 3) return { text: `Tocá los tres racimos de cristales (${lit}/3)`, at: CERRO.caveNodes[Math.min(lit, 2)] };
+    }
+    if (this.inside?.id === 'cueva' && this.voltio.active && this.voltio.isCaged('musguito')) {
+      return { text: '¡Musguito está atrapado! Cerrá un círculo con tu estela alrededor de la jaula', at: CERRO.caveChispi };
+    }
     if (this.inside) {
       const t = this.inside.target;
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
       return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
     }
-    const park = this.parkStep() ?? this.stationStep();
+    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep();
     if (park) return park;
     if (this.voltio.active && !this.inSkatepark) {
       const me = this.nexus.position;
@@ -1585,6 +1630,10 @@ export class WorldMode {
     const score = (b: THREE.Vector3) => ((b.x - np.pole.x) * fx + (b.z - np.pole.z) * fz) / (Math.hypot(b.x - np.pole.x, b.z - np.pole.z) || 1);
     const b = options.reduce((x, y) => (score(x) >= score(y) ? x : y));
     const a = np.pole;
+    if (b.y > a.y + 1.5) {
+      this.setMessage('Para arriba no se puede: ¡subí saltando por las rocas!');
+      return;
+    }
     this.zip = { a, b, t: 0, dur: Math.hypot(b.x - a.x, b.z - a.z) / ZIP_SPEED, climb: 0, from: this.nexus.position.clone() };
     this.nexus.hanging = true;
     this.nexus.airborne = false;
@@ -1600,7 +1649,7 @@ export class WorldMode {
   private updateZip(dt: number): void {
     const z = this.zip!;
     const p = this.nexus.position;
-    const hangY = (t: number) => z.a.y - Math.sin(t * Math.PI) * ZIP_SAG - ZIP_HANG;
+    const hangY = (t: number) => z.a.y + (z.b.y - z.a.y) * t - Math.sin(t * Math.PI) * ZIP_SAG - ZIP_HANG;
     // Primero sube hasta el cable
     if (z.climb < 1) {
       z.climb = Math.min(1, z.climb + dt / 0.45);
@@ -1921,6 +1970,7 @@ export class WorldMode {
       [[this.coaster], 'montana'],
       [[this.mirrorBall], 'espejos'],
       [[this.train], 'via'],
+      [[this.cascade], 'hielo'],
     ];
     const zone = zones.find(([list]) => list.includes(target))?.[1] ?? 'garden';
     return planTunnel(zone, this.progress.tunnelSkill);
@@ -2046,6 +2096,12 @@ export class WorldMode {
     nora.setHeard(this.progress.hasHeard('nora'));
     this.world.scene.add(nora.root);
     this.residents.push(nora);
+    // Lalo, el guardaparque del Cerro (Fase 8)
+    const ls = CERRO.lalo;
+    const lalo = new Resident3D('lalo', 'Lalo', ls.x, ls.z, Math.atan2(ls.faceX - ls.x, ls.faceZ - ls.z));
+    lalo.setHeard(this.progress.hasHeard('lalo'));
+    this.world.scene.add(lalo.root);
+    this.residents.push(lalo);
     // Rulo, el patinador del Skatepark (Fase 1)
     const rs = this.world.skate.rulo;
     const rulo = new Resident3D('rulo', 'Rulo', rs.x, rs.z, Math.atan2(rs.faceX - rs.x, rs.faceZ - rs.z));
@@ -2068,6 +2124,7 @@ export class WorldMode {
       lucio: this.lanterns.last.isActive,
       tita: this.parkDone === 3,
       nora: this.train.isActive,
+      lalo: this.cerroDone,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
@@ -2076,6 +2133,7 @@ export class WorldMode {
     if (r.id === 'rulo') return this.ruloText();
     if (r.id === 'tita') return this.titaText();
     if (r.id === 'nora') return this.noraText();
+    if (r.id === 'lalo') return this.laloText();
     const info = RESIDENTS.find((i) => i.id === r.id)!;
     // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
     if (r.id === 'bombo' && !this.fountain.isActive) {
@@ -2329,6 +2387,64 @@ export class WorldMode {
     }
     if (!this.train.isActive) return { text: 'Estación: conectá la energía con el tren', at: STATION.source };
     if (!this.progress.hasFlag('train-tour')) return { text: 'Subite al tren en una parada 🚂 y conocé cuatro paradas', at: this.stops.find((s) => s.id === 'estacion') ?? null };
+    return null;
+  }
+
+  /* ---------- Fase 8: Cerro y cascada ---------- */
+
+  /** Se cerró el circuito de la cueva: los cristales se prenden y la cueva recupera el color. */
+  private lightCave(animate: boolean): void {
+    const cave = this.world.cerro.cave;
+    cave.light();
+    cave.gray.revive(animate);
+    this.addLife(CERRO.cave.doorX, CERRO.cave.z + 2, 10, animate);
+    this.dropPack('lugar-cueva', CERRO.cave.doorX + 3.5, CERRO.cave.z + 2.2, animate);
+    this.setMessage('¡Los cristales se prendieron! La cueva ya no da miedo');
+    this.updateResidentMoods();
+  }
+
+  /** El cerro está completo: cima, cascada y cueva. */
+  get cerroDone(): boolean {
+    return this.cascade.isActive && this.progress.hasFlag('cerro-top') && this.progress.hasFlag('cave-lit');
+  }
+
+  /** ¿El Nexus llegó a la cima? (premio una vez: una carta del bosque) */
+  private checkSummit(): void {
+    if (this.progress.hasFlag('cerro-top') || this.inside) return;
+    const p = this.nexus.position;
+    const T = CERRO.top;
+    if (p.y < TOP_H - 0.3 || p.x < T.minX || p.x > T.maxX || p.z < T.minZ || p.z > T.maxZ) return;
+    this.progress.setFlag('cerro-top');
+    this.audio.playSuccess();
+    this.addLife((T.minX + T.maxX) / 2, (T.minZ + T.maxZ) / 2, 12, true);
+    const gift = ['hojin', 'pinita', 'ventarron'].find((id) => !this.progress.hasCard(id)) ?? 'hojin';
+    this.progress.addCard(gift);
+    this.updateResidentMoods();
+    this.showStory('Lalo · El mirador', '¡Llegaste a la cima! Desde acá se ve toda la ciudad. Para bajar rápido, tirate por la tirolesa: es la más larga del barrio.');
+    after(1.2, () => this.cb.card?.(gift, '¡Regalo del mirador!'));
+    this.refreshObjectiveSoon();
+  }
+
+  private laloText(): string {
+    if (!this.cascade.isActive) return 'Soy Lalo, el guardaparque. Con el apagón se congeló la cascada… ¿le llevás energía? Así el cerro vuelve a sonar.';
+    if (!this.progress.hasFlag('cerro-top')) return '¿Te animás a subir el cerro? Las rocas son como escalones: saltá de una a otra hasta el mirador.';
+    if (!this.progress.hasFlag('cave-lit')) return 'En la cueva no se ve nada. Pero vos tenés una capucha especial, ¿no? Los cristales tienen cables escondidos.';
+    return '¡El cerro está más lindo que nunca! Cascada, mirador y cueva. Sos un guardaparque honorario.';
+  }
+
+  /** Lo que conviene hacer en el Cerro. */
+  private cerroStep(): { text: string; at: { x: number; z: number } | null } | null {
+    if (this.districtId !== 'cerro' || this.inside) return null;
+    if (this.voltio.active) {
+      if (this.voltio.isCaged('ventarron')) return { text: '¡Ventarrón está atrapado! Cerrá un círculo con tu estela alrededor de la jaula', at: CERRO.chispi };
+      return null;
+    }
+    if (!this.cascade.isActive) return { text: 'Cerro: conectá la energía con la cascada congelada', at: CERRO.cascadeSource };
+    if (!this.progress.hasFlag('cerro-top')) {
+      const next = CERRO.steps.find((s) => s.h > this.nexus.position.y + 0.1);
+      return { text: 'Subí el cerro saltando de roca en roca hasta el mirador', at: next ?? CERRO.mirador };
+    }
+    if (!this.progress.hasFlag('cave-lit')) return { text: 'Entrá a la cueva oscura del cerro', at: { x: CERRO.cave.doorX, z: CERRO.cave.z + 1 } };
     return null;
   }
 
@@ -2816,6 +2932,9 @@ export class WorldMode {
             : 'Tocar';
     }
     this.checkFragments();
+    this.checkSummit();
+    // La cueva está a oscuras hasta prender los cristales (con la capucha se ven igual)
+    document.body.classList.toggle('cave-dark', this.inside?.id === 'cueva' && !this.voltio.active && !this.progress.hasFlag('cave-lit'));
 
     this.warnClosedShop(dt);
     this.updatePacks(dt);
@@ -2857,8 +2976,9 @@ export class WorldMode {
     const v = this.nexus.velocity;
     this.focus.x = damp(this.focus.x, p.x + v.x * 0.25, 5, dt);
     this.focus.z = damp(this.focus.z, p.z + v.z * 0.25, 5, dt);
-    // La cámara sube un poco cuando el Nexus está alto (techo de un auto, tirolesa)
-    this.focus.y = damp(this.focus.y, p.y * 0.6, 4, dt);
+    // La cámara sube un poco cuando el Nexus está alto (techo de un auto, tirolesa); en lo muy alto
+    // (cerro, faro) lo sigue casi entero para que no se salga de la pantalla
+    this.focus.y = damp(this.focus.y, p.y < 2.5 ? p.y * 0.6 : p.y - 1, 4, dt);
     this.isoCam.position.copy(this.focus).add(ISO_OFFSET);
     this.isoCam.lookAt(this.focus.x, this.focus.y + 0.8, this.focus.z);
 

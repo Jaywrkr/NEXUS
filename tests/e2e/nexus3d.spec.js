@@ -1300,3 +1300,112 @@ test('3D: Estación y tren — circuito en el Mundo Voltio, el tren despierta y 
   expect(await active('station-train')).toBe(true);
   expect(await w(() => window.__nexus3d.world.trainAwake)).toBe(true);
 });
+
+test('3D: Cerro y cascada — cascada congelada, subida al mirador, tirolesa larga y cueva oscura', async ({ page }) => {
+  test.setTimeout(300_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const active = (id) => w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, id);
+  const pos = () => w(() => window.__nexus3d.world.nexus.position.toArray());
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Se llega caminando por la calle hacia el oeste
+  await tp(page, -40, 0);
+  await page.keyboard.down('KeyA');
+  await page.keyboard.down('KeyW');
+  await step(page, 2.5);
+  await page.keyboard.up('KeyA');
+  await page.keyboard.up('KeyW');
+  expect((await pos())[0]).toBeLessThan(-46);
+  await step(page, 0.6);
+  expect(await text(page, 'districtBanner')).toContain('Cerro');
+  expect(await text(page, 'msg')).toContain('cascada');
+
+  // La cascada congelada se descongela con cable (carrera de hielo)
+  await connect(page, [-63, -24.6], [-72.4, -28.6]);
+  expect(await active('cerro-cascade')).toBe(true);
+  await step(page, 3);
+  expect(await w(() => window.__nexus3d.world.lifeAt(-74, -22))).toBeGreaterThan(0.9);
+
+  // Las rocas se suben saltando: la primera mide 0,9 m
+  await tp(page, -61.6, 20);
+  await w(() => (window.__nexus3d.world.nexus.heading = -Math.PI / 2));
+  await page.keyboard.down('KeyA');
+  await page.keyboard.down('KeyW');
+  await page.keyboard.press('Space');
+  await step(page, 0.7);
+  await page.keyboard.up('KeyA');
+  await page.keyboard.up('KeyW');
+  await step(page, 0.4);
+  expect((await pos())[1]).toBeGreaterThan(0.8);
+
+  // Arriba del mirador: premio (una carta del bosque)
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(-92, 7.2, 20);
+    g.focus.set(-92, 0, 20);
+  });
+  await step(page, 0.3);
+  expect(await w(() => window.__nexus3d.world.progress.hasFlag('cerro-top'))).toBe(true);
+  await step(page, 1.5);
+  await expect.poll(() => w(() => !document.getElementById('cardPop').hidden)).toBe(true);
+  await page.screenshot({ path: test.info().outputPath('cerro-mirador.png') });
+  await page.click('#cardOk');
+
+  // Tirolesa larga hasta el pie del cerro (para arriba no se puede)
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(-87.2, 7.2, 22.6);
+    g.nexus.heading = Math.atan2(30, -37.5);
+  });
+  await step(page, 0.1);
+  expect(await text(page, 'interact')).toBe('Tirolesa');
+  await touch(page);
+  for (let i = 0; i < 40 && (await w(() => Boolean(window.__nexus3d.world.zip))); i += 1) await step(page, 0.5);
+  await step(page, 1);
+  const end = await pos();
+  expect(Math.hypot(end[0] + 58, end[2] + 14)).toBeLessThan(3);
+  expect(end[1]).toBeLessThan(0.1);
+  await w(() => (window.__nexus3d.world.nexus.heading = Math.atan2(-30, 37.5)));
+  await tp(page, -58.8, -13);
+  await w(() => (window.__nexus3d.world.nexus.heading = Math.atan2(-30, 37.5)));
+  await touch(page);
+  expect(await w(() => Boolean(window.__nexus3d.world.zip))).toBe(false);
+
+  // La cueva: oscura; con la capucha se ven los cristales (nodos del circuito)
+  await tp(page, -93, 28.9);
+  expect(await text(page, 'interact')).toBe('Entrar');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  await step(page, 0.1);
+  expect(await w(() => document.body.classList.contains('cave-dark'))).toBe(true);
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    p.setFlag('hood');
+    p.setFlag('voltio-seen');
+    document.body.classList.add('has-hood');
+  });
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.voltio.active)).toBe(true);
+  expect(await w(() => document.body.classList.contains('cave-dark'))).toBe(false);
+  expect(await text(page, 'msg')).toContain('cristales');
+  const nodes = await w(() => window.__nexus3d.world.voltio.nodes.filter((n) => n.circuit === 'cave-lit').map((n) => [n.x, n.z]));
+  expect(nodes.length).toBe(3);
+  for (const [x, z] of nodes) await tp(page, x, z + 1.1);
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.progress.hasFlag('cave-lit'))).toBe(true);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.3);
+  expect(await w(() => document.body.classList.contains('cave-dark'))).toBe(false);
+  expect(await w(() => window.__nexus3d.world.world.cerro.cave.gray.alive)).toBe(true);
+
+  // Lalo, el guardaparque, está contento; se guarda
+  expect(await w(() => window.__nexus3d.world.cerroDone)).toBe(true);
+  await step(page, 1);
+  expect(await w(() => window.__nexus3d.world.residents.find((r) => r.id === 'lalo').isHappy)).toBe(true);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await active('cerro-cascade')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.world.cerro.cave.gray.alive)).toBe(true);
+});

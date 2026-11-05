@@ -246,6 +246,16 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Nora** (`STATION.nora`, look `conductor`), texto `noraText()`, objetivo `stationStep()`. Rielito se rescata en (88, 58).
 - `tunnelPlanFor` usa una tabla objeto → tema (plaza, fountain, beacon, bridge, skate, casa, helado, cartas, taller, faroles, fiesta, feria, montana, espejos, via; si no, garden).
 
+### Cerro, cascada y cueva (Decisión 051, Fase 8)
+
+- **Región** `CERRO_REGION` (x −100…−51, z −32…32) + `CERRO_CORRIDOR` (x −52…−44, |z| < 6,1) desde la calle este-oeste. Distrito `cerro` abierto. Acantilado norte: rect x −102…−56, z −40…−33.
+- **Cascada** `cerro-cascade` (`objects/cascade.ts`) en (−74, −31,4), fuente `cerro-cascade-source` (−64, −25,5), túnel `hielo`.
+- **Subida**: `CERRO.steps` (x −64 − 3i, z 20, h 0,9·(i+1)) y meseta `CERRO.top` (x −100…−83,5, z 10…28, h `TOP_H` = 7,2), todo como rects con `h` (se suben saltando: el salto llega a ~1,28 m). `checkSummit()` marca `cerro-top` y regala una carta del bosque.
+- **Tirolesa**: `World.cerro.zipLine` (postes en (−88, 23,5) arriba y (−58, −14) abajo) agregada a `World.zipLines`. `updateZip` ahora interpola la altura entre postes; `startZip` no deja subir (b.y > a.y + 1,5).
+- **Cueva** (`World.cerro.cave`, x = 900, puerta (−93, 28,9)): `enterVoltio` está permitido solo en el interior `cueva`; nodos `CERRO.caveNodes` (circuito `cave-lit` → `lightCave`: cristales `toonUnique` en un grupo fuera de `makeGray`, revive la habitación y deja un sobre afuera). `body.cave-dark` + `#caveDark` oscurecen la pantalla adentro hasta prender los cristales (no con la capucha puesta).
+- Lalo (`CERRO.lalo`, look `ranger`), `laloText()`, `cerroStep()`, `cerroDone`. Rescates: Ventarrón (−86, −14), Musguito (en la cueva). Parada del tren del Cerro (−55, −7,5).
+- Cámara: `focus.y` sigue `p.y − 1` cuando el Nexus está a más de 2,5 m.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -264,7 +274,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
 6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
 
-Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–050).
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–051).
 
 ### 6. Trampas técnicas ya conocidas (no repetirlas)
 
@@ -290,7 +300,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–050).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 7 hechas (Decisiones 043–050). Sigue la Fase 8: Cerro y cascada (subida, mirador, tirolesa larga y cueva oscura).**
+> **Fases 0 a 8 hechas (Decisiones 043–051). Sigue la Fase 9: Puerto y faro (el final).**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 
