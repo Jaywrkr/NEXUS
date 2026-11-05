@@ -227,7 +227,7 @@ Cada fase termina con: `npm run build` sin errores, pruebas automáticas nuevas 
 | **4. Chispi compañero** ✅ (hecha, Decisión 047) | Elegir compañero desde el álbum; lo sigue en ambos mundos; ayuditas. | Cada tipo tiene su ayudita funcionando. |
 | **5. Centro completo** ✅ (hecha, Decisión 048) | Taller de Pipa (interior) y faroles de Lucio, con sus carreras de luz, vecinos, cosas dormidas y Chispis. | Las 7 zonas originales del capítulo están en 3D. |
 | **6. Parque de diversiones** ✅ (hecha, Decisión 049) | Distrito, juegos que se arrancan con circuitos Voltio, subirse a la calesita/vuelta al mundo, montaña rusa como carrera de luz al aire libre. | Se puede subir a los juegos y el parque revive. |
-| **7. Estación y tren** | Despertar el tren; viaje rápido entre estaciones desde el mapa. | Se viaja entre al menos 4 distritos. |
+| **7. Estación y tren** ✅ (hecha, Decisión 050) | Despertar el tren; viaje rápido entre estaciones desde el mapa. | Se viaja entre al menos 4 distritos. |
 | **8. Cerro, cascada y cueva** | Subida, mirador, tirolesa larga, cueva oscura con visión de energía. | Se llega arriba y se completa la cueva. |
 | **9. Puerto y faro: final** | El bote navega por el canal; puerto; circuito final del faro; vuelve la Gran Chispa; fiesta con todos los vecinos y créditos; se puede seguir jugando. | El capítulo tiene final y la canción completa suena. |
 

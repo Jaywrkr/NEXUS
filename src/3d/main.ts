@@ -68,6 +68,7 @@ class Game {
       trade: (o) => this.showTrade(o),
       album: () => this.showAlbum(),
       ending: (s) => this.showEnding(s),
+      travel: () => this.showTravel(),
     });
   }
 
@@ -181,6 +182,12 @@ class Game {
     $('buddy').addEventListener('click', () => this.showAlbum());
     $('tradeNo').addEventListener('click', () => this.closePop('tradePop'));
     $('albumBack').addEventListener('click', () => this.closePop('albumPop'));
+    $('travelNo').addEventListener('click', () => this.closePop('travelPop'));
+    $('mapTravel').addEventListener('click', () => {
+      $('mapPanel').hidden = true;
+      this.mapOpen = false;
+      this.showTravel();
+    });
     $('mAlbum').addEventListener('click', () => {
       $('menu').hidden = true;
       this.showAlbum();
@@ -237,6 +244,7 @@ class Game {
     this.mapOpen = true;
     $('menu').hidden = true;
     $('mapPanel').hidden = false;
+    $('mapTravel').hidden = !this.world.trainAwake;
     document.body.classList.add('paused');
     this.input.flush();
   }
@@ -245,7 +253,7 @@ class Game {
     this.paused = false;
     this.mapOpen = false;
     $('menu').hidden = true;
-    for (const k of ['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop']) $(k).hidden = true;
+    for (const k of ['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop', 'travelPop']) $(k).hidden = true;
     $('mapPanel').hidden = true;
     document.body.classList.remove('paused');
     this.input.flush();
@@ -289,7 +297,7 @@ class Game {
 
   private closePop(id: string): void {
     $(id).hidden = true;
-    if (['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop'].some((k) => !$(k).hidden)) return;
+    if (['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop', 'travelPop'].some((k) => !$(k).hidden)) return;
     this.closeMenu();
   }
 
@@ -401,6 +409,26 @@ class Game {
     for (const el of Array.from(document.querySelectorAll<HTMLElement>('#albumGrid .mini-card'))) {
       el.classList.toggle('is-buddy', el.dataset.card === this.world.companionId);
     }
+  }
+
+  /** Cartel del tren: una parada por distrito abierto. */
+  private showTravel(): void {
+    const list = $('travelList');
+    list.innerHTML = '';
+    for (const st of this.world.trainStops) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `ui-btn travel-stop${st.here ? ' here' : ''}`;
+      b.dataset.stop = st.id;
+      b.disabled = st.here;
+      b.innerHTML = `<b>${st.name}</b><small>${st.here ? 'estás acá' : st.visited ? 'ya fuiste' : '¡nueva!'}</small>`;
+      b.addEventListener('click', () => {
+        this.closePop('travelPop');
+        this.world.travelTo(st.id);
+      });
+      list.appendChild(b);
+    }
+    this.pauseFor('travelPop');
   }
 
   /** Final del capítulo 1: resultados de la partida. */

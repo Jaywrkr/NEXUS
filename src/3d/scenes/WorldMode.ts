@@ -24,7 +24,7 @@ import { planTunnel } from './TunnelMode';
 import type { TunnelPlan } from './TunnelMode';
 import { flashScreen } from '../core/settings';
 import type { MapData } from '../ui/MapView';
-import { districtAt } from '../world/districts';
+import { DISTRICTS, districtAt } from '../world/districts';
 import { BRIDGE_X, CANAL_MAX_Z } from '../world/World';
 import { CANAL_MIN_Z, ZIP_SAG } from '../world/World';
 import { SkateRamp, makeBoard } from '../objects/skate';
@@ -38,6 +38,8 @@ import { ConfettiCannon, LanternPost, Motor, Stage, ToyBell, ToyDuck, ToyParade 
 import { FESTIVAL } from '../world/Festival';
 import { Carousel, Coaster, FerrisWheel, MirrorBall, type Ride } from '../objects/rides';
 import { PARK } from '../world/Park';
+import { STATION, TRAIN_STOPS } from '../world/Station';
+import { Train, makeStop } from '../objects/train';
 import type { CageSpot } from '../systems/Voltio';
 import { Companion } from '../entities/Companion';
 import type { ChispiType } from '../data/chispis';
@@ -75,6 +77,8 @@ export interface WorldCallbacks {
   trade?: (offer: { who: string; name: string; text: string; card: string; duplicates: string[] }) => void;
   /** Abrir el álbum. */
   album?: () => void;
+  /** Tocaste una parada con el tren despierto: elegir destino (llama a `travelTo`). */
+  travel?: () => void;
   /** La fiesta terminó el capítulo: pantalla de resultados. */
   ending?: (stats: { places: number; placesTotal: number; awake: number; awakeTotal: number; cards: number; cardsTotal: number; chispis: number }) => void;
 }
@@ -101,6 +105,7 @@ const CAGES: { id: string; x: number; z: number }[] = [
   { id: 'brotecito', x: 13, z: 42 },
   { id: 'globin', x: 22, z: 44 },
   { id: 'pochoclin', x: PARK.chispi.x, z: PARK.chispi.z },
+  { id: 'rielito', x: STATION.chispi.x, z: STATION.chispi.z },
 ];
 
 /** Sobres escondidos por el mundo (x, z, altura). */
@@ -198,6 +203,10 @@ export class WorldMode {
   private readonly coaster: Coaster;
   private readonly mirrorBall: MirrorBall;
   /** Juego en el que está subido el Nexus. */
+  private readonly train: Train;
+  /** Paradas del tren construidas (Fase 7). */
+  private readonly stops: { id: string; name: string; x: number; z: number }[] = [];
+  private stopSpot: { id: string; name: string; x: number; z: number } | null = null;
   private rideOn: (Ride & Connectable) | null = null;
   private rideSpot: (Ride & Connectable) | null = null;
   private readonly labels: { obj: Connectable; el: HTMLElement; alpha: number }[] = [];
@@ -326,6 +335,12 @@ export class WorldMode {
     this.mirrorBall = new MirrorBall('espejos-bola', esp.target.x, esp.target.z);
     this.wheel.unlocked = this.progress.hasFlag('wheel-open');
     this.coaster.unlocked = this.progress.hasFlag('coaster-open');
+    // Fase 7: Estación y tren
+    const stationSource = new EnergySource('station-source', STATION.source.x, STATION.source.z);
+    this.train = new Train('station-train', STATION.train.x, STATION.train.z);
+    this.train.unlocked = this.progress.hasFlag('train-open');
+    this.world.rects.push({ minX: STATION.train.x - 10.6, maxX: STATION.train.x + 3.3, minZ: STATION.train.z - 1.1, maxZ: STATION.train.z + 1.1 });
+    this.buildStops();
 
     const labels: [Connectable, string][] = [
       [source, 'Energía'], [this.lamp, 'Farola'], [this.door, 'Puerta'],
@@ -338,10 +353,11 @@ export class WorldMode {
       [this.fuse, 'Tablero de luz'], [this.iceMachine, 'Máquina de helados'], [this.cardDisplay, 'Vitrina de cartas'],
       [tallerSource, 'Energía'], [lanternSource, 'Energía'],
       [carouselSource, 'Energía'], [wheelSource, 'Energía'], [coasterSource, 'Energía'], [espejosSource, 'Energía'],
+      [stationSource, 'Energía'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -399,6 +415,14 @@ export class WorldMode {
       blockedMessage: 'La montaña rusa tiene el motor trabado: mirá sus cables con la capucha ⚡',
     });
     this.connections.addRule({ sourceId: espejosSource.id, targetId: this.mirrorBall.id, useTunnel: true });
+    // Estación: el tren está dormido y con el motor trabado hasta cerrar su circuito en el Mundo Voltio
+    this.connections.addRule({
+      sourceId: stationSource.id,
+      targetId: this.train.id,
+      useTunnel: true,
+      available: () => this.train.unlocked,
+      blockedMessage: 'El tren tiene el motor trabado: mirá sus cables con la capucha ⚡',
+    });
     this.bigSteps = [
       { s: source, t: this.lamp, sName: 'la energía de la plaza', tName: 'la farola' },
       { s: this.lamp, t: this.door, sName: 'la farola', tName: 'la puerta de la casa' },
@@ -418,6 +442,7 @@ export class WorldMode {
       { s: carouselSource, t: this.carousel, sName: 'la energía del parque', tName: 'la calesita' },
       { s: wheelSource, t: this.wheel, sName: 'la energía de la vuelta al mundo', tName: 'la vuelta al mundo', when: () => this.wheel.unlocked },
       { s: coasterSource, t: this.coaster, sName: 'la energía de la montaña rusa', tName: 'la montaña rusa', when: () => this.coaster.unlocked },
+      { s: stationSource, t: this.train, sName: 'la energía de la estación', tName: 'el tren', when: () => this.train.unlocked },
     ];
 
     // Fragmentos: uno por zona + el secreto detrás de la casa (Decisión 019), que ya está visible
@@ -607,6 +632,7 @@ export class WorldMode {
       [this.wheel, 'vuelta', true],
       [this.coaster, 'montana', true],
       [this.mirrorBall, 'espejos', true],
+      [this.train, 'estacion', true],
     ];
     for (const [obj, id, ok] of packFor) {
       if (target !== obj || !ok) continue;
@@ -702,6 +728,12 @@ export class WorldMode {
       } else {
         say(`¡${name} revivió! Acercate y subite`);
       }
+    }
+    // Fase 7: el tren despierta y las paradas sirven para viajar
+    if (target === this.train) {
+      this.addLife(73, 49, 26, animate);
+      say('¡El tren despertó! Buscá una parada 🚂 en cualquier distrito para viajar');
+      if (animate) after(0.8, () => this.updateResidentMoods());
     }
     if (target === this.mirrorBall) {
       this.world.espejos.gray.revive(animate);
@@ -1092,6 +1124,7 @@ export class WorldMode {
       { name: 'Calesita', x: PARK.carousel.x, z: PARK.carousel.z, alive: this.carousel.isActive },
       { name: 'Vuelta al mundo', x: PARK.wheel.x, z: PARK.wheel.z, alive: this.wheel.isActive },
       { name: 'Montaña rusa', x: -20, z: -85, alive: this.coaster.isActive },
+      { name: 'Estación', x: STATION.train.x - 4, z: STATION.train.z, alive: this.train.isActive },
     ];
     return {
       life: (x, z) => LIFE.at(x, z),
@@ -1128,6 +1161,7 @@ export class WorldMode {
         { id: 'cartas-open', nodes: this.world.cardNodes, door: cartas },
         { id: 'wheel-open', nodes: PARK.wheelNodes, door: { x: PARK.wheel.x, z: PARK.wheel.z } },
         { id: 'coaster-open', nodes: PARK.coasterNodes, door: { x: PARK.coasterStation.x, z: PARK.coasterStation.z } },
+        { id: 'train-open', nodes: STATION.nodes, door: { x: STATION.train.x, z: STATION.train.z } },
       ],
       {
         rescue: (id, x, z) => this.onRescue(id, x, z),
@@ -1146,6 +1180,9 @@ export class WorldMode {
           } else if (id === 'coaster-open') {
             this.coaster.unlocked = true;
             this.setMessage('¡Circuito cerrado! El motor de la montaña rusa se destrabó');
+          } else if (id === 'train-open') {
+            this.train.unlocked = true;
+            this.setMessage('¡Circuito cerrado! El motor del tren se destrabó');
           }
           this.refreshObjectiveSoon();
         },
@@ -1172,7 +1209,7 @@ export class WorldMode {
         cages: [{ id: 'rueditas', ...this.world.skate.chispi }, ...CAGES]
           .filter((c) => !this.progress.hasChispi(c.id))
           .map((c): CageSpot => ({ ...c, color: TYPES[CARD_BY_ID.get(c.id)!.type].color })),
-        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open'].filter((f) => this.progress.hasFlag(f)),
+        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open'].filter((f) => this.progress.hasFlag(f)),
       },
     );
   }
@@ -1398,7 +1435,7 @@ export class WorldMode {
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
       return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
     }
-    const park = this.parkStep();
+    const park = this.parkStep() ?? this.stationStep();
     if (park) return park;
     if (this.voltio.active && !this.inSkatepark) {
       const me = this.nexus.position;
@@ -1868,24 +1905,24 @@ export class WorldMode {
 
   /** La carrera de luz que corresponde a un objeto grande (tema según el lugar, dificultad adaptada). */
   tunnelPlanFor(target: Connectable): TunnelPlan {
-    const zone =
-      target === this.lamp || target === this.door
-        ? 'plaza'
-        : target === this.fountain
-          ? 'fountain'
-          : target === this.beacon
-            ? 'beacon'
-            : target === this.bridge
-              ? 'bridge'
-              : target === this.ramp
-                ? 'skate'
-                : target === this.fuse
-                  ? 'casa'
-                  : target === this.iceMachine
-                    ? 'helado'
-                    : target === this.cardDisplay
-                      ? 'cartas'
-                      : 'garden';
+    const zones: [Connectable[], string][] = [
+      [[this.lamp, this.door], 'plaza'],
+      [[this.fountain], 'fountain'],
+      [[this.beacon], 'beacon'],
+      [[this.bridge], 'bridge'],
+      [[this.ramp], 'skate'],
+      [[this.fuse], 'casa'],
+      [[this.iceMachine], 'helado'],
+      [[this.cardDisplay], 'cartas'],
+      [[this.motor], 'taller'],
+      [[this.lanterns.first], 'faroles'],
+      [[this.stage], 'fiesta'],
+      [[this.carousel, this.wheel], 'feria'],
+      [[this.coaster], 'montana'],
+      [[this.mirrorBall], 'espejos'],
+      [[this.train], 'via'],
+    ];
+    const zone = zones.find(([list]) => list.includes(target))?.[1] ?? 'garden';
     return planTunnel(zone, this.progress.tunnelSkill);
   }
 
@@ -2003,6 +2040,12 @@ export class WorldMode {
     tita.setHeard(this.progress.hasHeard('tita'));
     this.world.scene.add(tita.root);
     this.residents.push(tita);
+    // Nora, la jefa de estación (Fase 7)
+    const ns = STATION.nora;
+    const nora = new Resident3D('nora', 'Nora', ns.x, ns.z, Math.atan2(ns.faceX - ns.x, ns.faceZ - ns.z));
+    nora.setHeard(this.progress.hasHeard('nora'));
+    this.world.scene.add(nora.root);
+    this.residents.push(nora);
     // Rulo, el patinador del Skatepark (Fase 1)
     const rs = this.world.skate.rulo;
     const rulo = new Resident3D('rulo', 'Rulo', rs.x, rs.z, Math.atan2(rs.faceX - rs.x, rs.faceZ - rs.z));
@@ -2024,6 +2067,7 @@ export class WorldMode {
       pipa: this.parade.isActive,
       lucio: this.lanterns.last.isActive,
       tita: this.parkDone === 3,
+      nora: this.train.isActive,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
@@ -2031,6 +2075,7 @@ export class WorldMode {
   private residentText(r: Resident3D): string {
     if (r.id === 'rulo') return this.ruloText();
     if (r.id === 'tita') return this.titaText();
+    if (r.id === 'nora') return this.noraText();
     const info = RESIDENTS.find((i) => i.id === r.id)!;
     // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
     if (r.id === 'bombo' && !this.fountain.isActive) {
@@ -2187,6 +2232,104 @@ export class WorldMode {
     if (!this.coaster.isActive) return { text: 'Parque: conectá la energía con la montaña rusa', at: PARK.coasterSource };
     if (!this.world.espejos.gray.alive) return { text: 'Parque: entrá a la casa de los espejos', at: { x: PARK.mirror.doorX, z: PARK.mirror.z + 3.4 } };
     return { text: '¡El parque está vivo! Subite a los juegos', at: null };
+  }
+
+  /* ---------- Fase 7: Estación y tren ---------- */
+
+  /** Postes de parada en cada distrito abierto (los de distritos nuevos aparecen con su fase). */
+  private buildStops(): void {
+    for (const st of TRAIN_STOPS) {
+      if (st.need && !DISTRICTS.find((d) => d.id === st.id)?.open) continue;
+      const g = makeStop(st.name);
+      g.position.set(st.x, 0, st.z);
+      keepVivid(g);
+      this.world.scene.add(g);
+      this.world.circles.push({ x: st.x, z: st.z, r: 0.2 });
+      this.stops.push({ id: st.id, name: st.name, x: st.x, z: st.z });
+    }
+  }
+
+  get trainAwake(): boolean {
+    return this.train.isActive;
+  }
+
+  /** Paradas para el cartel de viaje: dónde estás y adónde se puede ir. */
+  get trainStops(): { id: string; name: string; here: boolean; visited: boolean }[] {
+    const here = this.nearStop()?.id ?? (this.stops.find((s) => DISTRICTS.find((d) => d.id === s.id) === districtAt(this.nexus.position.x, this.nexus.position.z))?.id ?? '');
+    return this.stops.map((s) => ({ id: s.id, name: s.name, here: s.id === here, visited: this.progress.hasFlag(`train-${s.id}`) }));
+  }
+
+  private nearStop(): { id: string; name: string; x: number; z: number } | null {
+    if (this.inside || this.voltio.active) return null;
+    const p = this.nexus.position;
+    let best: (typeof this.stops)[number] | null = null;
+    let bd = 1.9;
+    for (const s of this.stops) {
+      const d = Math.hypot(s.x - p.x, s.z - p.z);
+      if (d < bd) {
+        bd = d;
+        best = s;
+      }
+    }
+    return best;
+  }
+
+  /** Viaje rápido en tren hasta la parada `id` (desde una parada o desde el mapa). */
+  travelTo(id: string): void {
+    const st = this.stops.find((s) => s.id === id);
+    if (!st || !this.train.isActive || this.inside) return;
+    this.dismount();
+    if (this.rideOn) this.leaveRide();
+    if (this.voltio.active) this.exitVoltio();
+    this.train.depart();
+    this.audio.tone(660, 0, 0.18, 'square', 0.05);
+    this.audio.tone(880, 0.2, 0.3, 'square', 0.05);
+    this.crossDoor(() => {
+      // Bajás al lado del cartel, del lado de la vereda
+      let tx = st.x + 1.4;
+      let tz = st.z + 1.2;
+      for (let ring = 0; ring < 8 && !this.world.isWalkable(tx, tz, 0.5); ring += 1) {
+        const a = ring * 0.9;
+        tx = st.x + Math.cos(a) * 1.6;
+        tz = st.z + Math.sin(a) * 1.6;
+      }
+      this.nexus.position.set(tx, 0, tz);
+      this.nexus.velocity.set(0, 0, 0);
+      this.progress.setFlag(`train-${id}`);
+      const visited = this.stops.filter((s) => this.progress.hasFlag(`train-${s.id}`)).length;
+      this.toast(`🚂 ¡Llegaste a ${st.name}!`, 'ok');
+      if (visited >= 4 && !this.progress.hasFlag('train-tour')) {
+        this.progress.setFlag('train-tour');
+        this.pickups.burst(4, tx, tz, 1.4);
+        this.setMessage('¡Conociste cuatro paradas! Ahora la ciudad entera queda cerquita');
+      }
+      this.refreshObjectiveSoon();
+    });
+  }
+
+  private noraText(): string {
+    if (!this.train.unlocked) return 'Soy Nora, la jefa de estación. El tren se durmió y tiene el motor trabado. Con la capucha ⚡ se ven sus cables… ¡pero cuidado con las Estáticas!';
+    if (!this.train.isActive) return '¡El motor está libre! Falta lo más lindo: llevarle energía con el cable. ¡Fiii!';
+    if (!this.progress.hasFlag('train-tour')) return '¡Pasajeros al tren! Tocá cualquier parada 🚂 y elegí adónde ir. Te regalo el boleto.';
+    return '¡Qué lindo es tener el tren andando! Ahora se llega a cualquier lado en un ratito. ¡Fiii!';
+  }
+
+  /** Lo que conviene hacer en la Estación. */
+  private stationStep(): { text: string; at: { x: number; z: number } | null } | null {
+    if (this.districtId !== 'estacion' || this.inside) return null;
+    const hood = this.progress.hasFlag('hood');
+    if (this.voltio.active) {
+      const lit = this.voltio.litNodes('train-open');
+      if (!this.train.unlocked) return { text: `Tocá los tres nodos de las vías (${lit}/3)`, at: STATION.nodes[Math.min(lit, 2)] };
+      if (this.voltio.isCaged('rielito')) return { text: '¡Rielito está atrapado! Cerrá un círculo con tu estela alrededor de la jaula', at: STATION.chispi };
+      return { text: 'El motor del tren está libre: sacate la capucha y llevale energía', at: null };
+    }
+    if (!this.train.unlocked) {
+      return { text: hood ? 'El tren tiene el motor trabado: ponete la capucha ⚡ y mirá los cables de las vías' : 'El tren tiene el motor trabado… Rulo, en el Skatepark, sabe de cables', at: hood ? STATION.nodes[0] : null };
+    }
+    if (!this.train.isActive) return { text: 'Estación: conectá la energía con el tren', at: STATION.source };
+    if (!this.progress.hasFlag('train-tour')) return { text: 'Subite al tren en una parada 🚂 y conocé cuatro paradas', at: this.stops.find((s) => s.id === 'estacion') ?? null };
+    return null;
   }
 
   /* ---------- La fiesta: fin del capítulo (Fase 5) ---------- */
@@ -2623,13 +2766,17 @@ export class WorldMode {
       this.boardToggle = this.nexus.riding ? 'off' : 'on';
     }
     this.rideSpot = this.findRideSpot();
-    if (this.rideOn || this.rideSpot) {
+    this.stopSpot = !this.rideOn && !this.rideSpot && !this.nearest && !this.doorway && !this.connections.hasSelection() ? this.nearStop() : null;
+    if (this.rideOn || this.rideSpot || this.stopSpot) {
       this.nearestResident = null;
       this.nearestPole = null;
       this.boardToggle = null;
     }
     const pressed = this.input.consumeInteract();
-    if (pressed && !this.busy && !this.zip && (this.rideOn || this.rideSpot)) {
+    if (pressed && !this.busy && !this.zip && this.stopSpot) {
+      if (this.train.isActive) this.cb.travel?.();
+      else this.setMessage(this.train.unlocked ? 'El tren está dormido: llevale energía en la Estación' : 'El tren está dormido en la Estación, al sureste. Nora sabe qué le pasa');
+    } else if (pressed && !this.busy && !this.zip && (this.rideOn || this.rideSpot)) {
       if (this.rideOn) this.leaveRide();
       else if (this.rideSpot) this.boardRide(this.rideSpot);
     } else if (pressed && !this.busy && !this.zip) {
@@ -2643,8 +2790,10 @@ export class WorldMode {
       else if (this.boardToggle === 'off') this.dismount();
     }
     if (this.el.interact) {
-      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway && !this.nearBoard && !this.boardToggle && !this.rideSpot && !this.rideOn) || this.busy || !!this.zip || (this.rideOn === this.coaster && !!this.rideOn);
-      this.el.interact.textContent = this.rideOn
+      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway && !this.nearBoard && !this.boardToggle && !this.rideSpot && !this.rideOn && !this.stopSpot) || this.busy || !!this.zip || (this.rideOn === this.coaster && !!this.rideOn);
+      this.el.interact.textContent = this.stopSpot
+        ? '🚂 Viajar'
+        : this.rideOn
         ? 'Bajar'
         : this.rideSpot
           ? '🎠 Subir'

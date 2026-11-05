@@ -321,3 +321,6 @@ Pasan al 3D las zonas 6 y 7 del capítulo, en el barrio del canal sur: el taller
 
 ## 3D: Fase 6 — Parque de diversiones
 Nuevo distrito al norte: calesita, vuelta al mundo y montaña rusa que se reviven con su carrera de luz y a las que el Nexus se sube (la montaña rusa da una vuelta sola juntando chispitas de la vía). Los motores de la vuelta al mundo y de la montaña rusa se destraban con circuitos del Mundo Voltio. Feriante Tita, casa de los espejos (interior que revive), puestos de feria, cosas dormidas, sobres y el Chispi Pochoclín. Arreglo: las piezas que cambian de color al revivir ya se ven encendidas. Pruebas 3D: 28 escenarios. Decisión 049.
+
+## 3D: Fase 7 — Estación y tren
+Nuevo distrito al sureste: la Estación, con andén, vías, hall con reloj y un tren dormido. Su motor se destraba con un circuito del Mundo Voltio y se despierta con cable (carrera de luz «cable de vías»). Despierto, cada distrito tiene una parada 🚂 para viajar al instante (también desde el mapa). Jefa de estación Nora, rescate de Rielito y un sobre más. Cada carrera de luz usa el tema de su lugar. Pruebas 3D: 32 escenarios. Decisión 050.

@@ -10,7 +10,7 @@ export interface ResidentLook {
   hair: string;
   /** 1 = normal; >1 = más ancho (Bombo). */
   girth?: number;
-  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor' | 'skater' | 'inventor' | 'lamplighter' | 'barker';
+  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor' | 'skater' | 'inventor' | 'lamplighter' | 'barker' | 'conductor' | 'ranger' | 'sailor';
 }
 
 export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
@@ -31,6 +31,12 @@ export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
   lucio: { body: '#9be37a', pants: '#2c3f66', skin: '#c98e6b', hair: '#3a2a22', accessory: 'lamplighter' },
   // Tita: feriante del Parque de diversiones; chaleco a rayas, sombrero de paja y megáfono
   tita: { body: '#ff5a6e', pants: '#3d3550', skin: '#e3a986', hair: '#2a1d14', accessory: 'barker' },
+  // Nora: jefa de estación (Fase 7); gorra de visera con galón, saco azul y silbato
+  nora: { body: '#30406a', pants: '#2c2838', skin: '#c98e6b', hair: '#1d1630', accessory: 'conductor' },
+  // Lalo: guardaparque del Cerro (Fase 8); sombrero de ala ancha, pañuelo y binoculares
+  lalo: { body: '#6f8f3a', pants: '#5a4630', skin: '#e3a986', hair: '#7a4a2e', accessory: 'ranger' },
+  // Marina: capitana del Puerto (Fase 9); gorra de capitán, rayas y catalejo
+  marina: { body: '#3f7fd6', pants: '#fff3dc', skin: '#f0c39a', hair: '#e0a040', accessory: 'sailor' },
   goteo: { body: '#4d6b8a', pants: '#2c3040', skin: '#e3a986', hair: '#bdbdbd', girth: 1.15, accessory: 'mayor' },
 };
 
@@ -367,6 +373,58 @@ export class Resident3D {
       horn.rotation.x = Math.PI / 2;
       horn.position.set(0, -0.36, 0.14);
       this.armR.add(horn);
+    } else if (kind === 'conductor' || kind === 'sailor') {
+      // Gorra de visera con galón dorado (jefa de estación) o blanca con ancla (capitana)
+      const capColor = kind === 'sailor' ? '#fff3dc' : '#30406a';
+      const cap = rounded(new THREE.CylinderGeometry(0.22, 0.19, 0.12, 16), toon(capColor), 0.012);
+      cap.position.y = 0.3;
+      h.add(cap);
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.195, 0.195, 0.035, 16), toon(kind === 'sailor' ? '#1d1630' : '#ffc23a'));
+      band.position.y = 0.26;
+      h.add(band);
+      const visor = box(0.24, 0.02, 0.14, '#1d1630', { outline: 0.008 });
+      visor.position.set(0, 0.25, 0.24);
+      h.add(visor);
+      if (kind === 'sailor') {
+        for (let i = 0; i < 3; i += 1) {
+          const st = new THREE.Mesh(new THREE.CylinderGeometry(0.168, 0.168, 0.035, 18, 1, true), toon('#fff3dc'));
+          st.scale.set(1.06 * this.g, 1, 0.87 * this.g);
+          st.position.y = 0.5 + i * 0.08;
+          this.body.add(st);
+        }
+        const scope = rounded(new THREE.CylinderGeometry(0.03, 0.04, 0.4, 10), toon('#c8a24a'), 0.006);
+        scope.rotation.x = Math.PI / 2;
+        scope.position.set(0, -0.36, 0.14);
+        this.armR.add(scope);
+      } else {
+        for (const by of [0.47, 0.57, 0.67]) {
+          const btn = new THREE.Mesh(new THREE.SphereGeometry(0.02, 6, 5), toon('#ffc23a'));
+          btn.position.set(0, by, 0.165);
+          this.body.add(btn);
+        }
+        const whistle = rounded(new THREE.CylinderGeometry(0.025, 0.025, 0.1, 8), toon('#c8cdd6'), 0.005);
+        whistle.rotation.x = Math.PI / 2;
+        whistle.position.set(0, -0.34, 0.1);
+        this.armR.add(whistle);
+      }
+    } else if (kind === 'ranger') {
+      // Sombrero de ala ancha, pañuelo rojo y binoculares colgando
+      const crown = rounded(new THREE.CylinderGeometry(0.15, 0.18, 0.16, 14), toon('#a97a52'), 0.01);
+      crown.position.y = 0.34;
+      h.add(crown);
+      const brim = rounded(new THREE.CylinderGeometry(0.34, 0.34, 0.025, 20), toon('#a97a52'), 0.008);
+      brim.position.y = 0.27;
+      h.add(brim);
+      const scarf = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.14, 4), toon('#c8452f'));
+      scarf.rotation.x = Math.PI;
+      scarf.position.set(0, 0.66, 0.14);
+      this.body.add(scarf);
+      for (const sx of [-0.04, 0.04]) {
+        const bin = rounded(new THREE.CylinderGeometry(0.03, 0.03, 0.08, 8), toon('#2c2838'), 0.005);
+        bin.rotation.x = Math.PI / 2;
+        bin.position.set(sx, 0.52, 0.18);
+        this.body.add(bin);
+      }
     } else if (kind === 'mayor') {
       // Banda cruzada roja con borde dorado
       const sash = box(0.07, 0.5, 0.36, '#c8452f', { outline: false });

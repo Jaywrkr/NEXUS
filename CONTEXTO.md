@@ -238,6 +238,14 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Casa de los espejos**: puerta (25,5, −55,5), interior `World.espejos` (x = 800): `espejos-source → espejos-bola` (túnel `espejos`).
 - **keepVivid**: los materiales `toonUnique` (marcados `userData.unique`) se modifican en el lugar en vez de copiarse; así las referencias guardadas por cada clase siguen siendo las que se ven.
 
+### Estación y tren (Decisión 050, Fase 7)
+
+- **Región** `STATION_REGION` (x 52…94, z 38…62) + `STATION_CORRIDOR` (x 44…53, z 42,5…48,5) desde el canal sur. Distrito `estacion` abierto.
+- **Tren** `station-train` (`objects/train.ts`) en (82, 41), mira a +X; su largo va de x 71 a 85 (`distanceFrom` rectangular, rect de colisión sobre la vía). Fuente `station-source` (60, 48,5). Regla con túnel `via` y `available: train.unlocked` (flag `train-open`; nodos `STATION.nodes`).
+- **Paradas** (`TRAIN_STOPS` en `world/Station.ts`): centro (−7,5, −7,5), skatepark (64, 8,6), parque (8, −55), estación (72, 44,5); cerro y puerto tienen `need` y se construyen cuando su distrito está abierto. `nearStop()` (< 1,9 m) → botón «🚂 Viajar» → `cb.travel()` → `#travelPop` (main.ts `showTravel`) → `world.travelTo(id)` (fundido con `crossDoor`, flag `train-<id>`; 4 paradas → `train-tour`). `world.trainAwake`/`trainStops` para la interfaz.
+- **Nora** (`STATION.nora`, look `conductor`), texto `noraText()`, objetivo `stationStep()`. Rielito se rescata en (88, 58).
+- `tunnelPlanFor` usa una tabla objeto → tema (plaza, fountain, beacon, bridge, skate, casa, helado, cartas, taller, faroles, fiesta, feria, montana, espejos, via; si no, garden).
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -256,7 +264,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
 6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
 
-Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–049).
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–050).
 
 ### 6. Trampas técnicas ya conocidas (no repetirlas)
 
@@ -282,7 +290,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–049).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 6 hechas (Decisiones 043–049). Sigue la Fase 7: Estación y tren (despertar el tren y viajar entre distritos desde el mapa).**
+> **Fases 0 a 7 hechas (Decisiones 043–050). Sigue la Fase 8: Cerro y cascada (subida, mirador, tirolesa larga y cueva oscura).**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 

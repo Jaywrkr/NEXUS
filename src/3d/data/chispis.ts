@@ -100,7 +100,7 @@ export const CARDS: ChispiCard[] = [
   c('vagoncito', 'Vagoncito', 'via', 'comun', 'sobre', 'Lleva chispitas de un lado al otro, sin boleto.'),
   c('silbatin', 'Silbatín', 'via', 'comun', 'sobre', '¡Fiii! Así saluda. Así se despide. Así estornuda.'),
   c('boletito', 'Boletito', 'via', 'comun', 'sobre', 'Colecciona boletos de trenes que todavía no existen.'),
-  c('rielito', 'Rielito', 'via', 'brillante', 'sobre', 'Se desliza por las vías como si fueran tobogán.'),
+  c('rielito', 'Rielito', 'via', 'brillante', 'rescate', 'Se desliza por las vías como si fueran tobogán.'),
   // Mar
   c('caracolin', 'Caracolín', 'mar', 'comun', 'sobre', 'Si lo acercás a la oreja, se escucha el mar… y chistes.'),
   c('gaviotin', 'Gaviotín', 'mar', 'comun', 'sobre', 'Le roba las papas fritas a las otras gaviotas.'),

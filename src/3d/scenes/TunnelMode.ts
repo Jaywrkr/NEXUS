@@ -56,6 +56,7 @@ export const TUNNEL_THEMES: Record<string, TunnelTheme> = {
   feria: { name: 'Cable de feria', base: '#180608', near: '#ff5a6e', pulse: '#ffe066', spark: '#ffe066', bg: '#100405', deco: 'estrellas' },
   montana: { name: 'Cable de montaña rusa', base: '#140a02', near: '#ffe066', pulse: '#ff5a6e', spark: '#5ec8ff', bg: '#0c0601', deco: 'ondas' },
   espejos: { name: 'Cable de espejos', base: '#08101a', near: '#c9ecff', pulse: '#ff9ff3', spark: '#ffffff', bg: '#050a10', deco: 'burbujas' },
+  via: { name: 'Cable de vías', base: '#120c06', near: '#c7a17a', pulse: '#fff3a8', spark: '#ffb84a', bg: '#0b0703', deco: 'ondas' },
   skate: { name: 'Cable grafiti', base: '#140a04', near: '#ff9f43', pulse: '#d8ff6a', spark: '#7dff8a', bg: '#0d0703', deco: 'estrellas' },
   garden: { name: 'Cable de flores', base: '#1a0712', near: '#ff8fc8', pulse: '#fff0a8', spark: '#ffb3da', bg: '#12040c', deco: 'petalos' },
 };

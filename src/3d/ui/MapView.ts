@@ -1,6 +1,7 @@
 import { DISTRICTS } from '../world/districts';
 import { SKATE_REGION } from '../world/Skatepark';
 import { PARK_REGION } from '../world/Park';
+import { STATION_CORRIDOR, STATION_REGION } from '../world/Station';
 
 /*
  * Mapa de la ciudad visto desde arriba (menú → Mapa, o tecla M). Muestra dónde volvió el color,
@@ -64,6 +65,8 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
     [center, [98, 170, 68]],
     [SKATE_REGION, [200, 150, 90]],
     [PARK_REGION, [230, 120, 140]],
+    [STATION_REGION, [190, 160, 120]],
+    [STATION_CORRIDOR, [190, 160, 120]],
   ] as [{ minX: number; maxX: number; minZ: number; maxZ: number }, number[]][]) {
     for (let x = area.minX; x < area.maxX; x += step) {
       for (let z = area.minZ; z < area.maxZ; z += step) {
@@ -81,6 +84,9 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
   ctx.fillRect(px(-60), pz(-4), (62 + 60) * sx, 8 * sz);
   ctx.fillRect(px(-4), pz(-60), 8 * sx, (data.canal.minZ - 1.2 + 60) * sz);
   ctx.fillRect(px(-4), pz(PARK_REGION.maxZ), 8 * sx, (-45 - PARK_REGION.maxZ) * sz);
+  // Vías de la Estación
+  ctx.fillStyle = '#6a3e26';
+  ctx.fillRect(px(STATION_REGION.minX - 2), pz(40.2), (STATION_REGION.maxX - STATION_REGION.minX + 8) * sx, 1.6 * sz);
 
   // Canal y puente
   ctx.fillStyle = '#3f86c8';

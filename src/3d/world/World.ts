@@ -6,6 +6,7 @@ import { buildMigaHouse, type InteriorInfo, type ReviveRoom } from './MigaHouse'
 import { buildCardRoom, buildIceCreamRoom } from './ShopRooms';
 import { buildFestivalStreet, buildWorkshopRoom, type WorkshopRoom } from './Festival';
 import { PARK_REGION, buildMirrorRoom, buildPark } from './Park';
+import { STATION_CORRIDOR, STATION_REGION, buildStation } from './Station';
 import { SKATE_REGION, buildSkatepark, type SkateparkInfo } from './Skatepark';
 
 export interface Rect {
@@ -46,6 +47,9 @@ const REGIONS: Rect[] = [
   // Fase 6: la calle norte-sur sigue hasta el Parque de diversiones
   { minX: -(4 + 2.4 - 0.3), maxX: 4 + 2.4 - 0.3, minZ: PARK_REGION.maxZ - 1, maxZ: -BOUNDS + 1 },
   PARK_REGION,
+  // Fase 7: pasaje al sureste y la Estación
+  STATION_CORRIDOR,
+  STATION_REGION,
 ];
 /** Jardín municipal (zona 5): borde de cercos, entradas al norte y al este. */
 export const GARDEN = { minX: -26, maxX: 4, minZ: 47, maxZ: 61.5 };
@@ -191,6 +195,7 @@ export class World {
     this.taller = buildWorkshopRoom(s, this.rects);
     buildFestivalStreet(s, this.rects);
     buildPark(s, this.rects);
+    buildStation(s, this.rects);
     this.espejos = buildMirrorRoom(s, this.rects);
     this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller, this.espejos);
     this.buildOutsideFx();

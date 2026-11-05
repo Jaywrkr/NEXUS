@@ -1214,3 +1214,89 @@ test('3D: Parque de diversiones — calesita, motores en el Mundo Voltio, vuelta
   expect(await w(() => window.__nexus3d.world.parkDone)).toBe(3);
   expect(await w(() => [window.__nexus3d.world.wheel.unlocked, window.__nexus3d.world.coaster.unlocked])).toEqual([true, true]);
 });
+
+test('3D: Estación y tren — circuito en el Mundo Voltio, el tren despierta y se viaja entre paradas', async ({ page }) => {
+  test.setTimeout(300_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const active = (id) => w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, id);
+  const pos = () => w(() => { const p = window.__nexus3d.world.nexus.position; return [p.x, p.z]; });
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Se llega caminando por el pasaje del sureste
+  await tp(page, 42, 45.5);
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  await step(page, 2.5);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  expect((await pos())[0]).toBeGreaterThan(50);
+  await step(page, 0.6);
+  expect(await text(page, 'districtBanner')).toContain('Estación');
+  expect(await text(page, 'msg')).toContain('motor trabado');
+
+  // La parada todavía no sirve: el tren duerme
+  await tp(page, 73.2, 45.6);
+  expect(await text(page, 'interact')).toBe('🚂 Viajar');
+  await touch(page);
+  expect(await text(page, 'msg')).toContain('dormido');
+
+  // Motor trabado hasta cerrar el circuito de las vías
+  await connect(page, [60.9, 49.3], [78, 43]);
+  expect(await active('station-train')).toBe(false);
+  expect(await text(page, 'toast')).toContain('motor trabado');
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    p.setFlag('hood');
+    p.setFlag('voltio-seen');
+    document.body.classList.add('has-hood');
+  });
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  expect(await text(page, 'msg')).toContain('nodos de las vías');
+  const nodes = await w(() => window.__nexus3d.world.voltio.nodes.filter((n) => n.circuit === 'train-open').map((n) => [n.x, n.z]));
+  expect(nodes.length).toBe(3);
+  for (const [x, z] of nodes) await tp(page, x, z);
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.train.unlocked)).toBe(true);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.3);
+
+  // El tren despierta con cable (carrera de luz de vías) y la estación revive
+  await connect(page, [60.9, 49.3], [78, 43]);
+  expect(await active('station-train')).toBe(true);
+  await step(page, 3);
+  expect(await w(() => window.__nexus3d.world.lifeAt(73, 49))).toBeGreaterThan(0.9);
+  expect(await text(page, 'msg')).toContain('parada');
+
+  // Viajar desde la parada: elegir el Parque
+  await tp(page, 73.2, 45.6);
+  await touch(page);
+  await expect.poll(() => w(() => !document.getElementById('travelPop').hidden)).toBe(true);
+  expect(await w(() => document.querySelectorAll('#travelList .travel-stop').length)).toBeGreaterThanOrEqual(4);
+  await page.screenshot({ path: test.info().outputPath('estacion-viaje.png') });
+  await page.click('#travelList [data-stop="parque"]');
+  await expect.poll(async () => { const [x, z] = await pos(); return Math.hypot(x - 8, z + 55) < 3; }).toBe(true);
+  await step(page, 0.6);
+  expect(await text(page, 'districtBanner')).toContain('Parque');
+
+  // Desde el mapa también se viaja
+  await page.keyboard.press('KeyM');
+  await expect.poll(() => w(() => !document.getElementById('mapTravel').hidden)).toBe(true);
+  await page.click('#mapTravel');
+  await page.click('#travelList [data-stop="skatepark"]');
+  await expect.poll(async () => (await pos())[0] > 60).toBe(true);
+  await w(() => window.__nexus3d.world.travelTo('centro'));
+  await expect.poll(async () => (await pos())[0] < 0).toBe(true);
+  expect(await w(() => window.__nexus3d.world.progress.hasFlag('train-tour'))).toBe(false);
+  await w(() => window.__nexus3d.world.travelTo('estacion'));
+  await expect.poll(() => w(() => window.__nexus3d.world.progress.hasFlag('train-tour'))).toBe(true);
+
+  // Nora, la jefa de estación, está contenta; se guarda
+  await step(page, 1);
+  expect(await w(() => window.__nexus3d.world.residents.find((r) => r.id === 'nora').isHappy)).toBe(true);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await active('station-train')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.trainAwake)).toBe(true);
+});
