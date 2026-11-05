@@ -899,3 +899,96 @@ test('3D: cartas de Chispis — sobres, rescates en Voltio, cambios con vecinos 
   expect(await w(() => window.__nexus3d.world.packSpots.some((p) => p.id === 'banco-plaza'))).toBe(false);
   expect(await w(() => window.__nexus3d.world.voltio.isCaged('chispazo'))).toBe(false);
 });
+
+test('3D: Chispi compañero — se elige en el álbum, sigue al Nexus y cada tipo ayuda', async ({ page }) => {
+  test.setTimeout(240_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const choose = (id) => w((id) => window.__nexus3d.world.setCompanion(id, false), id);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    for (const id of ['hojin', 'chispazo', 'turbochispa', 'gotita', 'olita', 'ondita', 'pochoclin']) p.addCard(id);
+  });
+
+  // Se elige desde la carta del álbum y aparece al lado del Nexus
+  await page.locator('#menuBtn').click();
+  await page.locator('#mAlbum').click();
+  await page.locator('#albumGrid .mini-card[data-card="hojin"]').click();
+  await expect(page.locator('#cardBuddy')).toHaveText('⭐ Elegir de compañero');
+  await page.locator('#cardBuddy').click();
+  await expect(page.locator('#cardBuddy')).toHaveText('⭐ Es tu compañero');
+  expect(await page.locator('#albumGrid .mini-card.is-buddy').getAttribute('data-card')).toBe('hojin');
+  await page.locator('#cardOk').click();
+  await page.locator('#albumBack').click();
+  expect(await w(() => window.__nexus3d.world.companionId)).toBe('hojin');
+  expect(await text(page, 'buddy')).toContain('Hojín');
+
+  // Sigue al Nexus al caminar
+  await tp(page, -20, -11);
+  await page.keyboard.down('KeyD');
+  await step(page, 2);
+  await page.keyboard.up('KeyD');
+  await step(page, 1);
+  const gap = await w(() => {
+    const g = window.__nexus3d.world;
+    return Math.hypot(g.companion.position.x - g.nexus.position.x, g.companion.position.z - g.nexus.position.z);
+  });
+  expect(gap).toBeLessThan(2.2);
+
+  // Bosque: salta más alto (más de 1,5 m; sin ayudita, ~1,28 m)
+  const peak = async () => {
+    await tp(page, -20, -8);
+    await w(() => window.__nexus3d.world.jump());
+    let top = 0;
+    for (let i = 0; i < 12; i += 1) {
+      await step(page, 0.05);
+      top = Math.max(top, await w(() => window.__nexus3d.world.nexus.position.y));
+    }
+    await step(page, 1);
+    return top;
+  };
+  expect(await peak()).toBeGreaterThan(1.5);
+  await choose(null);
+  expect(await peak()).toBeLessThan(1.4);
+
+  // Luz: imán más grande para las chispitas
+  await choose('chispazo');
+  expect(await w(() => window.__nexus3d.world.pickups.magnet)).toBeGreaterThan(3);
+  // Mar: más voltaje en el Mundo Voltio
+  await choose('olita');
+  expect(await w(() => window.__nexus3d.world.voltio.maxVolt)).toBe(45);
+  expect(await w(() => window.__nexus3d.world.pickups.magnet)).toBe(1.4);
+  // Agua: pisar un charco da un impulso
+  await choose('gotita');
+  await tp(page, -11, -3.5);
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  await step(page, 0.9);
+  expect(await w(() => window.__nexus3d.world.nexus.speedScale)).toBeGreaterThan(1.4);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  // Ruedas: más velocidad en patineta
+  await choose('turbochispa');
+  await w(() => window.__nexus3d.world.progress.setFlag('board'));
+  await tp(page, 66, 0);
+  await w(() => window.__nexus3d.world.mount());
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  await step(page, 3);
+  expect(await w(() => window.__nexus3d.world.nexus.speed)).toBeGreaterThan(9.5);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  await w(() => window.__nexus3d.world.dismount());
+  // Radio: escucha un sobre cercano y vuela a mostrarlo
+  await choose('ondita');
+  const pack = await w(() => window.__nexus3d.world.packSpots.find((p) => p.id === 'callejon'));
+  await tp(page, pack.x + 8, pack.z);
+  await step(page, 7);
+  expect(await w(() => window.__nexus3d.world.companion.scouting)).toBe(true);
+
+  // Se guarda
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await w(() => window.__nexus3d.world.companionId)).toBe('ondita');
+});
