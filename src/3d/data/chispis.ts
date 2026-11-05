@@ -98,13 +98,13 @@ export const CARDS: ChispiCard[] = [
   c('musguito', 'Musguito', 'bosque', 'brillante', 'rescate', 'Es suave como una almohada y igual de dormilón.'),
   // Vía
   c('vagoncito', 'Vagoncito', 'via', 'comun', 'sobre', 'Lleva chispitas de un lado al otro, sin boleto.'),
-  c('silbatin', 'Silbatín', 'via', 'comun', 'sobre', '¡Fiii! Así saluda. Así se despide. Así estornuda.'),
+  c('silbatin', 'Silbatín', 'via', 'brillante', 'sobre', '¡Fiii! Así saluda. Así se despide. Así estornuda.'),
   c('boletito', 'Boletito', 'via', 'comun', 'sobre', 'Colecciona boletos de trenes que todavía no existen.'),
   c('rielito', 'Rielito', 'via', 'brillante', 'rescate', 'Se desliza por las vías como si fueran tobogán.'),
   // Mar
   c('caracolin', 'Caracolín', 'mar', 'comun', 'sobre', 'Si lo acercás a la oreja, se escucha el mar… y chistes.'),
   c('gaviotin', 'Gaviotín', 'mar', 'comun', 'sobre', 'Le roba las papas fritas a las otras gaviotas.'),
-  c('olita', 'Olita', 'mar', 'comun', 'sobre', 'Va y viene, va y viene, va y viene…'),
+  c('olita', 'Olita', 'mar', 'brillante', 'sobre', 'Va y viene, va y viene, va y viene…'),
   c('farito', 'Farito', 'mar', 'dorada', 'sobre', 'Guarda la última luz del faro del puerto.'),
 ];
 
@@ -123,7 +123,9 @@ export function rollPack(owned: (id: string) => boolean, rnd: () => number = Mat
     const roll = rnd();
     let rarity: Rarity = roll < 0.07 ? 'dorada' : roll < 0.32 ? 'brillante' : 'comun';
     if (minRarity === 'brillante' && rarity === 'comun') rarity = 'brillante';
-    const ofRarity = PACK_POOL.filter((k) => k.rarity === rarity);
+    // Si una rareza se quedó sin cartas de sobre (pasaron a rescates), se usa la más cercana
+    const exact = PACK_POOL.filter((k) => k.rarity === rarity);
+    const ofRarity = exact.length ? exact : PACK_POOL.filter((k) => (rarity === 'comun' ? k.rarity === 'comun' : k.rarity !== 'comun'));
     const missing = ofRarity.filter((k) => !owned(k.id) && !out.includes(k.id));
     const list = missing.length && rnd() < 0.8 ? missing : ofRarity;
     return list[Math.floor(rnd() * list.length)];
