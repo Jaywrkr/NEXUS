@@ -249,7 +249,7 @@ export class Progress3D {
       seenCompletion: this.state.seenCompletion,
       connections: this.getConnections(),
       position: null,
-      story: { heard: [...this.state.heard], discoveries: [], chapterSeen: false },
+      story: { heard: [...this.state.heard], discoveries: [], chapterSeen: this.state.flags.includes('chapter-done') },
     };
   }
 

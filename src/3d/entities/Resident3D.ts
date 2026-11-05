@@ -10,7 +10,7 @@ export interface ResidentLook {
   hair: string;
   /** 1 = normal; >1 = más ancho (Bombo). */
   girth?: number;
-  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor' | 'skater';
+  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor' | 'skater' | 'inventor' | 'lamplighter';
 }
 
 export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
@@ -25,6 +25,10 @@ export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
   // Alcalde Goteo: confunde tener un aspersor con gobernar; banda de alcalde, bombín, bigote y regadera
   // Rulo: patinador del Skatepark (Fase 1); gorra al revés, rodilleras y muñequeras
   rulo: { body: '#ff9f43', pants: '#2c3f66', skin: '#b9825f', hair: '#1d1630', accessory: 'skater' },
+  // Pipa: inventora de juguetes del taller; antiparras en la frente y delantal con bolsillos
+  pipa: { body: '#c7a0ef', pants: '#3d3550', skin: '#f0c39a', hair: '#e0563f', accessory: 'inventor' },
+  // Lucio: farolero; gorra con visera, chaleco verde y una vara para encender faroles
+  lucio: { body: '#9be37a', pants: '#2c3f66', skin: '#c98e6b', hair: '#3a2a22', accessory: 'lamplighter' },
   goteo: { body: '#4d6b8a', pants: '#2c3040', skin: '#e3a986', hair: '#bdbdbd', girth: 1.15, accessory: 'mayor' },
 };
 
@@ -297,6 +301,48 @@ export class Resident3D {
         band.position.y = -0.28;
         arm.add(band);
       }
+    } else if (kind === 'inventor') {
+      // Pelo con rodete, antiparras en la frente y delantal con herramientas
+      const bun = rounded(new THREE.SphereGeometry(0.12, 10, 8), toon(RESIDENT_LOOKS.pipa.hair), 0.01);
+      bun.position.set(0, 0.42, -0.1);
+      h.add(bun);
+      const strap = rounded(new THREE.TorusGeometry(0.235, 0.022, 6, 22), toon('#3d3550'), 0.006);
+      strap.rotation.x = Math.PI / 2 - 0.25;
+      strap.position.y = 0.24;
+      h.add(strap);
+      for (const s of [-1, 1]) {
+        const lens = rounded(new THREE.CylinderGeometry(0.07, 0.07, 0.06, 12), toon('#5ec8ff'), 0.008);
+        lens.rotation.x = Math.PI / 2 - 0.25;
+        lens.position.set(s * 0.085, 0.3, 0.2);
+        h.add(lens);
+      }
+      const apron = box(0.26, 0.32, 0.02, '#fff3dc', { outline: 0.006 });
+      apron.position.set(0, 0.48, 0.15 * this.g);
+      this.body.add(apron);
+      const pocket = box(0.14, 0.07, 0.015, '#ffc23a', { outline: false });
+      pocket.position.set(0, 0.42, 0.162 * this.g);
+      this.body.add(pocket);
+      const wrench = box(0.035, 0.22, 0.03, '#8b8f9a', { outline: 0.006 });
+      wrench.position.set(0, -0.34, 0.06);
+      this.armR.add(wrench);
+    } else if (kind === 'lamplighter') {
+      // Gorra con visera, chaleco y la vara de encender faroles con una llamita
+      const cap = rounded(new THREE.SphereGeometry(0.23, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon('#2c3f66'), 0.014);
+      cap.position.y = 0.2;
+      h.add(cap);
+      const visor = box(0.26, 0.025, 0.16, '#2c3f66', { outline: 0.008 });
+      visor.position.set(0, 0.22, 0.26);
+      h.add(visor);
+      const vest = new THREE.Mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.2, 18, 1, true), toon('#4f8f3a'));
+      vest.scale.set(1.07 * this.g, 1, 0.88 * this.g);
+      vest.position.y = 0.6;
+      this.body.add(vest);
+      const rod = rounded(new THREE.CylinderGeometry(0.014, 0.014, 1.1, 6), toon('#7a4a2e'), 0.005);
+      rod.position.set(0, -0.1, 0.08);
+      this.armR.add(rod);
+      const flame = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.1, 8), glow('#ffb84a'));
+      flame.position.set(0, 0.5, 0.08);
+      this.armR.add(flame);
     } else if (kind === 'mayor') {
       // Banda cruzada roja con borde dorado
       const sash = box(0.07, 0.5, 0.36, '#c8452f', { outline: false });

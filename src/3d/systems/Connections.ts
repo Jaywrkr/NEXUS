@@ -13,6 +13,10 @@ export interface ConnectionRule {
   useTunnel?: boolean;
   /** El cable se desvanece después de conectar (cosas chicas: no llenan el barrio de cables). */
   ephemeral?: boolean;
+  /** Si devuelve false, la conexión todavía no se puede hacer (ej.: el escenario de la fiesta). */
+  available?: () => boolean;
+  /** Qué se dice cuando todavía no está disponible. */
+  blockedMessage?: string;
 }
 
 export type FeedbackKind = 'info' | 'ok' | 'error';
@@ -124,6 +128,12 @@ export class Connections {
       this.drawCable(source, target, false);
       if (this.events.invalid?.(source, target)) return;
       this.events.feedback('Esa conexión no encaja, prueba otra', 'error');
+      this.audio.playError();
+      return;
+    }
+    if (rule.available && !rule.available()) {
+      this.drawCable(source, target, false);
+      this.events.feedback(rule.blockedMessage ?? 'Todavía no se puede conectar', 'info');
       this.audio.playError();
       return;
     }

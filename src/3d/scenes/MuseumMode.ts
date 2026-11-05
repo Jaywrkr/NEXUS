@@ -10,6 +10,8 @@ export const ZONE_FRAGMENTS = [
   { id: 'beacon-fragment', label: 'Fragmento de la antena' },
   { id: 'bridge-fragment', label: 'Fragmento del puente' },
   { id: 'garden-fragment', label: 'Flor del jardín' },
+  { id: 'workshop-fragment', label: 'Pato del taller' },
+  { id: 'lantern-fragment', label: 'Farol de Lucio' },
 ];
 /** No cuenta para "¡Colección completa!" (Decisión 019). */
 export const SECRET_FRAGMENT = { id: 'secret-fragment', label: 'Fragmento secreto' };

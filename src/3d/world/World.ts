@@ -4,6 +4,7 @@ import { FOG_COLOR, FOG_FAR, FOG_NEAR, LIFE, box, flat, gradientMap, makeSky, ou
 import { clamp, pick, rnd } from '../core/util';
 import { buildMigaHouse, type InteriorInfo, type ReviveRoom } from './MigaHouse';
 import { buildCardRoom, buildIceCreamRoom } from './ShopRooms';
+import { buildFestivalStreet, buildWorkshopRoom, type WorkshopRoom } from './Festival';
 import { SKATE_REGION, buildSkatepark, type SkateparkInfo } from './Skatepark';
 
 export interface Rect {
@@ -86,6 +87,8 @@ export class World {
   /** Fase 2: la heladería y la tienda de cartas (interiores de los locales de la calle). */
   readonly heladeria: ReviveRoom;
   readonly tienda: ReviveRoom;
+  /** Fase 5: el taller de Pipa por dentro (x = 700). */
+  readonly taller: WorkshopRoom;
   /** Lo que se nota afuera al revivir cada interior. */
   readonly outside = {
     /** Guirnalda de luces en el frente de la casa de Miga. */
@@ -179,7 +182,9 @@ export class World {
     this.skate = buildSkatepark(s, this.rects);
     this.heladeria = buildIceCreamRoom(s, this.rects);
     this.tienda = buildCardRoom(s, this.rects);
-    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda);
+    this.taller = buildWorkshopRoom(s, this.rects);
+    buildFestivalStreet(s, this.rects);
+    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller);
     this.buildOutsideFx();
 
     // Rendimiento: toda la escenografía quieta se junta en pocas mallas.

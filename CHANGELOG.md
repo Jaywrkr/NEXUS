@@ -315,3 +315,6 @@ La casa de Miga, la heladería y la tienda de cartas tienen interior gris con al
 
 ## 3D: Fase 4 — Chispi compañero
 Cualquier Chispi del álbum se puede elegir de compañero: sigue al Nexus en los dos mundos, salta y baila con él y tiene una ayudita según su tipo (imán y chispitas señaladas, impulso en charcos, sobres escuchados, más color, más velocidad en patineta, más chispitas en las carreras, salto más alto, caminar más rápido, más voltaje). Su nombre se ve en el HUD. Pruebas 3D: 26 escenarios. Decisión 047.
+
+## 3D: Fase 5 — el Centro completo y la fiesta
+Pasan al 3D las zonas 6 y 7 del capítulo, en el barrio del canal sur: el taller de Pipa (interior gris que revive: motor → pato y campana → desfile) y los faroles de Lucio (camino directo o curioso, con el farol tímido). Con todos los preparativos, la salida de los faroles enciende el escenario y el cañón de confeti: fiesta con todos los vecinos bailando y pantalla final con los resultados del capítulo. Ahora son 7 lugares (★ n/7) y 8 vitrinas en el museo; el color vuelve a todo el pueblo con los siete. Vecinos nuevos Pipa y Lucio, 4 cosas dormidas más, sobres nuevos y un Chispi más para rescatar. Pruebas 3D: 27 escenarios. Decisión 048.

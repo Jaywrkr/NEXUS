@@ -1269,3 +1269,39 @@ body.voltio #labels {
   font-size: 18px;
   filter: drop-shadow(1px 1px 0 var(--ink));
 }
+
+/* ---------- Fase 5: final del capítulo ---------- */
+.end-sheet {
+  justify-items: center;
+  text-align: center;
+  background: linear-gradient(170deg, #fff3dc, #ffe2f4);
+  animation: sheet-in 0.4s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+.end-sheet h2 {
+  font-size: clamp(28px, 6vw, 40px);
+  color: #c8452f;
+}
+.end-text {
+  margin: 0;
+}
+.end-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+}
+.end-stats li {
+  padding: 8px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 3px 3px 0 var(--ink);
+  font-weight: 800;
+}
+.end-stats b {
+  display: block;
+  font-family: var(--display);
+  font-size: 22px;
+}

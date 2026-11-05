@@ -67,6 +67,7 @@ class Game {
       pack: (ids) => this.showPack(ids),
       trade: (o) => this.showTrade(o),
       album: () => this.showAlbum(),
+      ending: (s) => this.showEnding(s),
     });
   }
 
@@ -166,6 +167,7 @@ class Game {
     });
     $('mapBack').addEventListener('click', () => this.closeMenu());
     $('packOk').addEventListener('click', () => this.closePop('packPop'));
+    $('endOk').addEventListener('click', () => this.closePop('endPop'));
     $('cardBuddy').addEventListener('click', () => {
       const id = ($('cardBuddy') as HTMLButtonElement).dataset.card;
       if (!id) return;
@@ -243,7 +245,7 @@ class Game {
     this.paused = false;
     this.mapOpen = false;
     $('menu').hidden = true;
-    for (const k of ['cardPop', 'packPop', 'tradePop', 'albumPop']) $(k).hidden = true;
+    for (const k of ['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop']) $(k).hidden = true;
     $('mapPanel').hidden = true;
     document.body.classList.remove('paused');
     this.input.flush();
@@ -287,7 +289,7 @@ class Game {
 
   private closePop(id: string): void {
     $(id).hidden = true;
-    if (['cardPop', 'packPop', 'tradePop', 'albumPop'].some((k) => !$(k).hidden)) return;
+    if (['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop'].some((k) => !$(k).hidden)) return;
     this.closeMenu();
   }
 
@@ -399,6 +401,18 @@ class Game {
     for (const el of Array.from(document.querySelectorAll<HTMLElement>('#albumGrid .mini-card'))) {
       el.classList.toggle('is-buddy', el.dataset.card === this.world.companionId);
     }
+  }
+
+  /** Final del capítulo 1: resultados de la partida. */
+  private showEnding(s: { places: number; placesTotal: number; awake: number; awakeTotal: number; cards: number; cardsTotal: number; chispis: number }): void {
+    const items: [string, string][] = [
+      ['★ Lugares con vida', `${s.places}/${s.placesTotal}`],
+      ['✦ Cosas despiertas', `${s.awake}/${s.awakeTotal}`],
+      ['🃏 Cartas', `${s.cards}/${s.cardsTotal}`],
+      ['⚡ Chispis rescatados', `${s.chispis}`],
+    ];
+    $('endStats').innerHTML = items.map(([k, v]) => `<li><b>${v}</b>${k}</li>`).join('');
+    this.pauseFor('endPop');
   }
 
   /** Álbum: las 40 cartas por tipo; las que faltan se ven como sombra. */

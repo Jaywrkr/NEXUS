@@ -60,7 +60,7 @@ export const CARDS: ChispiCard[] = [
   // Luz
   c('chispazo', 'Chispazo', 'luz', 'brillante', 'rescate', 'Prende la luz de la plaza con un estornudo.'),
   c('foquito', 'Foquito', 'luz', 'comun', 'sobre', 'Cuando tiene una idea, se le prende la cabeza.'),
-  c('linternin', 'Linternín', 'luz', 'comun', 'sobre', 'Le tiene miedo a la oscuridad, por eso brilla.'),
+  c('linternin', 'Linternín', 'luz', 'brillante', 'cambio', 'Le tiene miedo a la oscuridad, por eso brilla. Lucio lo cuida.', 'lucio'),
   c('tuerquin', 'Tuerquín', 'luz', 'brillante', 'cambio', 'Ayuda a Miga a arreglar todo… y a desarmarlo.', 'miga'),
   c('faroluz', 'Faroluz', 'luz', 'dorada', 'sobre', 'Dicen que vio a la Gran Chispa antes de romperse.'),
   // Agua
@@ -88,8 +88,8 @@ export const CARDS: ChispiCard[] = [
   c('turbochispa', 'Turbochispa', 'ruedas', 'dorada', 'sobre', 'Una vez fue tan rápido que llegó ayer.'),
   // Feria
   c('pochoclin', 'Pochoclín', 'feria', 'comun', 'sobre', 'Explota de alegría. Literalmente: ¡pop!'),
-  c('calesito', 'Calesito', 'feria', 'comun', 'sobre', 'Da vueltas y vueltas y nunca se marea.'),
-  c('globin', 'Globín', 'feria', 'comun', 'sobre', 'Si lo soltás, se va volando a saludar a las nubes.'),
+  c('calesito', 'Calesito', 'feria', 'brillante', 'cambio', 'Da vueltas y vueltas y nunca se marea. Pipa lo armó.', 'pipa'),
+  c('globin', 'Globín', 'feria', 'brillante', 'rescate', 'Si lo soltás, se va volando a saludar a las nubes.'),
   c('monito', 'Moñito', 'feria', 'brillante', 'cambio', 'Don Paso le enseñó a saludar como una estrella.', 'don-paso'),
   // Bosque
   c('hojin', 'Hojín', 'bosque', 'comun', 'sobre', 'En otoño se pone naranja y se hace el importante.'),

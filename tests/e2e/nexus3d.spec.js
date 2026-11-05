@@ -155,19 +155,19 @@ test('3D: los cinco lugares, el museo y el progreso guardado', async ({ page }) 
   await connect(page, [-4.2, 53.4], [-8.6, 54.2]);
   expect(await text(page, 'msg')).toContain('El jardín volvió a florecer');
   await collect(page, -13, 58.2);
-  expect(await text(page, 'msg')).toBe('¡El barrio entero volvió a la vida!');
+  expect(await text(page, 'msg')).toBe('¡Fragmento recuperado!');
   await step(page, 4);
-  // Con los cinco lugares, el color vuelve a todo el pueblo (también lejos de las zonas)
-  expect(await page.evaluate(() => window.__nexus3d.world.lifeAt(-40, 40))).toBeGreaterThan(0.99);
+  // Con cinco de siete lugares (faltan el taller y los faroles), lejos de las zonas sigue gris
+  expect(await page.evaluate(() => window.__nexus3d.world.lifeAt(-40, 40))).toBeLessThan(0.05);
   await expect.poll(() => mode(page), { timeout: 15_000 }).toContain('mode-museum');
-  await expect(page.locator('#museumComplete')).toBeVisible();
+  await expect(page.locator('#museumComplete')).toBeHidden();
   await leaveMuseum(page);
 
   // El fragmento secreto (detrás de la casa) no cuenta para la colección de zonas
   await collect(page, -18, -39.6);
   expect(await text(page, 'msg')).toBe('¡Encontraste un fragmento secreto!');
   await leaveMuseum(page);
-  expect(await text(page, 'stars')).toBe('★ 5/5');
+  expect(await text(page, 'stars')).toBe('★ 5/7');
 
   // Recargar: Continuar restaura todo
   await page.goto('/');
@@ -176,8 +176,8 @@ test('3D: los cinco lugares, el museo y el progreso guardado', async ({ page }) 
   await expect(page.locator('#play')).toBeHidden();
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
-  expect(await text(page, 'msg')).toBe('Ya le devolviste la vida a todo el barrio');
-  expect(await text(page, 'stars')).toBe('★ 5/5');
+  expect(await text(page, 'msg')).toBe('Le devolviste la vida a 5 de 7 lugares — sigue explorando');
+  expect(await text(page, 'stars')).toBe('★ 5/7');
 });
 
 test('3D: el señuelo no encaja y una conexión no se repite', async ({ page }) => {
@@ -304,8 +304,8 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     return { nests, sleepers: wm.sleepers.map((s) => ({ id: s.id, x: s.x, z: s.z })) };
   });
   expect(info.nests.length).toBe(6);
-  expect(info.sleepers.length).toBe(20);
-  expect(await text(page, 'awake')).toBe('✦ 0/20');
+  expect(info.sleepers.length).toBe(24);
+  expect(await text(page, 'awake')).toBe('✦ 0/24');
   expect(await text(page, 'charge')).toBe('🎒 ○○○○○');
 
   // Con la mochila vacía no se despierta nada
@@ -348,7 +348,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     woken += 1;
     expect(await w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, sl.id), `despierta ${sl.id}`).toBe(true);
     expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
-    expect(await text(page, 'awake')).toBe(`✦ ${woken}/20`);
+    expect(await text(page, 'awake')).toBe(`✦ ${woken}/24`);
     if (woken === 1) {
       await touch(page);
       expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
@@ -370,7 +370,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
-  expect(await text(page, 'awake')).toBe('✦ 20/20');
+  expect(await text(page, 'awake')).toBe('✦ 24/24');
   expect(await text(page, 'charge')).toBe('🎒 ●○○○○');
   expect(await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id?.startsWith('spark-hidden')).length)).toBe(9);
 
@@ -1000,4 +1000,99 @@ test('3D: Chispi compañero — se elige en el álbum, sigue al Nexus y cada tip
   await page.reload();
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   expect(await w(() => window.__nexus3d.world.companionId)).toBe('ondita');
+});
+
+test('3D: el Centro completo — taller de Pipa, faroles de Lucio y la fiesta final', async ({ page }) => {
+  test.setTimeout(360_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const active = (id) => w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, id);
+  const at = (id) => w((id) => { const o = window.__nexus3d.world.connections.all.find((k) => k.id === id); return [o.x, o.z]; }, id);
+  const near = async (id, dx = 0.9, dz = 0.9) => { const [x, z] = await at(id); return [x + dx, z + dz]; };
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Los cinco primeros lugares ya resueltos (como una partida guardada)
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    for (const [s, t] of [
+      ['energy-source', 'lamp'], ['lamp', 'door'], ['fountain-source', 'fountain'], ['beacon-source-a', 'beacon'],
+      ['beacon-source-b', 'beacon'], ['bridge-source', 'bridge'], ['garden-source', 'garden-sprinkler'], ['garden-sprinkler', 'garden-bed'],
+    ]) p.saveConnection(s, t);
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  await page.evaluate(() => document.getElementById('continue').click());
+  await expect.poll(() => mode(page)).toContain('mode-world');
+  expect(await text(page, 'stars')).toContain('/7');
+
+  // La fiesta no se puede armar sin el desfile
+  // (primero los faroles: energía → inicio → curioso → tímido → salida)
+  await connect(page, await near('lantern-source'), await near('lantern-first', 0.6, 0.6));
+  expect(await active('lantern-first')).toBe(true);
+  await connect(page, await near('lantern-first', 0.6, 0.6), await near('lantern-side-a', 0.6, 0.6));
+  await connect(page, await near('lantern-side-a', 0.6, 0.6), await near('lantern-side-b', 0.6, -0.6));
+  await step(page, 1);
+  expect(await text(page, 'storyWho')).toBe('El farol tímido');
+  await connect(page, await near('lantern-side-b', 0.6, -0.6), await near('lantern-last', 0.6, 0.6));
+  expect(await active('lantern-last')).toBe(true);
+  expect(await text(page, 'msg')).toContain('Tenemos camino');
+  await connect(page, await near('lantern-last', 0.6, 0.6), [32.5, 61]);
+  expect(await active('party-stage')).toBe(false);
+  expect(await text(page, 'toast')).toContain('Faltan preparativos');
+
+  // Taller de Pipa: entrar, motor (carrera de luz), pato y campana, desfile
+  const door = await w(() => {
+    const W = { x: 41.5, z: 51.5 + 2.5 + 1.0 };
+    return W;
+  });
+  await tp(page, door.x, door.z);
+  expect(await text(page, 'interact')).toBe('Entrar');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  expect(await text(page, 'storyWho')).toContain('Pipa');
+  await connect(page, await near('toy-source'), await near('toy-motor', 1.2, 1.2));
+  expect(await active('toy-motor')).toBe(true);
+  await connect(page, await near('toy-motor', 1.2, 1.2), await near('toy-duck', 0, 0.8));
+  await connect(page, await near('toy-motor', 1.2, 1.2), await near('toy-bell', 0, 0.8));
+  await connect(page, await near('toy-duck', 0, 0.8), await near('toy-parade', 0, 1.4));
+  expect(await active('toy-parade')).toBe(false);
+  expect(await text(page, 'msg')).toContain('las dos cosas');
+  await connect(page, await near('toy-bell', 0, 0.8), await near('toy-parade', 0, 1.4));
+  expect(await active('toy-parade')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.world.taller.gray.alive)).toBe(true);
+  const exit = await w(() => window.__nexus3d.world.world.taller.exit);
+  await tp(page, exit.x, exit.z - 0.3);
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(false);
+  expect(await text(page, 'stars')).toBe('★ 0/7');
+
+  // Ahora sí: salida → escenario (carrera de luz) → confeti = ¡fiesta!
+  await connect(page, await near('lantern-last', 0.6, 0.6), [32.5, 61]);
+  expect(await active('party-stage')).toBe(true);
+  await connect(page, [32.5, 61], await near('party-confetti', -0.9, 0.6));
+  expect(await active('party-confetti')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.chapterDone)).toBe(true);
+  await step(page, 3.6);
+  await expect.poll(() => w(() => document.getElementById('endPop').hidden), { timeout: 15_000 }).toBe(false);
+  expect(await page.locator('#endStats li').count()).toBe(4);
+  expect(await text(page, 'endStats')).toContain('7/7');
+  await page.locator('#endOk').click();
+  expect(await mode(page)).not.toContain('paused');
+  // Con los siete lugares, el color vuelve a todo el pueblo
+  await step(page, 4);
+  expect(await w(() => window.__nexus3d.world.lifeAt(-40, 40))).toBeGreaterThan(0.99);
+
+  // Los vecinos ya dicen su epílogo
+  await tp(page, 11.5, 59.4);
+  await step(page, 0.2);
+  await expect.poll(() => text(page, 'interact')).toBe('Hablar');
+  await touch(page);
+  expect(await text(page, 'storyText')).toContain('La fiesta sigue');
+
+  // Se guarda: al recargar, el capítulo sigue terminado y no se repite la pantalla final
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await w(() => window.__nexus3d.world.chapterDone)).toBe(true);
+  expect(await active('party-confetti')).toBe(true);
+  expect(await w(() => document.getElementById('endPop').hidden)).toBe(true);
 });

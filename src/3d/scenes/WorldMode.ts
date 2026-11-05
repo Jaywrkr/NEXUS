@@ -34,6 +34,8 @@ import type { InteriorInfo, ReviveRoom } from '../world/MigaHouse';
 import { CardDisplay, FuseBox, IceCreamMachine } from '../objects/indoor';
 import { CARDS, CARD_BY_ID, TOTAL_CARDS, TYPES, rollPack } from '../data/chispis';
 import { makePack } from '../objects/pack';
+import { ConfettiCannon, LanternPost, Motor, Stage, ToyBell, ToyDuck, ToyParade } from '../objects/festival';
+import { FESTIVAL } from '../world/Festival';
 import type { CageSpot } from '../systems/Voltio';
 import { Companion } from '../entities/Companion';
 import type { ChispiType } from '../data/chispis';
@@ -54,7 +56,7 @@ const GRAVITY = 15;
 const ZIP_HANG = 2.0;
 const ZIP_SPEED = 8.5;
 
-const [PLAZA_ID, FOUNTAIN_ID, BEACON_ID, BRIDGE_ID, GARDEN_ID] = ZONE_FRAGMENTS.map((f) => f.id);
+const [PLAZA_ID, FOUNTAIN_ID, BEACON_ID, BRIDGE_ID, GARDEN_ID, WORKSHOP_ID, LANTERN_ID] = ZONE_FRAGMENTS.map((f) => f.id);
 /** Lugares que se pueden devolver a la vida (uno por fragmento de zona). */
 const ZONE_COUNT = ZONE_FRAGMENTS.length;
 
@@ -71,6 +73,8 @@ export interface WorldCallbacks {
   trade?: (offer: { who: string; name: string; text: string; card: string; duplicates: string[] }) => void;
   /** Abrir el álbum. */
   album?: () => void;
+  /** La fiesta terminó el capítulo: pantalla de resultados. */
+  ending?: (stats: { places: number; placesTotal: number; awake: number; awakeTotal: number; cards: number; cardsTotal: number; chispis: number }) => void;
 }
 
 /** Una habitación que se visita: dónde está su puerta afuera y cuándo se abre. */
@@ -92,7 +96,8 @@ const CAGES: { id: string; x: number; z: number }[] = [
   { id: 'chispazo', x: -30, z: -8 },
   { id: 'gotita', x: -31, z: 20 },
   { id: 'antenita', x: 26, z: -9 },
-  { id: 'brotecito', x: 12, z: 50 },
+  { id: 'brotecito', x: 13, z: 42 },
+  { id: 'globin', x: 22, z: 44 },
 ];
 
 /** Sobres escondidos por el mundo (x, z, altura). */
@@ -135,7 +140,7 @@ export class WorldMode {
   private districtId = 'centro';
   private districtCheck = 0;
   /** Conexiones grandes en orden (para las pistas): origen, destino y cómo se llaman. */
-  private bigSteps: { s: Connectable; t: Connectable; sName: string; tName: string }[] = [];
+  private bigSteps: { s: Connectable; t: Connectable; sName: string; tName: string; door?: { x: number; z: number }; when?: () => boolean }[] = [];
   private hintArrow: THREE.Mesh | null = null;
   private hintRing: THREE.Mesh | null = null;
   private hintTimer = 0;
@@ -175,6 +180,14 @@ export class WorldMode {
   private readonly bridge: BridgeLever;
   private readonly sprinkler: Sprinkler;
   private readonly flowerBed: FlowerBed;
+  /* Fase 5: taller de Pipa y faroles de Lucio */
+  private readonly motor: Motor;
+  private readonly duck: ToyDuck;
+  private readonly bell: ToyBell;
+  private readonly parade: ToyParade;
+  private readonly lanterns: { first: LanternPost; middle: LanternPost; last: LanternPost; sideA: LanternPost; sideB: LanternPost };
+  private readonly stage: Stage;
+  private readonly confetti: ConfettiCannon;
   private readonly labels: { obj: Connectable; el: HTMLElement; alpha: number }[] = [];
   private readonly fragmentById = new Map<string, Fragment>();
   /** Chisperos y cosas dormidas repartidos por el barrio (despertarlas es opcional). */
@@ -267,6 +280,25 @@ export class WorldMode {
     this.iceMachine = new IceCreamMachine('helados-maquina', hel.target.x, hel.target.z);
     const cartasSource = new EnergySource('cartas-source', tie.source.x, tie.source.z);
     this.cardDisplay = new CardDisplay('cartas-vitrina', tie.target.x, tie.target.z);
+    // Fase 5: taller de Pipa (adentro) y la calle de los faroles de Lucio con la fiesta
+    const tal = this.world.taller;
+    const tallerSource = new EnergySource('toy-source', tal.source.x, tal.source.z);
+    this.motor = new Motor('toy-motor', tal.motor.x, tal.motor.z);
+    this.duck = new ToyDuck('toy-duck', tal.duck.x, tal.duck.z);
+    this.bell = new ToyBell('toy-bell', tal.bell.x, tal.bell.z);
+    this.parade = new ToyParade('toy-parade', tal.parade.x, tal.parade.z);
+    const F = FESTIVAL;
+    const lanternSource = new EnergySource('lantern-source', F.lanternSource.x, F.lanternSource.z);
+    this.lanterns = {
+      first: new LanternPost('lantern-first', F.first.x, F.first.z, 'Farol del inicio', '#ffe066'),
+      middle: new LanternPost('lantern-middle', F.direct.x, F.direct.z, 'Farol apurado', '#5ee7ff'),
+      last: new LanternPost('lantern-last', F.exit.x, F.exit.z, 'Farol de salida', '#ff9ff3'),
+      sideA: new LanternPost('lantern-side-a', F.curious.x, F.curious.z, 'Farol curioso', '#9be37a'),
+      sideB: new LanternPost('lantern-side-b', F.shy.x, F.shy.z, 'Farol tímido', '#ffb86c', true),
+    };
+    this.stage = new Stage('party-stage', F.stage.x, F.stage.z);
+    this.confetti = new ConfettiCannon('party-confetti', F.confetti.x, F.confetti.z, scene);
+    this.world.rects.push(this.stage.deckRect);
 
     const labels: [Connectable, string][] = [
       [source, 'Energía'], [this.lamp, 'Farola'], [this.door, 'Puerta'],
@@ -277,10 +309,11 @@ export class WorldMode {
       [skateSource, 'Energía'], [this.ramp, 'Rampa'],
       [casaSource, 'Energía'], [heladosSource, 'Energía'], [cartasSource, 'Energía'],
       [this.fuse, 'Tablero de luz'], [this.iceMachine, 'Máquina de helados'], [this.cardDisplay, 'Vitrina de cartas'],
+      [tallerSource, 'Energía'], [lanternSource, 'Energía'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -298,6 +331,28 @@ export class WorldMode {
     this.connections.addRule({ sourceId: casaSource.id, targetId: this.fuse.id, useTunnel: true });
     this.connections.addRule({ sourceId: heladosSource.id, targetId: this.iceMachine.id, useTunnel: true });
     this.connections.addRule({ sourceId: cartasSource.id, targetId: this.cardDisplay.id, useTunnel: true });
+    // Taller: la energía al motor (carrera de luz); del motor, cables cortos al pato y a la campana; los dos al desfile
+    this.connections.addRule({ sourceId: tallerSource.id, targetId: this.motor.id, useTunnel: true });
+    for (const [a, b] of [
+      [this.motor, this.duck],
+      [this.motor, this.bell],
+      [this.duck, this.parade],
+      [this.bell, this.parade],
+    ] as [Connectable, Connectable][]) this.connections.addRule({ sourceId: a.id, targetId: b.id });
+    // Faroles: la energía al primero (carrera de luz); de ahí, camino directo o camino curioso hasta la salida
+    const L = this.lanterns;
+    this.connections.addRule({ sourceId: lanternSource.id, targetId: L.first.id, useTunnel: true });
+    for (const [a, b] of [
+      [L.first, L.middle],
+      [L.middle, L.last],
+      [L.first, L.sideA],
+      [L.sideA, L.sideB],
+      [L.sideB, L.last],
+    ] as [Connectable, Connectable][]) this.connections.addRule({ sourceId: a.id, targetId: b.id });
+    // La fiesta: necesita todos los preparativos (luz, agua, radio, jardín y desfile)
+    const blockedMessage = 'Faltan preparativos para la fiesta: luz, agua, radio, jardín y desfile';
+    this.connections.addRule({ sourceId: L.last.id, targetId: this.stage.id, useTunnel: true, available: () => this.prepared, blockedMessage });
+    this.connections.addRule({ sourceId: this.stage.id, targetId: this.confetti.id, available: () => this.prepared, blockedMessage });
     this.bigSteps = [
       { s: source, t: this.lamp, sName: 'la energía de la plaza', tName: 'la farola' },
       { s: this.lamp, t: this.door, sName: 'la farola', tName: 'la puerta de la casa' },
@@ -308,6 +363,12 @@ export class WorldMode {
       { s: gardenSource, t: this.sprinkler, sName: 'la energía del jardín', tName: 'el aspersor' },
       { s: this.sprinkler, t: this.flowerBed, sName: 'el aspersor', tName: 'las flores' },
       { s: skateSource, t: this.ramp, sName: 'la energía del skatepark', tName: 'la rampa grande' },
+      { s: tallerSource, t: this.motor, sName: 'la energía del taller de Pipa', tName: 'el motor', door: { x: F.workshop.doorX, z: F.workshop.z + F.workshop.d / 2 + 1 } },
+      { s: lanternSource, t: this.lanterns.first, sName: 'la energía de la calle de los faroles', tName: 'el primer farol' },
+      { s: this.lanterns.first, t: this.lanterns.middle, sName: 'el primer farol', tName: 'el farol apurado (o el curioso)' },
+      { s: this.lanterns.middle, t: this.lanterns.last, sName: 'el farol apurado', tName: 'el farol de salida' },
+      { s: this.lanterns.last, t: this.stage, sName: 'el farol de salida', tName: 'el escenario de la fiesta', when: () => this.prepared },
+      { s: this.stage, t: this.confetti, sName: 'el escenario', tName: 'el cañón de confeti', when: () => this.prepared },
     ];
 
     // Fragmentos: uno por zona + el secreto detrás de la casa (Decisión 019), que ya está visible
@@ -318,6 +379,8 @@ export class WorldMode {
       [BRIDGE_ID, 18, 1.0, 40.5],
       [GARDEN_ID, -13, 1.0, 58.2],
       [SECRET_FRAGMENT.id, -18, 1.0, -39.6],
+      [WORKSHOP_ID, this.world.taller.fragment.x, 1.0, this.world.taller.fragment.z],
+      [LANTERN_ID, FESTIVAL.lanternFragment.x, 1.0, FESTIVAL.lanternFragment.z],
     ] as const) {
       const f = new Fragment(id, x, y, z);
       keepVivid(f.group);
@@ -390,7 +453,7 @@ export class WorldMode {
       }
       if (!s || !t) continue;
       s.activate();
-      if (t === this.beacon) this.beacon.activate();
+      if (t === this.beacon || t === this.parade) t.activate();
       else t.restore();
       this.connections.restore(s, t);
       this.applyConnection(t, false);
@@ -413,7 +476,7 @@ export class WorldMode {
 
   /** Zonas resueltas (no hace falta haber juntado el fragmento). */
   private zonesDone(): number {
-    return [this.door.isActive, this.fountain.isActive, this.beacon.isFullyActive, this.bridge.isActive, this.flowerBed.isActive].filter(Boolean).length;
+    return [this.door.isActive, this.fountain.isActive, this.beacon.isFullyActive, this.bridge.isActive, this.flowerBed.isActive, this.parade.isActive, this.lanterns.last.isActive].filter(Boolean).length;
   }
 
   /* ---------- Vida del barrio ---------- */
@@ -489,10 +552,14 @@ export class WorldMode {
       [this.fuse, 'casa-miga', true],
       [this.iceMachine, 'heladeria', true],
       [this.cardDisplay, 'tienda', true],
+      [this.parade, 'taller', this.parade.isActive],
+      [this.lanterns.last, 'faroles', true],
     ];
     for (const [obj, id, ok] of packFor) {
-      // Al costado (no justo delante, donde están las puertas)
-      if (target === obj && ok) this.dropPack(`lugar-${id}`, target.x + 2.6, target.z + 2.4, animate);
+      if (target !== obj || !ok) continue;
+      // El del taller cae afuera, junto al portón; los demás al costado (no justo delante de las puertas)
+      if (obj === this.parade) this.dropPack(`lugar-${id}`, FESTIVAL.workshop.x - 1.5, FESTIVAL.workshop.z + FESTIVAL.workshop.d / 2 + 3, animate);
+      else this.dropPack(`lugar-${id}`, target.x + 2.6, target.z + 2.4, animate);
     }
     if (target === this.lamp) {
       this.lightWindow();
@@ -543,6 +610,33 @@ export class WorldMode {
             : '¡La tienda de cartas se encendió! Su vidriera brilla desde la calle',
       );
     }
+    // Fase 5: taller de Pipa
+    if (target === this.motor) say('¡El motor arrancó! Ahora un cable al pato y otro a la campana');
+    if (target === this.duck) say('¡El pato supervisor despertó! Cuac.');
+    if (target === this.bell) say('¡La campana ya no está muda! Ding, dong.');
+    if (target === this.parade) {
+      if (this.parade.isActive) {
+        reveal(WORKSHOP_ID);
+        this.world.taller.gray.revive(animate);
+        zoneLife(FESTIVAL.workshop.x, FESTIVAL.workshop.z, 10);
+        say('¡El desfile funciona! Acércate al fragmento');
+      } else {
+        say('El desfile necesita las dos cosas: el pato y la campana');
+      }
+    }
+    // Fase 5: los faroles de Lucio y la fiesta
+    if (target === this.lanterns.first) say('¡Se prendió el primer farol! ¿Camino directo o camino curioso?');
+    if (target === this.lanterns.sideB && animate && !this.progress.hasHeard('shy-lantern')) {
+      this.progress.markHeard('shy-lantern');
+      after(0.6, () => this.showStory('El farol tímido', '¿Por qué cruzó el cable el camino? Porque alguien lo conectó. Perdón.'));
+    }
+    if (target === this.lanterns.last) {
+      reveal(LANTERN_ID);
+      zoneLife(21, 55.5, 14);
+      say(this.prepared ? '¡Tenemos camino! Ahora, a preparar la fiesta en el escenario' : '¡Tenemos camino! Acércate al fragmento');
+    }
+    if (target === this.stage) say('¡El escenario está listo! Falta el confeti');
+    if (target === this.confetti) this.party(animate);
     if (target === this.ramp) {
       this.addLife(80, 0, 24, animate);
       if (animate) after(0.6, () => this.pickups.burst(4, target.x, target.z + 1.5, 1.6));
@@ -658,6 +752,12 @@ export class WorldMode {
     let text = '';
     let where: { x: number; z: number } | null = null;
     if (this.inside) {
+      const ist = this.skateStep();
+      if (ist?.at) {
+        this.showStory('Pista', ist.text);
+        this.pointTo(ist.at.x, ist.at.z);
+        return;
+      }
       this.showStory('Pista', 'Para volver al barrio, pisá el felpudo amarillo de la puerta.');
       this.pointTo(this.inside.info.exit.x, this.inside.info.exit.z);
       return;
@@ -669,15 +769,20 @@ export class WorldMode {
       return;
     }
     const sel = this.connections.selection;
-    const pending = this.bigSteps.filter((b) => !this.progress.hasConnection(b.s.id, b.t.id) && b.s.canInitiate() && reachable(b.s));
+    const at = (b: (typeof this.bigSteps)[number]) => b.door ?? b.s;
+    const pending = this.bigSteps.filter(
+      (b) => !this.progress.hasConnection(b.s.id, b.t.id) && b.s.canInitiate() && reachable(at(b)) && (b.when?.() ?? true) && !b.t.isActive,
+    );
     const forSel = sel ? pending.find((b) => b.s === sel) : undefined;
     if (forSel) {
       text = `Tenés el cable de ${forSel.sName}: llevalo hasta ${forSel.tName}.`;
       where = forSel.t;
     } else if (pending.length) {
-      const b = pending.reduce((a, c) => (dist(a.s) < dist(c.s) ? a : c));
-      text = `Tocá ${b.sName} y después ${b.tName}. ¡Ahí empieza la carrera de luz!`;
-      where = b.s;
+      const b = pending.reduce((a, c) => (dist(at(a)) < dist(at(c)) ? a : c));
+      text = b.door
+        ? `Entrá al taller de Pipa: adentro, tocá ${b.sName} y después ${b.tName}.`
+        : `Tocá ${b.sName} y después ${b.tName}. ¡Ahí empieza la carrera de luz!`;
+      where = at(b);
     } else {
       const sleeping = this.sleepers.filter((sl) => !sl.isActive && reachable(sl));
       if (sleeping.length && this.progress.charge > 0) {
@@ -780,6 +885,15 @@ export class WorldMode {
         open: () => this.progress.hasFlag('cartas-open'),
         story: ['Tienda de cartas', '¡Acá se juntan las cartas de los Chispis! La vitrina está apagada: llevale energía desde la estrella.'],
         target: this.cardDisplay,
+      },
+      {
+        id: 'taller-pipa',
+        info: this.world.taller,
+        door: { x: FESTIVAL.workshop.doorX, z: FESTIVAL.workshop.z + FESTIVAL.workshop.d / 2 + 0.9 },
+        out: { x: FESTIVAL.workshop.doorX, z: FESTIVAL.workshop.z + FESTIVAL.workshop.d / 2 + 1.7 },
+        open: () => true,
+        story: ['Pipa · El taller', 'El desfile necesita música y un supervisor. Tenemos una campana muda y un pato demasiado quieto. ¿Le das energía al motor?'],
+        target: this.parade,
       },
       {
         id: 'sala-skate',
@@ -894,6 +1008,8 @@ export class WorldMode {
       { name: 'Puente', x: 17, z: 30, alive: this.bridge.isActive },
       { name: 'Jardín', x: -11, z: 54, alive: this.flowerBed.isActive },
       { name: 'Skatepark', x: 82, z: -12, alive: this.ramp.isActive },
+      { name: 'Taller', x: FESTIVAL.workshop.x, z: FESTIVAL.workshop.z, alive: this.parade.isActive },
+      { name: 'Faroles', x: 21, z: 55, alive: this.lanterns.last.isActive },
     ];
     return {
       life: (x, z) => LIFE.at(x, z),
@@ -1176,6 +1292,15 @@ export class WorldMode {
   private skateStep(): { text: string; at: { x: number; z: number } | null } | null {
     const p = this.progress;
     const sk = this.world.skate;
+    if (this.inside?.id === 'taller-pipa' && !this.parade.isActive) {
+      const tal = this.world.taller;
+      if (!this.motor.isActive) return { text: 'Llevá la energía del taller hasta el motor', at: this.connections.hasSelection() ? tal.motor : tal.source };
+      if (!this.duck.isActive || !this.bell.isActive) {
+        const next = !this.duck.isActive ? tal.duck : tal.bell;
+        return { text: 'Del motor, un cable al pato y otro a la campana', at: this.connections.hasSelection() ? next : tal.motor };
+      }
+      return { text: 'El pato y la campana tienen que llegar los dos al desfile', at: tal.parade };
+    }
     if (this.inside) {
       const t = this.inside.target;
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
@@ -1540,6 +1665,16 @@ export class WorldMode {
       make('car', c.x + Math.sin(c.rot) * 2.36, c.z + Math.cos(c.rot) * 2.36, c.rot);
     }
     for (const x of [-14, 6]) make('drain', x, CANAL_MIN_Z - 0.8, 0);
+    // Fase 5: cuatro más en el barrio del canal sur (al final, así no cambian los ids guardados)
+    for (const [kind, x, z] of [
+      ['balloons', 29, 61.5],
+      ['pinwheel', 12.5, 61.8],
+      ['gnome', 34.5, 55.2],
+      ['birdhouse', 7, 57],
+    ] as [SleeperKind, number, number][]) {
+      const [px, pz] = place(x, z);
+      make(kind, px, pz, Math.PI / 4);
+    }
 
     Sleeper.audio = this.audio;
     // Nidos de chispitas: al tocarlos sueltan chispitas que hay que atrapar
@@ -1751,6 +1886,8 @@ export class WorldMode {
     vera: { x: 31.5, z: -21, faceX: 27, faceZ: -18 },
     'don-paso': { x: 21.5, z: 27, faceX: 18, faceZ: 29 },
     goteo: { x: -1.6, z: 55.6, faceX: -6, faceZ: 54 },
+    pipa: { x: 696.6, z: -1.3, faceX: 700, faceZ: 1 },
+    lucio: { x: FESTIVAL.lucio.x, z: FESTIVAL.lucio.z, faceX: FESTIVAL.lucio.faceX, faceZ: FESTIVAL.lucio.faceZ },
   };
 
   private placeResidents(): void {
@@ -1780,6 +1917,8 @@ export class WorldMode {
       'don-paso': this.bridge.isActive,
       goteo: this.flowerBed.isActive,
       rulo: this.ramp.isActive,
+      pipa: this.parade.isActive,
+      lucio: this.lanterns.last.isActive,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
@@ -1831,6 +1970,52 @@ export class WorldMode {
     this.residents.find((r) => r.id === who)?.talk();
     this.updateHud();
     return offer.id;
+  }
+
+  /* ---------- La fiesta: fin del capítulo (Fase 5) ---------- */
+
+  /** ¿Están todos los preparativos? (luz, agua, radio, jardín y desfile) */
+  get prepared(): boolean {
+    return this.door.isActive && this.fountain.isActive && this.beacon.isFullyActive && this.flowerBed.isActive && this.parade.isActive;
+  }
+
+  get chapterDone(): boolean {
+    return this.progress.hasFlag('chapter-done');
+  }
+
+  /** El confeti: todos bailan, explota la fiesta y aparece la pantalla del final (solo en vivo). */
+  private party(animate: boolean): void {
+    if (!animate) return;
+    const first = !this.progress.hasFlag('chapter-done');
+    this.progress.setFlag('chapter-done');
+    this.audio.playSuccess();
+    this.nexus.celebrate();
+    flashScreen(350);
+    const F = FESTIVAL;
+    [
+      new THREE.Vector3(F.stage.x, 3, F.stage.z),
+      new THREE.Vector3(F.confetti.x, 2.5, F.confetti.z),
+      new THREE.Vector3(F.exit.x, 3, F.exit.z),
+      this.nexus.position.clone().setY(1.6),
+    ].forEach((p, i) => after(i * 0.25, () => this.connections.celebrate(p)));
+    after(0.8, () => this.confetti.fire());
+    this.residents.forEach((r, i) => r.dance(i * 0.15));
+    this.nexus.dance();
+    this.showStory('Lucio', '¡Fiesta en el barrio! Gracias a vos, la ciudad al revés volvió a estar al derecho… o casi.');
+    for (const r of this.residents) r.setHappy(true);
+    if (first) {
+      after(3.2, () =>
+        this.cb.ending?.({
+          places: this.zonesDone(),
+          placesTotal: ZONE_COUNT,
+          awake: this.awakeCount(),
+          awakeTotal: this.sleepers.length,
+          cards: this.progress.uniqueCards,
+          cardsTotal: TOTAL_CARDS,
+          chispis: this.progress.chispis.length,
+        }),
+      );
+    }
   }
 
   /* ---------- Chispi compañero (Fase 4) ---------- */
@@ -1950,7 +2135,8 @@ export class WorldMode {
     const clear = (x2: number, z2: number) =>
       this.world.isWalkable(x2, z2, 0.5) &&
       this.fragments.every((f) => Math.hypot(f.group.position.x - x2, f.group.position.z - z2) > 2.8) &&
-      this.packs.every((q) => Math.hypot(q.x - x2, q.z - z2) > 2.5);
+      this.packs.every((q) => Math.hypot(q.x - x2, q.z - z2) > 2.5) &&
+      this.interiors.every((r) => Math.hypot(r.door.x - x2, r.door.z - z2) > 2.5 && Math.hypot(r.info.exit.x - x2, r.info.exit.z - z2) > 2.5);
     for (let k = 0; k < 60 && !clear(px, pz); k += 1) {
       const a = k * 2.4;
       px = x + Math.cos(a) * (1 + k * 0.2);

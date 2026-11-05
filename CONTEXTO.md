@@ -102,6 +102,9 @@ src/3d/
   world/MigaHouse.ts       — primer interior (casa de Miga) en x = 300 + roomShell() para armar habitaciones "maqueta"
   data/chispis.ts          — las 40 cartas (tipo, rareza, origen, vecino que la cambia, frase), TYPES, rollPack()
   ui/cardArt.ts            — drawChispi() y drawCard(): dibujo procedural de cada Chispi y de la carta
+  objects/festival.ts      — Motor, ToyDuck, ToyBell, ToyParade (2 entradas), LanternPost (tímido), Stage, ConfettiCannon
+  world/Festival.ts        — FESTIVAL (posiciones del canal sur), buildFestivalStreet (faroles, plaza de la fiesta, galpón)
+                             y buildWorkshopRoom (taller de Pipa por dentro, x = 700)
   entities/Companion.ts    — Chispi compañero: makeBuddy(tipo) y Companion (sigue al Nexus, show() vuela a mostrar algo)
   objects/pack.ts          — makePack(): sobre que flota en el mundo
   world/ShopRooms.ts       — interiores de la heladería (x = 500) y la tienda de cartas (x = 600)
@@ -215,6 +218,14 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - `updateCompanion` lo mueve cada cuadro y lo reubica si queda a más de 25 m (puertas, teletransportes). Cada 6 s, Luz (`pickups.nearestHidden`) y Radio (sobres a < 40 m) vuelan a mostrar algo con `show()` + `pointTo`.
 - Ayuditas: `pickups.magnet` (Luz 3,4), `playground.onSplash` → `boostT` (Agua), `walkScale()` (Voltio × Vía × charco), salto ×1,2 (Bosque), patineta ×1,25 (Ruedas), `addLife` 5,2 al despertar (Flor), +2 chispitas en `finishTunnel` (Feria), `voltio.maxVolt` 45 (Mar).
 
+### El Centro completo y la fiesta (Decisión 048, Fase 5)
+
+- **Taller de Pipa**: galpón en (39,5, 51,5), portón (41,5, 54) que mira a +Z; interior `World.taller` (x = 700, `ReviveRoom` gris). Reglas: `toy-source → toy-motor` (túnel `taller`), `toy-motor → toy-duck | toy-bell`, `toy-duck | toy-bell → toy-parade` (instantáneas). `ToyParade` necesita 2 entradas (en `restoreProgress` se activa por conexión, igual que la antena). Objetivo y pista adentro guían paso a paso. Pipa está adentro.
+- **Faroles** (`FESTIVAL`): energía (9,5, 52) → inicio (14, 54) con túnel `faroles`; directo (20, 50,5) → salida (27,5, 55); curioso (18,5, 59) → tímido (24,5, 60) → salida. Lucio en (11,5, 58).
+- **Fiesta**: `lantern-last → party-stage` (túnel `fiesta`) y `party-stage → party-confetti`, con `ConnectionRule.available = prepared` (puerta, fuente, antena completa, flores y desfile) y `blockedMessage`. `party()` marca el flag `chapter-done`, hace bailar a todos y llama `cb.ending(stats)` → `#endPop`. `progress.snapshot().story.chapterSeen` sale de ese flag (epílogos de `residentLine`).
+- **7 lugares**: `ZONE_FRAGMENTS` suma `workshop-fragment` y `lantern-fragment`; `zonesDone()` cuenta desfile y salida de faroles. Los sobres de lugares nunca caen cerca de puertas, felpudos ni fragmentos.
+- Cosas dormidas nuevas al final de la lista (para no cambiar los ids guardados): globos, molinete, enano y casita de pájaros en el canal sur.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -233,7 +244,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
 6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
 
-Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–047).
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–048).
 
 ### 6. Trampas técnicas ya conocidas (no repetirlas)
 
@@ -259,7 +270,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–047).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 4 hechas (Decisiones 043–047). Sigue la Fase 5: Centro completo (taller de Pipa y faroles de Lucio, con carreras de luz, vecinos, cosas dormidas y Chispis).**
+> **Fases 0 a 5 hechas (Decisiones 043–048): el capítulo 1 completo está en 3D. Sigue la Fase 6: Parque de diversiones.**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 
