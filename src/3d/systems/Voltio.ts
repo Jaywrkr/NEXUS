@@ -25,8 +25,8 @@ const AREA = { minX: 69, maxX: 94, minZ: -12, maxZ: 12 };
 export interface VoltioHooks {
   /** Se rescató un Chispi (jaula rota). */
   rescue(id: string, x: number, z: number): void;
-  /** Se cerró el circuito de la sala. */
-  circuit(): void;
+  /** Se cerró un circuito (id = el flag que abre algo afuera: 'sala-open', 'cartas-open'). */
+  circuit(id: string): void;
   /** Una Estática tocó al Nexus. */
   zap(): void;
   /** Se rompió una Estática encerrándola. */
@@ -45,6 +45,13 @@ interface Static {
   tz: number;
   dead: number;
   phase: number;
+}
+
+/** Un circuito del Mundo Voltio: sus nodos y la puerta del mundo normal que abre. */
+export interface Circuit {
+  id: string;
+  nodes: { x: number; z: number }[];
+  door: { x: number; z: number };
 }
 
 interface TrailPoint {
@@ -133,21 +140,20 @@ export class Voltio {
   private readonly trailPos = new Float32Array(TRAIL_MAX * 2 * 3);
   private readonly trailCol = new Float32Array(TRAIL_MAX * 2 * 3);
   private readonly statics: Static[] = [];
-  private readonly nodes: { x: number; z: number; lit: boolean; ring: THREE.Mesh; core: THREE.Mesh }[] = [];
-  private readonly beams = new THREE.Group();
+  private readonly nodes: { x: number; z: number; lit: boolean; ring: THREE.Mesh; core: THREE.Mesh; circuit: string }[] = [];
+  private readonly circuits: Circuit[];
+  private readonly done = new Set<string>();
   private cage: { g: THREE.Group; chispi: THREE.Group; x: number; z: number } | null = null;
-  private circuitDone = false;
   private loops: { mesh: THREE.Mesh; t: number }[] = [];
   private time = 0;
   /** Para las pruebas: cuántos círculos se cerraron. */
   loopsClosed = 0;
 
   private readonly hooks: VoltioHooks;
-  private readonly skate: SkateparkInfo;
 
-  constructor(scene: THREE.Scene, skate: SkateparkInfo, hooks: VoltioHooks, state: { rescued: boolean; circuit: boolean }) {
+  constructor(scene: THREE.Scene, skate: SkateparkInfo, circuits: Circuit[], hooks: VoltioHooks, state: { rescued: boolean; circuits: string[] }) {
     this.hooks = hooks;
-    this.skate = skate;
+    this.circuits = circuits;
     this.group.visible = false;
     scene.add(this.group);
 
@@ -200,18 +206,19 @@ export class Voltio {
       this.statics.push(s);
     }
 
-    // Circuito de la sala: tres nodos
-    for (const n of skate.nodes) {
-      const node = makeNode();
-      node.g.position.set(n.x, 0.1, n.z);
-      this.group.add(node.g);
-      this.nodes.push({ x: n.x, z: n.z, lit: false, ring: node.ring, core: node.core });
-    }
-    this.group.add(this.beams);
-    this.circuitDone = state.circuit;
-    if (state.circuit) {
-      for (const n of this.nodes) this.lightNode(n);
-      this.drawBeams(skate);
+    // Circuitos: tres nodos cada uno (la sala del skatepark, la tienda de cartas...)
+    for (const c of circuits) {
+      for (const n of c.nodes) {
+        const node = makeNode();
+        node.g.position.set(n.x, 0.1, n.z);
+        this.group.add(node.g);
+        this.nodes.push({ x: n.x, z: n.z, lit: false, ring: node.ring, core: node.core, circuit: c.id });
+      }
+      if (state.circuits.includes(c.id)) {
+        this.done.add(c.id);
+        for (const n of this.nodes) if (n.circuit === c.id) this.lightNode(n);
+        this.drawBeams(c);
+      }
     }
 
     // Rueditas, atrapado en una jaula de Estática
@@ -246,16 +253,17 @@ export class Voltio {
     return this.cage !== null;
   }
 
-  get litNodes(): number {
-    return this.nodes.filter((n) => n.lit).length;
+  /** Nodos prendidos de un circuito (por defecto, el de la sala del skatepark). */
+  litNodes(id = 'sala-open'): number {
+    return this.nodes.filter((n) => n.lit && n.circuit === id).length;
   }
 
   enter(): void {
     this.active = true;
     this.group.visible = true;
     this.trail.length = 0;
-    // Los nodos se apagan al salir si el circuito no se cerró
-    if (!this.circuitDone) for (const n of this.nodes) this.unlightNode(n);
+    // Los nodos se apagan al salir si su circuito no se cerró
+    for (const n of this.nodes) if (!this.done.has(n.circuit)) this.unlightNode(n);
   }
 
   exit(): void {
@@ -331,12 +339,13 @@ export class Voltio {
       n.core.position.y = 1.1 + Math.sin(time * 3 + n.x) * 0.1;
       if (!n.lit && Math.hypot(n.x - p.x, n.z - p.z) < NODE_REACH) {
         this.lightNode(n);
-        const lit = this.litNodes;
-        this.hooks.node(lit, this.nodes.length);
-        if (lit === this.nodes.length && !this.circuitDone) {
-          this.circuitDone = true;
-          this.drawBeams(this.skate);
-          this.hooks.circuit();
+        const c = this.circuits.find((k) => k.id === n.circuit)!;
+        const lit = this.litNodes(c.id);
+        this.hooks.node(lit, c.nodes.length);
+        if (lit === c.nodes.length && !this.done.has(c.id)) {
+          this.done.add(c.id);
+          this.drawBeams(c);
+          this.hooks.circuit(c.id);
         }
       }
     }
@@ -363,10 +372,9 @@ export class Voltio {
     (n.core.material as THREE.MeshBasicMaterial).color.set('#ff4fd8');
   }
 
-  /** Rayos de luz que unen los nodos y llegan a la persiana. */
-  private drawBeams(skate: SkateparkInfo): void {
-    this.beams.clear();
-    const pts = [...skate.nodes.map((n) => new THREE.Vector3(n.x, 1.1, n.z)), new THREE.Vector3(skate.sala.doorX, 1.4, skate.sala.doorZ + 0.3)];
+  /** Rayos de luz que unen los nodos y llegan a la puerta que abren. */
+  private drawBeams(c: Circuit): void {
+    const pts = [...c.nodes.map((n) => new THREE.Vector3(n.x, 1.1, n.z)), new THREE.Vector3(c.door.x, 1.4, c.door.z + 0.3)];
     for (let i = 0; i < pts.length - 1; i += 1) {
       const a = pts[i];
       const b = pts[i + 1];
@@ -374,7 +382,7 @@ export class Voltio {
       const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, len, 6), new THREE.MeshBasicMaterial({ color: '#7dffef' }));
       beam.position.copy(a).lerp(b, 0.5);
       beam.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize());
-      this.beams.add(beam);
+      this.group.add(beam);
     }
   }
 

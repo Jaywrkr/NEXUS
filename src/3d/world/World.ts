@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { batchStatic } from '../core/batch';
 import { FOG_COLOR, FOG_FAR, FOG_NEAR, LIFE, box, flat, gradientMap, makeSky, outline, outlineScaled, rounded, sharedOutline, toon, toonUnique, withLife } from '../core/render';
 import { clamp, pick, rnd } from '../core/util';
-import { buildMigaHouse, type InteriorInfo } from './MigaHouse';
+import { buildMigaHouse, type InteriorInfo, type ReviveRoom } from './MigaHouse';
+import { buildCardRoom, buildIceCreamRoom } from './ShopRooms';
 import { SKATE_REGION, buildSkatepark, type SkateparkInfo } from './Skatepark';
 
 export interface Rect {
@@ -81,7 +82,28 @@ export class World {
   readonly scene = new THREE.Scene();
   readonly rects: Rect[] = [];
   /** Interiores que se pueden visitar (por ahora, la casa de Miga). */
-  readonly interior: InteriorInfo;
+  readonly interior: ReviveRoom;
+  /** Fase 2: la heladería y la tienda de cartas (interiores de los locales de la calle). */
+  readonly heladeria: ReviveRoom;
+  readonly tienda: ReviveRoom;
+  /** Lo que se nota afuera al revivir cada interior. */
+  readonly outside = {
+    /** Guirnalda de luces en el frente de la casa de Miga. */
+    miga: new THREE.Group(),
+    /** Vidrieras que se prenden. */
+    helados: null as unknown as THREE.Mesh,
+    cartas: null as unknown as THREE.Mesh,
+    /** Reja de la tienda de cartas (sube cuando se cierra su circuito en el Mundo Voltio). */
+    grille: new THREE.Group(),
+  };
+  /** Puertas de los locales (frente a +Z). */
+  readonly shopDoors = { helados: { x: 15.5, z: 13.9 }, cartas: { x: 33.5, z: 13.9 } };
+  /** Nodos del circuito de la tienda de cartas (Mundo Voltio). */
+  readonly cardNodes = [
+    { x: 28, z: 17.5 },
+    { x: 31.5, z: 20 },
+    { x: 36, z: 17.5 },
+  ];
   /** Todas las habitaciones visitables (casa de Miga, sala del skatepark...). */
   readonly rooms: InteriorInfo[] = [];
   /** Skatepark: rampitas, barandas, sala, nodos del circuito... */
@@ -155,7 +177,10 @@ export class World {
     this.rects.push(this.bridgeGap);
     this.interior = buildMigaHouse(s, this.rects);
     this.skate = buildSkatepark(s, this.rects);
-    this.rooms.push(this.interior, this.skate.room);
+    this.heladeria = buildIceCreamRoom(s, this.rects);
+    this.tienda = buildCardRoom(s, this.rects);
+    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda);
+    this.buildOutsideFx();
 
     // Rendimiento: toda la escenografía quieta se junta en pocas mallas.
     // Lo que se anima (árbol de la plaza, ventana, mariposas, nubes) queda marcado como dinámico.
@@ -302,6 +327,8 @@ export class World {
       const a = (i / 16) * Math.PI * 2 + rnd() * 0.2;
       const r = 230 + rnd() * 50;
       const h = 30 + rnd() * 50;
+      // Al este (x de 300 a 600) están las habitaciones "maqueta": ahí no van cerros
+      if (Math.cos(a) > 0.75) continue;
       const hill = new THREE.Mesh(new THREE.SphereGeometry(1, 14, 8), toon(pick(['#6f8fbf', '#7a95bf', '#6a86b0'])));
       const hw = 50 + rnd() * 60;
       hill.scale.set(hw, h, hw * 0.7);
@@ -1163,11 +1190,58 @@ export class World {
     return tex;
   }
 
+  /** Guirnalda de la casa de Miga, vidrieras de los locales y reja de la tienda de cartas. */
+  private buildOutsideFx(): void {
+    const o = this.outside;
+    // Guirnalda: foquitos de colores bajo el alero del frente de la casa (−23…−13, z = −27)
+    const cols = ['#ffe066', '#ff6b4a', '#7dff8a', '#9be7ff', '#ff9ff3'];
+    for (let i = 0; i < 14; i += 1) {
+      const x = -22.4 + i * 0.68;
+      const y = 3.3 - Math.sin((i / 13) * Math.PI) * 0.35;
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.09, 8, 6), new THREE.MeshBasicMaterial({ color: cols[i % cols.length] }));
+      bulb.position.set(x, y, -26.82);
+      o.miga.add(bulb);
+    }
+    o.miga.visible = false;
+    o.miga.userData.dynamic = true;
+    this.scene.add(o.miga);
+    // Vidrieras: un panel de luz cálida delante del vidrio (apagado al principio)
+    const pane = (x: number) => {
+      const m = new THREE.Mesh(
+        new THREE.PlaneGeometry(4.1, 1.6),
+        new THREE.MeshBasicMaterial({ color: '#ffe9a8', transparent: true, opacity: 0, depthWrite: false }),
+      );
+      m.position.set(x - 1.0, 1.35, 13.99);
+      m.userData.dynamic = true;
+      this.scene.add(m);
+      return m;
+    };
+    o.helados = pane(13);
+    o.cartas = pane(31);
+    // Reja de la tienda de cartas, delante de la puerta
+    for (let i = 0; i < 7; i += 1) {
+      const bar = box(0.07, 2.2, 0.07, '#8b8f9a', { outline: 0.008 });
+      bar.position.set(-0.6 + i * 0.2, 1.1, 0);
+      o.grille.add(bar);
+    }
+    for (const y of [0.3, 1.1, 1.9]) {
+      const rail = box(1.4, 0.08, 0.08, '#8b8f9a', { outline: 0.008 });
+      rail.position.y = y;
+      o.grille.add(rail);
+    }
+    const lock = box(0.25, 0.25, 0.06, '', { mat: flat('#ff4fd8'), outline: 0.01 });
+    lock.position.set(0, 1.1, 0.06);
+    o.grille.add(lock);
+    o.grille.position.set(this.shopDoors.cartas.x, 0, this.shopDoors.cartas.z + 0.12);
+    o.grille.userData.dynamic = true;
+    this.scene.add(o.grille);
+  }
+
   private buildShops(): void {
     const shops: [string, string][] = [
       ['HELADOS', '#e77fa6'],
       ['PANADERÍA', '#e0563f'],
-      ['JUEGOS', '#2bb3a8'],
+      ['CARTAS', '#7b4fb0'],
       ['TIENDA', '#6f8fcf'],
     ];
     shops.forEach(([name, col], i) => {

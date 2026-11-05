@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { box, flat, keepVivid, rounded, toon } from '../core/render';
+import { makeGray, type Revivable } from './revive';
 import type { Rect } from './World';
 
 /*
@@ -25,6 +26,14 @@ export interface InteriorInfo {
   exit: { x: number; z: number };
   /** Chispita escondida. */
   spark: { id: string; x: number; z: number; y: number };
+}
+
+/** Habitación con algo para revivir adentro (Fase 2): empieza gris y recupera el color. */
+export interface ReviveRoom extends InteriorInfo {
+  /** Dónde va la energía de la habitación y lo que se revive. */
+  source: { x: number; z: number };
+  target: { x: number; z: number };
+  gray: Revivable;
 }
 
 export interface RoomSpec {
@@ -98,7 +107,7 @@ export function roomShell(rects: Rect[], r: RoomSpec): RoomKit {
   return { g, x0, x1, z0, z1, add, solid };
 }
 
-export function buildMigaHouse(scene: THREE.Scene, rects: Rect[]): InteriorInfo {
+export function buildMigaHouse(scene: THREE.Scene, rects: Rect[]): ReviveRoom {
   const { g, x0, x1, z0, z1, add, solid } = roomShell(rects, {
     cx: ROOM_X,
     cz: ROOM_Z,
@@ -212,7 +221,9 @@ export function buildMigaHouse(scene: THREE.Scene, rects: Rect[]): InteriorInfo 
   }
   rects.push({ minX: x0 + 0.25, maxX: x0 + 0.95, minZ: z1 - 1.05, maxZ: z1 - 0.35 });
 
+  g.userData.dynamic = true;
   keepVivid(g);
+  const gray = makeGray(g);
   scene.add(g);
 
   return {
@@ -220,5 +231,9 @@ export function buildMigaHouse(scene: THREE.Scene, rects: Rect[]): InteriorInfo 
     spawn: { x: 303, z: z1 - 1.3 },
     exit: { x: 303, z: z1 - 0.3 },
     spark: { id: 'spark-room-casa', x: wx, z: wz, y: 0.95 + 0.9 },
+    source: { x: x0 + 2.6, z: z1 - 1.5 },
+    // El tablero de luz va en la pared oeste, entre la cama y el cuadro
+    target: { x: x0, z: ROOM_Z - 0.6 },
+    gray,
   };
 }

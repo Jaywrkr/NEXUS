@@ -719,3 +719,84 @@ test('3D: skatepark — patineta, trucos de Rulo, capucha, Mundo Voltio, Chispi 
   });
   expect(saved).toEqual([true, true, true, true]);
 });
+
+test('3D: interiores — heladería, casa de Miga y tienda de cartas se reviven y se nota desde afuera', async ({ page }) => {
+  test.setTimeout(300_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+  const enterAt = async (door) => {
+    await tp(page, door.x, door.z + 1.0);
+    expect(await text(page, 'interact')).toBe('Entrar');
+    await touch(page);
+    await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  };
+  const leave = async (room) => {
+    const exit = await w((r) => window.__nexus3d.world.world[r].exit, room);
+    await tp(page, exit.x, exit.z - 0.3);
+    expect(await text(page, 'interact')).toBe('Salir');
+    await touch(page);
+    await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(false);
+  };
+  const revive = async (room) => {
+    const r = await w((r) => ({ s: window.__nexus3d.world.world[r].source, t: window.__nexus3d.world.world[r].target }), room);
+    expect(await w((r) => window.__nexus3d.world.world[r].gray.alive, room)).toBe(false);
+    // El objetivo adentro dice qué revivir (cuando se apaga el último aviso)
+    await step(page, 5.5);
+    expect(await text(page, 'msg')).toContain('Llevá la energía');
+    await connect(page, [r.s.x + 0.9, r.s.z], [r.t.x + (room === 'interior' ? 1.2 : 0), r.t.z + (room === 'interior' ? 0 : 1.4)]);
+    expect(await w((r) => window.__nexus3d.world.world[r].gray.alive, room)).toBe(true);
+  };
+  const doors = await w(() => window.__nexus3d.world.world.shopDoors);
+
+  // Heladería: abierta desde el principio, gris adentro hasta prender la máquina de helados
+  await enterAt(doors.helados);
+  expect(await text(page, 'storyWho')).toBe('Heladería');
+  await revive('heladeria');
+  expect(await text(page, 'msg')).toContain('heladería volvió');
+  await leave('heladeria');
+  expect(await w(() => window.__nexus3d.world.world.outside.helados.material.opacity)).toBeGreaterThan(0.5);
+
+  // Casa de Miga: se abre con la plaza; adentro se prende el tablero de luz y afuera aparece la guirnalda
+  await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
+  await connect(page, [-14.3, -16.5], [-15.2, -25.6]);
+  const door = await w(() => [window.__nexus3d.world.door.x, window.__nexus3d.world.door.z]);
+  await tp(page, door[0], door[1] + 1.2);
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  expect(await w(() => window.__nexus3d.world.world.outside.miga.visible)).toBe(false);
+  await revive('interior');
+  await leave('interior');
+  expect(await w(() => window.__nexus3d.world.world.outside.miga.visible)).toBe(true);
+
+  // Tienda de cartas: cerrada hasta cerrar su circuito en el Mundo Voltio
+  await tp(page, doors.cartas.x, doors.cartas.z + 1.0);
+  expect(await text(page, 'interact')).not.toBe('Entrar');
+  await w(() => {
+    window.__nexus3d.world.progress.setFlag('hood');
+    document.body.classList.add('has-hood');
+  });
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.voltioActive)).toBe(true);
+  await page.evaluate(() => document.getElementById('story').click());
+  expect(await text(page, 'msg')).toContain('tienda de cartas');
+  const nodes = await w(() => window.__nexus3d.world.world.cardNodes);
+  for (const n of nodes) await tp(page, n.x, n.z);
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.progress.hasFlag('cartas-open'))).toBe(true);
+  await page.keyboard.press('KeyQ');
+  await step(page, 1.2);
+  expect(await w(() => window.__nexus3d.world.world.outside.grille.position.y)).toBeGreaterThan(2);
+  await enterAt(doors.cartas);
+  await revive('tienda');
+  await leave('tienda');
+  expect(await w(() => window.__nexus3d.world.world.outside.cartas.material.opacity)).toBeGreaterThan(0.5);
+
+  // Al recargar, todo sigue revivido
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  const alive = await w(() => ['interior', 'heladeria', 'tienda'].map((r) => window.__nexus3d.world.world[r].gray.alive));
+  expect(alive).toEqual([true, true, true]);
+  expect(await w(() => window.__nexus3d.world.world.outside.miga.visible)).toBe(true);
+});

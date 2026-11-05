@@ -47,6 +47,9 @@ export const TUNNEL_THEMES: Record<string, TunnelTheme> = {
   fountain: { name: 'Cable de agua', base: '#04121f', near: '#5ec8ff', pulse: '#d6f4ff', spark: '#8fe3ff', bg: '#031019', deco: 'burbujas' },
   beacon: { name: 'Cable de radio', base: '#0f0820', near: '#b77cff', pulse: '#ffd1ff', spark: '#e0b0ff', bg: '#0a0516', deco: 'ondas' },
   bridge: { name: 'Cable del bosque', base: '#06150a', near: '#7be07a', pulse: '#e8ffb0', spark: '#b6ff8a', bg: '#041008', deco: 'hojas' },
+  casa: { name: 'Cable de la casa', base: '#160d06', near: '#ffb070', pulse: '#fff0c8', spark: '#ffd08a', bg: '#0f0804', deco: 'estrellas' },
+  helado: { name: 'Cable de helado', base: '#140814', near: '#ff9fd0', pulse: '#e8fbff', spark: '#9be7ff', bg: '#0e050e', deco: 'burbujas' },
+  cartas: { name: 'Cable de cartas', base: '#0c0618', near: '#c08cff', pulse: '#ffe8a0', spark: '#ffc23a', bg: '#080412', deco: 'estrellas' },
   skate: { name: 'Cable grafiti', base: '#140a04', near: '#ff9f43', pulse: '#d8ff6a', spark: '#7dff8a', bg: '#0d0703', deco: 'estrellas' },
   garden: { name: 'Cable de flores', base: '#1a0712', near: '#ff8fc8', pulse: '#fff0a8', spark: '#ffb3da', bg: '#12040c', deco: 'petalos' },
 };

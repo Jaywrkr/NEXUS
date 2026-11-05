@@ -30,7 +30,8 @@ import { CANAL_MIN_Z, ZIP_SAG } from '../world/World';
 import { SkateRamp, makeBoard } from '../objects/skate';
 import { Skate, type Trick } from '../systems/Skate';
 import { MAX_VOLT, Voltio } from '../systems/Voltio';
-import type { InteriorInfo } from '../world/MigaHouse';
+import type { InteriorInfo, ReviveRoom } from '../world/MigaHouse';
+import { CardDisplay, FuseBox, IceCreamMachine } from '../objects/indoor';
 
 const INTERACT_REACH = 2.2; // metros desde el borde del objeto
 const NEXUS_RADIUS = 0.32;
@@ -69,6 +70,8 @@ interface Interior {
   out: { x: number; z: number };
   open: () => boolean;
   story: [string, string];
+  /** Lo que se revive adentro (si tiene). */
+  target?: Connectable;
 }
 
 const TRICKS: Trick[] = ['ollie', 'air', 'grind'];
@@ -112,6 +115,11 @@ export class WorldMode {
   /* Fase 1: Skatepark, patineta y Mundo Voltio */
   private readonly skate = new Skate();
   private readonly ramp: SkateRamp;
+  /* Fase 2: lo que se revive adentro de cada casa */
+  private readonly fuse: FuseBox;
+  private readonly iceMachine: IceCreamMachine;
+  private readonly cardDisplay: CardDisplay;
+  private closedWarned = 0;
   private readonly voltio: Voltio;
   private boardPickup: THREE.Group | null = null;
   private nearBoard = false;
@@ -211,6 +219,16 @@ export class WorldMode {
     const sk = this.world.skate;
     const skateSource = new EnergySource('skate-source', sk.source.x, sk.source.z);
     this.ramp = new SkateRamp('skate-ramp', sk.ramp.x, sk.ramp.z);
+    // Interiores (Fase 2): cada habitación tiene su energía y algo para revivir con su carrera de luz
+    const casa = this.world.interior;
+    const hel = this.world.heladeria;
+    const tie = this.world.tienda;
+    const casaSource = new EnergySource('casa-source', casa.source.x, casa.source.z);
+    this.fuse = new FuseBox('casa-tablero', casa.target.x, casa.target.z);
+    const heladosSource = new EnergySource('helados-source', hel.source.x, hel.source.z);
+    this.iceMachine = new IceCreamMachine('helados-maquina', hel.target.x, hel.target.z);
+    const cartasSource = new EnergySource('cartas-source', tie.source.x, tie.source.z);
+    this.cardDisplay = new CardDisplay('cartas-vitrina', tie.target.x, tie.target.z);
 
     const labels: [Connectable, string][] = [
       [source, 'Energía'], [this.lamp, 'Farola'], [this.door, 'Puerta'],
@@ -219,10 +237,12 @@ export class WorldMode {
       [bridgeSource, 'Energía'], [this.bridge, 'Palanca del puente'],
       [gardenSource, 'Energía'], [this.sprinkler, 'Aspersor'], [this.flowerBed, 'Flores'],
       [skateSource, 'Energía'], [this.ramp, 'Rampa'],
+      [casaSource, 'Energía'], [heladosSource, 'Energía'], [cartasSource, 'Energía'],
+      [this.fuse, 'Tablero de luz'], [this.iceMachine, 'Máquina de helados'], [this.cardDisplay, 'Vitrina de cartas'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -237,6 +257,9 @@ export class WorldMode {
     this.connections.addRule({ sourceId: gardenSource.id, targetId: this.sprinkler.id, useTunnel: true });
     this.connections.addRule({ sourceId: this.sprinkler.id, targetId: this.flowerBed.id, useTunnel: true });
     this.connections.addRule({ sourceId: skateSource.id, targetId: this.ramp.id, useTunnel: true });
+    this.connections.addRule({ sourceId: casaSource.id, targetId: this.fuse.id, useTunnel: true });
+    this.connections.addRule({ sourceId: heladosSource.id, targetId: this.iceMachine.id, useTunnel: true });
+    this.connections.addRule({ sourceId: cartasSource.id, targetId: this.cardDisplay.id, useTunnel: true });
     this.bigSteps = [
       { s: source, t: this.lamp, sName: 'la energía de la plaza', tName: 'la farola' },
       { s: this.lamp, t: this.door, sName: 'la farola', tName: 'la puerta de la casa' },
@@ -440,6 +463,23 @@ export class WorldMode {
       reveal(GARDEN_ID);
       zoneLife(-11, 54, 16);
       say('¡El jardín volvió a florecer! Acércate al fragmento');
+    }
+    // Fase 2: al revivir algo adentro, la habitación recupera el color y afuera se nota
+    const room = target === this.fuse ? this.world.interior : target === this.iceMachine ? this.world.heladeria : target === this.cardDisplay ? this.world.tienda : null;
+    if (room) {
+      room.gray.revive(animate);
+      const o = this.world.outside;
+      if (target === this.fuse) o.miga.visible = true;
+      const pane = target === this.iceMachine ? o.helados : target === this.cardDisplay ? o.cartas : null;
+      if (pane) (pane.material as THREE.MeshBasicMaterial).opacity = 0.75;
+      if (animate) after(0.5, () => this.pickups.burst(3, target.x + 1, target.z + 2, 1.4));
+      say(
+        target === this.fuse
+          ? '¡Volvió la luz a la casa de Miga! Desde la plaza se ven las guirnaldas'
+          : target === this.iceMachine
+            ? '¡La heladería volvió a la vida! Su vidriera brilla desde la calle'
+            : '¡La tienda de cartas se encendió! Su vidriera brilla desde la calle',
+      );
     }
     if (target === this.ramp) {
       this.addLife(80, 0, 24, animate);
@@ -657,8 +697,27 @@ export class WorldMode {
         open: () => this.door.isActive,
         story: [
           'Miga · Mi casa',
-          '¡Bienvenido a mi casa! Fue lo primero que volvió a tener color. En ese banco arreglo cosas… y dicen que arriba se escondió una chispita. ¿Llegás saltando?',
+          '¡Bienvenido a mi casa! Desde el apagón está todo gris acá adentro… ¿Le llevás energía al tablero de luz de la pared? Ah, y arriba del banco de trabajo se escondió una chispita.',
         ],
+        target: this.fuse,
+      },
+      {
+        id: 'heladeria',
+        info: this.world.heladeria,
+        door: { x: this.world.shopDoors.helados.x, z: this.world.shopDoors.helados.z + 0.9 },
+        out: { x: this.world.shopDoors.helados.x, z: this.world.shopDoors.helados.z + 1.7 },
+        open: () => true,
+        story: ['Heladería', 'La máquina de helados se apagó con la Gran Chispa y todo quedó gris. Llevale energía con un cable desde la estrella.'],
+        target: this.iceMachine,
+      },
+      {
+        id: 'tienda-cartas',
+        info: this.world.tienda,
+        door: { x: this.world.shopDoors.cartas.x, z: this.world.shopDoors.cartas.z + 0.9 },
+        out: { x: this.world.shopDoors.cartas.x, z: this.world.shopDoors.cartas.z + 1.7 },
+        open: () => this.progress.hasFlag('cartas-open'),
+        story: ['Tienda de cartas', '¡Acá se juntan las cartas de los Chispis! La vitrina está apagada: llevale energía desde la estrella.'],
+        target: this.cardDisplay,
       },
       {
         id: 'sala-skate',
@@ -719,6 +778,7 @@ export class WorldMode {
       this.nexus.heading = Math.PI;
       this.hintTimer = 0;
       document.body.classList.add('inside');
+      if (this.eventTimer <= 0) this.showObjective();
       if (!this.progress.hasHeard(room.id)) {
         this.progress.markHeard(room.id);
         this.showStory(room.story[0], room.story[1]);
@@ -740,6 +800,7 @@ export class WorldMode {
       this.camYaw = 0;
       this.hintTimer = 0;
       document.body.classList.remove('inside');
+      if (this.eventTimer <= 0) this.showObjective();
     });
   }
 
@@ -796,16 +857,27 @@ export class WorldMode {
   /* ---------- Fase 1: Skatepark, patineta y Mundo Voltio (PLAN_MAESTRO.md) ---------- */
 
   private makeVoltio(): Voltio {
+    const sala = this.world.skate.sala;
+    const cartas = this.world.shopDoors.cartas;
     return new Voltio(
       this.world.scene,
       this.world.skate,
+      [
+        { id: 'sala-open', nodes: this.world.skate.nodes, door: { x: sala.doorX, z: sala.doorZ } },
+        { id: 'cartas-open', nodes: this.world.cardNodes, door: cartas },
+      ],
       {
         rescue: (id, x, z) => this.onRescue(id, x, z),
-        circuit: () => {
-          this.progress.setFlag('sala-open');
-          this.openShutter(true);
+        circuit: (id) => {
+          this.progress.setFlag(id);
           this.audio.playSuccess();
-          this.setMessage('¡Circuito cerrado! Afuera se abrió la sala del skatepark');
+          if (id === 'sala-open') {
+            this.openShutter(true);
+            this.setMessage('¡Circuito cerrado! Afuera se abrió la sala del skatepark');
+          } else {
+            this.openGrille(true);
+            this.setMessage('¡Circuito cerrado! Afuera se abrió la tienda de cartas');
+          }
           this.refreshObjectiveSoon();
         },
         zap: () => {
@@ -827,7 +899,7 @@ export class WorldMode {
           this.toast(`Nodo ${n} de ${total}`, 'ok');
         },
       },
-      { rescued: this.progress.hasChispi('rueditas'), circuit: this.progress.hasFlag('sala-open') },
+      { rescued: this.progress.hasChispi('rueditas'), circuits: ['sala-open', 'cartas-open'].filter((f) => this.progress.hasFlag(f)) },
     );
   }
 
@@ -842,6 +914,10 @@ export class WorldMode {
       this.boardPickup = b;
     }
     if (this.progress.hasFlag('sala-open')) this.openShutter(false);
+    if (this.progress.hasFlag('cartas-open')) this.openGrille(false);
+    for (const r of [this.world.heladeria, this.world.tienda]) {
+      if (!this.progress.hasSpark(r.spark.id)) this.pickups.addHidden(r.spark.id, r.spark.x, r.spark.z, r.spark.y);
+    }
     const rs = sk.room.spark;
     if (!this.progress.hasSpark(rs.id)) this.pickups.addHidden(rs.id, rs.x, rs.z, rs.y);
     document.body.classList.toggle('has-hood', this.progress.hasFlag('hood'));
@@ -861,6 +937,32 @@ export class WorldMode {
       sh.position.y = y0 + (2.5 - y0) * k;
       sh.scale.y = 1 - 0.85 * k;
     });
+  }
+
+  /** La reja de la tienda de cartas sube. */
+  private openGrille(animate: boolean): void {
+    const g = this.world.outside.grille;
+    if (!animate) {
+      g.position.y = 2.3;
+      return;
+    }
+    tween(1.0, (k) => (g.position.y = 2.3 * k));
+  }
+
+  /** Cerca de la tienda de cartas cerrada: un aviso de vez en cuando. */
+  private warnClosedShop(dt: number): void {
+    this.closedWarned -= dt;
+    if (this.closedWarned > 0 || this.inside || this.voltio.active || this.progress.hasFlag('cartas-open')) return;
+    const d = this.world.shopDoors.cartas;
+    const p = this.nexus.position;
+    if (Math.hypot(p.x - d.x, p.z - (d.z + 1)) > 2.5) return;
+    this.closedWarned = 8;
+    this.toast(
+      this.progress.hasFlag('hood')
+        ? 'La tienda de cartas está trabada… ¿y si mirás los cables con la capucha ⚡?'
+        : 'La tienda de cartas está cerrada. Rulo, en el Skatepark, sabe de cables…',
+      'info',
+    );
   }
 
   get hasBoard(): boolean {
@@ -1004,10 +1106,19 @@ export class WorldMode {
   private skateStep(): { text: string; at: { x: number; z: number } | null } | null {
     const p = this.progress;
     const sk = this.world.skate;
+    if (this.inside) {
+      const t = this.inside.target;
+      if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
+      return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
+    }
+    if (this.voltio.active && !this.inSkatepark && !p.hasFlag('cartas-open')) {
+      const n = this.voltio.litNodes('cartas-open');
+      return { text: `Tocá los tres nodos frente a la tienda de cartas (${n}/3)`, at: this.world.cardNodes[Math.min(n, 2)] };
+    }
     if (this.voltio.active) {
       if (this.voltio.chispiCaged) return { text: 'Cerrá un círculo con tu estela alrededor de la jaula del Chispi', at: sk.chispi };
       if (!p.hasFlag('sala-open')) {
-        const n = this.voltio.litNodes;
+        const n = this.voltio.litNodes();
         return { text: `Tocá los tres nodos del circuito frente a la sala (${n}/3)`, at: sk.nodes[Math.min(n, 2)] };
       }
       return { text: 'Encerrá Estáticas con tu estela: se vuelven chispitas', at: null };
@@ -1446,7 +1557,13 @@ export class WorldMode {
               ? 'bridge'
               : target === this.ramp
                 ? 'skate'
-                : 'garden';
+                : target === this.fuse
+                  ? 'casa'
+                  : target === this.iceMachine
+                    ? 'helado'
+                    : target === this.cardDisplay
+                      ? 'cartas'
+                      : 'garden';
     return planTunnel(zone, this.progress.tunnelSkill);
   }
 
@@ -1850,6 +1967,7 @@ export class WorldMode {
     }
     this.checkFragments();
 
+    this.warnClosedShop(dt);
     // Mundo Voltio
     this.voltio.update(dt, this.time, this.nexus.position);
     if (this.voltio.active && this.voltio.voltage <= 0) this.exitVoltio('Se acabó el voltaje ⚡: volviste al mundo normal');

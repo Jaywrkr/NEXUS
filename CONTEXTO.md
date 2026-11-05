@@ -100,6 +100,9 @@ src/3d/
                              escenografía de cada zona, colisiones (rectángulos + círculos), portón del skatepark
   world/districts.ts       — distritos de la ciudad (Centro, Camino al Skatepark y los que vienen) + districtAt()
   world/MigaHouse.ts       — primer interior (casa de Miga) en x = 300 + roomShell() para armar habitaciones "maqueta"
+  world/ShopRooms.ts       — interiores de la heladería (x = 500) y la tienda de cartas (x = 600)
+  world/revive.ts          — makeGray(): una habitación empieza gris y revive() le devuelve el color
+  objects/indoor.ts        — FuseBox (casa de Miga), IceCreamMachine (heladería), CardDisplay (tienda de cartas)
   world/Skatepark.ts       — distrito Skatepark: piso, grafitis, portón, rampitas (Kicker), barandas (Rail), cajón,
                              sala con persiana, nodos del circuito, lugar del Chispi y el interior de la sala (x = 400)
   objects/skate.ts         — makeBoard() (patineta), SkateRamp (rampa grande conectable), makeNode()
@@ -184,6 +187,15 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Objetivo y pistas**: `skateStep()` da el paso que toca en el Skatepark o en Voltio; tiene prioridad en el objetivo y en `showHint()`.
 - **Pruebas**: el escenario «skatepark» recorre todo (caminar hasta allá, patineta, tres trucos, capucha, Voltio, rescate, circuito, Estática, sala, rampa, voltaje, guardado).
 
+### Interiores que se reviven (Decisión 045, Fase 2)
+
+- **Habitaciones** (`World.rooms`): casa de Miga (x = 300), sala del skatepark (400), heladería (500), tienda de cartas (600). Las tres del Centro son `ReviveRoom` (`source`, `target`, `gray`): empiezan grises (`makeGray`, materiales clonados) y no se agrupan (`userData.dynamic`).
+- **Revivir**: en cada una, `EnergySource` (`casa-source`, `helados-source`, `cartas-source`) → `FuseBox` / `IceCreamMachine` / `CardDisplay` con `useTunnel` (temas `casa`, `helado`, `cartas`). `applyConnection` llama `room.gray.revive()` y prende lo de afuera (`World.outside`: `miga` guirnalda, `helados` y `cartas` vidrieras).
+- **Puertas** (`WorldMode.interiors`): casa de Miga (con la plaza viva), heladería (`World.shopDoors.helados` = 15,5, 13,9; siempre abierta), tienda de cartas (`shopDoors.cartas` = 33,5, 13,9; flag `cartas-open`). Los locales miran a +Z (hacia el canal), no a la calle.
+- **Circuitos del Mundo Voltio** (`Voltio` recibe `Circuit[]`): `sala-open` (nodos del skatepark) y `cartas-open` (`World.cardNodes`: 28, 17,5 · 31,5, 20 · 36, 17,5). Al cerrarse llaman `hooks.circuit(id)`: persiana de la sala o reja de la tienda. Cerca de la tienda trabada aparece un aviso.
+- **Objetivo y pistas adentro**: `skateStep()` (también cubre interiores) dice qué revivir y apunta a la energía (o al objeto si ya hay cable en la mano).
+- **Horizonte**: no hay cerros al este (cos(a) > 0,75), porque tapaban las habitaciones.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -202,7 +214,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
 6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
 
-Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–044).
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–045).
 
 ### 6. Trampas técnicas ya conocidas (no repetirlas)
 
@@ -228,7 +240,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–044).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 y 1 hechas (Decisiones 043 y 044). Sigue la Fase 2: primeros interiores (tienda de cartas, heladería, casa de Miga con algo para revivir adentro).**
+> **Fases 0, 1 y 2 hechas (Decisiones 043–045). Sigue la Fase 3: cartas de Chispis (~40 cartas, rarezas, sobres, álbum, intercambio).**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 
