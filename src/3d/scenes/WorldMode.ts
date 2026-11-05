@@ -36,6 +36,8 @@ import { CARDS, CARD_BY_ID, TOTAL_CARDS, TYPES, rollPack } from '../data/chispis
 import { makePack } from '../objects/pack';
 import { ConfettiCannon, LanternPost, Motor, Stage, ToyBell, ToyDuck, ToyParade } from '../objects/festival';
 import { FESTIVAL } from '../world/Festival';
+import { Carousel, Coaster, FerrisWheel, MirrorBall, type Ride } from '../objects/rides';
+import { PARK } from '../world/Park';
 import type { CageSpot } from '../systems/Voltio';
 import { Companion } from '../entities/Companion';
 import type { ChispiType } from '../data/chispis';
@@ -98,6 +100,7 @@ const CAGES: { id: string; x: number; z: number }[] = [
   { id: 'antenita', x: 26, z: -9 },
   { id: 'brotecito', x: 13, z: 42 },
   { id: 'globin', x: 22, z: 44 },
+  { id: 'pochoclin', x: PARK.chispi.x, z: PARK.chispi.z },
 ];
 
 /** Sobres escondidos por el mundo (x, z, altura). */
@@ -110,6 +113,7 @@ const HIDDEN_PACKS: [string, number, number, number][] = [
   ['jardin-oeste', -34, 50, 0.9],
   ['skate-cajon', 75, 2, 1.55],
   ['sala-skate', 398, 1.5, 0.9],
+  ['parque-algodon', 26, -91, 0.9],
 ];
 const TRICK_NAMES: Record<Trick, string> = { ollie: 'Ollie', air: '¡Vuelo!', grind: 'Grind' };
 
@@ -188,6 +192,14 @@ export class WorldMode {
   private readonly lanterns: { first: LanternPost; middle: LanternPost; last: LanternPost; sideA: LanternPost; sideB: LanternPost };
   private readonly stage: Stage;
   private readonly confetti: ConfettiCannon;
+  /* Fase 6: Parque de diversiones */
+  private readonly carousel: Carousel;
+  private readonly wheel: FerrisWheel;
+  private readonly coaster: Coaster;
+  private readonly mirrorBall: MirrorBall;
+  /** Juego en el que está subido el Nexus. */
+  private rideOn: (Ride & Connectable) | null = null;
+  private rideSpot: (Ride & Connectable) | null = null;
   private readonly labels: { obj: Connectable; el: HTMLElement; alpha: number }[] = [];
   private readonly fragmentById = new Map<string, Fragment>();
   /** Chisperos y cosas dormidas repartidos por el barrio (despertarlas es opcional). */
@@ -299,6 +311,21 @@ export class WorldMode {
     this.stage = new Stage('party-stage', F.stage.x, F.stage.z);
     this.confetti = new ConfettiCannon('party-confetti', F.confetti.x, F.confetti.z, scene);
     this.world.rects.push(this.stage.deckRect);
+    // Fase 6: Parque de diversiones
+    const P = PARK;
+    const carouselSource = new EnergySource('park-carousel-source', P.carouselSource.x, P.carouselSource.z);
+    this.carousel = new Carousel('park-carousel', P.carousel.x, P.carousel.z);
+    this.world.circles.push({ x: P.carousel.x, z: P.carousel.z, r: 4.7 });
+    const wheelSource = new EnergySource('park-wheel-source', P.wheelSource.x, P.wheelSource.z);
+    this.wheel = new FerrisWheel('park-wheel', P.wheel.x, P.wheel.z);
+    this.world.rects.push({ minX: P.wheel.x - 3.2, maxX: P.wheel.x + 3.2, minZ: P.wheel.z - 1.6, maxZ: P.wheel.z + 1.6 });
+    const coasterSource = new EnergySource('park-coaster-source', P.coasterSource.x, P.coasterSource.z);
+    this.coaster = new Coaster('park-coaster', P.coasterStation, P.coasterTrack);
+    const esp = this.world.espejos;
+    const espejosSource = new EnergySource('espejos-source', esp.source.x, esp.source.z);
+    this.mirrorBall = new MirrorBall('espejos-bola', esp.target.x, esp.target.z);
+    this.wheel.unlocked = this.progress.hasFlag('wheel-open');
+    this.coaster.unlocked = this.progress.hasFlag('coaster-open');
 
     const labels: [Connectable, string][] = [
       [source, 'Energía'], [this.lamp, 'Farola'], [this.door, 'Puerta'],
@@ -310,10 +337,11 @@ export class WorldMode {
       [casaSource, 'Energía'], [heladosSource, 'Energía'], [cartasSource, 'Energía'],
       [this.fuse, 'Tablero de luz'], [this.iceMachine, 'Máquina de helados'], [this.cardDisplay, 'Vitrina de cartas'],
       [tallerSource, 'Energía'], [lanternSource, 'Energía'],
+      [carouselSource, 'Energía'], [wheelSource, 'Energía'], [coasterSource, 'Energía'], [espejosSource, 'Energía'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -353,6 +381,24 @@ export class WorldMode {
     const blockedMessage = 'Faltan preparativos para la fiesta: luz, agua, radio, jardín y desfile';
     this.connections.addRule({ sourceId: L.last.id, targetId: this.stage.id, useTunnel: true, available: () => this.prepared, blockedMessage });
     this.connections.addRule({ sourceId: this.stage.id, targetId: this.confetti.id, available: () => this.prepared, blockedMessage });
+    // Parque: la calesita arranca con cable; la vuelta al mundo y la montaña rusa tienen el motor trabado
+    // hasta cerrar su circuito en el Mundo Voltio
+    this.connections.addRule({ sourceId: carouselSource.id, targetId: this.carousel.id, useTunnel: true });
+    this.connections.addRule({
+      sourceId: wheelSource.id,
+      targetId: this.wheel.id,
+      useTunnel: true,
+      available: () => this.wheel.unlocked,
+      blockedMessage: 'La vuelta al mundo tiene el motor trabado: mirá sus cables con la capucha ⚡',
+    });
+    this.connections.addRule({
+      sourceId: coasterSource.id,
+      targetId: this.coaster.id,
+      useTunnel: true,
+      available: () => this.coaster.unlocked,
+      blockedMessage: 'La montaña rusa tiene el motor trabado: mirá sus cables con la capucha ⚡',
+    });
+    this.connections.addRule({ sourceId: espejosSource.id, targetId: this.mirrorBall.id, useTunnel: true });
     this.bigSteps = [
       { s: source, t: this.lamp, sName: 'la energía de la plaza', tName: 'la farola' },
       { s: this.lamp, t: this.door, sName: 'la farola', tName: 'la puerta de la casa' },
@@ -369,6 +415,9 @@ export class WorldMode {
       { s: this.lanterns.middle, t: this.lanterns.last, sName: 'el farol apurado', tName: 'el farol de salida' },
       { s: this.lanterns.last, t: this.stage, sName: 'el farol de salida', tName: 'el escenario de la fiesta', when: () => this.prepared },
       { s: this.stage, t: this.confetti, sName: 'el escenario', tName: 'el cañón de confeti', when: () => this.prepared },
+      { s: carouselSource, t: this.carousel, sName: 'la energía del parque', tName: 'la calesita' },
+      { s: wheelSource, t: this.wheel, sName: 'la energía de la vuelta al mundo', tName: 'la vuelta al mundo', when: () => this.wheel.unlocked },
+      { s: coasterSource, t: this.coaster, sName: 'la energía de la montaña rusa', tName: 'la montaña rusa', when: () => this.coaster.unlocked },
     ];
 
     // Fragmentos: uno por zona + el secreto detrás de la casa (Decisión 019), que ya está visible
@@ -554,6 +603,10 @@ export class WorldMode {
       [this.cardDisplay, 'tienda', true],
       [this.parade, 'taller', this.parade.isActive],
       [this.lanterns.last, 'faroles', true],
+      [this.carousel, 'calesita', true],
+      [this.wheel, 'vuelta', true],
+      [this.coaster, 'montana', true],
+      [this.mirrorBall, 'espejos', true],
     ];
     for (const [obj, id, ok] of packFor) {
       if (target !== obj || !ok) continue;
@@ -637,6 +690,23 @@ export class WorldMode {
     }
     if (target === this.stage) say('¡El escenario está listo! Falta el confeti');
     if (target === this.confetti) this.party(animate);
+    // Fase 6: Parque de diversiones
+    if (target === this.carousel || target === this.wheel || target === this.coaster) {
+      this.addLife(target.x, target.z, 10, animate);
+      const name = target === this.carousel ? 'La calesita' : target === this.wheel ? 'La vuelta al mundo' : 'La montaña rusa';
+      if (target === this.coaster) this.placeCoasterSparks();
+      if (this.parkDone === 3) {
+        this.addLife(0, -73, 42, animate);
+        say('¡El Parque de diversiones volvió a la vida! Subite a todos los juegos');
+        if (animate) after(0.8, () => this.updateResidentMoods());
+      } else {
+        say(`¡${name} revivió! Acercate y subite`);
+      }
+    }
+    if (target === this.mirrorBall) {
+      this.world.espejos.gray.revive(animate);
+      say('¡La casa de los espejos brilla otra vez!');
+    }
     if (target === this.ramp) {
       this.addLife(80, 0, 24, animate);
       if (animate) after(0.6, () => this.pickups.burst(4, target.x, target.z + 1.5, 1.6));
@@ -896,6 +966,15 @@ export class WorldMode {
         target: this.parade,
       },
       {
+        id: 'casa-espejos',
+        info: this.world.espejos,
+        door: { x: PARK.mirror.doorX, z: PARK.mirror.z + PARK.mirror.d / 2 + 0.9 },
+        out: { x: PARK.mirror.doorX, z: PARK.mirror.z + PARK.mirror.d / 2 + 1.7 },
+        open: () => true,
+        story: ['Casa de los espejos', '¡Cuántos Nexus! La bola de espejos se apagó y todo quedó gris. Llevale energía desde la estrella.'],
+        target: this.mirrorBall,
+      },
+      {
         id: 'sala-skate',
         info: this.world.skate.room,
         door: { x: sala.doorX, z: sala.doorZ + 0.9 },
@@ -1010,6 +1089,9 @@ export class WorldMode {
       { name: 'Skatepark', x: 82, z: -12, alive: this.ramp.isActive },
       { name: 'Taller', x: FESTIVAL.workshop.x, z: FESTIVAL.workshop.z, alive: this.parade.isActive },
       { name: 'Faroles', x: 21, z: 55, alive: this.lanterns.last.isActive },
+      { name: 'Calesita', x: PARK.carousel.x, z: PARK.carousel.z, alive: this.carousel.isActive },
+      { name: 'Vuelta al mundo', x: PARK.wheel.x, z: PARK.wheel.z, alive: this.wheel.isActive },
+      { name: 'Montaña rusa', x: -20, z: -85, alive: this.coaster.isActive },
     ];
     return {
       life: (x, z) => LIFE.at(x, z),
@@ -1044,6 +1126,8 @@ export class WorldMode {
       [
         { id: 'sala-open', nodes: this.world.skate.nodes, door: { x: sala.doorX, z: sala.doorZ } },
         { id: 'cartas-open', nodes: this.world.cardNodes, door: cartas },
+        { id: 'wheel-open', nodes: PARK.wheelNodes, door: { x: PARK.wheel.x, z: PARK.wheel.z } },
+        { id: 'coaster-open', nodes: PARK.coasterNodes, door: { x: PARK.coasterStation.x, z: PARK.coasterStation.z } },
       ],
       {
         rescue: (id, x, z) => this.onRescue(id, x, z),
@@ -1053,9 +1137,15 @@ export class WorldMode {
           if (id === 'sala-open') {
             this.openShutter(true);
             this.setMessage('¡Circuito cerrado! Afuera se abrió la sala del skatepark');
-          } else {
+          } else if (id === 'cartas-open') {
             this.openGrille(true);
             this.setMessage('¡Circuito cerrado! Afuera se abrió la tienda de cartas');
+          } else if (id === 'wheel-open') {
+            this.wheel.unlocked = true;
+            this.setMessage('¡Circuito cerrado! El motor de la vuelta al mundo se destrabó');
+          } else if (id === 'coaster-open') {
+            this.coaster.unlocked = true;
+            this.setMessage('¡Circuito cerrado! El motor de la montaña rusa se destrabó');
           }
           this.refreshObjectiveSoon();
         },
@@ -1082,7 +1172,7 @@ export class WorldMode {
         cages: [{ id: 'rueditas', ...this.world.skate.chispi }, ...CAGES]
           .filter((c) => !this.progress.hasChispi(c.id))
           .map((c): CageSpot => ({ ...c, color: TYPES[CARD_BY_ID.get(c.id)!.type].color })),
-        circuits: ['sala-open', 'cartas-open'].filter((f) => this.progress.hasFlag(f)),
+        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open'].filter((f) => this.progress.hasFlag(f)),
       },
     );
   }
@@ -1099,6 +1189,8 @@ export class WorldMode {
     }
     if (this.progress.hasFlag('sala-open')) this.openShutter(false);
     if (this.progress.hasFlag('cartas-open')) this.openGrille(false);
+    const rs2 = this.world.espejos.spark;
+    if (!this.progress.hasSpark(rs2.id)) this.pickups.addHidden(rs2.id, rs2.x, rs2.z, rs2.y);
     for (const r of [this.world.heladeria, this.world.tienda]) {
       if (!this.progress.hasSpark(r.spark.id)) this.pickups.addHidden(r.spark.id, r.spark.x, r.spark.z, r.spark.y);
     }
@@ -1306,6 +1398,8 @@ export class WorldMode {
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
       return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
     }
+    const park = this.parkStep();
+    if (park) return park;
     if (this.voltio.active && !this.inSkatepark) {
       const me = this.nexus.position;
       const near = this.voltio.cageSpots.filter((c) => c.id !== 'rueditas' && Math.hypot(c.x - me.x, c.z - me.z) < 14);
@@ -1671,6 +1765,10 @@ export class WorldMode {
       ['pinwheel', 12.5, 61.8],
       ['gnome', 34.5, 55.2],
       ['birdhouse', 7, 57],
+      // Fase 6: en el parque
+      ['balloons', 9, -56],
+      ['icecream', -25, -60],
+      ['pinwheel', 29, -80],
     ] as [SleeperKind, number, number][]) {
       const [px, pz] = place(x, z);
       make(kind, px, pz, Math.PI / 4);
@@ -1899,6 +1997,12 @@ export class WorldMode {
       this.world.scene.add(r.root);
       this.residents.push(r);
     }
+    // Tita, la feriante del Parque de diversiones (Fase 6)
+    const tp = PARK.tita;
+    const tita = new Resident3D('tita', 'Tita', tp.x, tp.z, Math.atan2(tp.faceX - tp.x, tp.faceZ - tp.z));
+    tita.setHeard(this.progress.hasHeard('tita'));
+    this.world.scene.add(tita.root);
+    this.residents.push(tita);
     // Rulo, el patinador del Skatepark (Fase 1)
     const rs = this.world.skate.rulo;
     const rulo = new Resident3D('rulo', 'Rulo', rs.x, rs.z, Math.atan2(rs.faceX - rs.x, rs.faceZ - rs.z));
@@ -1919,12 +2023,14 @@ export class WorldMode {
       rulo: this.ramp.isActive,
       pipa: this.parade.isActive,
       lucio: this.lanterns.last.isActive,
+      tita: this.parkDone === 3,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
 
   private residentText(r: Resident3D): string {
     if (r.id === 'rulo') return this.ruloText();
+    if (r.id === 'tita') return this.titaText();
     const info = RESIDENTS.find((i) => i.id === r.id)!;
     // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
     if (r.id === 'bombo' && !this.fountain.isActive) {
@@ -1970,6 +2076,117 @@ export class WorldMode {
     this.residents.find((r) => r.id === who)?.talk();
     this.updateHud();
     return offer.id;
+  }
+
+  /* ---------- Parque de diversiones (Fase 6) ---------- */
+
+  /** Cuántos juegos del parque revivieron (0..3). */
+  get parkDone(): number {
+    return [this.carousel, this.wheel, this.coaster].filter((r) => r.isActive).length;
+  }
+
+  /** Juego en el que está subido el Nexus (id) o null. */
+  get onRide(): string | null {
+    return this.rideOn?.id ?? null;
+  }
+
+  /** Chispitas arriba de la vía de la montaña rusa: solo se juntan andando en ella. */
+  private placeCoasterSparks(): void {
+    [0.32, 0.5, 0.68, 0.84].forEach((t, i) => {
+      const id = `spark-coaster-${i}`;
+      if (this.progress.hasSpark(id) || this.pickups.items.some((p) => p.id === id)) return;
+      const p = this.coaster.worldPoint(t);
+      this.pickups.addHidden(id, p.x, p.z, p.y + 0.3 + 0.9);
+    });
+  }
+
+  /** ¿Hay un juego vivo (y destrabado) al lado para subirse? */
+  private findRideSpot(): (Ride & Connectable) | null {
+    if (this.rideOn || this.busy || this.zip || this.inside || this.voltio.active || this.connections.hasSelection() || this.nexus.riding) return null;
+    const p = this.nexus.position;
+    for (const r of [this.carousel, this.wheel, this.coaster] as (Ride & Connectable)[]) {
+      if (!r.isActive) continue;
+      if (Math.hypot(p.x - r.boardAt.x, p.z - r.boardAt.z) < 1.9) return r;
+    }
+    return null;
+  }
+
+  boardRide(r: Ride & Connectable): void {
+    this.dismount();
+    this.rideOn = r;
+    r.startRide();
+    this.nexus.velocity.set(0, 0, 0);
+    this.vy = 0;
+    this.audio.tone(523, 0, 0.1, 'triangle', 0.07);
+    this.audio.tone(784, 0.08, 0.14, 'triangle', 0.07);
+    this.companion?.cheer();
+    if (!this.progress.hasFlag(`ride-${r.id}`)) {
+      this.progress.setFlag(`ride-${r.id}`);
+      this.toast(r === this.coaster ? '¡Agarrate fuerte! Juntá las chispitas de la vía' : '¡Wiii! Tocá «Bajar» cuando quieras', 'info');
+    }
+  }
+
+  leaveRide(): void {
+    const r = this.rideOn;
+    if (!r) return;
+    this.rideOn = null;
+    (r as unknown as { stopRide?: () => void }).stopRide?.();
+    this.nexus.position.set(r.boardAt.x, 0, r.boardAt.z);
+    this.nexus.airborne = false;
+    this.grounded = true;
+    this.vy = 0;
+    this.nexus.heading = Math.PI / 4;
+  }
+
+  /** Subido a un juego: el Nexus va pegado al asiento. */
+  private updateRideOn(dt: number): void {
+    const r = this.rideOn!;
+    if (!r.updateRide(dt)) {
+      this.leaveRide();
+      this.setMessage(r === this.coaster ? '¡Qué vuelta! ¿Otra?' : '¡Qué lindo paseo!');
+      return;
+    }
+    const seat = r.seat();
+    const v = new THREE.Vector3();
+    seat.getWorldPosition(v);
+    this.nexus.position.copy(v);
+    const q = new THREE.Quaternion();
+    seat.getWorldQuaternion(q);
+    const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+    if (Math.hypot(fwd.x, fwd.z) > 0.2) this.nexus.heading = Math.atan2(fwd.x, fwd.z);
+    this.nexus.velocity.set(0, 0, 0);
+    this.nexus.airborne = false;
+  }
+
+  private titaText(): string {
+    if (!this.carousel.isActive) return '¡Pasen y vean! Bueno… cuando haya luz. La calesita se apagó con la Gran Chispa: ¿le llevás energía?';
+    if (!this.wheel.unlocked || !this.coaster.unlocked) return 'La vuelta al mundo y la montaña rusa tienen el motor trabado. Dicen que con una capucha especial se ven sus cables…';
+    if (this.parkDone < 3) return '¡Los motores están libres! Falta llevarles energía.';
+    return '¡El parque está más vivo que nunca! Subite a la montaña rusa: arriba de la vía hay chispitas.';
+  }
+
+  /** Lo que conviene hacer en el parque (o en sus cables). */
+  private parkStep(): { text: string; at: { x: number; z: number } | null } | null {
+    if (this.districtId !== 'parque' || this.inside) return null;
+    const lit = (id: string) => this.voltio.litNodes(id);
+    const hood = this.progress.hasFlag('hood');
+    if (this.voltio.active) {
+      if (!this.wheel.unlocked) return { text: `Tocá los tres nodos de la vuelta al mundo (${lit('wheel-open')}/3)`, at: PARK.wheelNodes[Math.min(lit('wheel-open'), 2)] };
+      if (!this.coaster.unlocked) return { text: `Tocá los tres nodos de la montaña rusa (${lit('coaster-open')}/3)`, at: PARK.coasterNodes[Math.min(lit('coaster-open'), 2)] };
+      if (this.voltio.isCaged('pochoclin')) return { text: '¡Pochoclín está atrapado! Cerrá un círculo con tu estela alrededor de la jaula', at: PARK.chispi };
+      return { text: 'Los motores del parque están libres: sacate la capucha y llevales energía', at: null };
+    }
+    if (!this.carousel.isActive) return { text: 'Parque: conectá la energía con la calesita', at: PARK.carouselSource };
+    if (!this.wheel.unlocked || !this.coaster.unlocked) {
+      return {
+        text: hood ? 'Los motores de los juegos están trabados: ponete la capucha ⚡ y mirá sus cables' : 'Los motores están trabados… Rulo, en el Skatepark, sabe de cables',
+        at: hood ? (!this.wheel.unlocked ? PARK.wheelNodes[0] : PARK.coasterNodes[0]) : null,
+      };
+    }
+    if (!this.wheel.isActive) return { text: 'Parque: conectá la energía con la vuelta al mundo', at: PARK.wheelSource };
+    if (!this.coaster.isActive) return { text: 'Parque: conectá la energía con la montaña rusa', at: PARK.coasterSource };
+    if (!this.world.espejos.gray.alive) return { text: 'Parque: entrá a la casa de los espejos', at: { x: PARK.mirror.doorX, z: PARK.mirror.z + 3.4 } };
+    return { text: '¡El parque está vivo! Subite a los juegos', at: null };
   }
 
   /* ---------- La fiesta: fin del capítulo (Fase 5) ---------- */
@@ -2194,6 +2411,7 @@ export class WorldMode {
         ['Mochila', '🎒', '#ffc23a'],
         ['Pista', '💡', '#ffc23a'],
         ['Rulo', '🛹', '#ff9f43'],
+        ['Tita', '🎪', '#ff5a6e'],
         ['Voltio', '⚡', '#7dffef'],
       ];
       const f = faces.find(([k]) => who.includes(k));
@@ -2325,7 +2543,9 @@ export class WorldMode {
       ...this.connections.all.map((c) => ({ x: c.x, z: c.z, r: c.collideRadius })),
       ...this.residents.map((r) => ({ x: r.x, z: r.z, r: 0.4 })),
     ];
-    if (this.zip) {
+    if (this.rideOn) {
+      this.updateRideOn(dt);
+    } else if (this.zip) {
       this.updateZip(dt);
     } else {
       const still = this.busy || this.nexus.dancing;
@@ -2402,7 +2622,17 @@ export class WorldMode {
     if (this.hasBoard && !this.inside && !this.zip && !this.busy && this.grounded && !this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway && !this.connections.hasSelection()) {
       this.boardToggle = this.nexus.riding ? 'off' : 'on';
     }
-    if (this.input.consumeInteract() && !this.busy && !this.zip) {
+    this.rideSpot = this.findRideSpot();
+    if (this.rideOn || this.rideSpot) {
+      this.nearestResident = null;
+      this.nearestPole = null;
+      this.boardToggle = null;
+    }
+    const pressed = this.input.consumeInteract();
+    if (pressed && !this.busy && !this.zip && (this.rideOn || this.rideSpot)) {
+      if (this.rideOn) this.leaveRide();
+      else if (this.rideSpot) this.boardRide(this.rideSpot);
+    } else if (pressed && !this.busy && !this.zip) {
       if (this.doorway?.kind === 'enter') this.enterHouse(this.doorway.room);
       else if (this.doorway?.kind === 'exit') this.leaveHouse();
       else if (this.nearBoard) this.takeBoard();
@@ -2413,8 +2643,12 @@ export class WorldMode {
       else if (this.boardToggle === 'off') this.dismount();
     }
     if (this.el.interact) {
-      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway && !this.nearBoard && !this.boardToggle) || this.busy || !!this.zip;
-      this.el.interact.textContent = this.nearBoard
+      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway && !this.nearBoard && !this.boardToggle && !this.rideSpot && !this.rideOn) || this.busy || !!this.zip || (this.rideOn === this.coaster && !!this.rideOn);
+      this.el.interact.textContent = this.rideOn
+        ? 'Bajar'
+        : this.rideSpot
+          ? '🎠 Subir'
+          : this.nearBoard
         ? 'Patineta'
         : this.boardToggle && !this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway
           ? this.boardToggle === 'on'

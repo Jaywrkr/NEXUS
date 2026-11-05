@@ -304,8 +304,8 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     return { nests, sleepers: wm.sleepers.map((s) => ({ id: s.id, x: s.x, z: s.z })) };
   });
   expect(info.nests.length).toBe(6);
-  expect(info.sleepers.length).toBe(24);
-  expect(await text(page, 'awake')).toBe('✦ 0/24');
+  expect(info.sleepers.length).toBe(27);
+  expect(await text(page, 'awake')).toBe('✦ 0/27');
   expect(await text(page, 'charge')).toBe('🎒 ○○○○○');
 
   // Con la mochila vacía no se despierta nada
@@ -348,7 +348,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     woken += 1;
     expect(await w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, sl.id), `despierta ${sl.id}`).toBe(true);
     expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
-    expect(await text(page, 'awake')).toBe(`✦ ${woken}/24`);
+    expect(await text(page, 'awake')).toBe(`✦ ${woken}/27`);
     if (woken === 1) {
       await touch(page);
       expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
@@ -370,7 +370,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
-  expect(await text(page, 'awake')).toBe('✦ 24/24');
+  expect(await text(page, 'awake')).toBe('✦ 27/27');
   expect(await text(page, 'charge')).toBe('🎒 ●○○○○');
   expect(await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id?.startsWith('spark-hidden')).length)).toBe(9);
 
@@ -1095,4 +1095,122 @@ test('3D: el Centro completo — taller de Pipa, faroles de Lucio y la fiesta fi
   expect(await w(() => window.__nexus3d.world.chapterDone)).toBe(true);
   expect(await active('party-confetti')).toBe(true);
   expect(await w(() => document.getElementById('endPop').hidden)).toBe(true);
+});
+
+test('3D: Parque de diversiones — calesita, motores en el Mundo Voltio, vuelta al mundo y montaña rusa', async ({ page }) => {
+  test.setTimeout(360_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const active = (id) => w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, id);
+  const at = (id) => w((id) => { const o = window.__nexus3d.world.connections.all.find((k) => k.id === id); return [o.x, o.z]; }, id);
+  const near = async (id, dx = 0.9, dz = 0.9) => { const [x, z] = await at(id); return [x + dx, z + dz]; };
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Se llega caminando por la calle norte-sur
+  await tp(page, 0, -40);
+  await page.keyboard.down('KeyW');
+  await page.keyboard.down('KeyD');
+  await step(page, 3);
+  await page.keyboard.up('KeyW');
+  await page.keyboard.up('KeyD');
+  expect(await w(() => window.__nexus3d.world.nexus.position.z)).toBeLessThan(-50);
+  await step(page, 0.6);
+  expect(await text(page, 'districtBanner')).toContain('Parque');
+  expect(await text(page, 'msg')).toContain('calesita');
+
+  // Calesita: cable desde la energía (carrera de luz) y subirse
+  await connect(page, await near('park-carousel-source'), await near('park-carousel', 4.2, 4.2));
+  expect(await active('park-carousel')).toBe(true);
+  const board = await w(() => window.__nexus3d.world.carousel.boardAt);
+  await tp(page, board.x, board.z);
+  expect(await text(page, 'interact')).toBe('🎠 Subir');
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.onRide)).toBe('park-carousel');
+  const p0 = await w(() => window.__nexus3d.world.nexus.position.toArray());
+  await step(page, 1.5);
+  const p1 = await w(() => window.__nexus3d.world.nexus.position.toArray());
+  expect(Math.hypot(p1[0] - p0[0], p1[2] - p0[2])).toBeGreaterThan(0.5); // gira con la calesita
+  expect(p1[1]).toBeGreaterThan(0.8); // arriba del caballito
+  expect(await text(page, 'interact')).toBe('Bajar');
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.onRide)).toBe(null);
+
+  // La vuelta al mundo tiene el motor trabado
+  await connect(page, await near('park-wheel-source'), await near('park-wheel', 0, 3.4));
+  expect(await active('park-wheel')).toBe(false);
+  expect(await text(page, 'toast')).toContain('motor trabado');
+
+  // Mundo Voltio: los dos circuitos del parque destraban los motores
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    p.setFlag('hood');
+    p.setFlag('voltio-seen');
+    document.body.classList.add('has-hood');
+  });
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  expect(await text(page, 'msg')).toContain('vuelta al mundo');
+  const nodes = await w(() => {
+    const v = window.__nexus3d.world.voltio;
+    return v.nodes.filter((n) => n.circuit === 'wheel-open' || n.circuit === 'coaster-open').map((n) => [n.x, n.z]);
+  });
+  expect(nodes.length).toBe(6);
+  for (const [x, z] of nodes) await tp(page, x, z);
+  await step(page, 0.1);
+  expect(await w(() => [window.__nexus3d.world.wheel.unlocked, window.__nexus3d.world.coaster.unlocked])).toEqual([true, true]);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.3);
+
+  // Vuelta al mundo: revive y sube alto
+  await connect(page, await near('park-wheel-source'), await near('park-wheel', 0, 3.4));
+  expect(await active('park-wheel')).toBe(true);
+  const wb = await w(() => window.__nexus3d.world.wheel.boardAt);
+  await tp(page, wb.x, wb.z);
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.onRide)).toBe('park-wheel');
+  let top = 0;
+  for (let i = 0; i < 20; i += 1) {
+    await step(page, 0.5);
+    top = Math.max(top, await w(() => window.__nexus3d.world.nexus.position.y));
+  }
+  expect(top).toBeGreaterThan(8);
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.nexus.position.y)).toBe(0);
+
+  // Montaña rusa: revive, da una vuelta sola y junta chispitas de la vía
+  await connect(page, await near('park-coaster-source'), await near('park-coaster', 2.2, 2.2));
+  expect(await active('park-coaster')).toBe(true);
+  await w(() => window.__nexus3d.world.setCharge(0));
+  const cb = await w(() => window.__nexus3d.world.coaster.boardAt);
+  await tp(page, cb.x, cb.z);
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.onRide)).toBe('park-coaster');
+  let high = 0;
+  for (let i = 0; i < 60 && (await w(() => window.__nexus3d.world.onRide)); i += 1) {
+    await step(page, 0.25);
+    high = Math.max(high, await w(() => window.__nexus3d.world.nexus.position.y));
+  }
+  expect(await w(() => window.__nexus3d.world.onRide)).toBe(null);
+  expect(high).toBeGreaterThan(6);
+  expect(await w(() => window.__nexus3d.world.charge)).toBeGreaterThanOrEqual(3);
+
+  // Con los tres juegos, el parque revive y Tita se alegra
+  expect(await w(() => window.__nexus3d.world.parkDone)).toBe(3);
+  await step(page, 3);
+  expect(await w(() => window.__nexus3d.world.lifeAt(0, -73))).toBeGreaterThan(0.9);
+
+  // Casa de los espejos: entrar y revivir la bola de espejos
+  await tp(page, 25.5, -54.6);
+  expect(await text(page, 'interact')).toBe('Entrar');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  const room = await w(() => ({ s: window.__nexus3d.world.world.espejos.source, t: window.__nexus3d.world.world.espejos.target }));
+  await connect(page, [room.s.x + 0.9, room.s.z], [room.t.x + 0.9, room.t.z + 0.9]);
+  expect(await w(() => window.__nexus3d.world.world.espejos.gray.alive)).toBe(true);
+
+  // Se guarda
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await w(() => window.__nexus3d.world.parkDone)).toBe(3);
+  expect(await w(() => [window.__nexus3d.world.wheel.unlocked, window.__nexus3d.world.coaster.unlocked])).toEqual([true, true]);
 });

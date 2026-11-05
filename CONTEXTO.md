@@ -105,6 +105,9 @@ src/3d/
   objects/festival.ts      — Motor, ToyDuck, ToyBell, ToyParade (2 entradas), LanternPost (tímido), Stage, ConfettiCannon
   world/Festival.ts        — FESTIVAL (posiciones del canal sur), buildFestivalStreet (faroles, plaza de la fiesta, galpón)
                              y buildWorkshopRoom (taller de Pipa por dentro, x = 700)
+  objects/rides.ts         — Carousel, FerrisWheel, Coaster (vía con CatmullRom), MirrorBall; interfaz Ride (seat, startRide, updateRide)
+  world/Park.ts            — PARK (posiciones), PARK_REGION, buildPark (piso, cerco, portón, puestos, casa de los espejos)
+                             y buildMirrorRoom (x = 800)
   entities/Companion.ts    — Chispi compañero: makeBuddy(tipo) y Companion (sigue al Nexus, show() vuela a mostrar algo)
   objects/pack.ts          — makePack(): sobre que flota en el mundo
   world/ShopRooms.ts       — interiores de la heladería (x = 500) y la tienda de cartas (x = 600)
@@ -226,6 +229,15 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **7 lugares**: `ZONE_FRAGMENTS` suma `workshop-fragment` y `lantern-fragment`; `zonesDone()` cuenta desfile y salida de faroles. Los sobres de lugares nunca caen cerca de puertas, felpudos ni fragmentos.
 - Cosas dormidas nuevas al final de la lista (para no cambiar los ids guardados): globos, molinete, enano y casita de pájaros en el canal sur.
 
+### Parque de diversiones (Decisión 049, Fase 6)
+
+- **Región** `PARK_REGION` (x −36…36, z −94…−52) + corredor de la calle norte-sur (|x| < 6,1) desde el Centro. Distrito `parque` abierto.
+- **Juegos** (`objects/rides.ts`): `park-carousel` (−15, −66), `park-wheel` (17, −80), `park-coaster` (estación −9, −82; vía en `PARK.coasterTrack`). Fuentes `park-*-source`. Reglas con túnel; la vuelta y la montaña rusa con `available: unlocked` (flags `wheel-open` / `coaster-open`, circuitos del Mundo Voltio con nodos `PARK.wheelNodes` / `PARK.coasterNodes`).
+- **Subirse**: `findRideSpot` (a < 1,9 m de `boardAt`, juego vivo) → «🎠 Subir» → `boardRide`; `updateRideOn` pega al Nexus al `seat()` del juego; «Bajar» → `leaveRide` (la montaña rusa termina sola al dar la vuelta). `WorldMode.onRide` da el id. Chispitas `spark-coaster-*` arriba de la vía (solo se alcanzan andando).
+- **Objetivo**: `parkStep()` en el distrito parque (también dentro del Mundo Voltio). Tita: `titaText()`.
+- **Casa de los espejos**: puerta (25,5, −55,5), interior `World.espejos` (x = 800): `espejos-source → espejos-bola` (túnel `espejos`).
+- **keepVivid**: los materiales `toonUnique` (marcados `userData.unique`) se modifican en el lugar en vez de copiarse; así las referencias guardadas por cada clase siguen siendo las que se ven.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -244,7 +256,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
 6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
 
-Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–048).
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–049).
 
 ### 6. Trampas técnicas ya conocidas (no repetirlas)
 
@@ -270,7 +282,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–048).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 5 hechas (Decisiones 043–048): el capítulo 1 completo está en 3D. Sigue la Fase 6: Parque de diversiones.**
+> **Fases 0 a 6 hechas (Decisiones 043–049). Sigue la Fase 7: Estación y tren (despertar el tren y viajar entre distritos desde el mapa).**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 

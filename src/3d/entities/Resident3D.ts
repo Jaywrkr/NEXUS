@@ -10,7 +10,7 @@ export interface ResidentLook {
   hair: string;
   /** 1 = normal; >1 = más ancho (Bombo). */
   girth?: number;
-  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor' | 'skater' | 'inventor' | 'lamplighter';
+  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor' | 'skater' | 'inventor' | 'lamplighter' | 'barker';
 }
 
 export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
@@ -29,6 +29,8 @@ export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
   pipa: { body: '#c7a0ef', pants: '#3d3550', skin: '#f0c39a', hair: '#e0563f', accessory: 'inventor' },
   // Lucio: farolero; gorra con visera, chaleco verde y una vara para encender faroles
   lucio: { body: '#9be37a', pants: '#2c3f66', skin: '#c98e6b', hair: '#3a2a22', accessory: 'lamplighter' },
+  // Tita: feriante del Parque de diversiones; chaleco a rayas, sombrero de paja y megáfono
+  tita: { body: '#ff5a6e', pants: '#3d3550', skin: '#e3a986', hair: '#2a1d14', accessory: 'barker' },
   goteo: { body: '#4d6b8a', pants: '#2c3040', skin: '#e3a986', hair: '#bdbdbd', girth: 1.15, accessory: 'mayor' },
 };
 
@@ -343,6 +345,28 @@ export class Resident3D {
       const flame = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.1, 8), glow('#ffb84a'));
       flame.position.set(0, 0.5, 0.08);
       this.armR.add(flame);
+    } else if (kind === 'barker') {
+      // Sombrero de paja con cinta, chaleco a rayas y megáfono
+      const crown = rounded(new THREE.CylinderGeometry(0.17, 0.18, 0.14, 16), toon('#f2d38a'), 0.01);
+      crown.position.y = 0.33;
+      h.add(crown);
+      const brim = rounded(new THREE.CylinderGeometry(0.3, 0.3, 0.02, 20), toon('#f2d38a'), 0.008);
+      brim.position.y = 0.27;
+      h.add(brim);
+      const ribbon = new THREE.Mesh(new THREE.CylinderGeometry(0.175, 0.175, 0.04, 16), toon('#ff5a6e'));
+      ribbon.position.y = 0.3;
+      h.add(ribbon);
+      for (let i = 0; i < 4; i += 1) {
+        const st = new THREE.Mesh(new THREE.CylinderGeometry(0.168, 0.168, 0.035, 18, 1, true), toon('#fff3dc'));
+        st.scale.set(1.06 * this.g, 1, 0.87 * this.g);
+        st.position.y = 0.48 + i * 0.07;
+        this.body.add(st);
+      }
+      const horn = rounded(new THREE.ConeGeometry(0.1, 0.26, 12, 1, true), toon('#ffe066'), 0.008);
+      (horn.material as THREE.Material).side = THREE.DoubleSide;
+      horn.rotation.x = Math.PI / 2;
+      horn.position.set(0, -0.36, 0.14);
+      this.armR.add(horn);
     } else if (kind === 'mayor') {
       // Banda cruzada roja con borde dorado
       const sash = box(0.07, 0.5, 0.36, '#c8452f', { outline: false });

@@ -129,7 +129,15 @@ export function keepVivid(root: THREE.Object3D): void {
     const m = o as THREE.Mesh;
     if (!m.isMesh || Array.isArray(m.material)) return;
     const mat = m.material as THREE.Material;
-    if (mat.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile) m.material = mat.clone();
+    if (mat.onBeforeCompile === THREE.Material.prototype.onBeforeCompile) return;
+    if (mat.userData.unique) {
+      // Material propio del objeto (toonUnique): se le saca el efecto en el lugar, así las clases que
+      // guardan una referencia para cambiarle el color (al conectarse) siguen apuntando al que se ve.
+      mat.onBeforeCompile = THREE.Material.prototype.onBeforeCompile;
+      mat.needsUpdate = true;
+      return;
+    }
+    m.material = mat.clone();
   });
 }
 
@@ -154,7 +162,9 @@ export function toon(color: THREE.ColorRepresentation, brush = 0): THREE.MeshToo
 
 /** Material toon propio (no compartido), para objetos que cambian de color al conectarse. */
 export function toonUnique(color: THREE.ColorRepresentation, brush = 0): THREE.MeshToonMaterial {
-  return withLife(toon(color, brush).clone());
+  const m = withLife(toon(color, brush).clone());
+  m.userData.unique = true;
+  return m;
 }
 
 const flatCache = new Map<string, THREE.MeshBasicMaterial>();

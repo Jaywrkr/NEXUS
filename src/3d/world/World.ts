@@ -5,6 +5,7 @@ import { clamp, pick, rnd } from '../core/util';
 import { buildMigaHouse, type InteriorInfo, type ReviveRoom } from './MigaHouse';
 import { buildCardRoom, buildIceCreamRoom } from './ShopRooms';
 import { buildFestivalStreet, buildWorkshopRoom, type WorkshopRoom } from './Festival';
+import { PARK_REGION, buildMirrorRoom, buildPark } from './Park';
 import { SKATE_REGION, buildSkatepark, type SkateparkInfo } from './Skatepark';
 
 export interface Rect {
@@ -42,6 +43,9 @@ const REGIONS: Rect[] = [
   { minX: -BOUNDS, maxX: BOUNDS, minZ: -BOUNDS, maxZ: BOUNDS_MAX_Z },
   { minX: BOUNDS - 1, maxX: SKATE_REGION.minX + 1, minZ: -(4 + 2.4 - 0.3), maxZ: 4 + 2.4 - 0.3 },
   SKATE_REGION,
+  // Fase 6: la calle norte-sur sigue hasta el Parque de diversiones
+  { minX: -(4 + 2.4 - 0.3), maxX: 4 + 2.4 - 0.3, minZ: PARK_REGION.maxZ - 1, maxZ: -BOUNDS + 1 },
+  PARK_REGION,
 ];
 /** Jardín municipal (zona 5): borde de cercos, entradas al norte y al este. */
 export const GARDEN = { minX: -26, maxX: 4, minZ: 47, maxZ: 61.5 };
@@ -89,6 +93,8 @@ export class World {
   readonly tienda: ReviveRoom;
   /** Fase 5: el taller de Pipa por dentro (x = 700). */
   readonly taller: WorkshopRoom;
+  /** Fase 6: la casa de los espejos del parque (x = 800). */
+  readonly espejos: ReviveRoom;
   /** Lo que se nota afuera al revivir cada interior. */
   readonly outside = {
     /** Guirnalda de luces en el frente de la casa de Miga. */
@@ -184,7 +190,9 @@ export class World {
     this.tienda = buildCardRoom(s, this.rects);
     this.taller = buildWorkshopRoom(s, this.rects);
     buildFestivalStreet(s, this.rects);
-    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller);
+    buildPark(s, this.rects);
+    this.espejos = buildMirrorRoom(s, this.rects);
+    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller, this.espejos);
     this.buildOutsideFx();
 
     // Rendimiento: toda la escenografía quieta se junta en pocas mallas.

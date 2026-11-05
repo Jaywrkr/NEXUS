@@ -318,3 +318,6 @@ Cualquier Chispi del álbum se puede elegir de compañero: sigue al Nexus en los
 
 ## 3D: Fase 5 — el Centro completo y la fiesta
 Pasan al 3D las zonas 6 y 7 del capítulo, en el barrio del canal sur: el taller de Pipa (interior gris que revive: motor → pato y campana → desfile) y los faroles de Lucio (camino directo o curioso, con el farol tímido). Con todos los preparativos, la salida de los faroles enciende el escenario y el cañón de confeti: fiesta con todos los vecinos bailando y pantalla final con los resultados del capítulo. Ahora son 7 lugares (★ n/7) y 8 vitrinas en el museo; el color vuelve a todo el pueblo con los siete. Vecinos nuevos Pipa y Lucio, 4 cosas dormidas más, sobres nuevos y un Chispi más para rescatar. Pruebas 3D: 27 escenarios. Decisión 048.
+
+## 3D: Fase 6 — Parque de diversiones
+Nuevo distrito al norte: calesita, vuelta al mundo y montaña rusa que se reviven con su carrera de luz y a las que el Nexus se sube (la montaña rusa da una vuelta sola juntando chispitas de la vía). Los motores de la vuelta al mundo y de la montaña rusa se destraban con circuitos del Mundo Voltio. Feriante Tita, casa de los espejos (interior que revive), puestos de feria, cosas dormidas, sobres y el Chispi Pochoclín. Arreglo: las piezas que cambian de color al revivir ya se ven encendidas. Pruebas 3D: 28 escenarios. Decisión 049.

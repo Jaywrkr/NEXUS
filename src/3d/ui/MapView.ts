@@ -1,5 +1,6 @@
 import { DISTRICTS } from '../world/districts';
 import { SKATE_REGION } from '../world/Skatepark';
+import { PARK_REGION } from '../world/Park';
 
 /*
  * Mapa de la ciudad visto desde arriba (menú → Mapa, o tecla M). Muestra dónde volvió el color,
@@ -18,7 +19,7 @@ export interface MapData {
 }
 
 // Ventana del mapa: el Centro con un borde para asomar los distritos que vienen
-const VIEW = { minX: -70, maxX: 100, minZ: -72, maxZ: 98 };
+const VIEW = { minX: -76, maxX: 100, minZ: -100, maxZ: 76 };
 
 export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number): void {
   const ctx = canvas.getContext('2d');
@@ -62,6 +63,7 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
   for (const [area, alive] of [
     [center, [98, 170, 68]],
     [SKATE_REGION, [200, 150, 90]],
+    [PARK_REGION, [230, 120, 140]],
   ] as [{ minX: number; maxX: number; minZ: number; maxZ: number }, number[]][]) {
     for (let x = area.minX; x < area.maxX; x += step) {
       for (let z = area.minZ; z < area.maxZ; z += step) {
@@ -78,6 +80,7 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
   ctx.fillStyle = '#8a817c';
   ctx.fillRect(px(-60), pz(-4), (62 + 60) * sx, 8 * sz);
   ctx.fillRect(px(-4), pz(-60), 8 * sx, (data.canal.minZ - 1.2 + 60) * sz);
+  ctx.fillRect(px(-4), pz(PARK_REGION.maxZ), 8 * sx, (-45 - PARK_REGION.maxZ) * sz);
 
   // Canal y puente
   ctx.fillStyle = '#3f86c8';
@@ -88,7 +91,7 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
   // Casas y paredes
   ctx.fillStyle = 'rgba(29,22,48,0.75)';
   for (const r of data.walls) {
-    if (r.minZ < -60 || r.maxZ > 70 || r.maxX - r.minX > 40) continue;
+    if (r.minX > 200 || r.maxX - r.minX > 40 || r.maxZ - r.minZ > 40) continue;
     ctx.fillRect(px(r.minX), pz(r.minZ), (r.maxX - r.minX) * sx, (r.maxZ - r.minZ) * sz);
   }
 
