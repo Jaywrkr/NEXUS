@@ -26,22 +26,29 @@ const touch = async (page) => {
 const text = (page, id) => page.evaluate((id) => document.getElementById(id).textContent, id);
 const mode = (page) => page.evaluate(() => document.body.className);
 
-async function connect(page, from, to) {
+/**
+ * Conecta dos cosas caminando hasta cada una. Las conexiones grandes abren la carrera de luz:
+ * por defecto se recorre sola con el piloto automático (ride: false la deja abierta para probarla).
+ */
+async function connect(page, from, to, { ride = true } = {}) {
   await tp(page, ...from);
   await touch(page);
   await tp(page, ...to);
   await touch(page);
+  if (ride && (await page.evaluate(() => window.__nexus3d.world.tunnelPending))) await rideTunnel(page, true);
 }
 
-/** Entra al túnel, toca EMPEZAR y lo recorre manteniendo la chispa centrada (o sin manejarla, para chocar). */
+/** Entra al túnel, toca EMPEZAR y lo recorre con el piloto automático (o sin manejar, para chocar). */
 async function rideTunnel(page, steer, { backToWorld = true } = {}) {
   await expect.poll(() => mode(page)).toContain('mode-tunnel');
   await expect.poll(() => page.evaluate(() => window.__nexus3d.tunnel.state)).toMatch(/ready|failed/);
+  await page.evaluate((steer) => (window.__nexus3d.tunnel.autopilot = steer), steer);
   await page.keyboard.press('Space');
-  for (let i = 0; i < 160; i += 1) {
+  for (let i = 0; i < 220; i += 1) {
     const state = await page.evaluate((steer) => {
       const g = window.__nexus3d;
-      if (steer) g.tunnel.offset.set(0, 0);
+      // Sin manejar: la chispa se va contra la pared (en carreras fáciles sola podría llegar)
+      if (!steer && g.tunnel.state === 'run') g.tunnel.offset.set(10, 0);
       g.step(0.1);
       return g.tunnel.state;
     }, steer);
@@ -83,8 +90,9 @@ test('3D: los cinco lugares, el museo y el progreso guardado', async ({ page }) 
 
   // Plaza: fuente → farola (túnel) → puerta
   await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
-  await rideTunnel(page, true);
   expect(await text(page, 'msg')).toContain('La farola se encendió');
+  // La carrera de luz deja chispitas en la mochila
+  expect(await page.evaluate(() => window.__nexus3d.world.charge)).toBeGreaterThan(0);
   await connect(page, [-14.3, -16.5], [-15.2, -25.6]);
   expect(await text(page, 'msg')).toContain('La plaza volvió a la vida');
   // El color vuelve alrededor de la plaza, pero no en el resto del barrio
@@ -183,7 +191,7 @@ test('3D: el señuelo no encaja y una conexión no se repite', async ({ page }) 
 });
 
 test('3D: el túnel tiene práctica, se puede reintentar ahí mismo o volver al barrio', async ({ page, isMobile }) => {
-  await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
+  await connect(page, [-22.6, -13.8], [-14.3, -16.5], { ride: false });
   await expect.poll(() => mode(page)).toContain('mode-tunnel');
   // Práctica: la chispa se mueve pero no avanza ni choca
   await expect(page.locator('#tunnelGo')).toHaveText('EMPEZAR');
@@ -210,10 +218,20 @@ test('3D: el túnel tiene práctica, se puede reintentar ahí mismo o volver al 
   expect(await text(page, 'msg')).toBe('El barrio está triste y sin color. Conecta la fuente con la farola');
 
   // De nuevo: chocar, reintentar en el mismo túnel y ganar
-  await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
+  await connect(page, [-22.6, -13.8], [-14.3, -16.5], { ride: false });
+  const first = await page.evaluate(() => window.__nexus3d.tunnel.current);
   await rideTunnel(page, false);
   await rideTunnel(page, true);
   expect(await text(page, 'msg')).toContain('La farola se encendió');
+
+  // Cada carrera de luz sale distinta: otra forma que la anterior
+  await connect(page, [-14.3, -16.5], [-15.2, -25.6], { ride: false });
+  await expect.poll(() => mode(page)).toContain('mode-tunnel');
+  const second = await page.evaluate(() => window.__nexus3d.tunnel.current);
+  expect(second.shape).not.toBe(first.shape);
+  expect(second.theme).toBe('Cable dorado');
+  await rideTunnel(page, true);
+  expect(await text(page, 'msg')).toContain('La plaza volvió a la vida');
 });
 
 test('3D: los vecinos hablan, recuerdan la visita y se alegran cuando su lugar revive', async ({ page }) => {
@@ -231,7 +249,6 @@ test('3D: los vecinos hablan, recuerdan la visita y se alegran cuando su lugar r
 
   // Restaurar la plaza: Miga cambia de frase y se pone contenta
   await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
-  await rideTunnel(page, true);
   await connect(page, [-14.3, -16.5], [-15.2, -25.6]);
   await step(page, 1.5);
   expect(await happy('miga')).toBe(1);
@@ -278,51 +295,84 @@ test('3D: el jardín: la broma de Goteo, el aspersor que pasa el agua y las flor
   expect(restored).toEqual([true, true]);
 });
 
-test('3D: las cosas dormidas se despiertan desde los chisperos, se guardan y la pelota se patea', async ({ page }) => {
-  const info = await page.evaluate(() => {
-    const w = window.__nexus3d.world;
-    const sparks = w.connections.all.filter((o) => o.id.startsWith('spark-')).map((s) => ({ id: s.id, x: s.x, z: s.z }));
-    return { sparks, sleepers: w.sleepers.map((s) => ({ id: s.id, x: s.x, z: s.z })) };
+test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se despiertan', async ({ page }) => {
+  test.setTimeout(240_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const info = await w(() => {
+    const wm = window.__nexus3d.world;
+    const nests = wm.connections.all.filter((o) => o.id.startsWith('spark-')).map((s) => ({ id: s.id, x: s.x, z: s.z }));
+    return { nests, sleepers: wm.sleepers.map((s) => ({ id: s.id, x: s.x, z: s.z })) };
   });
-  expect(info.sparks.length).toBe(6);
+  expect(info.nests.length).toBe(6);
   expect(info.sleepers.length).toBe(20);
   expect(await text(page, 'awake')).toBe('✦ 0/20');
+  expect(await text(page, 'charge')).toBe('🎒 ○○○○○');
 
-  // Cada cosa dormida se despierta caminando hasta un chispero cercano y después hasta ella
+  // Con la mochila vacía no se despierta nada
+  const first = info.sleepers[0];
+  await tp(page, first.x + 0.9, first.z + 0.9);
+  await touch(page);
+  expect(await text(page, 'toast')).toContain('mochila está vacía');
+  expect(await w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, first.id)).toBe(false);
+
+  // Un nido suelta chispitas: se atrapan caminando cerca y van a la mochila
+  const nest = info.nests[0];
+  await tp(page, nest.x + 0.7, nest.z + 0.7);
+  await touch(page);
+  await step(page, 1.2);
+  for (let i = 0; i < 6; i += 1) {
+    const left = await w(() => window.__nexus3d.world.pickups.items.filter((p) => !p.id).map((p) => [p.pos.x, p.pos.z]));
+    if (!left.length) break;
+    await tp(page, left[0][0], left[0][1]);
+    await step(page, 0.3);
+  }
+  expect(await w(() => window.__nexus3d.world.charge)).toBe(3);
+  expect(await text(page, 'charge')).toBe('🎒 ●●●○○');
+  // El nido quedó vacío por un rato
+  await tp(page, nest.x + 0.7, nest.z + 0.7);
+  await touch(page);
+  expect(await text(page, 'toast')).toContain('volviendo a llenar');
+
+  // Cada cosa dormida gasta una chispita; ya despierta, tocarla repite la reacción sin gastar
   let woken = 0;
   for (const sl of info.sleepers) {
-    const sp = info.sparks.reduce((a, b) => (Math.hypot(a.x - sl.x, a.z - sl.z) < Math.hypot(b.x - sl.x, b.z - sl.z) ? a : b));
-    await tp(page, sp.x + 0.7, sp.z + 0.7);
-    await touch(page);
-    expect(await page.evaluate(() => window.__nexus3d.world.connections.selection?.id), `chispero para ${sl.id}`).toBe(sp.id);
-    // El pato está sobre el borde de la fuente: se llega desde afuera, del lado del pato
+    if ((await w(() => window.__nexus3d.world.charge)) === 0) await w(() => window.__nexus3d.world.setCharge(5));
     const duck = sl.id.includes('duck');
-    const dx = duck ? 1 : sp.x - sl.x;
-    const dz = duck ? 1 : sp.z - sl.z;
+    const n = info.nests.reduce((a, b) => (Math.hypot(a.x - sl.x, a.z - sl.z) < Math.hypot(b.x - sl.x, b.z - sl.z) ? a : b));
+    const dx = duck ? 1 : n.x - sl.x;
+    const dz = duck ? 1 : n.z - sl.z;
     const d = Math.hypot(dx, dz) || 1;
     await tp(page, sl.x + (dx / d) * 0.9, sl.z + (dz / d) * 0.9);
+    const before = await w(() => window.__nexus3d.world.charge);
     await touch(page);
     woken += 1;
-    expect(await page.evaluate((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, sl.id), `despierta ${sl.id}`).toBe(true);
+    expect(await w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, sl.id), `despierta ${sl.id}`).toBe(true);
+    expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
     expect(await text(page, 'awake')).toBe(`✦ ${woken}/20`);
+    if (woken === 1) {
+      await touch(page);
+      expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
+    }
   }
   await step(page, 1.5);
   await expect.poll(() => text(page, 'msg')).toContain('todas las cosas');
 
-  // Ya despierta: tocarla repite la reacción, sin cable y sin errores
-  const last = info.sleepers[info.sleepers.length - 1];
-  await page.evaluate((id) => {
-    const c = window.__nexus3d.world.connections;
-    c.interact(c.all.find((o) => o.id === id));
-  }, last.id);
-  expect(await page.evaluate(() => window.__nexus3d.world.connections.selection)).toBe(null);
+  // Una chispita escondida se junta y no vuelve a aparecer
+  const hidden = await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id).map((p) => [p.id, p.pos.x, p.pos.z]));
+  expect(hidden.length).toBe(10);
+  await w(() => window.__nexus3d.world.setCharge(0));
+  await tp(page, hidden[0][1], hidden[0][2]);
+  await step(page, 0.4);
+  expect(await w(() => window.__nexus3d.world.charge)).toBe(1);
 
-  // Las cosas despiertas se guardan y vuelven despiertas al continuar
+  // Todo queda guardado al continuar
   await page.reload();
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
   expect(await text(page, 'awake')).toBe('✦ 20/20');
+  expect(await text(page, 'charge')).toBe('🎒 ●○○○○');
+  expect(await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id).length)).toBe(9);
 
   // La pelota de la plaza se patea al pasar corriendo
   const ball0 = await page.evaluate(() => window.__nexus3d.world.playground.balls[0].g.position.toArray());

@@ -71,4 +71,5 @@ de menor a mayor esfuerzo/riesgo de romper zonas existentes:
   ayudas visuales, efectos suaves, radio CUAC FM, armario, historias secundarias.
 - Decidir con Luca la cámara final: isométrica o "detrás" del personaje.
 - Cable largo entre zonas: en 3D es más simple (un solo barrio, cables ya en el mundo).
-- Ideas para seguir con lo que ya hay (Decisión 040, en orden sugerido): la canción del barrio (cada lugar revivido suma un instrumento), un compañero animalito que se colorea y señala cosas dormidas, más túneles con variantes (agua, radio, puente largo), pedidos nuevos de los vecinos contentos usando cosas del barrio, y más fragmentos secretos (bajo el puente, en el bote, arriba de la antena).
+- Ideas para seguir con lo que ya hay (Decisión 040, en orden sugerido): la canción del barrio (cada lugar revivido suma un instrumento), un compañero animalito que se colorea y señala cosas dormidas, pedidos nuevos de los vecinos contentos usando cosas del barrio, y más fragmentos secretos (bajo el puente, en el bote, arriba de la antena).
+- La Gran Chispa vuelve cuando todo el barrio está vivo: final/fiesta del capítulo 3D (Decisión 041).

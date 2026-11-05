@@ -9,9 +9,18 @@ interface State3D {
   connections: SavedConnection[];
   /** Habitantes (y la intro) que ya hablaron. */
   heard: string[];
+  /** Chispitas guardadas en la mochila Atrapachispas (0..MAX_CHARGE). */
+  charge: number;
+  /** Chispitas escondidas del barrio que ya se juntaron (no vuelven a aparecer). */
+  sparks: string[];
+  /** Qué tan difícil sale la próxima carrera de luz (0..1): sube al ganar y baja al fallar. */
+  tunnelSkill: number;
 }
 
-const empty = (): State3D => ({ fragmentsCollected: [], seenCompletion: false, connections: [], heard: [] });
+/** Cuántas chispitas entran en la mochila. */
+export const MAX_CHARGE = 5;
+
+const empty = (): State3D => ({ fragmentsCollected: [], seenCompletion: false, connections: [], heard: [], charge: 0, sparks: [], tunnelSkill: 0.15 });
 
 /**
  * Progreso guardado de la versión 3D, separado del de la 2D. Guarda fragmentos, festejo final,
@@ -38,6 +47,9 @@ export class Progress3D {
         seenCompletion: parsed.seenCompletion === true,
         connections,
         heard: strings(parsed.heard),
+        charge: typeof parsed.charge === 'number' ? Math.max(0, Math.min(MAX_CHARGE, Math.floor(parsed.charge))) : 0,
+        sparks: strings(parsed.sparks),
+        tunnelSkill: typeof parsed.tunnelSkill === 'number' ? Math.max(0, Math.min(1, parsed.tunnelSkill)) : 0.15,
       };
     } catch {
       return empty();
@@ -101,6 +113,39 @@ export class Progress3D {
 
   hasHeard(id: string): boolean {
     return this.state.heard.includes(id);
+  }
+
+  /* ---------- Mochila Atrapachispas ---------- */
+
+  get charge(): number {
+    return this.state.charge;
+  }
+
+  /** Suma (o resta) chispitas; devuelve cuántas entraron de verdad. */
+  addCharge(n: number): number {
+    const before = this.state.charge;
+    this.state.charge = Math.max(0, Math.min(MAX_CHARGE, before + n));
+    this.save();
+    return this.state.charge - before;
+  }
+
+  hasSpark(id: string): boolean {
+    return this.state.sparks.includes(id);
+  }
+
+  collectSpark(id: string): void {
+    if (this.hasSpark(id)) return;
+    this.state.sparks.push(id);
+    this.save();
+  }
+
+  get tunnelSkill(): number {
+    return this.state.tunnelSkill;
+  }
+
+  set tunnelSkill(v: number) {
+    this.state.tunnelSkill = Math.max(0, Math.min(1, v));
+    this.save();
   }
 
   /** Vista compatible con el GameState de la 2D (para `residentLine`, `hasChapterConnection`...). */

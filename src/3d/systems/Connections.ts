@@ -171,6 +171,21 @@ export class Connections {
     this.events.made(source, target);
   }
 
+  /** Rayito desde un punto (la mochila del Nexus) hasta algo chico: se desvanece solo. */
+  zap(from: THREE.Vector3, target: Connectable): void {
+    const curve = this.curveBetween(from, target.plugPoint());
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 30, 0.05, 6), new THREE.MeshBasicMaterial({ color: '#ffe066', transparent: true, fog: false }));
+    this.scene.add(tube);
+    this.fading.push({ mesh: tube, life: 1.0 });
+    const pulse = new THREE.Mesh(new THREE.SphereGeometry(0.14, 10, 8), new THREE.MeshBasicMaterial({ color: '#ffffff', fog: false }));
+    this.scene.add(pulse);
+    this.pulses.push({ mesh: pulse, curve, t: 0 });
+    const at = target.plugPoint();
+    this.burst(at);
+    this.ring(at);
+    this.audio.playSuccess();
+  }
+
   private curveBetween(a: THREE.Vector3, b: THREE.Vector3): THREE.QuadraticBezierCurve3 {
     const mid = a.clone().add(b).multiplyScalar(0.5);
     mid.y = Math.max(a.y, b.y) + 0.8 + a.distanceTo(b) * 0.18;

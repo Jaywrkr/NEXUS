@@ -100,17 +100,35 @@ function noteMaterial(): THREE.SpriteMaterial {
   return noteMat;
 }
 
-/* ---------- Chispero: poste de energía chiquito ---------- */
+/* ---------- Nido de chispitas ---------- */
 
-/** Fuente de energía chica y cercana para despertar las cosas de alrededor. Siempre tiene carga. */
+/** Segundos que tarda un nido en volver a llenarse. */
+export const NEST_REFILL = 40;
+
+/**
+ * Nido de chispitas (Decisión 041): un poste donde se juntan chispitas perdidas de la Gran Chispa.
+ * Al tocarlo suelta unas cuantas, que saltan alrededor y hay que atrapar caminando; después
+ * tarda un rato en volver a llenarse. No es una fuente para cables.
+ */
 export class Spark extends Connectable {
+  /** Lo conecta WorldMode: soltar chispitas o avisar que el nido está vacío. */
+  static onRelease: ((nest: Spark) => void) | null = null;
+  static onEmpty: ((nest: Spark) => void) | null = null;
+
   private readonly bulb: THREE.Mesh;
   private readonly orbit: THREE.Group;
+  private readonly onMat = glow('#ffe066');
+  private readonly offMat = glow('#6a6450');
+  private refill = 0;
+
+  get ready(): boolean {
+    return this.refill <= 0;
+  }
 
   constructor(id: string, x: number, z: number) {
     super(id, 'source', x, z);
     this.collideRadius = 0.3;
-    this.label = 'Chispero';
+    this.label = 'Nido de chispitas';
     this.active_ = true;
     const base = rounded(new THREE.CylinderGeometry(0.26, 0.32, 0.14, 10), toon('#3a3d48'), 0.012);
     base.position.y = 0.07;
@@ -127,7 +145,7 @@ export class Spark extends Connectable {
     cage.rotation.x = Math.PI / 2;
     cage.position.y = 1.18;
     this.group.add(cage);
-    this.bulb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), glow('#ffe066'));
+    this.bulb = new THREE.Mesh(new THREE.SphereGeometry(0.13, 12, 10), this.onMat);
     this.bulb.position.y = 1.2;
     this.group.add(this.bulb);
     this.orbit = new THREE.Group();
@@ -144,8 +162,29 @@ export class Spark extends Connectable {
 
   activate(): void {}
 
-  update(_dt: number, time: number): void {
-    this.bulb.scale.setScalar(1 + Math.sin(time * 5 + this.x) * 0.12);
+  /** No inicia cables: se toca para que suelte chispitas. */
+  canInitiate(): boolean {
+    return false;
+  }
+
+  poke(): boolean {
+    if (this.ready) {
+      this.refill = NEST_REFILL;
+      Spark.onRelease?.(this);
+    } else {
+      Spark.onEmpty?.(this);
+    }
+    return true;
+  }
+
+  update(dt: number, time: number): void {
+    if (this.refill > 0) this.refill -= dt;
+    const ready = this.ready;
+    // Vacío: la luz se apaga y crece de a poco mientras se vuelve a llenar
+    this.bulb.material = ready ? this.onMat : this.offMat;
+    const fill = ready ? 1 : 0.4 + 0.6 * (1 - this.refill / NEST_REFILL);
+    this.bulb.scale.setScalar(fill * (1 + Math.sin(time * 5 + this.x) * (ready ? 0.12 : 0.03)));
+    this.orbit.visible = ready;
     this.orbit.rotation.y = time * 2.2;
     this.orbit.position.y = 1.2 + Math.sin(time * 3) * 0.04;
   }

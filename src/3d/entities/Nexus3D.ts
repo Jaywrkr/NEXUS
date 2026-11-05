@@ -62,6 +62,10 @@ export class Nexus3D {
   private reachT = -1;
   private blinkT = 2;
   private readonly eyes: THREE.Mesh[] = [];
+  /** Carga de la mochila Atrapachispas (0..1): la lente brilla más cuanto más llena. */
+  charge = 0;
+  private chargePulse = 0;
+  private readonly packGlow: THREE.Mesh;
 
   constructor() {
     this.root.add(this.body);
@@ -158,6 +162,12 @@ export class Nexus3D {
     this.lens.rotation.x = Math.PI / 2;
     this.lens.position.z = -0.08;
     pack.add(this.lens);
+    this.packGlow = new THREE.Mesh(
+      new THREE.SphereGeometry(0.12, 12, 10),
+      new THREE.MeshBasicMaterial({ color: '#ffe066', transparent: true, opacity: 0, depthWrite: false, fog: false }),
+    );
+    this.packGlow.position.z = -0.09;
+    pack.add(this.packGlow);
     // Detalles de la mochila: manija, bolsillos laterales, rejilla y hebilla
     const handle = rounded(new THREE.TorusGeometry(0.05, 0.012, 6, 12, Math.PI), toon(C.strap), 0.006);
     handle.position.set(0, 0.135, 0);
@@ -291,6 +301,11 @@ export class Nexus3D {
     return Math.hypot(this.velocity.x, this.velocity.z);
   }
 
+  /** La mochila recibió chispitas: un destello corto. */
+  sparkle(): void {
+    this.chargePulse = 1;
+  }
+
   celebrate(): void {
     this.celebrateT = 0;
   }
@@ -386,6 +401,12 @@ export class Nexus3D {
       }
     }
 
-    (this.lens.material as THREE.MeshBasicMaterial).color.setHSL(0.52, 0.9, 0.62 + Math.sin(this.time * 4) * 0.08);
+    // La lente pasa de cian apagado (vacía) a dorado brillante (llena) y late con la carga
+    const c = this.charge;
+    this.chargePulse = Math.max(0, this.chargePulse - dt * 2.5);
+    (this.lens.material as THREE.MeshBasicMaterial).color.setHSL(0.52 - c * 0.38, 0.9, 0.35 + c * 0.3 + Math.sin(this.time * 4) * 0.06 * c);
+    const glowMat = this.packGlow.material as THREE.MeshBasicMaterial;
+    glowMat.opacity = c * 0.35 + this.chargePulse * 0.5;
+    this.packGlow.scale.setScalar(1 + c * 0.6 + this.chargePulse * 1.2 + Math.sin(this.time * 5) * 0.1 * c);
   }
 }

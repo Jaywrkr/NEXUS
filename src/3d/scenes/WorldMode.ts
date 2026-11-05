@@ -18,6 +18,10 @@ import { Resident3D } from '../entities/Resident3D';
 import { SLEEPER_INFO, Sleeper, Spark } from '../objects/sleepers';
 import type { SleeperKind } from '../objects/sleepers';
 import { Playground } from '../systems/Playground';
+import { HIDDEN_SPARKS, SparkPickups } from '../systems/SparkPickups';
+import { MAX_CHARGE } from '../core/progress';
+import { planTunnel } from './TunnelMode';
+import type { TunnelPlan } from './TunnelMode';
 import { CANAL_MIN_Z } from '../world/World';
 
 const INTERACT_REACH = 2.2; // metros desde el borde del objeto
@@ -81,11 +85,16 @@ export class WorldMode {
   private readonly sparks: Spark[] = [];
   readonly sleepers: Sleeper[] = [];
   readonly playground: Playground;
+  readonly pickups: SparkPickups;
+  /** Para las pruebas: hay una carrera de luz pedida y todavía no terminó. */
+  tunnelPending = false;
+  private fullWarned = 0;
 
   private readonly el = {
     msg: document.getElementById('msg'),
     stars: document.getElementById('stars'),
     awake: document.getElementById('awake'),
+    charge: document.getElementById('charge'),
     toast: document.getElementById('toast'),
     interact: document.getElementById('interact') as HTMLButtonElement | null,
     view: document.getElementById('viewBtn'),
@@ -114,7 +123,10 @@ export class WorldMode {
         if (t instanceof Sleeper) this.onWake(t, true);
         else this.applyConnection(t, true);
       },
-      tunnel: (s, t) => this.cb.tunnel(s, t),
+      tunnel: (s, t) => {
+        this.tunnelPending = true;
+        this.cb.tunnel(s, t);
+      },
     });
 
     // Zona 1: la plaza (fuente → farola → puerta)
@@ -157,13 +169,13 @@ export class WorldMode {
       this.connections.register(obj);
     }
     this.connections.addRule({ sourceId: source.id, targetId: this.lamp.id, useTunnel: true });
-    this.connections.addRule({ sourceId: this.lamp.id, targetId: this.door.id });
-    this.connections.addRule({ sourceId: fountainSource.id, targetId: this.fountain.id });
-    this.connections.addRule({ sourceId: beaconA.id, targetId: this.beacon.id });
-    this.connections.addRule({ sourceId: beaconB.id, targetId: this.beacon.id });
-    this.connections.addRule({ sourceId: bridgeSource.id, targetId: this.bridge.id });
-    this.connections.addRule({ sourceId: gardenSource.id, targetId: this.sprinkler.id });
-    this.connections.addRule({ sourceId: this.sprinkler.id, targetId: this.flowerBed.id });
+    this.connections.addRule({ sourceId: this.lamp.id, targetId: this.door.id, useTunnel: true });
+    this.connections.addRule({ sourceId: fountainSource.id, targetId: this.fountain.id, useTunnel: true });
+    this.connections.addRule({ sourceId: beaconA.id, targetId: this.beacon.id, useTunnel: true });
+    this.connections.addRule({ sourceId: beaconB.id, targetId: this.beacon.id, useTunnel: true });
+    this.connections.addRule({ sourceId: bridgeSource.id, targetId: this.bridge.id, useTunnel: true });
+    this.connections.addRule({ sourceId: gardenSource.id, targetId: this.sprinkler.id, useTunnel: true });
+    this.connections.addRule({ sourceId: this.sprinkler.id, targetId: this.flowerBed.id, useTunnel: true });
 
     // Fragmentos: uno por zona + el secreto detrás de la casa (Decisión 019), que ya está visible
     for (const [id, x, y, z] of [
@@ -181,6 +193,7 @@ export class WorldMode {
       this.fragmentById.set(id, f);
     }
 
+    this.pickups = new SparkPickups(scene, this.world);
     this.buildSleepers();
     this.playground = new Playground(scene, this.world, this.audio);
 
@@ -219,13 +232,15 @@ export class WorldMode {
     for (const c of p.getConnections()) {
       const s = byId(c.sourceId);
       const t = byId(c.targetId);
-      if (!s || !t) continue;
+      // Cosas chicas despertadas con la mochila (o con los chisperos de antes)
       if (t instanceof Sleeper) {
-        t.restore();
-        this.connections.restore(s, t);
-        this.onWake(t, false);
+        if (!t.isActive) {
+          t.restore();
+          this.onWake(t, false);
+        }
         continue;
       }
+      if (!s || !t) continue;
       s.activate();
       if (t === this.beacon) this.beacon.activate();
       else t.restore();
@@ -305,6 +320,8 @@ export class WorldMode {
     };
     const zoneLife = (x: number, z: number, r: number) => {
       this.addLife(x, z, r, animate);
+      // Al revivir un lugar grande estallan chispitas de la Gran Chispa
+      if (animate) after(0.6, () => this.pickups.burst(4, target.x, target.z, 1.6));
       if (this.zonesDone() === ZONE_COUNT) this.reviveWholeTown(animate);
     };
     if (animate) after(0.8, () => this.updateResidentMoods());
@@ -445,9 +462,18 @@ export class WorldMode {
     this.input.flush();
   }
 
-  finishTunnel(source: Connectable, target: Connectable, success: boolean): void {
+  finishTunnel(source: Connectable, target: Connectable, success: boolean, sparks = 0): void {
     this.input.flush();
+    this.tunnelPending = false;
+    // Dificultad adaptable: sube de a poco al ganar, baja al abandonar
+    this.progress.tunnelSkill = this.progress.tunnelSkill + (success ? 0.1 : -0.12);
     this.connections.finishTunnel(source, target, success);
+    if (sparks > 0) {
+      const before = this.progress.charge;
+      this.addCharge(sparks);
+      const got = this.progress.charge - before;
+      after(1.4, () => this.toast(got > 0 ? `+${got} chispitas en tu mochila ✦` : '¡Tu mochila ya está llena!', 'ok'));
+    }
   }
 
   /* ---------- HUD ---------- */
@@ -468,6 +494,12 @@ export class WorldMode {
     const n = ZONE_FRAGMENTS.filter((f) => this.progress.hasFragment(f.id)).length;
     if (this.el.stars) this.el.stars.textContent = `★ ${n}/${ZONE_COUNT}`;
     if (this.el.awake) this.el.awake.textContent = `✦ ${this.awakeCount()}/${this.sleepers.length}`;
+    const c = this.progress.charge;
+    if (this.el.charge) {
+      this.el.charge.textContent = `🎒 ${'●'.repeat(c)}${'○'.repeat(MAX_CHARGE - c)}`;
+      this.el.charge.classList.toggle('full', c === MAX_CHARGE);
+    }
+    this.nexus.charge = c / MAX_CHARGE;
   }
 
   /* ---------- Cosas dormidas (chisperos + objetos chicos para despertar) ---------- */
@@ -557,22 +589,95 @@ export class WorldMode {
     }
     for (const x of [-14, 6]) make('drain', x, CANAL_MIN_Z - 0.8, 0);
 
-    // Cada cosa dormida se despierta desde cualquier chispero cercano (el cable se desvanece después)
-    for (const sl of this.sleepers) {
-      for (const sp of this.sparks) {
-        if (Math.hypot(sp.x - sl.x, sp.z - sl.z) < 22) this.connections.addRule({ sourceId: sp.id, targetId: sl.id, ephemeral: true });
-      }
-    }
     Sleeper.audio = this.audio;
+    // Nidos de chispitas: al tocarlos sueltan chispitas que hay que atrapar
+    Spark.onRelease = (nest) => {
+      this.pickups.burst(3, nest.x, nest.z, 1.3);
+      this.audio.tone(990, 0, 0.1, 'sine', 0.08);
+      this.audio.tone(1320, 0.08, 0.12, 'sine', 0.08);
+      this.setMessage('¡El nido soltó chispitas! Atrápalas para tu mochila');
+    };
+    Spark.onEmpty = () => this.toast('Este nido se está volviendo a llenar de chispitas. Vuelve en un ratito', 'info');
+    // Chispitas escondidas por el barrio (las que ya se juntaron no vuelven)
+    for (const [id, x, z] of HIDDEN_SPARKS) {
+      if (this.progress.hasSpark(id)) continue;
+      const [px, pz] = place(x, z);
+      this.pickups.addHidden(id, px, pz);
+    }
   }
 
-  /** La primera vez que el Nexus pasa junto a un chispero, se explica para qué sirve. */
+  /** La primera vez que el Nexus pasa junto a un nido, se explica para qué sirve. */
   private sparkTip(): void {
     if (this.progress.hasHeard('sparks')) return;
     const p = this.nexus.position;
     if (!this.sparks.some((s) => Math.hypot(s.x - p.x, s.z - p.z) < 3.5)) return;
     this.progress.markHeard('sparks');
-    this.showStory('Chispero', 'Los chisperos tienen energía para despertar las cosas dormidas del barrio (las que tienen «Zzz»). Tócalo y después toca algo dormido.');
+    this.showStory(
+      'Nido de chispitas',
+      'Acá se juntan chispitas perdidas de la Gran Chispa. Tócalo y atrápalas con tu mochila. Con la mochila cargada puedes despertar las cosas dormidas (las que tienen «Zzz»).',
+    );
+  }
+
+  /* ---------- Mochila Atrapachispas ---------- */
+
+  /** Carga actual de la mochila (también para las pruebas). */
+  get charge(): number {
+    return this.progress.charge;
+  }
+
+  /** Para las pruebas y ajustes: fija la carga de la mochila. */
+  setCharge(n: number): void {
+    this.progress.addCharge(n - this.progress.charge);
+    this.updateHud();
+  }
+
+  private addCharge(n: number): void {
+    const got = this.progress.addCharge(n);
+    if (got > 0) {
+      this.nexus.sparkle();
+      this.audio.tone(1500 + this.progress.charge * 80, 0, 0.1, 'sine', 0.08);
+    }
+    this.updateHud();
+  }
+
+  /** Despertar una cosa chica gastando una chispita de la mochila. */
+  private wakeWithBackpack(sl: Sleeper): void {
+    if (this.connections.hasSelection()) this.connections.cancel();
+    if (sl.isActive) {
+      sl.poke();
+      return;
+    }
+    if (this.progress.charge <= 0) {
+      this.toast('Tu mochila está vacía: junta chispitas ✦', 'info');
+      if (!this.progress.hasHeard('empty-pack')) {
+        this.progress.markHeard('empty-pack');
+        this.showStory(
+          'Mochila Atrapachispas',
+          'Las cosas dormidas se despiertan con chispitas de tu mochila. Hay chispitas escondidas por el barrio, en los nidos de chispitas y adentro de los cables, en cada carrera de luz.',
+        );
+      }
+      return;
+    }
+    this.progress.addCharge(-1);
+    this.connections.zap(this.nexus.plugPoint(), sl);
+    sl.activate();
+    this.progress.saveConnection('mochila', sl.id);
+    this.onWake(sl, true);
+  }
+
+  /** La carrera de luz que corresponde a un objeto grande (tema según el lugar, dificultad adaptada). */
+  tunnelPlanFor(target: Connectable): TunnelPlan {
+    const zone =
+      target === this.lamp || target === this.door
+        ? 'plaza'
+        : target === this.fountain
+          ? 'fountain'
+          : target === this.beacon
+            ? 'beacon'
+            : target === this.bridge
+              ? 'bridge'
+              : 'garden';
+    return planTunnel(zone, this.progress.tunnelSkill);
   }
 
   /** Una cosa dormida se despertó: un poquito de color alrededor y el contador. */
@@ -762,6 +867,11 @@ export class WorldMode {
 
   private interact(obj: Connectable): void {
     this.nexus.reach();
+    // Las cosas chicas se despiertan con la mochila, no con cables
+    if (obj instanceof Sleeper) {
+      this.wakeWithBackpack(obj);
+      return;
+    }
     this.connections.interact(obj);
   }
 
@@ -830,6 +940,15 @@ export class WorldMode {
     this.nexus.animate(dt);
     this.playground.update(dt, this.time, this.nexus.position, this.nexus.velocity, blockers);
     this.sparkTip();
+    const full = this.pickups.update(dt, this.time, this.nexus.position, MAX_CHARGE - this.progress.charge, (id) => {
+      if (id) this.progress.collectSpark(id);
+      this.addCharge(1);
+    });
+    this.fullWarned -= dt;
+    if (full && this.fullWarned <= 0) {
+      this.fullWarned = 4;
+      this.toast('¡Tu mochila está llena! Despierta algo dormido para hacer lugar', 'info');
+    }
 
     for (const obj of this.connections.all) obj.update(dt, this.time);
     for (const f of this.fragments) f.update(this.time);
@@ -838,7 +957,10 @@ export class WorldMode {
       this.introShown = true;
       if (!this.progress.hasHeard('intro')) {
         this.progress.markHeard('intro');
-        this.showStory('Miga · La ciudad al revés', 'El barrio se quedó sin color y sin ganas de fiesta. El manual lo escribió un pato. Empieza por la luz de la plaza.');
+        this.showStory(
+          'Miga · La Gran Chispa',
+          'El barrio se quedó sin color: la Gran Chispa que lo llenaba de vida se apagó y se rompió en chispitas. Tu mochila Atrapachispas puede juntarlas. Lleva la energía a la farola de la plaza y guía la chispa por el cable.',
+        );
       }
     }
     this.updateResidents(dt);

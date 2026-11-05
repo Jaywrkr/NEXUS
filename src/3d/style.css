@@ -77,6 +77,22 @@ body:not(.mode-tunnel) #tunnelHud {
   text-shadow: 2px 2px 0 var(--ink);
 }
 
+/* Mochila Atrapachispas: chispitas guardadas */
+#charge {
+  top: calc(60px + env(safe-area-inset-top, 0px));
+  left: calc(max(14px, env(safe-area-inset-left, 0px)) + 104px);
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: 0.05em;
+  color: #ffe066;
+  text-shadow: 2px 2px 0 var(--ink);
+  transition: transform 0.15s;
+}
+#charge.full {
+  color: #fff6c8;
+  transform: scale(1.08);
+}
+
 #stars {
   top: calc(12px + env(safe-area-inset-top, 0px));
   right: max(14px, env(safe-area-inset-right, 0px));

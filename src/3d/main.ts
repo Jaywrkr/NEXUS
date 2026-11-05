@@ -108,10 +108,10 @@ class Game {
   private openTunnel(source: Connectable, target: Connectable): void {
     this.transition(() => {
       this.setMode('tunnel');
-      this.tunnel.start((success) => {
+      this.tunnel.start(this.world.tunnelPlanFor(target), (success, sparks) => {
         this.transition(() => {
           this.setMode('world');
-          this.world.finishTunnel(source, target, success);
+          this.world.finishTunnel(source, target, success, sparks);
         });
       });
     });
