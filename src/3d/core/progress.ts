@@ -19,12 +19,14 @@ interface State3D {
   flags: string[];
   /** Chispis rescatados en el Mundo Voltio (serán cartas). */
   chispis: string[];
+  /** Cartas de Chispis: id → cuántas tiene (las repetidas sirven para cambiar con los vecinos). */
+  cards: Record<string, number>;
 }
 
 /** Cuántas chispitas entran en la mochila. */
 export const MAX_CHARGE = 5;
 
-const empty = (): State3D => ({ fragmentsCollected: [], seenCompletion: false, connections: [], heard: [], charge: 0, sparks: [], tunnelSkill: 0.15, flags: [], chispis: [] });
+const empty = (): State3D => ({ fragmentsCollected: [], seenCompletion: false, connections: [], heard: [], charge: 0, sparks: [], tunnelSkill: 0.15, flags: [], chispis: [], cards: {} });
 
 /**
  * Progreso guardado de la versión 3D, separado del de la 2D. Guarda fragmentos, festejo final,
@@ -56,10 +58,23 @@ export class Progress3D {
         tunnelSkill: typeof parsed.tunnelSkill === 'number' ? Math.max(0, Math.min(1, parsed.tunnelSkill)) : 0.15,
         flags: strings(parsed.flags),
         chispis: strings(parsed.chispis),
+        cards: Progress3D.cleanCards(parsed.cards, strings(parsed.chispis)),
       };
     } catch {
       return empty();
     }
+  }
+
+  private static cleanCards(v: unknown, rescued: string[]): Record<string, number> {
+    const out: Record<string, number> = {};
+    if (v && typeof v === 'object') {
+      for (const [k, n] of Object.entries(v as Record<string, unknown>)) {
+        if (typeof n === 'number' && n > 0) out[k] = Math.floor(n);
+      }
+    }
+    // Partidas de la Fase 1: el Chispi rescatado ya cuenta como carta
+    for (const id of rescued) out[id] = Math.max(1, out[id] ?? 0);
+    return out;
   }
 
   private save(): void {
@@ -173,7 +188,42 @@ export class Progress3D {
   rescueChispi(id: string): void {
     if (this.hasChispi(id)) return;
     this.state.chispis.push(id);
+    this.addCard(id);
+  }
+
+  /* ---------- Cartas ---------- */
+
+  cardCount(id: string): number {
+    return this.state.cards[id] ?? 0;
+  }
+
+  hasCard(id: string): boolean {
+    return this.cardCount(id) > 0;
+  }
+
+  addCard(id: string): void {
+    this.state.cards[id] = this.cardCount(id) + 1;
     this.save();
+  }
+
+  /** Saca una copia (para cambiarla). No deja sin la última. */
+  giveCard(id: string): boolean {
+    if (this.cardCount(id) < 2) return false;
+    this.state.cards[id] -= 1;
+    this.save();
+    return true;
+  }
+
+  /** Cuántas cartas distintas tiene. */
+  get uniqueCards(): number {
+    return Object.values(this.state.cards).filter((n) => n > 0).length;
+  }
+
+  /** Las repetidas: id de cada carta con más de una copia. */
+  get duplicates(): string[] {
+    return Object.entries(this.state.cards)
+      .filter(([, n]) => n > 1)
+      .map(([k]) => k);
   }
 
   get chispis(): string[] {

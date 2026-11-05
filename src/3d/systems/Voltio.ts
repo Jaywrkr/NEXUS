@@ -54,6 +54,14 @@ export interface Circuit {
   door: { x: number; z: number };
 }
 
+/** Una jaula de Estática con un Chispi adentro. */
+export interface CageSpot {
+  id: string;
+  x: number;
+  z: number;
+  color: string;
+}
+
 interface TrailPoint {
   x: number;
   z: number;
@@ -143,7 +151,7 @@ export class Voltio {
   private readonly nodes: { x: number; z: number; lit: boolean; ring: THREE.Mesh; core: THREE.Mesh; circuit: string }[] = [];
   private readonly circuits: Circuit[];
   private readonly done = new Set<string>();
-  private cage: { g: THREE.Group; chispi: THREE.Group; x: number; z: number } | null = null;
+  private cages: { id: string; g: THREE.Group; chispi: THREE.Group; x: number; z: number }[] = [];
   private loops: { mesh: THREE.Mesh; t: number }[] = [];
   private time = 0;
   /** Para las pruebas: cuántos círculos se cerraron. */
@@ -151,7 +159,7 @@ export class Voltio {
 
   private readonly hooks: VoltioHooks;
 
-  constructor(scene: THREE.Scene, skate: SkateparkInfo, circuits: Circuit[], hooks: VoltioHooks, state: { rescued: boolean; circuits: string[] }) {
+  constructor(scene: THREE.Scene, skate: SkateparkInfo, circuits: Circuit[], hooks: VoltioHooks, state: { cages: CageSpot[]; circuits: string[] }) {
     this.hooks = hooks;
     this.circuits = circuits;
     this.group.visible = false;
@@ -221,17 +229,18 @@ export class Voltio {
       }
     }
 
-    // Rueditas, atrapado en una jaula de Estática
-    if (!state.rescued) {
+    // Chispis atrapados en jaulas de Estática (los que todavía no se rescataron)
+    void skate;
+    for (const cs of state.cages) {
       const g = new THREE.Group();
-      const chispi = makeChispi();
+      const chispi = makeChispi(cs.color);
       g.add(chispi);
       const bars = new THREE.Mesh(new THREE.IcosahedronGeometry(1.25, 1), new THREE.MeshBasicMaterial({ color: '#ff4fd8', wireframe: true }));
       bars.position.y = 0.7;
       g.add(bars);
-      g.position.set(skate.chispi.x, 0.1, skate.chispi.z);
+      g.position.set(cs.x, 0.1, cs.z);
       this.group.add(g);
-      this.cage = { g, chispi, x: skate.chispi.x, z: skate.chispi.z };
+      this.cages.push({ id: cs.id, g, chispi, x: cs.x, z: cs.z });
     }
   }
 
@@ -249,8 +258,14 @@ export class Voltio {
     return this.statics.filter((s) => s.dead <= 0).map((s) => ({ x: s.x, z: s.z }));
   }
 
-  get chispiCaged(): boolean {
-    return this.cage !== null;
+  /** ¿Ese Chispi sigue en su jaula? (por defecto, Rueditas) */
+  isCaged(id = 'rueditas'): boolean {
+    return this.cages.some((c) => c.id === id);
+  }
+
+  /** Jaulas que quedan (para las pistas). */
+  get cageSpots(): { id: string; x: number; z: number }[] {
+    return this.cages.map((c) => ({ id: c.id, x: c.x, z: c.z }));
   }
 
   /** Nodos prendidos de un circuito (por defecto, el de la sala del skatepark). */
@@ -351,8 +366,7 @@ export class Voltio {
     }
 
     // La jaula vibra; el Chispi mira al Nexus
-    if (this.cage) {
-      const c = this.cage;
+    for (const c of this.cages) {
       c.g.children[1].rotation.y += dt * 1.5;
       c.g.children[1].rotation.x = Math.sin(time * 2) * 0.2;
       c.chispi.rotation.y = Math.atan2(p.x - c.x, p.z - c.z);
@@ -425,11 +439,11 @@ export class Voltio {
       s.g.visible = false;
       this.hooks.staticBroken(s.x, s.z);
     }
-    if (this.cage && inside(this.cage.x, this.cage.z, poly)) {
-      const c = this.cage;
-      this.cage = null;
+    for (const c of [...this.cages]) {
+      if (!inside(c.x, c.z, poly)) continue;
+      this.cages.splice(this.cages.indexOf(c), 1);
       this.group.remove(c.g);
-      this.hooks.rescue('rueditas', c.x, c.z);
+      this.hooks.rescue(c.id, c.x, c.z);
     }
   }
 

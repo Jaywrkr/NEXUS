@@ -800,3 +800,100 @@ test('3D: interiores — heladería, casa de Miga y tienda de cartas se reviven 
   expect(alive).toEqual([true, true, true]);
   expect(await w(() => window.__nexus3d.world.world.outside.miga.visible)).toBe(true);
 });
+
+test('3D: cartas de Chispis — sobres, rescates en Voltio, cambios con vecinos y álbum', async ({ page }) => {
+  test.setTimeout(300_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const unique = () => w(() => window.__nexus3d.world.progress.uniqueCards);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+  expect(await text(page, 'cards')).toBe('🃏 0/40');
+
+  // Sobre escondido: al pasar por encima se abren tres cartas, de a una y en orden
+  const pack = await w(() => window.__nexus3d.world.packSpots.find((p) => p.id === 'banco-plaza'));
+  await tp(page, pack.x, pack.z);
+  await step(page, 0.1);
+  await expect.poll(() => w(() => document.getElementById('packPop').hidden)).toBe(false);
+  expect(await mode(page)).toContain('paused');
+  expect(await page.locator('.flip-card').count()).toBe(3);
+  // La última (la más rara) no se da vuelta antes que las otras
+  await page.locator('.flip-card').nth(2).click();
+  expect(await page.locator('.flip-card.open').count()).toBe(0);
+  for (let i = 0; i < 3; i += 1) await page.locator('.flip-card').nth(i).click();
+  expect(await page.locator('.flip-card.open').count()).toBe(3);
+  const rarities = await page.$$eval('.flip-card', (els) => els.map((e) => e.className.match(/rare-(\w+)/)[1]));
+  expect(rarities[2]).not.toBe('comun');
+  await page.locator('#packOk').click();
+  expect(await mode(page)).not.toContain('paused');
+  expect(await unique()).toBeGreaterThanOrEqual(2);
+  expect(await text(page, 'cards')).toContain(`🃏 ${await unique()}/40`);
+  // El sobre ya no está
+  expect(await w(() => window.__nexus3d.world.packSpots.some((p) => p.id === 'banco-plaza'))).toBe(false);
+
+  // Revivir un lugar deja un sobre al lado
+  await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
+  await connect(page, [-14.3, -16.5], [-15.2, -25.6]);
+  await step(page, 1.5);
+  expect(await w(() => window.__nexus3d.world.packSpots.some((p) => p.id === 'lugar-plaza'))).toBe(true);
+
+  // Rescate en el Mundo Voltio: Chispazo, en el Centro
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    p.setFlag('hood');
+    p.setFlag('voltio-seen');
+    document.body.classList.add('has-hood');
+  });
+  const cage = await w(() => window.__nexus3d.world.voltio.cageSpots.find((c) => c.id === 'chispazo'));
+  await tp(page, cage.x - 3, cage.z);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  expect(await text(page, 'msg')).toContain('Chispazo');
+  for (let i = 0; i <= 22; i += 1) {
+    const a = (i / 20) * Math.PI * 2 + Math.PI;
+    await tp(page, cage.x + Math.cos(a) * 2.6, cage.z + Math.sin(a) * 2.6);
+  }
+  expect(await w(() => window.__nexus3d.world.progress.hasCard('chispazo'))).toBe(true);
+  await expect.poll(() => w(() => document.getElementById('cardPop').hidden)).toBe(false);
+  expect(await text(page, 'cardName')).toBe('Chispazo');
+  await page.locator('#cardOk').click();
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.3);
+
+  // Cambio con Miga: sin repetidas avisa; con una repetida, ofrece su Tuerquín
+  await tp(page, -16.5, -11.4);
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    for (const id of Object.keys(p.state.cards)) p.state.cards[id] = 1;
+  });
+  await touch(page);
+  expect(await text(page, 'storyText')).toContain('carta repetida');
+  await w(() => window.__nexus3d.world.progress.addCard('chispazo'));
+  await touch(page);
+  await expect.poll(() => w(() => document.getElementById('tradePop').hidden)).toBe(false);
+  await page.locator('#tradeDups button').first().click();
+  expect(await w(() => window.__nexus3d.world.progress.hasCard('tuerquin'))).toBe(true);
+  expect(await w(() => window.__nexus3d.world.progress.cardCount('chispazo'))).toBe(1);
+  expect(await text(page, 'cardName')).toBe('Tuerquín');
+  await page.locator('#cardOk').click();
+
+  // Álbum: desde el menú, con sombras para las que faltan y las que tiene a color
+  await page.locator('#menuBtn').click();
+  await page.locator('#mAlbum').click();
+  expect(await w(() => document.getElementById('albumPop').hidden)).toBe(false);
+  expect(await page.locator('#albumGrid .mini-card').count()).toBe(40);
+  const owned = await unique();
+  expect(await page.locator('#albumGrid .mini-card.missing').count()).toBe(40 - owned);
+  expect(await text(page, 'albumCount')).toContain(`${owned} / 40`);
+  await page.locator('#albumGrid .mini-card[data-card="tuerquin"]').click();
+  expect(await text(page, 'cardName')).toBe('Tuerquín');
+  await page.locator('#cardOk').click();
+  await page.locator('#albumBack').click();
+  expect(await mode(page)).not.toContain('paused');
+
+  // Todo queda guardado
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await unique()).toBe(owned);
+  expect(await w(() => window.__nexus3d.world.packSpots.some((p) => p.id === 'banco-plaza'))).toBe(false);
+  expect(await w(() => window.__nexus3d.world.voltio.isCaged('chispazo'))).toBe(false);
+});

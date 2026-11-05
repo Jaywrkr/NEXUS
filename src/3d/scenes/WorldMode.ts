@@ -32,6 +32,9 @@ import { Skate, type Trick } from '../systems/Skate';
 import { MAX_VOLT, Voltio } from '../systems/Voltio';
 import type { InteriorInfo, ReviveRoom } from '../world/MigaHouse';
 import { CardDisplay, FuseBox, IceCreamMachine } from '../objects/indoor';
+import { CARDS, CARD_BY_ID, TOTAL_CARDS, TYPES, rollPack } from '../data/chispis';
+import { makePack } from '../objects/pack';
+import type { CageSpot } from '../systems/Voltio';
 
 const INTERACT_REACH = 2.2; // metros desde el borde del objeto
 const NEXUS_RADIUS = 0.32;
@@ -58,8 +61,14 @@ export interface WorldCallbacks {
   tunnel: (source: Connectable, target: Connectable) => void;
   /** Ir al museo (tras recoger un fragmento). */
   museum: () => void;
-  /** Mostrar la carta de un Chispi rescatado (pausa el mundo hasta cerrarla). */
-  card?: (id: string) => void;
+  /** Mostrar la carta de un Chispi rescatado o recibido (pausa el mundo hasta cerrarla). */
+  card?: (id: string, kicker?: string) => void;
+  /** Abrir un sobre: las cartas ya quedaron guardadas, esto es la animación. */
+  pack?: (ids: string[]) => void;
+  /** Un vecino ofrece cambiar su carta por una repetida. */
+  trade?: (offer: { who: string; name: string; text: string; card: string; duplicates: string[] }) => void;
+  /** Abrir el álbum. */
+  album?: () => void;
 }
 
 /** Una habitación que se visita: dónde está su puerta afuera y cuándo se abre. */
@@ -75,6 +84,26 @@ interface Interior {
 }
 
 const TRICKS: Trick[] = ['ollie', 'air', 'grind'];
+
+/** Chispis atrapados en el Mundo Voltio, uno por lugar (Fase 3). Rueditas está en el Skatepark. */
+const CAGES: { id: string; x: number; z: number }[] = [
+  { id: 'chispazo', x: -30, z: -8 },
+  { id: 'gotita', x: -31, z: 20 },
+  { id: 'antenita', x: 26, z: -9 },
+  { id: 'brotecito', x: 12, z: 50 },
+];
+
+/** Sobres escondidos por el mundo (x, z, altura). */
+const HIDDEN_PACKS: [string, number, number, number][] = [
+  ['banco-plaza', -8, -32, 0.9],
+  ['callejon', 6, -40, 0.9],
+  ['esquina-este', 41, 8, 0.9],
+  ['fuente-oeste', -40, 8, 0.9],
+  ['canal-sur', 28, 44, 0.9],
+  ['jardin-oeste', -34, 50, 0.9],
+  ['skate-cajon', 75, 2, 1.55],
+  ['sala-skate', 398, 1.5, 0.9],
+];
 const TRICK_NAMES: Record<Trick, string> = { ollie: 'Ollie', air: '¡Vuelo!', grind: 'Grind' };
 
 /**
@@ -120,6 +149,8 @@ export class WorldMode {
   private readonly iceMachine: IceCreamMachine;
   private readonly cardDisplay: CardDisplay;
   private closedWarned = 0;
+  /** Sobres que están en el mundo, esperando que el Nexus pase por encima. */
+  private readonly packs: { id: string; g: THREE.Group; x: number; z: number; y: number }[] = [];
   private readonly voltio: Voltio;
   private boardPickup: THREE.Group | null = null;
   private nearBoard = false;
@@ -293,6 +324,8 @@ export class WorldMode {
     this.playground = new Playground(scene, this.world, this.audio);
     this.voltio = this.makeVoltio();
     this.setupSkatepark();
+    this.setupPacks();
+    CardDisplay.onPoke = () => this.cb.album?.();
 
     LIFE.reset();
     this.restoreProgress({ source, fountainSource, beaconA, beaconB, bridgeSource, gardenSource });
@@ -432,6 +465,21 @@ export class WorldMode {
     // Cada conexión devuelve un poco de color alrededor de lo que se encendió
     this.addLife(target.x, target.z, target === this.fountain ? 6 : 4.5, animate);
 
+    // Fase 3: cada lugar que revive deja un sobre de cartas
+    const packFor: [Connectable, string, boolean][] = [
+      [this.door, 'plaza', true],
+      [this.fountain, 'fuente', true],
+      [this.beacon, 'antena', this.beacon.isFullyActive],
+      [this.bridge, 'puente', true],
+      [this.flowerBed, 'jardin', true],
+      [this.ramp, 'skatepark', true],
+      [this.fuse, 'casa-miga', true],
+      [this.iceMachine, 'heladeria', true],
+      [this.cardDisplay, 'tienda', true],
+    ];
+    for (const [obj, id, ok] of packFor) {
+      if (target === obj && ok) this.dropPack(`lugar-${id}`, target.x + 1.6, target.z + 1.6, animate);
+    }
     if (target === this.lamp) {
       this.lightWindow();
       say('¡La farola se encendió! Ahora llévale energía a la puerta');
@@ -899,7 +947,12 @@ export class WorldMode {
           this.toast(`Nodo ${n} de ${total}`, 'ok');
         },
       },
-      { rescued: this.progress.hasChispi('rueditas'), circuits: ['sala-open', 'cartas-open'].filter((f) => this.progress.hasFlag(f)) },
+      {
+        cages: [{ id: 'rueditas', ...this.world.skate.chispi }, ...CAGES]
+          .filter((c) => !this.progress.hasChispi(c.id))
+          .map((c): CageSpot => ({ ...c, color: TYPES[CARD_BY_ID.get(c.id)!.type].color })),
+        circuits: ['sala-open', 'cartas-open'].filter((f) => this.progress.hasFlag(f)),
+      },
     );
   }
 
@@ -1083,11 +1136,13 @@ export class WorldMode {
 
   private onRescue(id: string, x: number, z: number): void {
     this.progress.rescueChispi(id);
+    this.updateHud();
     this.audio.playSuccess();
     this.connections.celebrate(new THREE.Vector3(x, 1.2, z));
     this.pickups.burst(3, x, z, 1.2);
-    this.setMessage('¡Rescataste a Rueditas, un Chispi de Ruedas!');
-    this.cb.card?.(id);
+    const card = CARD_BY_ID.get(id);
+    this.setMessage(card ? `¡Rescataste a ${card.name}, un Chispi de ${TYPES[card.type].name}!` : '¡Rescataste un Chispi!');
+    this.cb.card?.(id, '¡Rescataste un Chispi!');
     this.refreshObjectiveSoon();
   }
 
@@ -1111,12 +1166,20 @@ export class WorldMode {
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
       return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
     }
+    if (this.voltio.active && !this.inSkatepark) {
+      const me = this.nexus.position;
+      const near = this.voltio.cageSpots.filter((c) => c.id !== 'rueditas' && Math.hypot(c.x - me.x, c.z - me.z) < 30);
+      if (near.length) {
+        const c = near.reduce((a, b) => (Math.hypot(a.x - me.x, a.z - me.z) < Math.hypot(b.x - me.x, b.z - me.z) ? a : b));
+        return { text: `¡${CARD_BY_ID.get(c.id)!.name} está atrapado! Cerrá un círculo con tu estela alrededor de la jaula`, at: c };
+      }
+    }
     if (this.voltio.active && !this.inSkatepark && !p.hasFlag('cartas-open')) {
       const n = this.voltio.litNodes('cartas-open');
       return { text: `Tocá los tres nodos frente a la tienda de cartas (${n}/3)`, at: this.world.cardNodes[Math.min(n, 2)] };
     }
     if (this.voltio.active) {
-      if (this.voltio.chispiCaged) return { text: 'Cerrá un círculo con tu estela alrededor de la jaula del Chispi', at: sk.chispi };
+      if (this.voltio.isCaged('rueditas')) return { text: 'Cerrá un círculo con tu estela alrededor de la jaula del Chispi', at: sk.chispi };
       if (!p.hasFlag('sala-open')) {
         const n = this.voltio.litNodes();
         return { text: `Tocá los tres nodos del circuito frente a la sala (${n}/3)`, at: sk.nodes[Math.min(n, 2)] };
@@ -1357,6 +1420,8 @@ export class WorldMode {
     const n = ZONE_FRAGMENTS.filter((f) => this.progress.hasFragment(f.id)).length;
     if (this.el.stars) this.el.stars.textContent = `★ ${n}/${ZONE_COUNT}`;
     if (this.el.awake) this.el.awake.textContent = `✦ ${this.awakeCount()}/${this.sleepers.length}`;
+    const cardsEl = document.getElementById('cards');
+    if (cardsEl) cardsEl.textContent = `🃏 ${this.progress.uniqueCards}/${TOTAL_CARDS}`;
     const c = this.progress.charge;
     if (this.el.charge) {
       this.el.charge.textContent = `🎒 ${'●'.repeat(c)}${'○'.repeat(MAX_CHARGE - c)}`;
@@ -1710,7 +1775,109 @@ export class WorldMode {
     r.setHeard(true);
     r.talk();
     this.nexus.wave();
-    this.showStory(r.name, this.residentText(r));
+    // Cartas: cada vecino tiene un Chispi para cambiar por una carta repetida
+    const offer = CARDS.find((k) => k.trader === r.id);
+    const dups = this.progress.duplicates;
+    if (offer && !this.progress.hasCard(offer.id) && dups.length && this.cb.trade) {
+      this.cb.trade({
+        who: r.id,
+        name: r.name,
+        card: offer.id,
+        duplicates: dups,
+        text: `¿Me cambiás una carta repetida por mi ${offer.name}? ${offer.phrase}`,
+      });
+      return;
+    }
+    let text = this.residentText(r);
+    if (offer && !this.progress.hasCard(offer.id)) text += ` (Si conseguís una carta repetida, te cambio a mi Chispi ${offer.name}.)`;
+    this.showStory(r.name, text);
+  }
+
+  /** Cambio con un vecino: da una repetida y recibe su Chispi. Devuelve la carta recibida. */
+  trade(who: string, give: string): string | null {
+    const offer = CARDS.find((k) => k.trader === who);
+    if (!offer || this.progress.hasCard(offer.id) || !this.progress.giveCard(give)) return null;
+    this.progress.addCard(offer.id);
+    this.audio.playCollect();
+    this.residents.find((r) => r.id === who)?.talk();
+    this.updateHud();
+    return offer.id;
+  }
+
+  /* ---------- Sobres de cartas (Fase 3) ---------- */
+
+  private setupPacks(): void {
+    const taken: { x: number; z: number }[] = [];
+    for (const [id, x, z, y] of HIDDEN_PACKS) {
+      if (this.progress.hasFlag(`pack-${id}`)) continue;
+      // Corre el sobre a un lugar caminable si cae sobre algo (salvo los que van arriba de algo a propósito)
+      let px = x;
+      let pz = z;
+      if (y < 1 && x < 200) {
+        for (let k = 0; k < 40 && !(this.world.isWalkable(px, pz, 0.6) && taken.every((t) => Math.hypot(t.x - px, t.z - pz) > 2)); k += 1) {
+          const a = k * 2.4;
+          px = x + Math.cos(a) * (0.5 + k * 0.25);
+          pz = z + Math.sin(a) * (0.5 + k * 0.25);
+        }
+      }
+      taken.push({ x: px, z: pz });
+      this.spawnPack(id, px, pz, y);
+    }
+  }
+
+  private spawnPack(id: string, x: number, z: number, y = 0.9): void {
+    if (this.progress.hasFlag(`pack-${id}`) || this.packs.some((p) => p.id === id)) return;
+    const g = makePack();
+    g.position.set(x, y, z);
+    this.world.scene.add(g);
+    this.packs.push({ id, g, x, z, y });
+  }
+
+  /** Cada lugar que revive deja un sobre al lado. */
+  private dropPack(id: string, x: number, z: number, animate: boolean): void {
+    if (this.progress.hasFlag(`pack-${id}`)) return;
+    let px = x;
+    let pz = z;
+    for (let k = 0; k < 40 && !this.world.isWalkable(px, pz, 0.5); k += 1) {
+      const a = k * 2.4;
+      px = x + Math.cos(a) * (1 + k * 0.2);
+      pz = z + Math.sin(a) * (1 + k * 0.2);
+    }
+    if (animate) after(1.2, () => this.spawnPack(id, px, pz));
+    else this.spawnPack(id, px, pz);
+  }
+
+  /** Sobres que hay en el mundo (para las pruebas y las pistas). */
+  get packSpots(): { id: string; x: number; z: number; y: number }[] {
+    return this.packs.map((p) => ({ id: p.id, x: p.x, z: p.z, y: p.y }));
+  }
+
+  private updatePacks(dt: number): void {
+    const p = this.nexus.position;
+    for (const pk of [...this.packs]) {
+      const body = pk.g.userData.body as THREE.Group;
+      body.rotation.y += dt * 1.6;
+      pk.g.position.y = pk.y + Math.sin(this.time * 2 + pk.x) * 0.1;
+      if (this.busy || this.voltio.active) continue;
+      if (Math.hypot(pk.x - p.x, pk.z - p.z) < 1.0 && Math.abs(p.y + 0.9 - pk.y) < 0.5) this.openPack(pk.id);
+    }
+  }
+
+  /** Junta un sobre: las cartas se guardan ya y después se muestran dándose vuelta. */
+  openPack(id: string): void {
+    const i = this.packs.findIndex((p) => p.id === id);
+    if (i < 0) return;
+    const pk = this.packs[i];
+    this.world.scene.remove(pk.g);
+    this.packs.splice(i, 1);
+    this.progress.setFlag(`pack-${id}`);
+    const ids = rollPack((c) => this.progress.hasCard(c));
+    for (const c of ids) this.progress.addCard(c);
+    this.audio.playCollect();
+    this.nexus.celebrate();
+    this.updateHud();
+    if (this.cb.pack) this.cb.pack(ids);
+    else this.setMessage('¡Encontraste un sobre de cartas!');
   }
 
   private showStory(who: string, text: string): void {
@@ -1968,6 +2135,7 @@ export class WorldMode {
     this.checkFragments();
 
     this.warnClosedShop(dt);
+    this.updatePacks(dt);
     // Mundo Voltio
     this.voltio.update(dt, this.time, this.nexus.position);
     if (this.voltio.active && this.voltio.voltage <= 0) this.exitVoltio('Se acabó el voltaje ⚡: volviste al mundo normal');

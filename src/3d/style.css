@@ -1030,3 +1030,210 @@ body.voltio .objective {
   margin: 0 0 6px;
   font-size: 15px;
 }
+
+/* ---------- Fase 3: cartas, sobres, cambios y álbum ---------- */
+.chispi-card.rare-brillante {
+  border-color: #9be7ff;
+}
+.chispi-card.rare-dorada {
+  border-color: #ffc23a;
+  background: linear-gradient(160deg, #4a3410, #1d1630 55%, #5a3f10);
+}
+.chispi-card.rare-dorada::after,
+.mini-card.rare-dorada::after,
+.flip-card.rare-dorada .flip-front::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.55) 45%, rgba(255, 230, 120, 0.3) 52%, transparent 65%);
+  background-size: 250% 100%;
+  mix-blend-mode: screen;
+  animation: holo 2.6s linear infinite;
+}
+body.calm .chispi-card.rare-dorada::after,
+body.calm .mini-card.rare-dorada::after {
+  animation: none;
+}
+@keyframes holo {
+  from {
+    background-position: 150% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+.chispi-card {
+  position: relative;
+}
+.card-helper {
+  margin: -2px 0 6px;
+  font-size: 13px;
+  color: #7dffef;
+}
+.pack-stage {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: min(96vw, 620px);
+  text-align: center;
+  color: var(--cream);
+}
+.pack-tip {
+  margin: 0;
+  font-weight: 800;
+}
+.pack-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.flip-card {
+  position: relative;
+  width: min(28vw, 170px);
+  aspect-ratio: 5 / 7;
+  perspective: 800px;
+  cursor: pointer;
+  border: 0;
+  padding: 0;
+  background: none;
+  animation: pop-in 0.3s ease-out backwards;
+}
+.flip-card:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.flip-card:nth-child(3) {
+  animation-delay: 0.24s;
+}
+.flip-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.flip-card.open .flip-inner {
+  transform: rotateY(180deg);
+}
+.flip-back,
+.flip-front {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  overflow: hidden;
+}
+.flip-back {
+  display: grid;
+  place-items: center;
+  font-size: 44px;
+  background: repeating-linear-gradient(45deg, #ff9f43 0 12px, #ff8a1f 12px 24px);
+  border: 4px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.flip-front {
+  transform: rotateY(180deg);
+}
+.flip-front canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.flip-card.open.rare-dorada {
+  filter: drop-shadow(0 0 18px #ffe066);
+}
+.flip-card.open.rare-brillante {
+  filter: drop-shadow(0 0 12px #9be7ff);
+}
+.flip-new {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  z-index: 2;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: #ff4fd8;
+  color: #fff;
+  font-family: var(--display);
+  font-size: 12px;
+  transform: rotate(8deg);
+}
+.trade-sheet {
+  justify-items: center;
+}
+.trade-text,
+.trade-ask {
+  margin: 0;
+  text-align: center;
+}
+.trade-ask {
+  font-weight: 800;
+}
+.trade-offer canvas {
+  width: 150px;
+  border-radius: 12px;
+}
+.trade-dups {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.trade-dups button {
+  width: 82px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.trade-dups canvas,
+.mini-card canvas {
+  width: 100%;
+  display: block;
+  border-radius: 8px;
+}
+.album-sheet {
+  width: min(96vw, 760px);
+}
+.album-count {
+  margin: -6px 0 2px;
+  text-align: center;
+  font-weight: 800;
+}
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  gap: 8px;
+  max-height: 60dvh;
+  overflow-y: auto;
+  padding: 4px;
+}
+.album-type {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+  font-family: var(--display);
+  font-size: 15px;
+}
+.mini-card {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.mini-card .count {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--cream);
+  font-size: 11px;
+  font-weight: 800;
+}
+body.voltio #labels {
+  display: none;
+}

@@ -125,6 +125,15 @@ export class IceCreamMachine extends Connectable {
 
 /** Vitrina de cartas de la tienda: abanicos de cartas que brillan cuando vuelve la luz. */
 export class CardDisplay extends Connectable {
+  /** Tocar la vitrina encendida abre el álbum. */
+  static onPoke: (() => void) | null = null;
+
+  poke(): boolean {
+    if (!this.active_) return false;
+    CardDisplay.onPoke?.();
+    return true;
+  }
+
   private readonly cards: THREE.Mesh[] = [];
   private readonly glowMat: THREE.MeshBasicMaterial;
   private t = 0;

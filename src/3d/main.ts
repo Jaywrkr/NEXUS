@@ -1,7 +1,9 @@
 import './style.css';
 import { Input } from './core/input';
 import { Renderer } from './core/render';
-import { Settings, vibrate } from './core/settings';
+import { Settings, flashScreen, vibrate } from './core/settings';
+import { CARDS, CARD_BY_ID, RARITY_NAMES, TOTAL_CARDS, TYPES, TYPE_ORDER } from './data/chispis';
+import { drawCard, drawChispi } from './ui/cardArt';
 import { updateTweens } from './core/tween';
 import type { Connectable } from './objects/Connectable';
 import { MuseumMode } from './scenes/MuseumMode';
@@ -61,7 +63,10 @@ class Game {
     return new WorldMode(this.input, {
       tunnel: (s, t) => this.openTunnel(s, t),
       museum: () => this.transition(() => this.enterMuseum()),
-      card: (id) => this.showCard(id),
+      card: (id, kicker) => this.showCard(id, kicker),
+      pack: (ids) => this.showPack(ids),
+      trade: (o) => this.showTrade(o),
+      album: () => this.showAlbum(),
     });
   }
 
@@ -160,9 +165,15 @@ class Game {
       });
     });
     $('mapBack').addEventListener('click', () => this.closeMenu());
+    $('packOk').addEventListener('click', () => this.closePop('packPop'));
+    $('tradeNo').addEventListener('click', () => this.closePop('tradePop'));
+    $('albumBack').addEventListener('click', () => this.closePop('albumPop'));
+    $('mAlbum').addEventListener('click', () => {
+      $('menu').hidden = true;
+      this.showAlbum();
+    });
     $('cardOk').addEventListener('click', () => {
-      $('cardPop').hidden = true;
-      this.closeMenu();
+      this.closePop('cardPop');
     });
     // Tocar fuera de la hoja cierra
     for (const id of ['menu', 'mapPanel']) {
@@ -221,15 +232,17 @@ class Game {
     this.paused = false;
     this.mapOpen = false;
     $('menu').hidden = true;
-    $('cardPop').hidden = true;
+    for (const k of ['cardPop', 'packPop', 'tradePop', 'albumPop']) $(k).hidden = true;
     $('mapPanel').hidden = true;
     document.body.classList.remove('paused');
     this.input.flush();
   }
 
   /** Clic suave en todos los botones de la interfaz. */
+  private readonly uiAudio = new AudioSystem();
+
   private setupUiSounds(): void {
-    const audio = new AudioSystem();
+    const audio = this.uiAudio;
     document.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest?.('.ui-btn, .objective, .opt');
       if (!btn) return;
@@ -253,24 +266,155 @@ class Game {
     });
   }
 
-  /** Carta del Chispi rescatado: pausa el mundo hasta tocar «¡Genial!». */
-  private showCard(id: string): void {
-    const cards: Record<string, { name: string; type: string; text: string }> = {
-      rueditas: {
-        name: 'Rueditas',
-        type: 'Chispi de Ruedas · ★',
-        text: 'Le encanta la velocidad y hacer chispas al frenar. Lo encontraste en el Skatepark, atrapado por la Estática.',
-      },
-    };
-    const c = cards[id] ?? { name: id, type: 'Chispi', text: '' };
-    $('cardName').textContent = c.name;
-    $('cardType').textContent = c.type;
-    $('cardText').textContent = c.text;
-    drawChispiCard($('cardArt') as HTMLCanvasElement);
+  /** Pausa el mundo mientras hay una ventana abierta (carta, sobre, cambio, álbum). */
+  private pauseFor(id: string): void {
     this.paused = true;
     document.body.classList.add('paused');
-    $('cardPop').hidden = false;
+    $(id).hidden = false;
     this.input.flush();
+  }
+
+  private closePop(id: string): void {
+    $(id).hidden = true;
+    if (['cardPop', 'packPop', 'tradePop', 'albumPop'].some((k) => !$(k).hidden)) return;
+    this.closeMenu();
+  }
+
+  /** Carta grande de un Chispi: pausa el mundo hasta tocar «¡Genial!». */
+  private showCard(id: string, kicker = '¡Nueva carta!'): void {
+    const c = CARD_BY_ID.get(id);
+    if (!c) return;
+    const t = TYPES[c.type];
+    $('cardKicker').textContent = kicker;
+    $('cardName').textContent = c.name;
+    $('cardType').textContent = `${t.icon} Chispi de ${t.name} · ${RARITY_NAMES[c.rarity]}`;
+    $('cardText').textContent = c.phrase;
+    $('cardHelper').textContent = `Ayudita de compañero: ${t.helper.toLowerCase()} (muy pronto)`;
+    $('cardBox').className = `chispi-card rare-${c.rarity}`;
+    const art = $('cardArt') as HTMLCanvasElement;
+    const g = art.getContext('2d');
+    if (g) {
+      g.clearRect(0, 0, art.width, art.height);
+      drawChispi(g, c, art.width / 2, art.height * 0.56, 54);
+    }
+    this.pauseFor('cardPop');
+  }
+
+  /** Abrir un sobre: tres cartas boca abajo que se dan vuelta al tocarlas (la más rara, última). */
+  private showPack(ids: string[]): void {
+    const row = $('packRow');
+    row.innerHTML = '';
+    $('packOk').hidden = true;
+    $('packTip').textContent = 'Tocá cada carta para darla vuelta';
+    let opened = 0;
+    const seen = new Set<string>();
+    ids.forEach((id, i) => {
+      const c = CARD_BY_ID.get(id)!;
+      // ¿Es nueva? (la colección ya la cuenta: es nueva si hay exactamente las copias de este sobre)
+      const copiesHere = ids.filter((k) => k === id).length;
+      const isNew = this.world.progress.cardCount(id) === copiesHere && !seen.has(id);
+      seen.add(id);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `flip-card rare-${c.rarity}`;
+      btn.dataset.card = id;
+      btn.innerHTML = `<div class="flip-inner"><div class="flip-back">✦</div><div class="flip-front"><canvas width="200" height="280"></canvas></div></div>`;
+      drawCard(btn.querySelector('canvas')!, id);
+      if (isNew) {
+        const tag = document.createElement('span');
+        tag.className = 'flip-new';
+        tag.textContent = '¡NUEVA!';
+        tag.hidden = true;
+        btn.appendChild(tag);
+      }
+      btn.addEventListener('click', () => {
+        if (btn.classList.contains('open')) {
+          this.showCard(id, c.rarity === 'dorada' ? '¡Carta dorada!' : 'Carta del sobre');
+          return;
+        }
+        // Se dan vuelta en orden: la más rara (la última) se guarda para el final
+        if (i !== opened) return;
+        btn.classList.add('open');
+        const tag = btn.querySelector('.flip-new') as HTMLElement | null;
+        if (tag) window.setTimeout(() => (tag.hidden = false), 450);
+        opened += 1;
+        this.uiAudio.tone(c.rarity === 'dorada' ? 1320 : c.rarity === 'brillante' ? 990 : 660, 0.2, 0.15, 'triangle', 0.07);
+        if (c.rarity === 'dorada') {
+          flashScreen(300);
+          vibrate([30, 40, 60]);
+        }
+        if (opened === ids.length) {
+          $('packOk').hidden = false;
+          $('packTip').textContent = '¡Ya están en tu álbum!';
+        }
+      });
+      row.appendChild(btn);
+    });
+    this.pauseFor('packPop');
+  }
+
+  /** Cambio con un vecino: elegís una repetida y recibís su Chispi. */
+  private showTrade(o: { who: string; name: string; text: string; card: string; duplicates: string[] }): void {
+    $('tradeWho').textContent = `${o.name} te propone un cambio`;
+    $('tradeText').textContent = o.text;
+    drawCard($('tradeCard') as HTMLCanvasElement, o.card);
+    const box = $('tradeDups');
+    box.innerHTML = '';
+    for (const id of o.duplicates) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'ui-btn';
+      b.dataset.card = id;
+      b.title = CARD_BY_ID.get(id)?.name ?? id;
+      b.innerHTML = '<canvas width="120" height="168"></canvas>';
+      drawCard(b.querySelector('canvas')!, id);
+      b.addEventListener('click', () => {
+        const got = this.world.trade(o.who, id);
+        $('tradePop').hidden = true;
+        if (got) this.showCard(got, `¡${o.name} te cambió su carta!`);
+        else this.closePop('tradePop');
+      });
+      box.appendChild(b);
+    }
+    this.pauseFor('tradePop');
+  }
+
+  /** Álbum: las 40 cartas por tipo; las que faltan se ven como sombra. */
+  private showAlbum(): void {
+    const p = this.world.progress;
+    const grid = $('albumGrid');
+    grid.innerHTML = '';
+    $('albumCount').textContent = `${p.uniqueCards} / ${TOTAL_CARDS} cartas`;
+    for (const type of TYPE_ORDER) {
+      const t = TYPES[type];
+      const list = CARDS.filter((c) => c.type === type);
+      const h = document.createElement('p');
+      h.className = 'album-type';
+      h.textContent = `${t.icon} ${t.name} · ${list.filter((c) => p.hasCard(c.id)).length}/${list.length}`;
+      grid.appendChild(h);
+      for (const c of list) {
+        const owned = p.hasCard(c.id);
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = `mini-card ${owned ? `rare-${c.rarity}` : 'missing'}`;
+        b.dataset.card = c.id;
+        b.innerHTML = '<canvas width="120" height="168"></canvas>';
+        drawCard(b.querySelector('canvas')!, c.id, owned);
+        const n = p.cardCount(c.id);
+        if (n > 1) {
+          const tag = document.createElement('span');
+          tag.className = 'count';
+          tag.textContent = `×${n}`;
+          b.appendChild(tag);
+        }
+        b.addEventListener('click', () => {
+          if (!owned) return;
+          this.showCard(c.id, 'Tu carta');
+        });
+        grid.appendChild(b);
+      }
+    }
+    this.pauseFor('albumPop');
   }
 
   private enterMuseum(): void {
@@ -325,61 +469,6 @@ class Game {
         break;
     }
   }
-}
-
-/** Dibujo de Rueditas para la carta (bolita de luz con ruedas, criatura original). */
-function drawChispiCard(canvas: HTMLCanvasElement): void {
-  const g = canvas.getContext('2d');
-  if (!g) return;
-  const W = canvas.width;
-  const H = canvas.height;
-  g.clearRect(0, 0, W, H);
-  for (let i = 0; i < 18; i += 1) {
-    g.fillStyle = i % 2 ? '#ffe066' : '#7dffef';
-    g.globalAlpha = 0.5;
-    g.fillRect((i * 53) % W, (i * 37) % H, 4, 4);
-  }
-  g.globalAlpha = 1;
-  const glowG = g.createRadialGradient(W / 2, 92, 10, W / 2, 92, 80);
-  glowG.addColorStop(0, 'rgba(155,231,255,0.9)');
-  glowG.addColorStop(1, 'rgba(155,231,255,0)');
-  g.fillStyle = glowG;
-  g.fillRect(0, 0, W, H);
-  g.fillStyle = '#9be7ff';
-  g.strokeStyle = '#1d1630';
-  g.lineWidth = 5;
-  g.beginPath();
-  g.arc(W / 2, 92, 50, 0, Math.PI * 2);
-  g.fill();
-  g.stroke();
-  g.fillStyle = '#1d1630';
-  g.beginPath();
-  g.ellipse(W / 2 - 17, 86, 7, 11, 0, 0, Math.PI * 2);
-  g.ellipse(W / 2 + 17, 86, 7, 11, 0, 0, Math.PI * 2);
-  g.fill();
-  g.lineWidth = 4;
-  g.beginPath();
-  g.arc(W / 2, 104, 12, 0.15 * Math.PI, 0.85 * Math.PI);
-  g.stroke();
-  for (const dx of [-32, 32]) {
-    g.fillStyle = '#ff9f43';
-    g.beginPath();
-    g.arc(W / 2 + dx, 154, 17, 0, Math.PI * 2);
-    g.fill();
-    g.stroke();
-    g.fillStyle = '#1d1630';
-    g.beginPath();
-    g.arc(W / 2 + dx, 154, 5, 0, Math.PI * 2);
-    g.fill();
-  }
-  g.fillStyle = '#ffe066';
-  g.beginPath();
-  for (let i = 0; i < 8; i += 1) {
-    const a = (i / 8) * Math.PI * 2 - Math.PI / 2;
-    const r = i % 2 ? 6 : 14;
-    g.lineTo(W / 2 + Math.cos(a) * r, 30 + Math.sin(a) * r);
-  }
-  g.fill();
 }
 
 new Game();

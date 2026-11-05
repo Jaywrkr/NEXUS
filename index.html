@@ -23,6 +23,7 @@
       <div class="pill counters" id="counters">
         <span id="stars" title="Lugares con vida">★ 0/5</span>
         <span id="awake" title="Cosas despertadas">✦ 0/20</span>
+        <span id="cards" title="Cartas de Chispis">🃏 0/40</span>
       </div>
     </div>
     <div class="hud world-only" id="toast"></div>
@@ -42,13 +43,46 @@
 
     <!-- Carta de un Chispi rescatado -->
     <div id="cardPop" class="overlay" hidden>
-      <div class="chispi-card">
-        <p class="card-kicker">¡Rescataste un Chispi!</p>
+      <div class="chispi-card" id="cardBox">
+        <p class="card-kicker" id="cardKicker">¡Rescataste un Chispi!</p>
         <canvas id="cardArt" width="240" height="200"></canvas>
         <h2 id="cardName">Rueditas</h2>
         <p class="card-type" id="cardType">Chispi de Ruedas</p>
         <p class="card-text" id="cardText"></p>
+        <p class="card-helper" id="cardHelper"></p>
         <button class="ui-btn menu-btn primary" id="cardOk" type="button">¡Genial!</button>
+      </div>
+    </div>
+
+    <!-- Sobre de cartas: se dan vuelta de a una -->
+    <div id="packPop" class="overlay" hidden>
+      <div class="pack-stage">
+        <p class="card-kicker">¡Un sobre de cartas!</p>
+        <p class="pack-tip" id="packTip">Tocá cada carta para darla vuelta</p>
+        <div class="pack-row" id="packRow"></div>
+        <button class="ui-btn menu-btn primary" id="packOk" type="button" hidden>¡A mi álbum!</button>
+      </div>
+    </div>
+
+    <!-- Cambio con un vecino -->
+    <div id="tradePop" class="overlay" hidden>
+      <div class="sheet trade-sheet">
+        <h2 id="tradeWho">Cambio</h2>
+        <p class="trade-text" id="tradeText"></p>
+        <div class="trade-offer"><canvas id="tradeCard" width="150" height="210"></canvas></div>
+        <p class="trade-ask">Elegí una de tus repetidas:</p>
+        <div class="trade-dups" id="tradeDups"></div>
+        <button class="ui-btn menu-btn ghost" id="tradeNo" type="button">Ahora no</button>
+      </div>
+    </div>
+
+    <!-- Álbum de Chispis -->
+    <div id="albumPop" class="overlay" hidden>
+      <div class="sheet album-sheet">
+        <h2>Álbum de Chispis</h2>
+        <p class="album-count" id="albumCount">0 / 40</p>
+        <div class="album-grid" id="albumGrid"></div>
+        <button class="ui-btn menu-btn primary" id="albumBack" type="button">Cerrar</button>
       </div>
     </div>
 
@@ -58,6 +92,7 @@
         <h2>Pausa</h2>
         <button class="ui-btn menu-btn primary" id="mResume" type="button">▶ Seguir jugando</button>
         <button class="ui-btn menu-btn" id="mMap" type="button">🗺️ Mapa</button>
+        <button class="ui-btn menu-btn" id="mAlbum" type="button">🃏 Álbum de Chispis</button>
         <button class="ui-btn menu-btn" id="mMuseum" type="button">🏛️ Museo</button>
         <div class="menu-row">
           <button class="ui-btn menu-btn small" id="mDance" type="button">💃 Bailar</button>
