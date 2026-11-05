@@ -105,7 +105,7 @@ test('3D: los cinco lugares, el museo y el progreso guardado', async ({ page }) 
   expect(life.antena).toBeLessThan(0.05);
   await collect(page, -15.5, -24.2);
   await leaveMuseum(page);
-  expect(await text(page, 'stars')).toBe('★ 1/5');
+  expect(await text(page, 'stars')).toBe('★ 1/7');
 
   // Fuente de agua
   await connect(page, [-27.2, 10.6], [-22.4, 13.2]);
