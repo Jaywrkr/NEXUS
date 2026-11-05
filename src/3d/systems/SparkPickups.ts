@@ -19,6 +19,8 @@ interface Pickup {
   flying: boolean;
   p: number;
   life: number;
+  /** Altura a la que flota (las de arriba de los autos o en los cables están altas: hay que saltar o colgarse). */
+  baseY: number;
 }
 
 /** Escondidas por el barrio (ids fijos). */
@@ -47,7 +49,7 @@ export class SparkPickups {
     this.world = world;
   }
 
-  private make(id: string | null, x: number, z: number): Pickup {
+  private make(id: string | null, x: number, z: number, y = 0.9): Pickup {
     coreGeo ??= new THREE.OctahedronGeometry(0.17);
     const g = new THREE.Group();
     const core = new THREE.Mesh(coreGeo, new THREE.MeshBasicMaterial({ color: '#ffe066', fog: false }));
@@ -57,16 +59,16 @@ export class SparkPickups {
       new THREE.MeshBasicMaterial({ color: '#fff3b0', transparent: true, opacity: 0.3, depthWrite: false, fog: false }),
     );
     g.add(halo);
-    g.position.set(x, 0.9, z);
+    g.position.set(x, y, z);
     this.scene.add(g);
-    const pk: Pickup = { id, g, home: new THREE.Vector3(x, 0, z), pos: new THREE.Vector3(x, 0.9, z), vel: new THREE.Vector3(), flying: false, p: Math.random() * 10, life: 0 };
+    const pk: Pickup = { id, g, home: new THREE.Vector3(x, 0, z), pos: new THREE.Vector3(x, y, z), vel: new THREE.Vector3(), flying: false, p: Math.random() * 10, life: 0, baseY: y };
     this.items.push(pk);
     return pk;
   }
 
   /** Coloca una escondida (si todavía no se juntó). */
-  addHidden(id: string, x: number, z: number): void {
-    this.make(id, x, z);
+  addHidden(id: string, x: number, z: number, y = 0.9): void {
+    this.make(id, x, z, y);
   }
 
   /** Estallido: n chispitas que saltan desde (x, z) y caen alrededor. */
@@ -112,8 +114,10 @@ export class SparkPickups {
       } else {
         const dx = pk.pos.x - nexus.x;
         const dz = pk.pos.z - nexus.z;
-        const d = Math.hypot(dx, dz);
-        if (pk.id && d < 2.6 && room > 0) {
+        // Las que están altas solo se alcanzan saltando, subido a algo o colgado de la tirolesa
+        const reachY = Math.abs(pk.baseY - (nexus.y + 0.9)) < 0.95;
+        const d = reachY ? Math.hypot(dx, dz) : Infinity;
+        if (pk.id && pk.baseY < 1.5 && d < 2.6 && room > 0) {
           // Las escondidas se escapan un poquito (más lento que el Nexus: se pueden alcanzar)
           const fromHome = Math.hypot(pk.pos.x - pk.home.x, pk.pos.z - pk.home.z);
           if (fromHome < 1.8 && d > 0.9) {
@@ -139,7 +143,7 @@ export class SparkPickups {
           }
           full = true;
         }
-        pk.pos.y = 0.9 + Math.sin(time * 2.5 + pk.p) * 0.12;
+        pk.pos.y = pk.baseY + Math.sin(time * 2.5 + pk.p) * 0.12;
       }
       pk.g.position.copy(pk.pos);
       pk.g.rotation.y = time * 2.5 + pk.p;

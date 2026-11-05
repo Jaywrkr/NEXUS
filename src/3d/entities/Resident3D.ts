@@ -385,6 +385,19 @@ export class Resident3D {
     this.talkT = 0;
   }
 
+  private danceT = 0;
+  private dancing = false;
+
+  /** Bailar con el Nexus: contentos bailan de verdad; tristes levantan la cabeza y se balancean un poquito. */
+  dance(delay = 0): void {
+    this.dancing = true;
+    this.danceT = -delay; // una pequeña demora para que no bailen todos igual
+  }
+
+  get isHappy(): boolean {
+    return this.targetHappy > 0.5;
+  }
+
   update(dt: number, nexus: THREE.Vector3): void {
     this.time += dt;
     this.happy = damp(this.happy, this.targetHappy, 2, dt);
@@ -421,6 +434,30 @@ export class Resident3D {
       this.armR.rotation.x = -2.4 * w;
       this.armR.rotation.z = -0.3 - Math.sin(this.time * 12) * 0.35 * w;
       if (this.talkT >= 1) this.talkT = -1;
+    }
+
+    // Baile (después de una pequeña demora para que no bailen todos igual)
+    if (this.dancing) {
+      this.danceT += dt;
+      const d = this.danceT;
+      if (d >= 0) {
+        const beat = Math.sin(d * 8);
+        if (k > 0.5) {
+          this.body.rotation.y = Math.sin(d * 4) * 0.7;
+          this.body.position.y += Math.abs(beat) * 0.14;
+          this.armL.rotation.x = -2.2 + Math.max(0, beat) * 0.7;
+          this.armR.rotation.x = -2.2 + Math.max(0, -beat) * 0.7;
+          this.head.rotation.x = -0.15;
+        } else {
+          this.head.rotation.x = 0.05;
+          this.body.rotation.z = Math.sin(d * 3) * 0.08;
+        }
+        if (d >= 2.4) {
+          this.dancing = false;
+          this.body.rotation.y = 0;
+          this.body.rotation.z = 0;
+        }
+      }
     }
 
     this.notice.position.y = 1.55 + Math.sin(this.time * 3) * 0.06;

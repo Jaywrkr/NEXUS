@@ -297,3 +297,6 @@ Seis chisperos y veinte cosas dormidas por todo el barrio (buzón, tacho con ojo
 
 ## 3D: la Gran Chispa, la mochila Atrapachispas y carreras de luz distintas
 Nueva historia: la Gran Chispa del barrio se rompió en chispitas y la mochila del Nexus las junta. Las cosas dormidas se despiertan solo con la mochila (1 chispita cada una, hasta 5 guardadas, con indicador y lente que brilla). Las chispitas salen de las carreras de luz, de los lugares que reviven, de 10 escondites (que se escapan un poquito) y de 6 nidos que se recargan. Todas las conexiones grandes abren ahora una carrera de luz que se arma distinta cada vez: cinco formas, colores y decoración según el lugar, compuertas giratorias, chispitas para juntar y dificultad adaptable (dos choques seguidos la hacen más fácil). Pruebas 3D actualizadas: 12 escenarios. Decisión 041.
+
+## 3D: saltar, tirolesa y bailar
+El Nexus salta (Espacio o botón SALTAR) y puede subirse a bancos, tachos y autos (capó y techo), con chispitas escondidas arriba de los techos. Hace tirolesa entre los postes de luz colgado de su cable, con chispitas en el medio de los cables. Baila (B o botón BAILAR) y los vecinos cercanos se suman; al hablar con un vecino lo saluda con la mano. La cámara sube un poco cuando el Nexus está alto. Prueba nueva (14 escenarios 3D). Decisión 042.

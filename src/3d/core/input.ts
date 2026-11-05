@@ -1,7 +1,7 @@
 import { clamp, isTouch } from './util';
 
 /**
- * Entrada unificada: teclado (WASD/flechas, E/Espacio, V) + joystick táctil y botones HTML.
+ * Entrada unificada: teclado (WASD/flechas, E tocar, Espacio saltar, B bailar, V) + joystick táctil y botones HTML.
  * `move` está en coordenadas de pantalla: x a la derecha, y hacia arriba, magnitud 0..1.
  */
 export class Input {
@@ -9,6 +9,8 @@ export class Input {
   private readonly stick = { id: -1, ox: 0, oy: 0, dx: 0, dy: 0 };
   private interactQueued = false;
   private viewQueued = false;
+  private jumpQueued = false;
+  private danceQueued = false;
   readonly touch = isTouch();
 
   constructor() {
@@ -16,7 +18,9 @@ export class Input {
       if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
       if (e.repeat) return;
       this.keys.add(e.code);
-      if (e.code === 'KeyE' || e.code === 'Space' || e.code === 'Enter') this.interactQueued = true;
+      if (e.code === 'KeyE' || e.code === 'Enter') this.interactQueued = true;
+      if (e.code === 'Space') this.jumpQueued = true;
+      if (e.code === 'KeyB') this.danceQueued = true;
       if (e.code === 'KeyV') this.viewQueued = true;
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.code));
@@ -94,6 +98,26 @@ export class Input {
     this.viewQueued = true;
   }
 
+  queueJump(): void {
+    this.jumpQueued = true;
+  }
+
+  queueDance(): void {
+    this.danceQueued = true;
+  }
+
+  consumeJump(): boolean {
+    const v = this.jumpQueued;
+    this.jumpQueued = false;
+    return v;
+  }
+
+  consumeDance(): boolean {
+    const v = this.danceQueued;
+    this.danceQueued = false;
+    return v;
+  }
+
   consumeInteract(): boolean {
     const v = this.interactQueued;
     this.interactQueued = false;
@@ -110,5 +134,7 @@ export class Input {
   flush(): void {
     this.interactQueued = false;
     this.viewQueued = false;
+    this.jumpQueued = false;
+    this.danceQueued = false;
   }
 }

@@ -358,7 +358,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
   await expect.poll(() => text(page, 'msg')).toContain('todas las cosas');
 
   // Una chispita escondida se junta y no vuelve a aparecer
-  const hidden = await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id).map((p) => [p.id, p.pos.x, p.pos.z]));
+  const hidden = await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id?.startsWith('spark-hidden')).map((p) => [p.id, p.pos.x, p.pos.z]));
   expect(hidden.length).toBe(10);
   await w(() => window.__nexus3d.world.setCharge(0));
   await tp(page, hidden[0][1], hidden[0][2]);
@@ -372,7 +372,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
   await expect.poll(() => mode(page)).toContain('mode-world');
   expect(await text(page, 'awake')).toBe('✦ 20/20');
   expect(await text(page, 'charge')).toBe('🎒 ●○○○○');
-  expect(await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id).length)).toBe(9);
+  expect(await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id?.startsWith('spark-hidden')).length)).toBe(9);
 
   // La pelota de la plaza se patea al pasar corriendo
   const ball0 = await page.evaluate(() => window.__nexus3d.world.playground.balls[0].g.position.toArray());
@@ -386,4 +386,61 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
   await step(page, 1.0);
   const ball1 = await page.evaluate(() => window.__nexus3d.world.playground.balls[0].g.position.toArray());
   expect(Math.hypot(ball1[0] - ball0[0], ball1[2] - ball0[2])).toBeGreaterThan(0.5);
+});
+
+test('3D: saltar al auto, tirolesa entre postes y bailar', async ({ page }) => {
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const y = () => w(() => window.__nexus3d.world.nexus.position.y);
+  const setPos = (x, py, z) => w(([x, py, z]) => window.__nexus3d.world.nexus.position.set(x, py, z), [x, py, z]);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Saltar: desde la vereda al capó del auto (1,15 m) y desde ahí al techo (1,9 m), donde hay una chispita
+  const car = await w(() => window.__nexus3d.world.world.carSpots[0]);
+  const hoodX = car.x + Math.sin(car.rot) * 1.9;
+  const hoodZ = car.z + Math.cos(car.rot) * 1.9;
+  await tp(page, hoodX, car.z + 2.0);
+  expect(await y()).toBe(0);
+  await page.keyboard.press('Space');
+  await step(page, 0.4); // cerca de lo más alto del salto (~1,28 m)
+  expect(await y()).toBeGreaterThan(1.15);
+  await setPos(hoodX, await y(), hoodZ);
+  await step(page, 1.0);
+  expect(await y()).toBeCloseTo(1.15, 2);
+  // Sin saltar no se puede subir al techo: el techo empuja
+  await page.keyboard.press('Space');
+  await step(page, 0.35);
+  await setPos(car.roofX, await y(), car.roofZ);
+  await step(page, 1.0);
+  expect(await y()).toBeCloseTo(1.9, 2);
+  expect(await w(() => window.__nexus3d.world.charge)).toBe(1);
+  // Bajar: al caminar fuera del auto cae al piso
+  await setPos(car.roofX, 1.9, car.z + 3.5);
+  await step(page, 1.0);
+  expect(await y()).toBe(0);
+
+  // Tirolesa: al lado de un poste el botón dice Tirolesa y el Nexus se desliza hasta el poste vecino
+  const line = await w(() => window.__nexus3d.world.world.zipLines[0].map((p) => [p.x, p.z]));
+  await tp(page, line[2][0] + 0.9, line[2][1] + 0.4);
+  await w(() => (window.__nexus3d.world.nexus.heading = Math.PI / 2)); // mirando hacia +X
+  await step(page, 0.1);
+  expect(await text(page, 'interact')).toBe('Tirolesa');
+  await touch(page);
+  expect(await w(() => Boolean(window.__nexus3d.world.zip))).toBe(true);
+  await step(page, 0.6);
+  expect(await y()).toBeGreaterThan(4);
+  await step(page, 3.5);
+  expect(await w(() => window.__nexus3d.world.zip)).toBe(null);
+  const end = await w(() => window.__nexus3d.world.nexus.position.toArray());
+  expect(end[0]).toBeGreaterThan(line[3][0] - 2);
+  expect(end[1]).toBe(0);
+  // En el medio del cable había una chispita
+  expect(await w(() => window.__nexus3d.world.charge)).toBe(2);
+
+  // Bailar: el Nexus baila un rato y después sigue normal
+  await page.keyboard.press('KeyB');
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.nexus.dancing)).toBe(true);
+  await step(page, 3);
+  expect(await w(() => window.__nexus3d.world.nexus.dancing)).toBe(false);
 });

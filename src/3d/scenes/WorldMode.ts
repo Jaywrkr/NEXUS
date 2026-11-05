@@ -22,7 +22,7 @@ import { HIDDEN_SPARKS, SparkPickups } from '../systems/SparkPickups';
 import { MAX_CHARGE } from '../core/progress';
 import { planTunnel } from './TunnelMode';
 import type { TunnelPlan } from './TunnelMode';
-import { CANAL_MIN_Z } from '../world/World';
+import { CANAL_MIN_Z, ZIP_SAG } from '../world/World';
 
 const INTERACT_REACH = 2.2; // metros desde el borde del objeto
 const NEXUS_RADIUS = 0.32;
@@ -33,6 +33,12 @@ const ISO_OFFSET = new THREE.Vector3(20, 22, 20);
 const ISO_FACING = Math.atan2(ISO_OFFSET.x, ISO_OFFSET.z);
 const VIEW_KEY = 'los-nexus-3d-view';
 const START = new THREE.Vector3(-20, 0, -11);
+/** Salto: velocidad inicial y gravedad (sube ~1,3 m: alcanza bancos, tachos y el capó de los autos). */
+const JUMP_V = 6.2;
+const GRAVITY = 15;
+/** Tirolesa: qué tan abajo del cable queda el Nexus colgado y a qué velocidad va. */
+const ZIP_HANG = 2.0;
+const ZIP_SPEED = 8.5;
 
 const [PLAZA_ID, FOUNTAIN_ID, BEACON_ID, BRIDGE_ID, GARDEN_ID] = ZONE_FRAGMENTS.map((f) => f.id);
 /** Lugares que se pueden devolver a la vida (uno por fragmento de zona). */
@@ -86,6 +92,12 @@ export class WorldMode {
   readonly sleepers: Sleeper[] = [];
   readonly playground: Playground;
   readonly pickups: SparkPickups;
+  /** Velocidad vertical del Nexus (saltos y caídas). */
+  private vy = 0;
+  grounded = true;
+  /** Tirolesa en curso: del poste `a` al `b`. */
+  zip: { a: THREE.Vector3; b: THREE.Vector3; t: number; dur: number; climb: number; from: THREE.Vector3 } | null = null;
+  private nearestPole: { pole: THREE.Vector3; line: THREE.Vector3[]; i: number } | null = null;
   /** Para las pruebas: hay una carrera de luz pedida y todavía no terminó. */
   tunnelPending = false;
   private fullWarned = 0;
@@ -206,6 +218,8 @@ export class WorldMode {
 
     this.el.interact?.addEventListener('click', () => this.input.queueInteract());
     this.el.view?.addEventListener('click', () => this.input.queueView());
+    document.getElementById('jumpBtn')?.addEventListener('click', () => this.input.queueJump());
+    document.getElementById('danceBtn')?.addEventListener('click', () => this.input.queueDance());
     const canvas = document.getElementById('game');
     canvas?.addEventListener('pointerdown', (e) => this.onTap(e));
   }
@@ -462,6 +476,129 @@ export class WorldMode {
     this.input.flush();
   }
 
+  /* ---------- Saltar, tirolesa y bailar (Decisión 042) ---------- */
+
+  /** Gravedad, salto y plataformas (bancos, tachos, autos). */
+  private updateVertical(dt: number): void {
+    const p = this.nexus.position;
+    if (this.input.consumeJump() && this.grounded && !this.busy && !this.nexus.dancing) {
+      this.vy = JUMP_V;
+      this.grounded = false;
+      this.audio.tone(520, 0, 0.12, 'triangle', 0.06);
+      this.audio.tone(780, 0.05, 0.1, 'triangle', 0.05);
+    }
+    const prevY = p.y;
+    this.vy -= GRAVITY * dt;
+    p.y += this.vy * dt;
+    const ground = this.world.groundAt(p.x, p.z, prevY);
+    if (p.y <= ground) {
+      if (!this.grounded && this.vy < -3) {
+        this.nexus.land();
+        this.audio.tone(150, 0, 0.08, 'triangle', 0.06);
+      }
+      p.y = ground;
+      this.vy = 0;
+      this.grounded = true;
+    } else {
+      this.grounded = false;
+    }
+    this.nexus.airborne = !this.grounded;
+  }
+
+  /** Para las pruebas: saltar ahora. */
+  jump(): void {
+    this.input.queueJump();
+  }
+
+  private findNearestPole(objD: number): { pole: THREE.Vector3; line: THREE.Vector3[]; i: number } | null {
+    const p = this.nexus.position;
+    let best: { pole: THREE.Vector3; line: THREE.Vector3[]; i: number } | null = null;
+    let bestD = 1.7;
+    for (const line of this.world.zipLines) {
+      line.forEach((pole, i) => {
+        const d = Math.hypot(pole.x - p.x, pole.z - p.z);
+        if (d < bestD && d < objD + 0.25) {
+          bestD = d;
+          best = { pole, line, i };
+        }
+      });
+    }
+    return best;
+  }
+
+  /** Engancharse al cable y deslizarse hasta el poste vecino que queda hacia donde mira el Nexus. */
+  private startZip(np: { pole: THREE.Vector3; line: THREE.Vector3[]; i: number }): void {
+    const options = [np.line[np.i - 1], np.line[np.i + 1]].filter(Boolean) as THREE.Vector3[];
+    if (!options.length) return;
+    const h = this.nexus.heading;
+    const fx = Math.sin(h);
+    const fz = Math.cos(h);
+    const score = (b: THREE.Vector3) => ((b.x - np.pole.x) * fx + (b.z - np.pole.z) * fz) / (Math.hypot(b.x - np.pole.x, b.z - np.pole.z) || 1);
+    const b = options.reduce((x, y) => (score(x) >= score(y) ? x : y));
+    const a = np.pole;
+    this.zip = { a, b, t: 0, dur: Math.hypot(b.x - a.x, b.z - a.z) / ZIP_SPEED, climb: 0, from: this.nexus.position.clone() };
+    this.nexus.hanging = true;
+    this.nexus.airborne = false;
+    this.nexus.heading = Math.atan2(b.x - a.x, b.z - a.z);
+    this.connections.cancel();
+    this.audio.tone(660, 0, 0.1, 'square', 0.04);
+    if (!this.progress.hasHeard('zip')) {
+      this.progress.markHeard('zip');
+      this.setMessage('¡Tirolesa! El Nexus se engancha con su cable');
+    }
+  }
+
+  private updateZip(dt: number): void {
+    const z = this.zip!;
+    const p = this.nexus.position;
+    const hangY = (t: number) => z.a.y - Math.sin(t * Math.PI) * ZIP_SAG - ZIP_HANG;
+    // Primero sube hasta el cable
+    if (z.climb < 1) {
+      z.climb = Math.min(1, z.climb + dt / 0.45);
+      const k = z.climb * z.climb * (3 - 2 * z.climb);
+      p.set(z.from.x + (z.a.x - z.from.x) * k, z.from.y + (hangY(0) - z.from.y) * k, z.from.z + (z.a.z - z.from.z) * k);
+      this.nexus.velocity.set(0, 0, 0);
+      return;
+    }
+    // Se desliza (rápido en la bajada del cable, más lento al final)
+    z.t = Math.min(1, z.t + dt / z.dur);
+    const ease = z.t < 0.5 ? z.t : 0.5 + (z.t - 0.5) * (1 - (z.t - 0.5) * 0.6);
+    const t = Math.min(1, ease);
+    p.set(z.a.x + (z.b.x - z.a.x) * t, hangY(t), z.a.z + (z.b.z - z.a.z) * t);
+    this.nexus.velocity.set(((z.b.x - z.a.x) / z.dur) * 0.4, 0, ((z.b.z - z.a.z) / z.dur) * 0.4);
+    if (Math.random() < dt * 20) this.audio.noise(0, 0.05, 0.02, 3000);
+    if (z.t >= 1) {
+      // Se suelta un poquito antes del poste y cae (la gravedad hace el resto)
+      const dx = z.b.x - z.a.x;
+      const dz = z.b.z - z.a.z;
+      const d = Math.hypot(dx, dz) || 1;
+      p.x = z.b.x - (dx / d) * 1.1;
+      p.z = z.b.z - (dz / d) * 1.1;
+      this.zip = null;
+      this.nexus.hanging = false;
+      this.vy = 0;
+      this.grounded = false;
+      this.nexus.velocity.set(0, 0, 0);
+    }
+  }
+
+  /** ¡A bailar! El Nexus baila y los que están cerca se suman. */
+  private danceParty(): void {
+    this.nexus.dance();
+    const p = this.nexus.position;
+    let happy = 0;
+    this.residents.forEach((r, i) => {
+      if (Math.hypot(r.x - p.x, r.z - p.z) < 7) {
+        r.dance(0.15 + i * 0.12);
+        if (r.isHappy) happy += 1;
+      }
+    });
+    for (const sl of this.sleepers) if (sl.isActive && Math.hypot(sl.x - p.x, sl.z - p.z) < 7) sl.poke();
+    // Una melodía corta y alegre
+    [523, 659, 784, 659, 880, 784, 659, 523].forEach((f, i) => this.audio.tone(f, i * 0.22, 0.18, 'triangle', 0.06));
+    if (happy > 0) this.setMessage(happy > 1 ? '¡Todos bailan con el Nexus!' : '¡Bailan con el Nexus!');
+  }
+
   finishTunnel(source: Connectable, target: Connectable, success: boolean, sparks = 0): void {
     this.input.flush();
     this.tunnelPending = false;
@@ -604,6 +741,20 @@ export class WorldMode {
       const [px, pz] = place(x, z);
       this.pickups.addHidden(id, px, pz);
     }
+    // Chispitas altas: arriba del techo de tres autos (saltar al capó y después al techo)
+    // y en el medio de dos cables de la tirolesa (se juntan colgado)
+    [0, 2, 3].forEach((ci, k) => {
+      const c = this.world.carSpots[ci];
+      const id = `spark-high-${k}`;
+      if (c && !this.progress.hasSpark(id)) this.pickups.addHidden(id, c.roofX, c.roofZ, 1.9 + 0.95);
+    });
+    this.world.zipLines.forEach((line, k) => {
+      const i = Math.floor(line.length / 2) - 1;
+      const a = line[i];
+      const b = line[i + 1];
+      const id = `spark-zip-${k}`;
+      if (a && b && !this.progress.hasSpark(id)) this.pickups.addHidden(id, (a.x + b.x) / 2, (a.z + b.z) / 2, a.y - ZIP_SAG - ZIP_HANG + 0.9);
+    });
   }
 
   /** La primera vez que el Nexus pasa junto a un nido, se explica para qué sirve. */
@@ -806,6 +957,7 @@ export class WorldMode {
     this.progress.markHeard(r.id);
     r.setHeard(true);
     r.talk();
+    this.nexus.wave();
     this.showStory(r.name, this.residentText(r));
   }
 
@@ -930,12 +1082,19 @@ export class WorldMode {
     }
     const dirX = fx * mv.y + -fz * mv.x;
     const dirZ = fz * mv.y + fx * mv.x;
-    this.nexus.move(this.busy ? 0 : dirX, this.busy ? 0 : dirZ, dt);
     const blockers = [
       ...this.connections.all.map((c) => ({ x: c.x, z: c.z, r: c.collideRadius })),
       ...this.residents.map((r) => ({ x: r.x, z: r.z, r: 0.4 })),
     ];
-    this.world.resolve(this.nexus.position, NEXUS_RADIUS, blockers);
+    if (this.zip) {
+      this.updateZip(dt);
+    } else {
+      const still = this.busy || this.nexus.dancing;
+      this.nexus.move(still ? 0 : dirX, still ? 0 : dirZ, dt);
+      this.world.resolve(this.nexus.position, NEXUS_RADIUS, blockers, this.nexus.position.y);
+      this.updateVertical(dt);
+    }
+    if (this.input.consumeDance() && !this.busy && !this.zip && this.grounded) this.danceParty();
     this.nexus.idleFacing = this.iso ? ISO_FACING : null;
     this.nexus.animate(dt);
     this.playground.update(dt, this.time, this.nexus.position, this.nexus.velocity, blockers);
@@ -971,13 +1130,22 @@ export class WorldMode {
     const p = this.nexus.position;
     const objD = this.nearest ? this.nearest.distanceFrom(p.x, p.z) : Infinity;
     this.nearestResident = resident && !this.connections.hasSelection() && Math.hypot(resident.x - p.x, resident.z - p.z) < objD ? resident : null;
-    if (this.input.consumeInteract() && !this.busy) {
+    // Poste de luz cerca (y nada más cerca): el botón engancha la tirolesa
+    this.nearestPole = !this.zip && this.grounded && !this.nearestResident && !this.connections.hasSelection() ? this.findNearestPole(objD) : null;
+    if (this.input.consumeInteract() && !this.busy && !this.zip) {
       if (this.nearestResident) this.speak(this.nearestResident);
+      else if (this.nearestPole) this.startZip(this.nearestPole);
       else if (this.nearest) this.interact(this.nearest);
     }
     if (this.el.interact) {
-      this.el.interact.hidden = (!this.nearest && !this.nearestResident) || this.busy;
-      this.el.interact.textContent = this.nearestResident ? 'Hablar' : this.connections.hasSelection() ? 'Conectar' : 'Tocar';
+      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole) || this.busy || !!this.zip;
+      this.el.interact.textContent = this.nearestResident
+        ? 'Hablar'
+        : this.nearestPole
+          ? 'Tirolesa'
+          : this.connections.hasSelection()
+            ? 'Conectar'
+            : 'Tocar';
     }
     this.checkFragments();
 
@@ -998,14 +1166,15 @@ export class WorldMode {
     const v = this.nexus.velocity;
     this.focus.x = damp(this.focus.x, p.x + v.x * 0.25, 5, dt);
     this.focus.z = damp(this.focus.z, p.z + v.z * 0.25, 5, dt);
-    this.focus.y = 0;
+    // La cámara sube un poco cuando el Nexus está alto (techo de un auto, tirolesa)
+    this.focus.y = damp(this.focus.y, p.y * 0.6, 4, dt);
     this.isoCam.position.copy(this.focus).add(ISO_OFFSET);
-    this.isoCam.lookAt(this.focus.x, 0.8, this.focus.z);
+    this.isoCam.lookAt(this.focus.x, this.focus.y + 0.8, this.focus.z);
 
     if (this.nexus.speed > 0.5) this.camYaw = dampAngle(this.camYaw, this.nexus.heading, 2.2, dt);
     const back = 6;
-    this.chaseCam.position.set(p.x - Math.sin(this.camYaw) * back, 3.3, p.z - Math.cos(this.camYaw) * back);
-    this.chaseCam.lookAt(p.x + Math.sin(this.camYaw) * 2, 1.0, p.z + Math.cos(this.camYaw) * 2);
+    this.chaseCam.position.set(p.x - Math.sin(this.camYaw) * back, 3.3 + p.y, p.z - Math.cos(this.camYaw) * back);
+    this.chaseCam.lookAt(p.x + Math.sin(this.camYaw) * 2, 1.0 + p.y, p.z + Math.cos(this.camYaw) * 2);
   }
 
   /* ---------- Silueta cuando algo tapa al Nexus (solo isométrica) ---------- */

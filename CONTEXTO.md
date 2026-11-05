@@ -147,6 +147,14 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Barrio que reacciona** (`src/3d/systems/Playground.ts`): 5 bandadas de palomas que picotean y se espantan al acercarse (vuelan, dan vueltas y vuelven), 6 charcos que salpican al pasar corriendo, 5 montoncitos de hojas que vuelan al correr encima y 3 pelotas que se patean, ruedan, rebotan contra paredes y objetos (`world.resolve`).
 - Los círculos de vida del shader pasaron de 16 a 32 (`LIFE_SPOTS`).
 
+### Saltar, tirolesa y bailar (Decisión 042)
+
+- **Saltar** (Espacio en PC, botón SALTAR en el celular): sube ~1,3 m (`JUMP_V`, `GRAVITY` en `WorldMode`). Rects y círculos de colisión con `h` son **plataformas**: se pueden saltar encima (`World.groundAt`, `resolve(..., feetY)`): bancos (0,56/0,51), tacho de la fuente (0,88), autos (capó 1,15 y techo 1,9: se sube al capó y desde ahí al techo). Sin `h` = pared. Al caer se aplasta y rebota (`Nexus3D.land`); en el aire recoge las piernas.
+- **Chispitas altas**: arriba del techo de 3 autos (`spark-high-*`) y en el medio de los dos cables de la tirolesa (`spark-zip-*`). `SparkPickups` solo junta las que están a la altura del Nexus (`baseY`).
+- **Tirolesa**: las dos filas de postes son recorridos (`World.zipLines`, comba `ZIP_SAG`). Al lado de un poste el botón dice **Tirolesa**: el Nexus sube al cable, se desliza hasta el poste vecino que queda hacia donde mira y se suelta (cae con la gravedad). No cruza el canal (no hay postes del otro lado). La cámara sube un poco cuando el Nexus está alto.
+- **Bailar** (B o botón 💃 BAILAR): el Nexus baila ~2,4 s; los vecinos a menos de 7 m se suman (contentos bailan de verdad; tristes levantan un poco la cabeza) y las cosas despiertas cercanas repiten su reacción. Al hablar con un vecino el Nexus lo saluda con la mano.
+- Controles: **E** tocar/conectar, **Espacio** saltar, **B** bailar, **V** vista. En PC el botón de tocar está abajo a la derecha.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).

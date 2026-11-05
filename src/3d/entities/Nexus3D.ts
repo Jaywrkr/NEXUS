@@ -66,6 +66,13 @@ export class Nexus3D {
   charge = 0;
   private chargePulse = 0;
   private readonly packGlow: THREE.Mesh;
+  /** En el aire (saltando o cayendo): piernas recogidas y brazos abiertos. */
+  airborne = false;
+  /** Colgado de la tirolesa: brazos arriba, piernas colgando. */
+  hanging = false;
+  private danceT = -1;
+  private waveT = -1;
+  private landT = -1;
 
   constructor() {
     this.root.add(this.body);
@@ -301,6 +308,25 @@ export class Nexus3D {
     return Math.hypot(this.velocity.x, this.velocity.z);
   }
 
+  /** Baile corto (unos 2,4 s). */
+  dance(): void {
+    this.danceT = 0;
+  }
+
+  get dancing(): boolean {
+    return this.danceT >= 0;
+  }
+
+  /** Saludo con la mano (al hablar con un vecino). */
+  wave(): void {
+    this.waveT = 0;
+  }
+
+  /** Aterrizaje: se aplasta un poquito y rebota. */
+  land(): void {
+    this.landT = 0;
+  }
+
   /** La mochila recibió chispitas: un destello corto. */
   sparkle(): void {
     this.chargePulse = 1;
@@ -377,6 +403,68 @@ export class Nexus3D {
     pts[3].z = -0.24 - k * 0.08;
     this.cable.geometry.dispose();
     this.cable.geometry = new THREE.TubeGeometry(this.cableCurve, 12, 0.014, 6);
+
+    // En el aire: piernas recogidas, brazos abiertos (parece que vuela)
+    if (this.airborne && !this.hanging) {
+      this.legL.rotation.x = 0.7;
+      this.legR.rotation.x = -0.25;
+      this.armL.rotation.z = 0.9;
+      this.armR.rotation.z = -0.9;
+      this.armL.rotation.x = this.armR.rotation.x = -0.3;
+      this.body.rotation.x = -0.05;
+      this.earL.rotation.x = this.earR.rotation.x = -0.9;
+    }
+    // Colgado de la tirolesa: las dos manos arriba en el cable, piernas que se mecen
+    if (this.hanging) {
+      this.armL.rotation.set(-Math.PI * 0.95, 0, 0.15);
+      this.armR.rotation.set(-Math.PI * 0.95, 0, -0.15);
+      const swing = Math.sin(this.time * 6) * 0.35;
+      this.legL.rotation.x = swing;
+      this.legR.rotation.x = swing * 0.8;
+      this.body.position.y = 0;
+      this.body.rotation.x = 0;
+      this.earL.rotation.x = this.earR.rotation.x = -1.1;
+    }
+    // Aterrizaje
+    if (this.landT >= 0) {
+      this.landT += dt / 0.25;
+      const sq = Math.sin(Math.min(this.landT, 1) * Math.PI);
+      this.body.scale.set(1 + sq * 0.12, 1 - sq * 0.18, 1 + sq * 0.12);
+      if (this.landT >= 1) {
+        this.landT = -1;
+        this.body.scale.set(1, 1, 1);
+      }
+    }
+    // Baile: gira la cadera, brazos arriba alternados, saltitos y orejas locas
+    if (this.danceT >= 0) {
+      this.danceT += dt;
+      const d = this.danceT;
+      const beat = Math.sin(d * 9);
+      this.body.rotation.y = Math.sin(d * 4.5) * 0.6;
+      this.body.position.y += Math.abs(beat) * 0.12;
+      this.armL.rotation.x = -2.4 + Math.max(0, beat) * 0.6;
+      this.armR.rotation.x = -2.4 + Math.max(0, -beat) * 0.6;
+      this.armL.rotation.z = 0.4 + beat * 0.3;
+      this.armR.rotation.z = -0.4 + beat * 0.3;
+      this.legL.rotation.x = Math.max(0, beat) * 0.5;
+      this.legR.rotation.x = Math.max(0, -beat) * 0.5;
+      this.earL.rotation.x = Math.sin(d * 12) * 0.5;
+      this.earR.rotation.x = Math.cos(d * 12) * 0.5;
+      this.head.rotation.z = Math.sin(d * 4.5) * 0.2;
+      if (d >= 2.4) {
+        this.danceT = -1;
+        this.body.rotation.y = 0;
+        this.head.rotation.z = 0;
+      }
+    }
+    // Saludo con la mano derecha
+    if (this.waveT >= 0) {
+      this.waveT += dt / 1.2;
+      const w = Math.sin(Math.min(this.waveT, 1) * Math.PI);
+      this.armR.rotation.x = -2.6 * w;
+      this.armR.rotation.z = -0.3 - Math.sin(this.time * 14) * 0.4 * w;
+      if (this.waveT >= 1) this.waveT = -1;
+    }
 
     // Gesto de alcanzar
     if (this.reachT >= 0) {

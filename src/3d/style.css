@@ -185,8 +185,7 @@ body:not(.mode-tunnel) #tunnelHud {
 
 #interact {
   bottom: calc(22px + env(safe-area-inset-bottom, 0px));
-  left: 50%;
-  transform: translateX(-50%);
+  right: max(24px, env(safe-area-inset-right, 0px));
   min-width: 150px;
   padding: 14px 22px;
   background: var(--teal);
@@ -197,7 +196,7 @@ body:not(.mode-tunnel) #tunnelHud {
   box-shadow: 4px 4px 0 var(--ink);
 }
 #interact:active {
-  transform: translate(calc(-50% + 2px), 2px);
+  transform: translate(2px, 2px);
   box-shadow: 2px 2px 0 var(--ink);
 }
 
@@ -246,6 +245,42 @@ body.touch #interact {
 }
 body.touch #interact:active {
   transform: translate(2px, 2px);
+}
+
+/* Saltar (solo en el celular: en la PC es la barra espaciadora) y bailar */
+#jumpBtn {
+  display: none;
+}
+body.touch #jumpBtn {
+  display: block;
+  right: max(18px, env(safe-area-inset-right, 0px));
+  bottom: calc(150px + env(safe-area-inset-bottom, 0px));
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: var(--sun);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 15px;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+body.touch #jumpBtn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+#danceBtn {
+  top: calc(92px + env(safe-area-inset-top, 0px));
+  right: max(14px, env(safe-area-inset-right, 0px));
+  background: #ff9ff3;
+  color: var(--ink);
+  padding: 7px 10px;
+  font-family: var(--display);
+  font-size: 13px;
+}
+body.touch #danceBtn {
+  top: auto;
+  bottom: calc(250px + env(safe-area-inset-bottom, 0px));
+  right: max(24px, env(safe-area-inset-right, 0px));
 }
 #stickZone {
   position: absolute;

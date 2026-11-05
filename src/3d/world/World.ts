@@ -8,13 +8,22 @@ export interface Rect {
   maxX: number;
   minZ: number;
   maxZ: number;
+  /** Altura de la parte de arriba si se puede saltar encima (banco, auto...). Sin h = pared. */
+  h?: number;
 }
 
 export interface Circle {
   x: number;
   z: number;
   r: number;
+  h?: number;
 }
+
+/** Cuánto cuelgan los cables entre postes (también lo usa la tirolesa). */
+export const ZIP_SAG = 0.8;
+
+/** Margen para considerar que los pies están arriba de una plataforma. */
+const ON_TOP = 0.05;
 
 /* Medidas del barrio (metros). +X = este, +Z = sur. La cámara isométrica mira desde +X+Z hacia el noroeste,
    así que las fachadas importantes miran a +Z o +X. */
@@ -80,9 +89,11 @@ export class World {
   private readonly drifting: { o: THREE.Object3D; speed: number; p: number }[] = [];
   private boat: THREE.Group | null = null;
   /** Autos estacionados (para ubicar sus luces como cosas para despertar). */
-  readonly carSpots: { x: number; z: number; rot: number }[] = [];
+  readonly carSpots: { x: number; z: number; rot: number; roofX: number; roofZ: number }[] = [];
   /** Caños de desagüe del canal (x sobre el muro norte). */
   readonly drainXs = [-36, -14, 6, 32];
+  /** Filas de postes con cable (puntos de enganche arriba de cada poste), para la tirolesa. */
+  readonly zipLines: THREE.Vector3[][] = [];
 
   constructor() {
     const s = this.scene;
@@ -135,8 +146,9 @@ export class World {
   /* ---------- Colisiones ---------- */
 
   /** Empuja un círculo (el Nexus) fuera de paredes, objetos y los bordes del barrio. */
-  resolve(pos: THREE.Vector3, r: number, extra: Circle[] = []): void {
+  resolve(pos: THREE.Vector3, r: number, extra: Circle[] = [], feetY = 0): void {
     for (const o of this.rects) {
+      if (o.h !== undefined && feetY >= o.h - ON_TOP) continue; // va por arriba
       if (pos.x > o.minX - r && pos.x < o.maxX + r && pos.z > o.minZ - r && pos.z < o.maxZ + r) {
         const pen = [pos.x - (o.minX - r), o.maxX + r - pos.x, pos.z - (o.minZ - r), o.maxZ + r - pos.z];
         const m = Math.min(...pen);
@@ -149,6 +161,7 @@ export class World {
     }
     for (const c of [...this.circles, ...extra]) {
       if (c.r <= 0) continue;
+      if (c.h !== undefined && feetY >= c.h - ON_TOP) continue;
       const dx = pos.x - c.x;
       const dz = pos.z - c.z;
       const d = Math.hypot(dx, dz);
@@ -167,11 +180,28 @@ export class World {
     if (i >= 0) this.rects.splice(i, 1);
   }
 
-  private addRect(cx: number, cz: number, w: number, d: number, rot = 0): void {
+  private addRect(cx: number, cz: number, w: number, d: number, rot = 0, h?: number): void {
     const quarter = ((Math.round(rot / (Math.PI / 2)) % 2) + 2) % 2;
     const W = quarter ? d : w;
     const D = quarter ? w : d;
-    this.rects.push({ minX: cx - W / 2, maxX: cx + W / 2, minZ: cz - D / 2, maxZ: cz + D / 2 });
+    this.rects.push({ minX: cx - W / 2, maxX: cx + W / 2, minZ: cz - D / 2, maxZ: cz + D / 2, h });
+  }
+
+  /**
+   * Altura del piso debajo de (x, z) para alguien con los pies a `feetY`: lo más alto de las
+   * plataformas (bancos, autos, tachos) que estén debajo y por debajo de los pies.
+   */
+  groundAt(x: number, z: number, feetY: number, r = 0.2): number {
+    let g = 0;
+    for (const o of this.rects) {
+      if (o.h === undefined || o.h > feetY + ON_TOP) continue;
+      if (x > o.minX - r && x < o.maxX + r && z > o.minZ - r && z < o.maxZ + r) g = Math.max(g, o.h);
+    }
+    for (const c of this.circles) {
+      if (c.h === undefined || c.h > feetY + ON_TOP) continue;
+      if (Math.hypot(x - c.x, z - c.z) < c.r + r) g = Math.max(g, c.h);
+    }
+    return g;
   }
 
   /** ¿Se puede pisar este punto? Solo mira obstáculos reales (paredes, canal, objetos), no zonas reservadas. */
@@ -606,7 +636,7 @@ export class World {
       bench.position.set(bx, 0, bz);
       bench.rotation.y = rot;
       this.scene.add(bench);
-      this.addRect(bx, bz, 2.1, 0.7, rot);
+      this.addRect(bx, bz, 2.1, 0.7, rot, 0.56);
     }
 
     // Arbustos alrededor del fragmento secreto, detrás de la casa
@@ -655,7 +685,7 @@ export class World {
     const binLid = rounded(new THREE.CylinderGeometry(0.33, 0.33, 0.08, 12), toon('#3a6f2c'), 0.01);
     binLid.position.set(bin.position.x, 0.84, bin.position.z);
     this.scene.add(binLid);
-    this.circles.push({ x: bin.position.x, z: bin.position.z, r: 0.35 });
+    this.circles.push({ x: bin.position.x, z: bin.position.z, r: 0.35, h: 0.88 });
     for (let i = 0; i < 6; i += 1) {
       const a = (i / 6) * Math.PI * 2 + 0.3;
       if (Math.abs(a - 3.6) < 0.5) continue; // abertura hacia la fuente de energía
@@ -684,8 +714,8 @@ export class World {
     g.position.set(x, 0, z);
     g.rotation.y = rot;
     this.scene.add(g);
-    // En diagonal un rectángulo alineado a los ejes no sirve: un círculo cubre el banco
-    this.circles.push({ x, z, r: 0.95 });
+    // En diagonal un rectángulo alineado a los ejes no sirve: un círculo cubre el banco (se puede subir)
+    this.circles.push({ x, z, r: 0.95, h: 0.51 });
   }
 
   private buildAntennaYard(): void {
@@ -843,7 +873,7 @@ export class World {
       bench.position.set(bx, 0, bz);
       bench.rotation.y = rot;
       this.scene.add(bench);
-      this.addRect(bx, bz, 2.1, 0.7, rot);
+      this.addRect(bx, bz, 2.1, 0.7, rot, 0.56);
     }
     for (const [lx, lz] of [
       [1.6, 48.6],
@@ -1178,7 +1208,7 @@ export class World {
       const pts: THREE.Vector3[] = [];
       for (let i = 0; i <= 10; i += 1) {
         const t = i / 10;
-        const sag = Math.sin(t * Math.PI) * 0.8;
+        const sag = Math.sin(t * Math.PI) * ZIP_SAG;
         pts.push(
           new THREE.Vector3(
             a.x + (b.x - a.x) * t + (alongX ? 0 : off),
@@ -1320,24 +1350,34 @@ export class World {
     g.position.set(x, 0, z);
     g.rotation.y = rot;
     this.scene.add(g);
-    this.addRect(x, z, 2.1, 4.8, rot);
-    this.carSpots.push({ x, z, rot });
+    // Se puede saltar al capó (1.15 m) y desde ahí al techo (1.9 m)
+    this.addRect(x, z, 2.1, 4.8, rot, 1.15);
+    const roofX = x + Math.sin(rot) * cabZ;
+    const roofZ = z + Math.cos(rot) * cabZ;
+    this.addRect(roofX, roofZ, 1.8, cabD, rot, 1.9);
+    this.carSpots.push({ x, z, rot, roofX, roofZ });
   }
 
   private buildPolesAndCars(): void {
     let prev: THREE.Vector3 | null = null;
-    // Postes del lado sur de la calle: del lado norte tapaban la plaza en la vista isométrica
+    // Postes del lado sur de la calle: del lado norte tapaban la plaza en la vista isométrica.
+    // Cada fila de postes es además un recorrido de tirolesa (zipLines).
+    const ew: THREE.Vector3[] = [];
     for (let x = -44; x <= 44; x += 16) {
       const p = this.pole(x + 3, ROAD + WALK - 0.5);
       if (prev) this.wire(prev, p, true);
       prev = p;
+      ew.push(p);
     }
     prev = null;
+    const ns: THREE.Vector3[] = [];
     for (let z = -44; z <= 24; z += 17) {
       const p = this.pole(ROAD + WALK - 0.5, z + 2);
       if (prev) this.wire(prev, p, false);
       prev = p;
+      ns.push(p);
     }
+    this.zipLines.push(ew, ns);
     this.car(-34, ROAD - 1.4, Math.PI / 2);
     this.car(-6 - 14, -(ROAD - 1.4), -Math.PI / 2);
     this.car(30, -(ROAD - 1.4), -Math.PI / 2);
