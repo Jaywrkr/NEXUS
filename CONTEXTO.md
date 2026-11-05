@@ -199,6 +199,9 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–035).
 
 ### Qué sigue en el 3D
 
+> **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
+
+
 1. **Probarlo en el celular de Luca** y medir si va fluido; si no, bajar el filtro de pincel o las sombras en celular.
 2. **Pasar al 3D lo que ya existe en la 2D**, de a una pieza y en este orden sugerido (los vecinos Miga, Bombo, Vera y Don Paso ya están): ~~zona 5 (jardín) con Goteo~~ (hecho), zona 6 (taller) con Pipa, zona 7 (faroles + fiesta/confeti y final) con Lucio, objetivo del capítulo y pistas/ayudas visuales, efectos suaves, radio CUAC FM, armario del Nexus, historias secundarias. La lógica y los textos están en `src/data/*` y `src/scenes/*` de la 2D: reutilizarlos en vez de reescribirlos.
 3. Después, las ideas nuevas del backlog (criatura que sigue al Nexus, objeto en movimiento, energía compartida, cable largo entre zonas).
