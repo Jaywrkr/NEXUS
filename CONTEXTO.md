@@ -82,8 +82,13 @@ index.html                 — página 3D: canvas + HUD HTML (título, mensajes,
 2d.html                    — página 2D original (Phaser, src/main.ts)
 vite.config.ts             — build de las dos páginas
 src/3d/
-  main.ts                  — clase Game: modos (title/world/tunnel/museum), fundidos, loop; expone window.__nexus3d
-  style.css                — UI (tinta #1d1630, crema #fff3dc, sol #ffc23a, teal #2bb3a8; fuentes Bowlby One + DM Mono)
+  main.ts                  — clase Game: modos (title/world/tunnel/museum), menú de pausa (☰/Esc), mapa (M),
+                             opciones, ayuda, sonidos de interfaz, fundidos, loop; expone window.__nexus3d
+  style.css                — kit de UI (tinta #1d1630, crema #fff3dc, sol #ffc23a, teal #2bb3a8; Bowlby One + Nunito):
+                             .ui-btn, .big-btn, .menu-btn, .pill, .objective(.event), .overlay/.sheet, .action-btn, .round-btn
+  core/settings.ts         — opciones guardadas aparte de la partida (sonido, vibración, efectos suaves, botones
+                             grandes, cámara) + vibrate() y flashScreen()
+  ui/MapView.ts            — mapa de la ciudad en un canvas 2D (vida, lugares, cosas, nidos, distritos que vienen)
   core/
     render.ts              — look gouache: toon 3 bandas, contorno por casco invertido, textura de pincel,
                              post-proceso Kuwahara + grading + grano + viñeta; Renderer; cielo
@@ -92,7 +97,9 @@ src/3d/
     tween.ts               — tweens mínimos (tween, after, ease)
     util.ts                — clamp/lerp/damp, rnd con semilla 85, isTouch
   world/World.ts           — el barrio: luz, cielo, calles, canal, casas, tiendas, postes, naturaleza,
-                             escenografía de cada zona, colisiones (rectángulos + círculos)
+                             escenografía de cada zona, colisiones (rectángulos + círculos), portón del skatepark
+  world/districts.ts       — distritos de la ciudad (Centro, Camino al Skatepark y los que vienen) + districtAt()
+  world/MigaHouse.ts       — primer interior (casa de Miga) en x = 300: habitación "maqueta" con paredes bajas al S/E
   entities/Nexus3D.ts      — el personaje
   objects/
     Connectable.ts         — base de todo lo conectable (id, role, group, plugAnchor, activate, restore)
@@ -153,7 +160,15 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Chispitas altas**: arriba del techo de 3 autos (`spark-high-*`) y en el medio de los dos cables de la tirolesa (`spark-zip-*`). `SparkPickups` solo junta las que están a la altura del Nexus (`baseY`).
 - **Tirolesa**: las dos filas de postes son recorridos (`World.zipLines`, comba `ZIP_SAG`). Al lado de un poste el botón dice **Tirolesa**: el Nexus sube al cable, se desliza hasta el poste vecino que queda hacia donde mira y se suelta (cae con la gravedad). No cruza el canal (no hay postes del otro lado). La cámara sube un poco cuando el Nexus está alto.
 - **Bailar** (B o botón 💃 BAILAR): el Nexus baila ~2,4 s; los vecinos a menos de 7 m se suman (contentos bailan de verdad; tristes levantan un poco la cabeza) y las cosas despiertas cercanas repiten su reacción. Al hablar con un vecino el Nexus lo saluda con la mano.
-- Controles: **E** tocar/conectar, **Espacio** saltar, **B** bailar, **V** vista. En PC el botón de tocar está abajo a la derecha.
+- Controles: **E** tocar/conectar, **Espacio** saltar, **B** bailar, **V** vista, **H** pista, **M** mapa, **Esc** menú. En PC el botón de tocar está abajo a la derecha; en el celular, bailar y saludar están en el menú ☰.
+
+### Interfaz y base para crecer (Decisión 043, Fase 0)
+
+- **HUD**: `#menuBtn` ☰, `#charge` 🎒, `#msg` (botón: objetivo; `setMessage` lo marca `.event` ~5 s y vuelve solo con `showObjective()`), `#stars`, `#awake`, `#toast`, `#story` con `#storyFace` (retrato por quién habla), `#districtBanner`, `.action-dock` con `#jumpBtn` (solo táctil) e `#interact`.
+- **Pista**: tocar `#msg` o H → `WorldMode.showHint()`: elige el paso grande pendiente más cercano (`bigSteps`) o, si no queda, cosas dormidas / nidos; muestra tarjeta «Pista» y una flecha en el piso + aro en el destino (`pointTo`, 8 s, se apaga al llegar).
+- **Menú** (`main.ts`): ☰ o Esc pausa (`body.paused`, `world.update` no corre, tampoco en `step()`); hojas `#menuMain`, `#menuOptions`, `#menuHelp`; `#mapPanel` (M) dibuja `drawMap(world.mapData())` cada cuadro. Opciones en `core/settings.ts` (claves `los-nexus-vibration`, `los-nexus-reduced-effects`, `los-nexus-big-buttons`, `los-nexus-3d-view`); «Borrar partida» pide confirmación y no borra las opciones.
+- **Distritos**: `districtAt(x, z)`; al cambiar aparece el cartel. Hoy abiertos: Centro y Camino al Skatepark (la calle z = 0 sigue hasta x = 57,5; el portón está en x = 61,5). Fuera del Centro solo se camina por la calle (`World.resolve` empuja por el lado más corto).
+- **Interiores**: `World.interior` (`room`, `spawn`, `exit`, `spark`). Dentro de `room` el `resolve` usa las paredes de la habitación en vez de los límites del barrio; muebles con `h` son plataformas (cama 0,55, banco 0,95, mesa, sillón). `WorldMode.findDoorway` ofrece **Entrar** frente a la puerta de la plaza (si está abierta) y **Salir** sobre el felpudo; `enterHouse`/`leaveHouse` hacen un fundido corto. Adentro la cámara es isométrica y un poco más cerca. Chispita `spark-room-casa` arriba del banco. Para agregar otro interior: otra habitación lejos (otro x), su puerta y su `findDoorway`.
 
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
@@ -173,7 +188,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
 6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
 
-Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–035).
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–043).
 
 ### 6. Trampas técnicas ya conocidas (no repetirlas)
 
@@ -199,6 +214,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–035).
 
 ### Qué sigue en el 3D
 
+> **Fase 0 hecha (Decisión 043). Sigue la Fase 1: skatepark, patineta y Mundo Voltio básico.**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 

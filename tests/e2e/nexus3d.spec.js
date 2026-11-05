@@ -444,3 +444,123 @@ test('3D: saltar al auto, tirolesa entre postes y bailar', async ({ page }) => {
   await step(page, 3);
   expect(await w(() => window.__nexus3d.world.nexus.dancing)).toBe(false);
 });
+
+test('3D: menú de pausa, opciones, mapa y pista del objetivo', async ({ page }) => {
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Tocar el objetivo da una pista con flecha en el piso
+  await page.evaluate(() => document.getElementById('msg').click());
+  await step(page, 0.1);
+  expect(await text(page, 'storyWho')).toBe('Pista');
+  expect(await text(page, 'storyText')).toContain('farola');
+  expect(await w(() => window.__nexus3d.world.hintArrow.visible)).toBe(true);
+
+  // Esc abre el menú y el mundo queda quieto
+  await page.keyboard.press('Escape');
+  await expect.poll(() => mode(page)).toContain('paused');
+  const before = await w(() => window.__nexus3d.world.nexus.position.toArray());
+  await page.keyboard.down('KeyW');
+  await step(page, 0.5);
+  await page.keyboard.up('KeyW');
+  expect(await w(() => window.__nexus3d.world.nexus.position.toArray())).toEqual(before);
+
+  // Opciones: efectos suaves y botones grandes se guardan aparte de la partida
+  await page.evaluate(() => document.getElementById('mOptions').click());
+  await page.evaluate(() => document.getElementById('optBig').click());
+  expect(await mode(page)).toContain('big-buttons');
+  expect(await w(() => localStorage.getItem('los-nexus-big-buttons'))).toBe('true');
+  await page.evaluate(() => document.getElementById('optChase').click());
+  expect(await w(() => window.__nexus3d.world.isIso)).toBe(false);
+  await page.evaluate(() => document.getElementById('optChase').click());
+  expect(await w(() => window.__nexus3d.world.isIso)).toBe(true);
+  await page.evaluate(() => document.getElementById('optBack').click());
+
+  // Mapa: se abre desde el menú y se dibuja
+  await page.evaluate(() => document.getElementById('mMap').click());
+  expect(await w(() => document.getElementById('mapPanel').hidden)).toBe(false);
+  await expect
+    .poll(() => w(() => {
+      const c = document.getElementById('mapCanvas');
+      const d = c.getContext('2d').getImageData(320, 320, 1, 1).data;
+      return d[3];
+    }))
+    .toBe(255);
+  await page.evaluate(() => document.getElementById('mapBack').click());
+  expect(await mode(page)).not.toContain('paused');
+
+  // Seguir jugando: el Nexus se vuelve a mover
+  await page.keyboard.down('KeyW');
+  await step(page, 0.5);
+  await page.keyboard.up('KeyW');
+  expect(await w(() => window.__nexus3d.world.nexus.position.toArray())).not.toEqual(before);
+});
+
+test('3D: la casa de Miga se visita y el camino llega al portón del skatepark', async ({ page }) => {
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Con la puerta cerrada no se puede entrar
+  const door = await w(() => [window.__nexus3d.world.door.x, window.__nexus3d.world.door.z]);
+  await tp(page, door[0], door[1] + 1.2);
+  expect(await text(page, 'interact')).not.toBe('Entrar');
+
+  // Plaza: fuente → farola → puerta
+  await connect(page, [-22.6, -13.8], [-14.3, -16.5]);
+  await connect(page, [-14.3, -16.5], [-15.2, -25.6]);
+  await tp(page, door[0], door[1] + 1.2);
+  expect(await text(page, 'interact')).toBe('Entrar');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  expect(await text(page, 'storyWho')).toContain('Miga');
+  // Adentro las paredes son el límite
+  const room = await w(() => window.__nexus3d.world.world.interior.room);
+  await page.keyboard.down('KeyW');
+  await step(page, 3);
+  await page.keyboard.up('KeyW');
+  const p = await w(() => window.__nexus3d.world.nexus.position.toArray());
+  expect(p[0]).toBeGreaterThan(room.minX);
+  expect(p[2]).toBeGreaterThan(room.minZ);
+
+  // La chispita escondida está arriba del banco de trabajo: hay que saltar
+  const spark = await w(() => window.__nexus3d.world.world.interior.spark);
+  const charge0 = await w(() => window.__nexus3d.world.charge);
+  await tp(page, spark.x, spark.z + 1.2);
+  await page.keyboard.down('KeyW');
+  await page.keyboard.press('Space');
+  await step(page, 0.5);
+  await page.keyboard.up('KeyW');
+  await step(page, 1.5);
+  expect(await w(() => window.__nexus3d.world.nexus.position.y)).toBeCloseTo(0.95, 1);
+  expect(await w(() => window.__nexus3d.world.charge)).toBe(Math.min(5, charge0 + 1));
+
+  // Salir por el felpudo
+  const exit = await w(() => window.__nexus3d.world.world.interior.exit);
+  await tp(page, exit.x, exit.z - 0.3);
+  expect(await text(page, 'interact')).toBe('Salir');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(false);
+  const out = await w(() => window.__nexus3d.world.nexus.position.toArray());
+  expect(Math.hypot(out[0] - door[0], out[2] - door[1])).toBeLessThan(2.5);
+
+  // El camino del este sigue hasta el portón (y no más allá); fuera de la calle no se pasa
+  await tp(page, 44, 0);
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  await step(page, 4);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  const end = await w(() => window.__nexus3d.world.nexus.position.toArray());
+  expect(end[0]).toBeGreaterThan(50);
+  expect(end[0]).toBeLessThan(58);
+  expect(await text(page, 'districtBanner')).toContain('Skatepark');
+  await tp(page, 43, -20);
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  await step(page, 2);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  expect(await w(() => window.__nexus3d.world.nexus.position.x)).toBeLessThanOrEqual(45);
+});

@@ -22,6 +22,10 @@ import { HIDDEN_SPARKS, SparkPickups } from '../systems/SparkPickups';
 import { MAX_CHARGE } from '../core/progress';
 import { planTunnel } from './TunnelMode';
 import type { TunnelPlan } from './TunnelMode';
+import { flashScreen } from '../core/settings';
+import type { MapData } from '../ui/MapView';
+import { districtAt } from '../world/districts';
+import { BRIDGE_X, CANAL_MAX_Z } from '../world/World';
 import { CANAL_MIN_Z, ZIP_SAG } from '../world/World';
 
 const INTERACT_REACH = 2.2; // metros desde el borde del objeto
@@ -74,6 +78,19 @@ export class WorldMode {
   private nearestResident: Resident3D | null = null;
   private readonly residents: Resident3D[] = [];
   private storyTimer = 0;
+  private eventTimer = 0;
+  private districtId = 'centro';
+  private districtCheck = 0;
+  /** Conexiones grandes en orden (para las pistas): origen, destino y cómo se llaman. */
+  private bigSteps: { s: Connectable; t: Connectable; sName: string; tName: string }[] = [];
+  private hintArrow: THREE.Mesh | null = null;
+  private hintRing: THREE.Mesh | null = null;
+  private hintTimer = 0;
+  private hintTarget = new THREE.Vector3();
+  /** Adentro de la casa de Miga (Fase 0: primer interior). */
+  private inside = false;
+  private isoOutside = true;
+  private doorway: 'enter' | 'exit' | null = null;
   private introShown = false;
   private time = 0;
   private busy = false;
@@ -109,7 +126,6 @@ export class WorldMode {
     charge: document.getElementById('charge'),
     toast: document.getElementById('toast'),
     interact: document.getElementById('interact') as HTMLButtonElement | null,
-    view: document.getElementById('viewBtn'),
     story: document.getElementById('story'),
     storyWho: document.getElementById('storyWho'),
     storyText: document.getElementById('storyText'),
@@ -188,6 +204,16 @@ export class WorldMode {
     this.connections.addRule({ sourceId: bridgeSource.id, targetId: this.bridge.id, useTunnel: true });
     this.connections.addRule({ sourceId: gardenSource.id, targetId: this.sprinkler.id, useTunnel: true });
     this.connections.addRule({ sourceId: this.sprinkler.id, targetId: this.flowerBed.id, useTunnel: true });
+    this.bigSteps = [
+      { s: source, t: this.lamp, sName: 'la energía de la plaza', tName: 'la farola' },
+      { s: this.lamp, t: this.door, sName: 'la farola', tName: 'la puerta de la casa' },
+      { s: fountainSource, t: this.fountain, sName: 'la energía junto a la fuente', tName: 'la fuente de agua' },
+      { s: beaconA, t: this.beacon, sName: 'una energía de la antena', tName: 'la antena' },
+      { s: beaconB, t: this.beacon, sName: 'la otra energía de la antena', tName: 'la antena' },
+      { s: bridgeSource, t: this.bridge, sName: 'la energía junto al canal', tName: 'la palanca del puente' },
+      { s: gardenSource, t: this.sprinkler, sName: 'la energía del jardín', tName: 'el aspersor' },
+      { s: this.sprinkler, t: this.flowerBed, sName: 'el aspersor', tName: 'las flores' },
+    ];
 
     // Fragmentos: uno por zona + el secreto detrás de la casa (Decisión 019), que ya está visible
     for (const [id, x, y, z] of [
@@ -217,9 +243,11 @@ export class WorldMode {
     this.el.story?.addEventListener('click', () => this.hideStory());
 
     this.el.interact?.addEventListener('click', () => this.input.queueInteract());
-    this.el.view?.addEventListener('click', () => this.input.queueView());
+    this.el.msg?.addEventListener('click', () => this.showHint());
     document.getElementById('jumpBtn')?.addEventListener('click', () => this.input.queueJump());
-    document.getElementById('danceBtn')?.addEventListener('click', () => this.input.queueDance());
+    window.addEventListener('keydown', (e) => {
+      if (e.code === 'KeyH' && document.body.classList.contains('mode-world') && !document.body.classList.contains('paused')) this.showHint();
+    });
     const canvas = document.getElementById('game');
     canvas?.addEventListener('pointerdown', (e) => this.onTap(e));
   }
@@ -265,7 +293,7 @@ export class WorldMode {
     for (const f of this.fragments) if (p.hasFragment(f.id)) f.collect();
     if (!p.hasFragment(SECRET_FRAGMENT.id)) this.fragmentById.get(SECRET_FRAGMENT.id)!.reveal(false);
     this.updateHud();
-    this.setMessage(this.statusMessage());
+    this.showObjective();
   }
 
   private statusMessage(): string {
@@ -465,15 +493,220 @@ export class WorldMode {
       this.nexus.position.clone().setY(1.5),
     ];
     spots.forEach((s, i) => after(i * 0.2, () => this.connections.celebrate(s)));
-    const flash = document.getElementById('flash');
-    flash?.classList.add('on');
-    after(0.25, () => flash?.classList.remove('on'));
+    flashScreen();
   }
 
   /** Se llama al volver del museo. */
   resume(): void {
-    this.setMessage(this.statusMessage());
+    this.showObjective();
     this.input.flush();
+  }
+
+  /* ---------- Pistas, mapa y distritos (Fase 0, PLAN_MAESTRO.md §8) ---------- */
+
+  /** Tocar el objetivo (o H): dice qué conviene hacer y marca hacia dónde ir. */
+  showHint(): void {
+    const p = this.nexus.position;
+    const dist = (o: { x: number; z: number }) => Math.hypot(o.x - p.x, o.z - p.z);
+    const reachable = (o: { z: number }) => o.z < CANAL_MAX_Z || this.bridge.isActive;
+    let text = '';
+    let where: { x: number; z: number } | null = null;
+    if (this.inside) {
+      this.showStory('Pista', 'Para volver al barrio, pisá el felpudo amarillo de la puerta.');
+      this.pointTo(this.world.interior.exit.x, this.world.interior.exit.z);
+      return;
+    }
+    const sel = this.connections.selection;
+    const pending = this.bigSteps.filter((b) => !this.progress.hasConnection(b.s.id, b.t.id) && b.s.canInitiate() && reachable(b.s));
+    const forSel = sel ? pending.find((b) => b.s === sel) : undefined;
+    if (forSel) {
+      text = `Tenés el cable de ${forSel.sName}: llevalo hasta ${forSel.tName}.`;
+      where = forSel.t;
+    } else if (pending.length) {
+      const b = pending.reduce((a, c) => (dist(a.s) < dist(c.s) ? a : c));
+      text = `Tocá ${b.sName} y después ${b.tName}. ¡Ahí empieza la carrera de luz!`;
+      where = b.s;
+    } else {
+      const sleeping = this.sleepers.filter((sl) => !sl.isActive && reachable(sl));
+      if (sleeping.length && this.progress.charge > 0) {
+        const sl = sleeping.reduce((a, c) => (dist(a) < dist(c) ? a : c));
+        text = `Tenés chispitas en la mochila: despertá ${sl.label.toLowerCase()} (tiene Zzz).`;
+        where = sl;
+      } else if (sleeping.length) {
+        const nests = this.sparks.filter((n) => n.ready && reachable(n));
+        const n = nests.length ? nests.reduce((a, c) => (dist(a) < dist(c) ? a : c)) : null;
+        text = n ? 'Tu mochila está vacía: tocá un nido de chispitas y atrapalas.' : 'Buscá chispitas escondidas por el barrio (¡algunas están arriba de los autos!).';
+        where = n;
+      } else {
+        text = '¡El barrio está lleno de vida! Explorá: hay chispitas escondidas, techos y tirolesas.';
+      }
+    }
+    this.showStory('Pista', text);
+    if (where) this.pointTo(where.x, where.z);
+  }
+
+  /** Flecha en el piso alrededor del Nexus y aro en el destino, por unos segundos. */
+  private pointTo(x: number, z: number): void {
+    const scene = this.world.scene;
+    if (!this.hintArrow) {
+      const shape = new THREE.Shape();
+      shape.moveTo(0, 0.55);
+      shape.lineTo(0.38, 0);
+      shape.lineTo(0.14, 0);
+      shape.lineTo(0.14, -0.4);
+      shape.lineTo(-0.14, -0.4);
+      shape.lineTo(-0.14, 0);
+      shape.lineTo(-0.38, 0);
+      shape.closePath();
+      this.hintArrow = new THREE.Mesh(new THREE.ShapeGeometry(shape), new THREE.MeshBasicMaterial({ color: '#ffc23a', transparent: true, depthWrite: false, fog: false }));
+      this.hintRing = new THREE.Mesh(
+        new THREE.RingGeometry(1.0, 1.25, 32),
+        new THREE.MeshBasicMaterial({ color: '#ffc23a', transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide }),
+      );
+      this.hintRing.rotation.x = -Math.PI / 2;
+      scene.add(this.hintArrow, this.hintRing);
+    }
+    this.hintTarget.set(x, 0, z);
+    this.hintTimer = 8;
+  }
+
+  private updateHint(dt: number): void {
+    if (!this.hintArrow || !this.hintRing) return;
+    this.hintTimer -= dt;
+    const on = this.hintTimer > 0;
+    this.hintArrow.visible = this.hintRing.visible = on;
+    if (!on) return;
+    const p = this.nexus.position;
+    const a = Math.atan2(this.hintTarget.x - p.x, this.hintTarget.z - p.z);
+    this.hintArrow.position.set(p.x + Math.sin(a) * 1.3, p.y + 0.14, p.z + Math.cos(a) * 1.3);
+    this.hintArrow.rotation.set(-Math.PI / 2, 0, a + Math.PI);
+    const k = Math.min(1, this.hintTimer);
+    (this.hintArrow.material as THREE.MeshBasicMaterial).opacity = 0.9 * k;
+    this.hintRing.position.set(this.hintTarget.x, 0.14, this.hintTarget.z);
+    this.hintRing.scale.setScalar(1 + Math.sin(this.time * 5) * 0.12);
+    (this.hintRing.material as THREE.MeshBasicMaterial).opacity = 0.85 * k;
+    // Al llegar, la pista se apaga sola
+    if (Math.hypot(this.hintTarget.x - p.x, this.hintTarget.z - p.z) < 2) this.hintTimer = Math.min(this.hintTimer, 0.5);
+  }
+
+  /* ---------- Interiores: la casa de Miga ---------- */
+
+  get isInside(): boolean {
+    return this.inside;
+  }
+
+  /** ¿El Nexus está en una puerta que se puede cruzar? (más cerca que cualquier objeto) */
+  private findDoorway(objD: number): 'enter' | 'exit' | null {
+    if (this.busy || this.zip || this.connections.hasSelection()) return null;
+    const p = this.nexus.position;
+    if (this.inside) {
+      const e = this.world.interior.exit;
+      return Math.hypot(p.x - e.x, p.z - e.z) < 1.4 ? 'exit' : null;
+    }
+    if (!this.door.isActive) return null;
+    const d = Math.hypot(p.x - this.door.x, p.z - (this.door.z + 0.9));
+    return d < 1.7 && d <= objD + 0.6 ? 'enter' : null;
+  }
+
+  /** Fundido corto y el Nexus aparece del otro lado de la puerta. */
+  private crossDoor(move: () => void): void {
+    this.busy = true;
+    const fade = document.getElementById('fade');
+    fade?.classList.add('on');
+    this.audio.tone(392, 0, 0.12, 'triangle', 0.07);
+    this.audio.tone(523, 0.1, 0.14, 'triangle', 0.07);
+    window.setTimeout(() => {
+      move();
+      this.focus.set(this.nexus.position.x, 0, this.nexus.position.z);
+      this.updateCameras(1);
+      this.busy = false;
+      fade?.classList.remove('on');
+    }, 280);
+  }
+
+  enterHouse(): void {
+    if (this.inside) return;
+    this.crossDoor(() => {
+      this.inside = true;
+      this.isoOutside = this.iso;
+      this.iso = true;
+      const sp = this.world.interior.spawn;
+      this.nexus.position.set(sp.x, 0, sp.z);
+      this.nexus.velocity.set(0, 0, 0);
+      this.nexus.heading = Math.PI;
+      this.hintTimer = 0;
+      document.body.classList.add('inside');
+      if (!this.progress.hasHeard('casa-miga')) {
+        this.progress.markHeard('casa-miga');
+        this.showStory(
+          'Miga · Mi casa',
+          '¡Bienvenido a mi casa! Fue lo primero que volvió a tener color. En ese banco arreglo cosas… y dicen que arriba se escondió una chispita. ¿Llegás saltando?',
+        );
+      } else {
+        this.toast('Casa de Miga', 'info');
+      }
+    });
+  }
+
+  leaveHouse(): void {
+    if (!this.inside) return;
+    this.crossDoor(() => {
+      this.inside = false;
+      this.iso = this.isoOutside;
+      this.nexus.position.set(this.door.x, 0, this.door.z + 1.6);
+      this.nexus.velocity.set(0, 0, 0);
+      this.nexus.heading = 0;
+      this.camYaw = 0;
+      this.hintTimer = 0;
+      document.body.classList.remove('inside');
+    });
+  }
+
+  /** Cartel grande al entrar a otro distrito. */
+  private checkDistrict(): void {
+    const p = this.nexus.position;
+    const d = districtAt(p.x, p.z);
+    if (!d || d.id === this.districtId) return;
+    this.districtId = d.id;
+    const banner = document.getElementById('districtBanner');
+    if (!banner) return;
+    banner.hidden = false;
+    banner.innerHTML = `${d.name}${d.id === 'camino-skate' ? '<small>el skatepark abre muy pronto</small>' : ''}`;
+    // reiniciar la animación
+    banner.style.animation = 'none';
+    void banner.offsetWidth;
+    banner.style.animation = '';
+  }
+
+  /** Datos para dibujar el mapa. */
+  mapData(): MapData {
+    const n = this.inside ? { x: this.door.x, z: this.door.z + 1 } : this.nexus.position;
+    const places = [
+      { name: 'Plaza', x: -18, z: -22, alive: this.door.isActive },
+      { name: 'Fuente', x: -20, z: 16, alive: this.fountain.isActive },
+      { name: 'Antena', x: 27, z: -18, alive: this.beacon.isFullyActive },
+      { name: 'Puente', x: 17, z: 30, alive: this.bridge.isActive },
+      { name: 'Jardín', x: -11, z: 54, alive: this.flowerBed.isActive },
+    ];
+    return {
+      life: (x, z) => LIFE.at(x, z),
+      walls: this.world.rects.filter((r) => r.h === undefined && r.maxX - r.minX < 40 && r.maxZ - r.minZ < 40),
+      canal: { minZ: CANAL_MIN_Z, maxZ: CANAL_MAX_Z, bridgeX: BRIDGE_X, bridgeOpen: this.bridge.isActive },
+      places,
+      things: this.sleepers.map((s) => ({ x: s.x, z: s.z, awake: s.isActive })),
+      nests: this.sparks.map((s) => ({ x: s.x, z: s.z, ready: s.ready })),
+      nexus: { x: n.x, z: n.z, heading: this.inside ? 0 : this.nexus.heading },
+    };
+  }
+
+  /** Gestos desde el menú. */
+  dance(): void {
+    if (!this.zip && this.grounded) this.danceParty();
+  }
+
+  waveHello(): void {
+    this.nexus.wave();
+    this.audio.tone(880, 0, 0.1, 'triangle', 0.06);
   }
 
   /* ---------- Saltar, tirolesa y bailar (Decisión 042) ---------- */
@@ -615,8 +848,20 @@ export class WorldMode {
 
   /* ---------- HUD ---------- */
 
+  /** Aviso de algo que acaba de pasar: se destaca unos segundos y después vuelve el objetivo. */
   private setMessage(m: string): void {
-    if (this.el.msg) this.el.msg.textContent = m;
+    if (!this.el.msg) return;
+    this.el.msg.textContent = m;
+    this.el.msg.classList.add('event');
+    this.eventTimer = 5;
+  }
+
+  /** El objetivo actual (lo que conviene hacer ahora), en una línea. */
+  private showObjective(): void {
+    if (!this.el.msg) return;
+    this.el.msg.textContent = this.statusMessage();
+    this.el.msg.classList.remove('event');
+    this.eventTimer = 0;
   }
 
   private toast(message: string, kind: FeedbackKind): void {
@@ -748,6 +993,8 @@ export class WorldMode {
       const id = `spark-high-${k}`;
       if (c && !this.progress.hasSpark(id)) this.pickups.addHidden(id, c.roofX, c.roofZ, 1.9 + 0.95);
     });
+    const roomSpark = this.world.interior.spark;
+    if (!this.progress.hasSpark(roomSpark.id)) this.pickups.addHidden(roomSpark.id, roomSpark.x, roomSpark.z, roomSpark.y);
     this.world.zipLines.forEach((line, k) => {
       const i = Math.floor(line.length / 2) - 1;
       const a = line[i];
@@ -850,10 +1097,18 @@ export class WorldMode {
     }
   }
 
-  private setView(iso: boolean): void {
+  get isIso(): boolean {
+    return this.iso;
+  }
+
+  setView(iso: boolean): void {
+    if (this.inside) {
+      this.isoOutside = iso;
+      localStorage.setItem(VIEW_KEY, iso ? 'iso' : 'chase');
+      return;
+    }
     this.iso = iso;
     localStorage.setItem(VIEW_KEY, iso ? 'iso' : 'chase');
-    if (this.el.view) this.el.view.textContent = iso ? 'VISTA: ISOMÉTRICA' : 'VISTA: DETRÁS';
     this.camYaw = this.nexus.heading;
   }
 
@@ -963,6 +1218,23 @@ export class WorldMode {
 
   private showStory(who: string, text: string): void {
     if (!this.el.story) return;
+    const face = document.getElementById('storyFace');
+    if (face) {
+      // Retrato: un ícono y un color por quién habla (vecinos con el color de su ropa)
+      const faces: [string, string, string][] = [
+        ['Miga', '👷', '#2bb3a8'],
+        ['Bombo', '🥁', '#4fa8e0'],
+        ['Vera', '🎙️', '#e77fa6'],
+        ['Don Paso', '🎩', '#f2c14e'],
+        ['Goteo', '🌻', '#4d6b8a'],
+        ['Nido', '✨', '#ffe066'],
+        ['Mochila', '🎒', '#ffc23a'],
+        ['Pista', '💡', '#ffc23a'],
+      ];
+      const f = faces.find(([k]) => who.includes(k));
+      face.textContent = f ? f[1] : '💬';
+      face.style.background = f ? f[2] : '#9be7ff';
+    }
     if (this.el.storyWho) this.el.storyWho.textContent = who;
     if (this.el.storyText) this.el.storyText.textContent = text;
     this.el.story.hidden = false;
@@ -1067,7 +1339,7 @@ export class WorldMode {
 
   update(dt: number): void {
     this.time += dt;
-    if (this.input.consumeView()) this.setView(!this.iso);
+    if (this.input.consumeView() && !this.inside) this.setView(!this.iso);
 
     // Movimiento relativo a la cámara
     const mv = this.input.move;
@@ -1132,14 +1404,25 @@ export class WorldMode {
     this.nearestResident = resident && !this.connections.hasSelection() && Math.hypot(resident.x - p.x, resident.z - p.z) < objD ? resident : null;
     // Poste de luz cerca (y nada más cerca): el botón engancha la tirolesa
     this.nearestPole = !this.zip && this.grounded && !this.nearestResident && !this.connections.hasSelection() ? this.findNearestPole(objD) : null;
+    this.doorway = this.findDoorway(objD);
+    if (this.doorway) {
+      this.nearestResident = null;
+      this.nearestPole = null;
+    }
     if (this.input.consumeInteract() && !this.busy && !this.zip) {
-      if (this.nearestResident) this.speak(this.nearestResident);
+      if (this.doorway === 'enter') this.enterHouse();
+      else if (this.doorway === 'exit') this.leaveHouse();
+      else if (this.nearestResident) this.speak(this.nearestResident);
       else if (this.nearestPole) this.startZip(this.nearestPole);
       else if (this.nearest) this.interact(this.nearest);
     }
     if (this.el.interact) {
-      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole) || this.busy || !!this.zip;
-      this.el.interact.textContent = this.nearestResident
+      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway) || this.busy || !!this.zip;
+      this.el.interact.textContent = this.doorway === 'enter'
+        ? 'Entrar'
+        : this.doorway === 'exit'
+          ? 'Salir'
+          : this.nearestResident
         ? 'Hablar'
         : this.nearestPole
           ? 'Tirolesa'
@@ -1149,6 +1432,16 @@ export class WorldMode {
     }
     this.checkFragments();
 
+    if (this.eventTimer > 0) {
+      this.eventTimer -= dt;
+      if (this.eventTimer <= 0) this.showObjective();
+    }
+    this.updateHint(dt);
+    this.districtCheck -= dt;
+    if (this.districtCheck <= 0) {
+      this.districtCheck = 0.5;
+      this.checkDistrict();
+    }
     if (this.toastTimer > 0) {
       this.toastTimer -= dt;
       if (this.toastTimer <= 0) this.el.toast?.classList.remove('show');
@@ -1231,7 +1524,8 @@ export class WorldMode {
   render(renderer: Renderer, time: number): void {
     const aspect = renderer.width / renderer.height;
     // En vertical se aleja un poco, para que el ancho visible no quede demasiado angosto
-    const half = aspect < 1 ? Math.min(ISO_HALF / aspect, 9) : ISO_HALF;
+    const base = this.inside ? ISO_HALF * 0.92 : ISO_HALF;
+    const half = aspect < 1 ? Math.min(base / aspect, 9) : base;
     // La sombra cubre justo lo que muestra la cámara isométrica (la vista "detrás" mira más lejos).
     this.world.setShadowSpan(this.iso ? Math.min(26, half * 2 + 4) : 26);
     this.isoCam.left = -half * aspect;

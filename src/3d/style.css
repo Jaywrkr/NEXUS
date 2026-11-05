@@ -1,15 +1,35 @@
-/* Los Nexus 3D — UI con el lenguaje de Calle 85: tinta oscura, crema, amarillo sol y teal. */
+/*
+ * Los Nexus 3D — kit de interfaz (PLAN_MAESTRO.md §8).
+ * Un solo lenguaje para todo: tinta oscura, crema, amarillo sol, turquesa; sombras duras;
+ * Bowlby One para títulos y botones, Nunito para leer. Mismo ícono = misma cosa en todas partes.
+ */
 :root {
   --ink: #1d1630;
+  --ink-2: #2a2146;
   --cream: #fff3dc;
   --sun: #ffc23a;
   --teal: #2bb3a8;
   --coral: #ff6b4a;
   --pink: #ff9ff3;
-  --glass: rgba(29, 22, 48, 0.62);
+  --sky: #9be7ff;
+  --spark: #ffe066;
+  --glass: rgba(29, 22, 48, 0.72);
   --display: 'Bowlby One', 'Arial Black', Impact, sans-serif;
+  --text: 'Nunito', 'Trebuchet MS', system-ui, sans-serif;
   --mono: 'DM Mono', ui-monospace, Menlo, monospace;
+  --shadow: 4px 4px 0 var(--ink);
+  --shadow-sm: 2px 2px 0 var(--ink);
+  --radius: 14px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-l: env(safe-area-inset-left, 0px);
+  --safe-r: env(safe-area-inset-right, 0px);
+  --gap: max(14px, var(--safe-l));
+  --btn-scale: 1;
   color-scheme: dark;
+}
+body.big-buttons {
+  --btn-scale: 1.18;
 }
 
 html,
@@ -23,7 +43,8 @@ body {
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
-  font-family: var(--mono);
+  font-family: var(--text);
+  -webkit-tap-highlight-color: transparent;
 }
 
 [hidden] {
@@ -52,125 +73,167 @@ body:not(.mode-museum) #museum,
 body:not(.mode-tunnel) #tunnelHud {
   display: none !important;
 }
-
-#msg {
-  top: calc(14px + env(safe-area-inset-top, 0px));
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(70vw, 560px);
-  text-align: center;
-  font-family: var(--display);
-  font-size: clamp(15px, 2.6vw, 21px);
-  line-height: 1.15;
-  color: var(--cream);
-  text-shadow: 2px 2px 0 var(--ink);
-  text-wrap: balance;
+body.paused .hud-top,
+body.paused .action-dock,
+body.paused #touch,
+body.paused #labels {
+  visibility: hidden;
 }
 
-/* Cosas dormidas que ya se despertaron */
-#awake {
-  top: calc(60px + env(safe-area-inset-top, 0px));
-  left: max(14px, env(safe-area-inset-left, 0px));
+/* ---------- Botones (todos comparten forma, sombra y reacción al tocar) ---------- */
+.ui-btn {
+  border: 0;
+  cursor: pointer;
   font-family: var(--display);
-  font-size: 18px;
-  color: #9be7ff;
-  text-shadow: 2px 2px 0 var(--ink);
+  letter-spacing: 0.03em;
+  color: var(--ink);
+  background: var(--cream);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: transform 0.08s, box-shadow 0.08s, filter 0.15s;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+.ui-btn:hover {
+  filter: brightness(1.06);
+}
+.ui-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-sm);
+}
+.ui-btn:focus-visible {
+  outline: 3px solid var(--sky);
+  outline-offset: 3px;
 }
 
-/* Mochila Atrapachispas: chispitas guardadas */
+.big-btn {
+  font-size: 22px;
+  background: var(--sun);
+  padding: 14px 26px;
+}
+.big-btn.alt {
+  background: var(--cream);
+  font-size: 16px;
+  padding: 10px 18px;
+}
+
+.icon-btn {
+  width: calc(48px * var(--btn-scale));
+  height: calc(48px * var(--btn-scale));
+  font-size: calc(22px * var(--btn-scale));
+  background: var(--cream);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+/* ---------- HUD de arriba ---------- */
+.hud-top {
+  position: fixed;
+  z-index: 6;
+  top: calc(12px + var(--safe-t));
+  left: var(--gap);
+  right: max(14px, var(--safe-r));
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: 12px;
+  pointer-events: none;
+}
+.hud-left {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+.pill {
+  pointer-events: none;
+  background: var(--glass);
+  border-radius: 999px;
+  padding: 6px 12px 5px;
+  font-family: var(--display);
+  font-size: 16px;
+  line-height: 1.2;
+  text-shadow: 1px 1px 0 var(--ink);
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
 #charge {
-  top: calc(60px + env(safe-area-inset-top, 0px));
-  left: calc(max(14px, env(safe-area-inset-left, 0px)) + 104px);
-  font-family: var(--display);
-  font-size: 18px;
-  letter-spacing: 0.05em;
-  color: #ffe066;
-  text-shadow: 2px 2px 0 var(--ink);
+  color: var(--spark);
+  letter-spacing: 0.06em;
   transition: transform 0.15s;
 }
 #charge.full {
   color: #fff6c8;
-  transform: scale(1.08);
+  transform: scale(1.06);
 }
-
-#stars {
-  top: calc(12px + env(safe-area-inset-top, 0px));
-  right: max(14px, env(safe-area-inset-right, 0px));
-  font-family: var(--display);
-  font-size: 24px;
-  color: var(--sun);
-  text-shadow: 3px 3px 0 var(--ink);
-}
-
-.chip {
-  position: fixed;
-  z-index: 6;
-  pointer-events: auto;
-  border: 0;
-  border-radius: 8px;
-  cursor: pointer;
-  font: 500 12px var(--mono);
-  letter-spacing: 0.08em;
-  box-shadow: 2px 2px 0 var(--ink);
-}
-
-#muteBtn {
-  top: calc(12px + env(safe-area-inset-top, 0px));
-  left: max(14px, env(safe-area-inset-left, 0px));
-  background: var(--glass);
-  color: var(--cream);
+.counters {
+  display: flex;
+  gap: 12px;
   font-size: 18px;
-  padding: 6px 10px;
+}
+#stars {
+  color: var(--sun);
+}
+#awake {
+  color: var(--sky);
 }
 
-#viewBtn {
-  top: calc(52px + env(safe-area-inset-top, 0px));
-  right: max(14px, env(safe-area-inset-right, 0px));
-  background: var(--sun);
-  color: var(--ink);
-  padding: 8px 10px;
-}
-
-/* Lo que dicen los habitantes: no frena el juego; se cierra al tocarlo o solo */
-#story {
-  position: fixed;
-  z-index: 6;
-  top: calc(64px + env(safe-area-inset-top, 0px));
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(88vw, 560px);
-  padding: 10px 16px 12px;
-  border-radius: 10px;
-  background: var(--cream);
-  color: var(--ink);
-  box-shadow: 4px 4px 0 var(--ink);
+/* Objetivo actual: una línea corta; tocarlo da una pista */
+.objective {
+  justify-self: center;
   pointer-events: auto;
+  max-width: min(560px, 100%);
+  border: 0;
   cursor: pointer;
-}
-#story b {
+  background: rgba(29, 22, 48, 0.55);
+  color: var(--cream);
+  border-radius: 999px;
+  padding: 8px 16px 9px 38px;
   font-family: var(--display);
-  font-size: 15px;
-  letter-spacing: 0.03em;
-  color: #2b8f86;
+  font-size: clamp(14px, 2.2vw, 18px);
+  line-height: 1.2;
+  text-align: center;
+  text-shadow: 1px 1px 0 var(--ink);
+  text-wrap: balance;
+  position: relative;
+  transition: background 0.2s, transform 0.12s;
 }
-#story p {
-  margin: 4px 0 0;
-  font-size: 15px;
-  line-height: 1.4;
+.objective::before {
+  content: '🎯';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+}
+.objective:active {
+  transform: scale(0.98);
+}
+.objective.event {
+  background: rgba(255, 194, 58, 0.92);
+  color: var(--ink);
+  text-shadow: none;
+}
+.objective.event::before {
+  content: '✨';
 }
 
+/* Aviso breve (abajo al centro) */
 #toast {
-  bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(26px + var(--safe-b));
   left: 50%;
   transform: translate(-50%, 8px);
-  padding: 8px 14px;
-  border-radius: 8px;
+  max-width: min(88vw, 520px);
+  padding: 9px 16px;
+  border-radius: 999px;
   background: var(--glass);
-  font-size: 14px;
-  letter-spacing: 0.03em;
+  font-family: var(--text);
+  font-weight: 800;
+  font-size: 15px;
+  text-align: center;
   opacity: 0;
   transition: opacity 0.2s, transform 0.2s;
-  white-space: nowrap;
+  backdrop-filter: blur(4px);
 }
 #toast.show {
   opacity: 1;
@@ -183,42 +246,146 @@ body:not(.mode-tunnel) #tunnelHud {
   color: #ffb3a1;
 }
 
-#interact {
-  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
-  right: max(24px, env(safe-area-inset-right, 0px));
-  min-width: 150px;
-  padding: 14px 22px;
-  background: var(--teal);
-  color: var(--ink);
+/* Cartel al entrar a un distrito */
+#districtBanner {
+  position: fixed;
+  z-index: 6;
+  top: 62%;
+  left: 50%;
+  width: min(92vw, 720px);
+  transform: translateX(-50%);
+  pointer-events: none;
   font-family: var(--display);
-  font-size: 20px;
-  letter-spacing: 0.04em;
-  box-shadow: 4px 4px 0 var(--ink);
+  font-size: clamp(26px, 5.5vw, 46px);
+  line-height: 1.05;
+  color: var(--sun);
+  text-shadow: 4px 4px 0 var(--ink);
+  text-align: center;
+  animation: banner 2.6s ease-out forwards;
 }
-#interact:active {
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 var(--ink);
+#districtBanner small {
+  display: block;
+  font-size: 0.4em;
+  color: var(--cream);
+  letter-spacing: 0.12em;
+}
+@keyframes banner {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(0.9);
+  }
+  15%,
+  75% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
 }
 
-#help {
-  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
-  left: max(14px, env(safe-area-inset-left, 0px));
-  font-size: 11px;
-  line-height: 1.7;
-  background: var(--glass);
-  padding: 8px 11px;
-  border-radius: 6px;
-}
-#help kbd {
-  font-family: var(--mono);
+/* Tarjeta de vecino: retrato + nombre + frase; no frena el juego, se cierra al tocarla */
+#story {
+  position: fixed;
+  z-index: 7;
+  top: calc(74px + var(--safe-t));
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90vw, 560px);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px 13px 12px;
+  border-radius: var(--radius);
   background: var(--cream);
   color: var(--ink);
-  padding: 0 5px;
-  border-radius: 3px;
-  font-size: 10px;
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+  cursor: pointer;
+  animation: pop 0.22s ease-out;
+}
+#storyFace {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+  background: var(--teal);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.18), 2px 2px 0 var(--ink);
+}
+#story b {
+  font-family: var(--display);
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  color: #2b8f86;
+}
+#story p {
+  margin: 3px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
 }
 
-/* Controles táctiles */
+/* ---------- Botones de acción (abajo a la derecha) ---------- */
+.action-dock {
+  position: fixed;
+  z-index: 6;
+  right: max(22px, var(--safe-r));
+  bottom: calc(22px + var(--safe-b));
+  display: grid;
+  justify-items: end;
+  gap: 14px;
+  pointer-events: none;
+}
+.action-btn {
+  min-width: calc(150px * var(--btn-scale));
+  padding: calc(14px * var(--btn-scale)) 22px;
+  background: var(--teal);
+  font-size: calc(20px * var(--btn-scale));
+  animation: pop-in 0.18s ease-out;
+}
+@keyframes pop-in {
+  from {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+}
+.round-btn {
+  display: none;
+}
+body.touch .round-btn {
+  display: grid;
+  place-items: center;
+  width: calc(84px * var(--btn-scale));
+  height: calc(84px * var(--btn-scale));
+  border-radius: 50%;
+  padding: 0;
+  background: var(--sun);
+  font-size: calc(14px * var(--btn-scale));
+}
+body.touch .action-btn {
+  min-width: 0;
+  width: calc(112px * var(--btn-scale));
+  height: calc(112px * var(--btn-scale));
+  border-radius: 50%;
+  padding: 0;
+  font-size: calc(18px * var(--btn-scale));
+}
+
+/* ---------- Controles táctiles ---------- */
 #touch {
   position: fixed;
   inset: 0;
@@ -228,59 +395,6 @@ body:not(.mode-tunnel) #tunnelHud {
 }
 body.touch #touch {
   display: block;
-}
-body.touch #help {
-  display: none;
-}
-body.touch #interact {
-  left: auto;
-  right: max(18px, env(safe-area-inset-right, 0px));
-  transform: none;
-  min-width: 0;
-  width: 112px;
-  height: 112px;
-  border-radius: 50%;
-  padding: 0;
-  font-size: 19px;
-}
-body.touch #interact:active {
-  transform: translate(2px, 2px);
-}
-
-/* Saltar (solo en el celular: en la PC es la barra espaciadora) y bailar */
-#jumpBtn {
-  display: none;
-}
-body.touch #jumpBtn {
-  display: block;
-  right: max(18px, env(safe-area-inset-right, 0px));
-  bottom: calc(150px + env(safe-area-inset-bottom, 0px));
-  width: 84px;
-  height: 84px;
-  border-radius: 50%;
-  background: var(--sun);
-  color: var(--ink);
-  font-family: var(--display);
-  font-size: 15px;
-  box-shadow: 4px 4px 0 var(--ink);
-}
-body.touch #jumpBtn:active {
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 var(--ink);
-}
-#danceBtn {
-  top: calc(92px + env(safe-area-inset-top, 0px));
-  right: max(14px, env(safe-area-inset-right, 0px));
-  background: #ff9ff3;
-  color: var(--ink);
-  padding: 7px 10px;
-  font-family: var(--display);
-  font-size: 13px;
-}
-body.touch #danceBtn {
-  top: auto;
-  bottom: calc(250px + env(safe-area-inset-bottom, 0px));
-  right: max(24px, env(safe-area-inset-right, 0px));
 }
 #stickZone {
   position: absolute;
@@ -299,7 +413,7 @@ body.touch #danceBtn {
   border: 2px solid rgba(255, 243, 220, 0.45);
   background: rgba(29, 22, 48, 0.25);
   left: 100px;
-  top: calc(100% - 120px - env(safe-area-inset-bottom, 0px));
+  top: calc(100% - 120px - var(--safe-b));
 }
 #stickKnob {
   position: absolute;
@@ -312,82 +426,290 @@ body.touch #danceBtn {
   background: var(--sun);
   box-shadow: 3px 3px 0 var(--ink);
 }
+body.mode-tunnel #stickZone {
+  width: 100%;
+  height: 100%;
+}
+body.mode-tunnel #stickBase {
+  opacity: 0.55;
+}
 
-/* Pantalla de título */
+/* ---------- Menús (pausa, opciones, ayuda, mapa) ---------- */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-items: center;
+  padding: calc(16px + var(--safe-t)) 16px calc(16px + var(--safe-b));
+  background: rgba(13, 10, 24, 0.55);
+  backdrop-filter: blur(6px);
+  animation: fade-in 0.18s ease-out;
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+.sheet {
+  width: min(92vw, 420px);
+  max-height: 100%;
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+  padding: 18px 18px 20px;
+  border-radius: 20px;
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  animation: sheet-in 0.22s ease-out;
+}
+@keyframes sheet-in {
+  from {
+    transform: translateY(14px) scale(0.97);
+    opacity: 0;
+  }
+}
+.sheet h2 {
+  margin: 0 0 4px;
+  font-family: var(--display);
+  font-size: 30px;
+  text-align: center;
+  color: var(--ink);
+}
+.menu-btn {
+  width: 100%;
+  padding: 13px 16px;
+  font-size: 18px;
+  text-align: left;
+  background: #fff;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.menu-btn.primary {
+  background: var(--sun);
+  text-align: center;
+}
+.menu-btn.ghost {
+  background: transparent;
+  box-shadow: none;
+  text-align: center;
+  font-size: 15px;
+  color: #6b5f86;
+}
+.menu-btn.danger {
+  color: #c8452f;
+}
+.menu-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.menu-btn.small {
+  text-align: center;
+  font-size: 16px;
+}
+.opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff;
+  font-weight: 800;
+  font-size: 16px;
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+}
+.opt input {
+  appearance: none;
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  background: #cfc6dd;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.15s;
+  flex: none;
+}
+.opt input::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 1px 1px 0 var(--ink);
+  transition: transform 0.15s;
+}
+.opt input:checked {
+  background: var(--teal);
+}
+.opt input:checked::after {
+  transform: translateX(22px);
+}
+
+/* Cómo se juega */
+.howto {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.howto li {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.howto b {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 13px;
+  color: #2b8f86;
+}
+kbd {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--ink);
+  color: var(--cream);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+body.touch .keys-only {
+  display: none !important;
+}
+body:not(.touch) .touch-only {
+  display: none !important;
+}
+
+/* Mapa */
+.map-sheet {
+  width: min(94vw, 560px);
+}
+#mapCanvas {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 14px;
+  background: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+.lg {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 5px;
+  vertical-align: -1px;
+  border-radius: 50%;
+}
+.lg.star {
+  background: var(--sun);
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+.lg.star.off {
+  background: #8e8a99;
+}
+.lg.dot {
+  background: var(--sky);
+}
+.lg.dot.off {
+  background: #6b6680;
+}
+.lg.you {
+  background: var(--coral);
+  border-radius: 2px 50% 50% 50%;
+  transform: rotate(45deg);
+}
+
+/* ---------- Pantalla de título ---------- */
 #title {
   position: fixed;
   inset: 0;
   z-index: 20;
   display: grid;
-  place-items: center;
-  background: radial-gradient(ellipse at 50% 120%, rgba(255, 194, 58, 0.45), rgba(16, 30, 72, 0.82) 62%);
-  padding: 0 16px;
+  align-items: center;
+  justify-items: start;
+  padding: calc(20px + var(--safe-t)) clamp(16px, 7vw, 90px) calc(20px + var(--safe-b));
+  background: linear-gradient(90deg, rgba(16, 14, 40, 0.86) 0%, rgba(16, 14, 40, 0.55) 45%, rgba(16, 14, 40, 0) 75%);
 }
-#title .card {
-  max-width: 440px;
-  text-align: center;
+.title-card {
+  max-width: 420px;
   display: grid;
-  gap: 14px;
+  gap: 16px;
+  animation: sheet-in 0.5s ease-out;
 }
 #title h1 {
   margin: 0;
   font-family: var(--display);
-  font-size: clamp(56px, 15vw, 104px);
-  line-height: 0.9;
+  font-size: clamp(64px, 14vw, 120px);
+  line-height: 0.86;
   color: var(--sun);
-  text-shadow: 5px 5px 0 var(--ink);
+  text-shadow: 6px 6px 0 var(--ink);
   transform: rotate(-4deg);
+  transform-origin: left bottom;
 }
 #title .tag {
-  font-size: 12px;
-  letter-spacing: 0.18em;
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: var(--sky);
+  text-shadow: 1px 1px 0 var(--ink);
 }
-#title ul {
-  list-style: none;
-  margin: 0;
+.title-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+.howto.compact {
   padding: 12px 14px;
+  border-radius: 14px;
   background: var(--glass);
-  border-radius: 8px;
-  text-align: left;
-  font-size: 12px;
-  line-height: 1.9;
 }
-#title ul b {
+.howto.compact li {
+  grid-template-columns: 82px 1fr;
+  font-size: 13px;
+  color: var(--cream);
+}
+.howto.compact b {
   color: var(--sun);
-  font-weight: 500;
-  display: inline-block;
-  min-width: 110px;
 }
-.big-btn {
-  font-family: var(--display);
-  font-size: 22px;
-  letter-spacing: 0.04em;
-  background: var(--sun);
-  color: var(--ink);
-  border: 0;
-  border-radius: 8px;
-  padding: 14px 22px;
-  cursor: pointer;
-  box-shadow: 4px 4px 0 var(--ink);
-}
-.big-btn.alt {
+.howto.compact kbd {
   background: var(--cream);
-  font-size: 16px;
-  padding: 10px 18px;
+  color: var(--ink);
 }
-.big-btn:active {
-  transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0 var(--ink);
-}
-body.touch .keys-only {
-  display: none;
-}
-body:not(.touch) .touch-only {
-  display: none;
+@media (max-width: 640px) {
+  #title {
+    justify-items: center;
+    align-items: end;
+    background: linear-gradient(0deg, rgba(16, 14, 40, 0.9) 0%, rgba(16, 14, 40, 0.6) 50%, rgba(16, 14, 40, 0.1) 100%);
+  }
+  .title-card {
+    text-align: center;
+    justify-items: center;
+  }
+  .title-buttons {
+    justify-content: center;
+  }
 }
 
-/* Museo */
+/* ---------- Museo ---------- */
 #museum {
   position: fixed;
   inset: 0;
@@ -396,7 +718,7 @@ body:not(.touch) .touch-only {
 }
 #museum h2 {
   position: absolute;
-  top: calc(16px + env(safe-area-inset-top, 0px));
+  top: calc(16px + var(--safe-t));
   left: 0;
   right: 0;
   margin: 0;
@@ -408,7 +730,7 @@ body:not(.touch) .touch-only {
 }
 #museumComplete {
   position: absolute;
-  top: calc(74px + env(safe-area-inset-top, 0px));
+  top: calc(74px + var(--safe-t));
   left: 0;
   right: 0;
   text-align: center;
@@ -420,7 +742,8 @@ body:not(.touch) .touch-only {
 .museum-label {
   position: absolute;
   transform: translate(-50%, 0);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 800;
   text-align: center;
   width: 110px;
   text-shadow: 1px 1px 0 var(--ink);
@@ -430,13 +753,16 @@ body:not(.touch) .touch-only {
 }
 #museumBack {
   position: absolute;
-  bottom: calc(22px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(22px + var(--safe-b));
   left: 50%;
   transform: translateX(-50%);
   pointer-events: auto;
 }
+#museumBack:active {
+  transform: translate(calc(-50% + 2px), 2px);
+}
 
-/* Túnel */
+/* ---------- Carrera de luz ---------- */
 #tunnelHud {
   position: fixed;
   inset: 0;
@@ -445,7 +771,7 @@ body:not(.touch) .touch-only {
 }
 #tunnelMsg {
   position: absolute;
-  top: calc(18px + env(safe-area-inset-top, 0px));
+  top: calc(18px + var(--safe-t));
   left: 0;
   right: 0;
   text-align: center;
@@ -457,7 +783,7 @@ body:not(.touch) .touch-only {
 }
 #tunnelTrack {
   position: absolute;
-  top: calc(60px + env(safe-area-inset-top, 0px));
+  top: calc(60px + var(--safe-t));
   left: 50%;
   transform: translateX(-50%);
   width: min(60vw, 360px);
@@ -471,8 +797,68 @@ body:not(.touch) .touch-only {
   width: 0;
   background: var(--sun);
 }
+#tunnelCount {
+  position: absolute;
+  top: 38%;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-family: var(--display);
+  font-size: clamp(56px, 16vw, 120px);
+  color: var(--sun);
+  text-shadow: 5px 5px 0 var(--ink);
+  pointer-events: none;
+}
+#tunnelPanel {
+  position: absolute;
+  left: 50%;
+  bottom: calc(28px + var(--safe-b));
+  transform: translateX(-50%);
+  width: min(90vw, 440px);
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px 18px;
+  border-radius: 20px;
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  text-align: center;
+  pointer-events: auto;
+  z-index: 9;
+}
+#tunnelPanel p {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+}
 
-/* Fundidos */
+/* ---------- Nombres de los objetos (aparecen al acercarse) ---------- */
+#labels {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: hidden;
+}
+.obj-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding: 3px 10px 4px;
+  border-radius: 999px;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+/* ---------- Fundidos ---------- */
 #fade,
 #flash {
   position: fixed;
@@ -497,91 +883,44 @@ body:not(.touch) .touch-only {
   transition: opacity 0.1s;
 }
 
+/* ---------- Celular vertical ---------- */
 @media (max-width: 640px) {
-  #help {
-    display: none;
+  .hud-top {
+    grid-template-columns: auto 1fr;
+    grid-template-areas:
+      'left counters'
+      'obj obj';
+    row-gap: 10px;
   }
-  /* En el celular el objetivo va debajo de los botones de arriba, así ninguno lo tapa */
-  #msg {
-    top: calc(96px + env(safe-area-inset-top, 0px));
-    width: 92vw;
+  .hud-left {
+    grid-area: left;
+  }
+  .counters {
+    grid-area: counters;
+    justify-self: end;
     font-size: 16px;
   }
+  .objective {
+    grid-area: obj;
+    font-size: 15px;
+  }
   #story {
-    top: calc(160px + env(safe-area-inset-top, 0px));
+    top: calc(150px + var(--safe-t));
   }
-  #stars {
-    font-size: 20px;
-  }
+}
+
+/* Efectos suaves: sin animaciones de entrada ni inclinaciones */
+body.calm *,
+body.calm *::before,
+body.calm *::after {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+}
+body.calm #title h1 {
+  transform: none;
 }
 @media (prefers-reduced-motion: reduce) {
   #title h1 {
     transform: none;
   }
-}
-
-/* Túnel: en el celular se maneja arrastrando el dedo en cualquier parte de la pantalla */
-body.mode-tunnel #stickZone {
-  width: 100%;
-  height: 100%;
-}
-body.mode-tunnel #stickBase {
-  opacity: 0.55;
-}
-#tunnelCount {
-  position: absolute;
-  top: 38%;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-family: var(--display);
-  font-size: clamp(56px, 16vw, 120px);
-  color: var(--sun);
-  text-shadow: 5px 5px 0 var(--ink);
-  pointer-events: none;
-}
-#tunnelPanel {
-  position: absolute;
-  left: 50%;
-  bottom: calc(28px + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-50%);
-  width: min(90vw, 440px);
-  display: grid;
-  gap: 10px;
-  padding: 14px 16px 16px;
-  border-radius: 12px;
-  background: rgba(29, 22, 48, 0.82);
-  text-align: center;
-  pointer-events: auto;
-  z-index: 9;
-}
-#tunnelPanel p {
-  margin: 0 0 4px;
-  font-size: 14px;
-  line-height: 1.45;
-}
-
-/* Nombres de los objetos conectables (aparecen al acercarse) */
-#labels {
-  position: fixed;
-  inset: 0;
-  z-index: 4;
-  pointer-events: none;
-  overflow: hidden;
-}
-.obj-label {
-  position: absolute;
-  left: 0;
-  top: 0;
-  padding: 3px 10px 4px;
-  border-radius: 8px;
-  background: var(--cream);
-  color: var(--ink);
-  font-family: var(--display);
-  font-size: 13px;
-  letter-spacing: 0.03em;
-  white-space: nowrap;
-  box-shadow: 2px 2px 0 var(--ink);
-  opacity: 0;
-  will-change: transform, opacity;
 }

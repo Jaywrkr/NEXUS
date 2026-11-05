@@ -3,6 +3,7 @@ import { AudioSystem } from '../../systems/AudioSystem';
 import type { Input } from '../core/input';
 import type { Renderer } from '../core/render';
 import { clamp, damp } from '../core/util';
+import { vibrate } from '../core/settings';
 
 /*
  * La carrera de luz (idea de Luca, Decisiones 016 y 041): cada vez que una fuente de energía se
@@ -470,7 +471,7 @@ export class TunnelMode {
     this.phase = 'failed';
     this.fails += 1;
     this.audio.tone(180, 0, 0.25, 'sawtooth', 0.08);
-    if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+    vibrate([60, 40, 60]);
     if (this.fails >= 2 && this.plan.difficulty > 0.05) {
       // Dos choques seguidos: la misma carrera, pero más fácil (más ancha, lenta y sin tantas compuertas)
       this.fails = 0;
@@ -525,7 +526,7 @@ export class TunnelMode {
       this.countdown -= dt;
       const now = Math.ceil(this.countdown);
       if (this.el.count) this.el.count.textContent = this.countdown > 0 ? String(now) : '¡YA!';
-      if (now !== before && navigator.vibrate) navigator.vibrate(15);
+      if (now !== before) vibrate(15);
       if (this.countdown <= 0) {
         this.phase = 'run';
         this.runT = 0;
