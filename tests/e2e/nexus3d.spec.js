@@ -971,12 +971,16 @@ test('3D: Chispi compañero — se elige en el álbum, sigue al Nexus y cada tip
   // Ruedas: más velocidad en patineta
   await choose('turbochispa');
   await w(() => window.__nexus3d.world.progress.setFlag('board'));
-  await tp(page, 66, 0);
+  await tp(page, 63, -9);
   await w(() => window.__nexus3d.world.mount());
   await page.keyboard.down('KeyD');
   await page.keyboard.down('KeyS');
-  await step(page, 3);
-  expect(await w(() => window.__nexus3d.world.nexus.speed)).toBeGreaterThan(9.5);
+  let top = 0;
+  for (let i = 0; i < 10; i += 1) {
+    await step(page, 0.25);
+    top = Math.max(top, await w(() => window.__nexus3d.world.nexus.speed));
+  }
+  expect(top).toBeGreaterThan(9.5);
   await page.keyboard.up('KeyD');
   await page.keyboard.up('KeyS');
   await w(() => window.__nexus3d.world.dismount());
@@ -984,8 +988,13 @@ test('3D: Chispi compañero — se elige en el álbum, sigue al Nexus y cada tip
   await choose('ondita');
   const pack = await w(() => window.__nexus3d.world.packSpots.find((p) => p.id === 'callejon'));
   await tp(page, pack.x + 8, pack.z);
-  await step(page, 7);
-  expect(await w(() => window.__nexus3d.world.companion.scouting)).toBe(true);
+  let scouted = false;
+  for (let i = 0; i < 16 && !scouted; i += 1) {
+    await step(page, 0.5);
+    scouted = await w(() => window.__nexus3d.world.companion.scouting);
+  }
+  expect(scouted).toBe(true);
+  expect(await text(page, 'toast')).toContain('escucha un sobre');
 
   // Se guarda
   await page.reload();

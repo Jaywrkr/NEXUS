@@ -102,6 +102,7 @@ src/3d/
   world/MigaHouse.ts       — primer interior (casa de Miga) en x = 300 + roomShell() para armar habitaciones "maqueta"
   data/chispis.ts          — las 40 cartas (tipo, rareza, origen, vecino que la cambia, frase), TYPES, rollPack()
   ui/cardArt.ts            — drawChispi() y drawCard(): dibujo procedural de cada Chispi y de la carta
+  entities/Companion.ts    — Chispi compañero: makeBuddy(tipo) y Companion (sigue al Nexus, show() vuela a mostrar algo)
   objects/pack.ts          — makePack(): sobre que flota en el mundo
   world/ShopRooms.ts       — interiores de la heladería (x = 500) y la tienda de cartas (x = 600)
   world/revive.ts          — makeGray(): una habitación empieza gris y revive() le devuelve el color
@@ -208,6 +209,12 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Cambios**: `speak(r, asked)`; si el jugador habló (no el saludo automático), el vecino tiene carta sin dar y hay repetidas → `cb.trade(...)`; `WorldMode.trade(who, give)` hace el cambio.
 - **Pantallas** (`main.ts`, `index.html`): `#cardPop` (carta grande, encima de todo), `#packPop` (cartas `.flip-card` en orden), `#tradePop`, `#albumPop` (`.mini-card`, `.missing`). `pauseFor`/`closePop` pausan el mundo mientras están abiertas. La vitrina encendida de la tienda abre el álbum (`CardDisplay.onPoke`).
 
+### Chispi compañero (Decisión 047, Fase 4)
+
+- Se elige con `#cardBuddy` en la carta grande → `WorldMode.setCompanion(id)` (null lo saca); se guarda en `progress.companion`. `companionId`, `helps(tipo)`.
+- `updateCompanion` lo mueve cada cuadro y lo reubica si queda a más de 25 m (puertas, teletransportes). Cada 6 s, Luz (`pickups.nearestHidden`) y Radio (sobres a < 40 m) vuelan a mostrar algo con `show()` + `pointTo`.
+- Ayuditas: `pickups.magnet` (Luz 3,4), `playground.onSplash` → `boostT` (Agua), `walkScale()` (Voltio × Vía × charco), salto ×1,2 (Bosque), patineta ×1,25 (Ruedas), `addLife` 5,2 al despertar (Flor), +2 chispitas en `finishTunnel` (Feria), `voltio.maxVolt` 45 (Mar).
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -226,7 +233,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
 6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
 
-Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–046).
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–047).
 
 ### 6. Trampas técnicas ya conocidas (no repetirlas)
 
@@ -252,7 +259,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–046).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 3 hechas (Decisiones 043–046). Sigue la Fase 4: Chispi compañero (elegirlo desde el álbum, que siga al Nexus en los dos mundos, ayudita por tipo).**
+> **Fases 0 a 4 hechas (Decisiones 043–047). Sigue la Fase 5: Centro completo (taller de Pipa y faroles de Lucio, con carreras de luz, vecinos, cosas dormidas y Chispis).**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 

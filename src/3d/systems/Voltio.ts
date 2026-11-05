@@ -140,6 +140,8 @@ function segmentHit(
 export class Voltio {
   active = false;
   voltage = MAX_VOLT;
+  /** Voltaje máximo (la ayudita de Mar lo agranda). */
+  maxVolt = MAX_VOLT;
   /** 0..1 para el fundido del post-proceso. */
   amount = 0;
   readonly group = new THREE.Group();
@@ -294,7 +296,7 @@ export class Voltio {
     if (Math.abs(this.amount - target) < 0.01) this.amount = target;
     this.group.visible = this.amount > 0.02;
     if (!this.active) {
-      this.voltage = Math.min(MAX_VOLT, this.voltage + dt * 2);
+      this.voltage = Math.min(this.maxVolt, this.voltage + dt * 2);
       for (const l of this.loops) l.mesh.visible = false;
       return;
     }

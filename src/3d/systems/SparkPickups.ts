@@ -66,6 +66,24 @@ export class SparkPickups {
     return pk;
   }
 
+  /** Radio del imán de la mochila (la ayudita de Luz lo agranda). */
+  magnet = 1.4;
+
+  /** La chispita escondida (sin juntar) más cercana, si hay alguna a menos de `max` metros. */
+  nearestHidden(x: number, z: number, max: number): { x: number; z: number } | null {
+    let best: { x: number; z: number } | null = null;
+    let bd = max;
+    for (const pk of this.items) {
+      if (!pk.id || pk.flying) continue;
+      const d = Math.hypot(pk.pos.x - x, pk.pos.z - z);
+      if (d < bd) {
+        bd = d;
+        best = { x: pk.pos.x, z: pk.pos.z };
+      }
+    }
+    return best;
+  }
+
   /** Coloca una escondida (si todavía no se juntó). */
   addHidden(id: string, x: number, z: number, y = 0.9): void {
     this.make(id, x, z, y);
@@ -129,7 +147,7 @@ export class SparkPickups {
             }
           }
         }
-        if (d < 1.4 && room > 0) {
+        if (d < this.magnet && room > 0) {
           // Imán: se acercan a la mochila
           pk.pos.x -= (dx / (d || 1)) * Math.min(d, 6 * dt);
           pk.pos.z -= (dz / (d || 1)) * Math.min(d, 6 * dt);

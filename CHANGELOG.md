@@ -312,3 +312,6 @@ La casa de Miga, la heladería y la tienda de cartas tienen interior gris con al
 
 ## 3D: Fase 3 — cartas de Chispis
 40 Chispis originales en 9 tipos y tres rarezas, dibujados por código. Se consiguen rescatándolos de jaulas en el Mundo Voltio (5), en sobres (8 escondidos + uno por cada lugar que revive, con animación de dar vuelta y la más rara al final) y cambiando repetidas con los vecinos (6). Álbum con siluetas de las que faltan, desde el menú o la vitrina de la tienda; contador 🃏 en el HUD. Arreglos: la carta grande se abría detrás del álbum; el saludo automático de un vecino ya no abre el cambio. Pruebas 3D: 24 escenarios. Decisión 046.
+
+## 3D: Fase 4 — Chispi compañero
+Cualquier Chispi del álbum se puede elegir de compañero: sigue al Nexus en los dos mundos, salta y baila con él y tiene una ayudita según su tipo (imán y chispitas señaladas, impulso en charcos, sobres escuchados, más color, más velocidad en patineta, más chispitas en las carreras, salto más alto, caminar más rápido, más voltaje). Su nombre se ve en el HUD. Pruebas 3D: 26 escenarios. Decisión 047.

@@ -166,6 +166,17 @@ class Game {
     });
     $('mapBack').addEventListener('click', () => this.closeMenu());
     $('packOk').addEventListener('click', () => this.closePop('packPop'));
+    $('cardBuddy').addEventListener('click', () => {
+      const id = ($('cardBuddy') as HTMLButtonElement).dataset.card;
+      if (!id) return;
+      this.world.setCompanion(id);
+      ($('cardBuddy') as HTMLButtonElement).disabled = true;
+      $('cardBuddy').textContent = '⭐ Es tu compañero';
+      vibrate([20, 30, 20]);
+      // Si el álbum está abierto, se marca la estrella nueva
+      if (!$('albumPop').hidden) this.markBuddy();
+    });
+    $('buddy').addEventListener('click', () => this.showAlbum());
     $('tradeNo').addEventListener('click', () => this.closePop('tradePop'));
     $('albumBack').addEventListener('click', () => this.closePop('albumPop'));
     $('mAlbum').addEventListener('click', () => {
@@ -289,7 +300,12 @@ class Game {
     $('cardName').textContent = c.name;
     $('cardType').textContent = `${t.icon} Chispi de ${t.name} · ${RARITY_NAMES[c.rarity]}`;
     $('cardText').textContent = c.phrase;
-    $('cardHelper').textContent = `Ayudita de compañero: ${t.helper.toLowerCase()} (muy pronto)`;
+    $('cardHelper').textContent = `Ayudita de compañero: ${t.helper.toLowerCase()}`;
+    const buddyBtn = $('cardBuddy') as HTMLButtonElement;
+    buddyBtn.dataset.card = id;
+    const isBuddy = this.world.companionId === id;
+    buddyBtn.disabled = isBuddy;
+    buddyBtn.textContent = isBuddy ? '⭐ Es tu compañero' : '⭐ Elegir de compañero';
     $('cardBox').className = `chispi-card rare-${c.rarity}`;
     const art = $('cardArt') as HTMLCanvasElement;
     const g = art.getContext('2d');
@@ -379,6 +395,12 @@ class Game {
     this.pauseFor('tradePop');
   }
 
+  private markBuddy(): void {
+    for (const el of Array.from(document.querySelectorAll<HTMLElement>('#albumGrid .mini-card'))) {
+      el.classList.toggle('is-buddy', el.dataset.card === this.world.companionId);
+    }
+  }
+
   /** Álbum: las 40 cartas por tipo; las que faltan se ven como sombra. */
   private showAlbum(): void {
     const p = this.world.progress;
@@ -396,7 +418,7 @@ class Game {
         const owned = p.hasCard(c.id);
         const b = document.createElement('button');
         b.type = 'button';
-        b.className = `mini-card ${owned ? `rare-${c.rarity}` : 'missing'}`;
+        b.className = `mini-card ${owned ? `rare-${c.rarity}` : 'missing'}${this.world.companionId === c.id ? ' is-buddy' : ''}`;
         b.dataset.card = c.id;
         b.innerHTML = '<canvas width="120" height="168"></canvas>';
         drawCard(b.querySelector('canvas')!, c.id, owned);

@@ -50,6 +50,8 @@ export class Playground {
   private readonly pigeons: Pigeon[] = [];
   private readonly flocks: { x: number; z: number; birds: Pigeon[]; cooldown: number }[] = [];
   private readonly puddles: { x: number; z: number; r: number; cooldown: number }[] = [];
+  /** Se llama al pisar un charco (la ayudita de Agua da un impulso). */
+  onSplash: (() => void) | null = null;
   private readonly drops: Drop[] = [];
   private readonly piles: { x: number; z: number; leaves: Leaf[]; cooldown: number }[] = [];
   readonly balls: Ball[] = [];
@@ -317,6 +319,7 @@ export class Playground {
       if (pd.cooldown <= 0 && speed > 1.2 && Math.hypot(nexus.x - pd.x, nexus.z - pd.z) < pd.r * 1.2) {
         this.splash(nexus.x, nexus.z, 10, 0.8 + speed * 0.25);
         this.audio.noise(0, 0.25, 0.08, 2200);
+        this.onSplash?.();
         pd.cooldown = 0.45;
       }
     }

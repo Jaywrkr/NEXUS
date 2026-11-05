@@ -1241,3 +1241,31 @@ body.voltio #labels {
 #cardPop {
   z-index: 30;
 }
+
+/* ---------- Fase 4: Chispi compañero ---------- */
+.buddy-pill {
+  font-family: var(--text);
+  font-weight: 800;
+  font-size: 13px;
+  padding: 6px 12px;
+  color: var(--cream);
+  background: var(--glass);
+  box-shadow: none;
+}
+.buddy-btn {
+  text-align: center;
+  background: #7dffef;
+}
+.buddy-btn[disabled] {
+  background: #cfc9dd;
+  cursor: default;
+}
+.mini-card.is-buddy::before {
+  content: '⭐';
+  position: absolute;
+  top: -6px;
+  left: -4px;
+  z-index: 2;
+  font-size: 18px;
+  filter: drop-shadow(1px 1px 0 var(--ink));
+}

@@ -35,6 +35,8 @@ import { CardDisplay, FuseBox, IceCreamMachine } from '../objects/indoor';
 import { CARDS, CARD_BY_ID, TOTAL_CARDS, TYPES, rollPack } from '../data/chispis';
 import { makePack } from '../objects/pack';
 import type { CageSpot } from '../systems/Voltio';
+import { Companion } from '../entities/Companion';
+import type { ChispiType } from '../data/chispis';
 
 const INTERACT_REACH = 2.2; // metros desde el borde del objeto
 const NEXUS_RADIUS = 0.32;
@@ -149,6 +151,11 @@ export class WorldMode {
   private readonly iceMachine: IceCreamMachine;
   private readonly cardDisplay: CardDisplay;
   private closedWarned = 0;
+  /** Chispi compañero (Fase 4) y sus ayuditas. */
+  private companion: Companion | null = null;
+  private boostT = 0;
+  private scoutT = 4;
+  private readonly heardPacks = new Set<string>();
   /** Sobres que están en el mundo, esperando que el Nexus pase por encima. */
   private readonly packs: { id: string; g: THREE.Group; x: number; z: number; y: number }[] = [];
   private readonly voltio: Voltio;
@@ -326,6 +333,12 @@ export class WorldMode {
     this.setupSkatepark();
     this.setupPacks();
     CardDisplay.onPoke = () => this.cb.album?.();
+    this.playground.onSplash = () => {
+      if (!this.helps('agua')) return;
+      this.boostT = 1.6;
+      this.companion?.cheer();
+    };
+    if (this.progress.companion) this.setCompanion(this.progress.companion, false);
 
     LIFE.reset();
     this.restoreProgress({ source, fountainSource, beaconA, beaconB, bridgeSource, gardenSource });
@@ -807,6 +820,7 @@ export class WorldMode {
     this.audio.tone(523, 0.1, 0.14, 'triangle', 0.07);
     window.setTimeout(() => {
       move();
+      this.companion?.snap(this.nexus.position, this.nexus.heading);
       this.focus.set(this.nexus.position.x, 0, this.nexus.position.z);
       this.updateCameras(1);
       this.busy = false;
@@ -1240,7 +1254,8 @@ export class WorldMode {
       this.nexus.grinding = false;
     }
     if (this.input.consumeJump() && this.grounded && !this.busy && !this.nexus.dancing) {
-      this.vy = JUMP_V * (this.voltio.active ? 1.2 : 1);
+      this.vy = JUMP_V * (this.voltio.active ? 1.2 : 1) * (this.helps('bosque') ? 1.2 : 1);
+      this.companion?.cheer();
       this.grounded = false;
       if (this.nexus.riding) this.onTrick('ollie');
       this.audio.tone(520, 0, 0.12, 'triangle', 0.06);
@@ -1383,6 +1398,8 @@ export class WorldMode {
     // Dificultad adaptable: sube de a poco al ganar, baja al abandonar
     this.progress.tunnelSkill = this.progress.tunnelSkill + (success ? 0.1 : -0.12);
     this.connections.finishTunnel(source, target, success);
+    // Ayudita de Feria: las carreras de luz ganadas dan dos chispitas más
+    if (success && this.helps('feria')) sparks += 2;
     if (sparks > 0) {
       const before = this.progress.charge;
       this.addCharge(sparks);
@@ -1421,6 +1438,12 @@ export class WorldMode {
     const n = ZONE_FRAGMENTS.filter((f) => this.progress.hasFragment(f.id)).length;
     if (this.el.stars) this.el.stars.textContent = `★ ${n}/${ZONE_COUNT}`;
     if (this.el.awake) this.el.awake.textContent = `✦ ${this.awakeCount()}/${this.sleepers.length}`;
+    const buddy = document.getElementById('buddy');
+    if (buddy) {
+      const card = this.companion ? CARD_BY_ID.get(this.companion.id) : null;
+      buddy.hidden = !card;
+      if (card) buddy.textContent = `${TYPES[card.type].icon} ${card.name}`;
+    }
     const cardsEl = document.getElementById('cards');
     if (cardsEl) cardsEl.textContent = `🃏 ${this.progress.uniqueCards}/${TOTAL_CARDS}`;
     const c = this.progress.charge;
@@ -1635,7 +1658,7 @@ export class WorldMode {
 
   /** Una cosa dormida se despertó: un poquito de color alrededor y el contador. */
   private onWake(sl: Sleeper, animate: boolean): void {
-    this.addLife(sl.x, sl.z, 3.2, animate);
+    this.addLife(sl.x, sl.z, this.helps('flor') ? 5.2 : 3.2, animate);
     this.updateHud();
     if (!animate) return;
     this.setMessage(SLEEPER_INFO[sl.kind].wake);
@@ -1808,6 +1831,85 @@ export class WorldMode {
     this.residents.find((r) => r.id === who)?.talk();
     this.updateHud();
     return offer.id;
+  }
+
+  /* ---------- Chispi compañero (Fase 4) ---------- */
+
+  get companionId(): string | null {
+    return this.companion?.id ?? null;
+  }
+
+  /** ¿El compañero es de este tipo? (su ayudita está activa) */
+  helps(type: ChispiType): boolean {
+    return this.companion?.type === type;
+  }
+
+  /** Elige (o saca, con null) el Chispi compañero. */
+  setCompanion(id: string | null, announce = true): void {
+    if (id && !this.progress.hasCard(id)) return;
+    if (this.companion) {
+      this.world.scene.remove(this.companion.root);
+      this.companion = null;
+    }
+    this.progress.companion = id;
+    if (id) {
+      this.companion = new Companion(id);
+      this.companion.snap(this.nexus.position, this.nexus.heading);
+      this.world.scene.add(this.companion.root);
+      if (announce) {
+        this.companion.cheer();
+        this.audio.tone(784, 0, 0.1, 'triangle', 0.07);
+        this.audio.tone(1047, 0.08, 0.14, 'triangle', 0.07);
+        const card = CARD_BY_ID.get(id)!;
+        this.setMessage(`¡${card.name} es tu compañero! Ayudita: ${TYPES[card.type].helper.toLowerCase()}`);
+      }
+    }
+    this.applyHelpers();
+    this.updateHud();
+  }
+
+  /** Ayuditas que son un número (imán, voltaje). Las demás se miran en el momento con helps(). */
+  private applyHelpers(): void {
+    this.pickups.magnet = this.helps('luz') ? 3.4 : 1.4;
+    this.voltio.maxVolt = this.helps('mar') ? MAX_VOLT * 1.5 : MAX_VOLT;
+    if (!this.voltio.active) this.voltio.voltage = Math.min(this.voltio.voltage, this.voltio.maxVolt);
+  }
+
+  /** El compañero sigue al Nexus; Luz y Radio a veces vuelan a mostrar algo. */
+  private updateCompanion(dt: number): void {
+    const c = this.companion;
+    if (!c) return;
+    c.root.visible = true;
+    c.update(dt, this.nexus.position, this.nexus.heading, this.nexus.dancing);
+    if (Math.hypot(c.position.x - this.nexus.position.x, c.position.z - this.nexus.position.z) > 25) c.snap(this.nexus.position, this.nexus.heading);
+    this.scoutT -= dt;
+    if (this.scoutT > 0 || c.scouting || this.busy || this.inside) return;
+    this.scoutT = 6;
+    const p = this.nexus.position;
+    if (c.type === 'luz') {
+      const s = this.pickups.nearestHidden(p.x, p.z, 14);
+      if (s) {
+        c.show(s.x, s.z, 3);
+        this.pointTo(s.x, s.z);
+      }
+    } else if (c.type === 'radio') {
+      const near = this.packs.filter((k) => Math.hypot(k.x - p.x, k.z - p.z) < 40 && k.x < 200);
+      if (near.length) {
+        const k = near.reduce((a, b) => (Math.hypot(a.x - p.x, a.z - p.z) < Math.hypot(b.x - p.x, b.z - p.z) ? a : b));
+        c.show(k.x, k.z, 3);
+        this.pointTo(k.x, k.z);
+        if (!this.heardPacks.has(k.id)) {
+          this.heardPacks.add(k.id);
+          this.toast(`${c.name} escucha un sobre por allá 📻`, 'info');
+        }
+      }
+    }
+  }
+
+  /** Multiplicador de velocidad al caminar: Voltio, Vía y el impulso de los charcos (Agua). */
+  private walkScale(dt: number): number {
+    this.boostT = Math.max(0, this.boostT - dt);
+    return (this.voltio.active ? 1.5 : 1) * (this.helps('via') ? 1.15 : 1) * (this.boostT > 0 ? 1.55 : 1);
   }
 
   /* ---------- Sobres de cartas (Fase 3) ---------- */
@@ -2043,13 +2145,14 @@ export class WorldMode {
       const still = this.busy || this.nexus.dancing;
       if (this.nexus.riding) {
         if (!this.skate.grinding) {
-          this.skate.move(this.nexus, still ? 0 : dirX, still ? 0 : dirZ, dt, !this.grounded, this.voltio.active ? 1.25 : 1);
+          this.skate.move(this.nexus, still ? 0 : dirX, still ? 0 : dirZ, dt, !this.grounded, (this.voltio.active ? 1.25 : 1) * (this.helps('ruedas') ? 1.25 : 1));
           const wantX = this.nexus.position.x;
           const wantZ = this.nexus.position.z;
           this.world.resolve(this.nexus.position, NEXUS_RADIUS, blockers, this.nexus.position.y);
           if (Math.hypot(this.nexus.position.x - wantX, this.nexus.position.z - wantZ) > 0.03) this.skate.bonk();
         }
       } else {
+        this.nexus.speedScale = this.walkScale(dt);
         this.nexus.move(still ? 0 : dirX, still ? 0 : dirZ, dt);
         this.world.resolve(this.nexus.position, NEXUS_RADIUS, blockers, this.nexus.position.y);
       }
@@ -2147,12 +2250,13 @@ export class WorldMode {
 
     this.warnClosedShop(dt);
     this.updatePacks(dt);
+    this.updateCompanion(dt);
     // Mundo Voltio
     this.voltio.update(dt, this.time, this.nexus.position);
     if (this.voltio.active && this.voltio.voltage <= 0) this.exitVoltio('Se acabó el voltaje ⚡: volviste al mundo normal');
     const fill = document.getElementById('voltFill');
     if (fill) {
-      const k = this.voltio.voltage / MAX_VOLT;
+      const k = this.voltio.voltage / this.voltio.maxVolt;
       fill.style.width = `${Math.round(k * 100)}%`;
       fill.classList.toggle('low', k < 0.25);
     }

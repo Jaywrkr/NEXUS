@@ -38,7 +38,7 @@ export const TYPES: Record<ChispiType, TypeInfo> = {
   ruedas: { name: 'Ruedas', icon: '🛹', color: '#ff9f43', dark: '#b05a10', helper: 'Más velocidad en patineta' },
   feria: { name: 'Feria', icon: '🎪', color: '#ff5a6e', dark: '#a01f33', helper: 'Las carreras de luz dan más chispitas' },
   bosque: { name: 'Bosque', icon: '🍃', color: '#7be07a', dark: '#2f8a2e', helper: 'Saltás un poco más alto' },
-  via: { name: 'Vía', icon: '🚂', color: '#c7a17a', dark: '#6e5133', helper: 'Viajes más rápidos en tren' },
+  via: { name: 'Vía', icon: '🚂', color: '#c7a17a', dark: '#6e5133', helper: 'Caminás más rápido, como un tren' },
   mar: { name: 'Mar', icon: '🌊', color: '#3f7fd6', dark: '#163f80', helper: 'Más voltaje en el Mundo Voltio' },
 };
 

@@ -21,12 +21,14 @@ interface State3D {
   chispis: string[];
   /** Cartas de Chispis: id → cuántas tiene (las repetidas sirven para cambiar con los vecinos). */
   cards: Record<string, number>;
+  /** Chispi compañero elegido (id de carta) o null. */
+  companion: string | null;
 }
 
 /** Cuántas chispitas entran en la mochila. */
 export const MAX_CHARGE = 5;
 
-const empty = (): State3D => ({ fragmentsCollected: [], seenCompletion: false, connections: [], heard: [], charge: 0, sparks: [], tunnelSkill: 0.15, flags: [], chispis: [], cards: {} });
+const empty = (): State3D => ({ fragmentsCollected: [], seenCompletion: false, connections: [], heard: [], charge: 0, sparks: [], tunnelSkill: 0.15, flags: [], chispis: [], cards: {}, companion: null });
 
 /**
  * Progreso guardado de la versión 3D, separado del de la 2D. Guarda fragmentos, festejo final,
@@ -59,6 +61,7 @@ export class Progress3D {
         flags: strings(parsed.flags),
         chispis: strings(parsed.chispis),
         cards: Progress3D.cleanCards(parsed.cards, strings(parsed.chispis)),
+        companion: typeof parsed.companion === 'string' ? parsed.companion : null,
       };
     } catch {
       return empty();
@@ -212,6 +215,15 @@ export class Progress3D {
     this.state.cards[id] -= 1;
     this.save();
     return true;
+  }
+
+  get companion(): string | null {
+    return this.state.companion && this.hasCard(this.state.companion) ? this.state.companion : null;
+  }
+
+  set companion(id: string | null) {
+    this.state.companion = id;
+    this.save();
   }
 
   /** Cuántas cartas distintas tiene. */
