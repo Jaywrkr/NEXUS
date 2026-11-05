@@ -1237,3 +1237,7 @@ body.calm .mini-card.rare-dorada::after {
 body.voltio #labels {
   display: none;
 }
+/* La carta grande siempre va encima (se abre desde el álbum, el sobre o un cambio) */
+#cardPop {
+  z-index: 30;
+}

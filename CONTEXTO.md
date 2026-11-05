@@ -100,6 +100,9 @@ src/3d/
                              escenografía de cada zona, colisiones (rectángulos + círculos), portón del skatepark
   world/districts.ts       — distritos de la ciudad (Centro, Camino al Skatepark y los que vienen) + districtAt()
   world/MigaHouse.ts       — primer interior (casa de Miga) en x = 300 + roomShell() para armar habitaciones "maqueta"
+  data/chispis.ts          — las 40 cartas (tipo, rareza, origen, vecino que la cambia, frase), TYPES, rollPack()
+  ui/cardArt.ts            — drawChispi() y drawCard(): dibujo procedural de cada Chispi y de la carta
+  objects/pack.ts          — makePack(): sobre que flota en el mundo
   world/ShopRooms.ts       — interiores de la heladería (x = 500) y la tienda de cartas (x = 600)
   world/revive.ts          — makeGray(): una habitación empieza gris y revive() le devuelve el color
   objects/indoor.ts        — FuseBox (casa de Miga), IceCreamMachine (heladería), CardDisplay (tienda de cartas)
@@ -196,6 +199,15 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Objetivo y pistas adentro**: `skateStep()` (también cubre interiores) dice qué revivir y apunta a la energía (o al objeto si ya hay cable en la mano).
 - **Horizonte**: no hay cerros al este (cos(a) > 0,75), porque tapaban las habitaciones.
 
+### Cartas de Chispis (Decisión 046, Fase 3)
+
+- **Datos**: `data/chispis.ts` (40 cartas; `source` 'rescate' | 'sobre' | 'cambio'; `trader` = id del vecino). Para agregar un Chispi de Luca, sumar una línea ahí: el dibujo sale solo según su tipo.
+- **Progreso**: `progress.cards` (id → cantidad), `addCard`, `giveCard` (nunca deja sin la última), `uniqueCards`, `duplicates`. `rescueChispi` también suma la carta. Los sobres juntados son flags `pack-<id>`.
+- **Sobres** (`WorldMode`): `HIDDEN_PACKS` (8) + `dropPack('lugar-<lugar>')` en `applyConnection` para los 9 lugares que reviven (al costado, lejos de fragmentos y de otros sobres). Se juntan pasando encima (`updatePacks`, misma altura ± 0,5). `openPack` guarda las cartas (`rollPack`) y llama `cb.pack(ids)`.
+- **Jaulas**: `CAGES` (Centro) + Rueditas; `Voltio` recibe `CageSpot[]` con las que faltan; `isCaged(id)`, `cageSpots`. En Voltio, la jaula a menos de 14 m pasa a ser el objetivo.
+- **Cambios**: `speak(r, asked)`; si el jugador habló (no el saludo automático), el vecino tiene carta sin dar y hay repetidas → `cb.trade(...)`; `WorldMode.trade(who, give)` hace el cambio.
+- **Pantallas** (`main.ts`, `index.html`): `#cardPop` (carta grande, encima de todo), `#packPop` (cartas `.flip-card` en orden), `#tradePop`, `#albumPop` (`.mini-card`, `.missing`). `pauseFor`/`closePop` pausan el mundo mientras están abiertas. La vitrina encendida de la tienda abre el álbum (`CardDisplay.onPoke`).
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -214,7 +226,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
 6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
 
-Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–045).
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–046).
 
 ### 6. Trampas técnicas ya conocidas (no repetirlas)
 
@@ -240,7 +252,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–045).
 
 ### Qué sigue en el 3D
 
-> **Fases 0, 1 y 2 hechas (Decisiones 043–045). Sigue la Fase 3: cartas de Chispis (~40 cartas, rarezas, sobres, álbum, intercambio).**
+> **Fases 0 a 3 hechas (Decisiones 043–046). Sigue la Fase 4: Chispi compañero (elegirlo desde el álbum, que siga al Nexus en los dos mundos, ayudita por tipo).**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 

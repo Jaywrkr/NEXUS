@@ -865,8 +865,10 @@ test('3D: cartas de Chispis — sobres, rescates en Voltio, cambios con vecinos 
     const p = window.__nexus3d.world.progress;
     for (const id of Object.keys(p.state.cards)) p.state.cards[id] = 1;
   });
+  await step(page, 0.2);
+  await expect.poll(() => text(page, 'interact')).toBe('Hablar');
   await touch(page);
-  expect(await text(page, 'storyText')).toContain('carta repetida');
+  await expect.poll(() => text(page, 'storyText')).toContain('carta repetida');
   await w(() => window.__nexus3d.world.progress.addCard('chispazo'));
   await touch(page);
   await expect.poll(() => w(() => document.getElementById('tradePop').hidden)).toBe(false);

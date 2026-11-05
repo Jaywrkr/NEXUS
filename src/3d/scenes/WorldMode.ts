@@ -478,7 +478,8 @@ export class WorldMode {
       [this.cardDisplay, 'tienda', true],
     ];
     for (const [obj, id, ok] of packFor) {
-      if (target === obj && ok) this.dropPack(`lugar-${id}`, target.x + 1.6, target.z + 1.6, animate);
+      // Al costado (no justo delante, donde están las puertas)
+      if (target === obj && ok) this.dropPack(`lugar-${id}`, target.x + 2.6, target.z + 2.4, animate);
     }
     if (target === this.lamp) {
       this.lightWindow();
@@ -1168,7 +1169,7 @@ export class WorldMode {
     }
     if (this.voltio.active && !this.inSkatepark) {
       const me = this.nexus.position;
-      const near = this.voltio.cageSpots.filter((c) => c.id !== 'rueditas' && Math.hypot(c.x - me.x, c.z - me.z) < 30);
+      const near = this.voltio.cageSpots.filter((c) => c.id !== 'rueditas' && Math.hypot(c.x - me.x, c.z - me.z) < 14);
       if (near.length) {
         const c = near.reduce((a, b) => (Math.hypot(a.x - me.x, a.z - me.z) < Math.hypot(b.x - me.x, b.z - me.z) ? a : b));
         return { text: `¡${CARD_BY_ID.get(c.id)!.name} está atrapado! Cerrá un círculo con tu estela alrededor de la jaula`, at: c };
@@ -1770,7 +1771,8 @@ export class WorldMode {
     return residentLine(info, this.progress.snapshot());
   }
 
-  private speak(r: Resident3D): void {
+  /** `asked` = el jugador eligió hablar (botón o toque); el saludo automático no abre cambios. */
+  private speak(r: Resident3D, asked = true): void {
     this.progress.markHeard(r.id);
     r.setHeard(true);
     r.talk();
@@ -1778,7 +1780,7 @@ export class WorldMode {
     // Cartas: cada vecino tiene un Chispi para cambiar por una carta repetida
     const offer = CARDS.find((k) => k.trader === r.id);
     const dups = this.progress.duplicates;
-    if (offer && !this.progress.hasCard(offer.id) && dups.length && this.cb.trade) {
+    if (asked && offer && !this.progress.hasCard(offer.id) && dups.length && this.cb.trade) {
       this.cb.trade({
         who: r.id,
         name: r.name,
@@ -1789,7 +1791,11 @@ export class WorldMode {
       return;
     }
     let text = this.residentText(r);
-    if (offer && !this.progress.hasCard(offer.id)) text += ` (Si conseguís una carta repetida, te cambio a mi Chispi ${offer.name}.)`;
+    if (offer && !this.progress.hasCard(offer.id) && this.progress.uniqueCards > 0) {
+      text += dups.length
+        ? ` (¡Tenés cartas repetidas! Hablame y te cambio a mi Chispi ${offer.name}.)`
+        : ` (Si conseguís una carta repetida, te cambio a mi Chispi ${offer.name}.)`;
+    }
     this.showStory(r.name, text);
   }
 
@@ -1838,7 +1844,12 @@ export class WorldMode {
     if (this.progress.hasFlag(`pack-${id}`)) return;
     let px = x;
     let pz = z;
-    for (let k = 0; k < 40 && !this.world.isWalkable(px, pz, 0.5); k += 1) {
+    // Lejos de los fragmentos y de los otros sobres, para no juntar dos cosas a la vez
+    const clear = (x2: number, z2: number) =>
+      this.world.isWalkable(x2, z2, 0.5) &&
+      this.fragments.every((f) => Math.hypot(f.group.position.x - x2, f.group.position.z - z2) > 2.8) &&
+      this.packs.every((q) => Math.hypot(q.x - x2, q.z - z2) > 2.5);
+    for (let k = 0; k < 60 && !clear(px, pz); k += 1) {
       const a = k * 2.4;
       px = x + Math.cos(a) * (1 + k * 0.2);
       pz = z + Math.sin(a) * (1 + k * 0.2);
@@ -1931,7 +1942,7 @@ export class WorldMode {
     // La primera vez que el Nexus se acerca, el vecino habla solo
     const p = this.nexus.position;
     for (const r of this.residents) {
-      if (!this.progress.hasHeard(r.id) && Math.hypot(r.x - p.x, r.z - p.z) < 2.6) this.speak(r);
+      if (!this.progress.hasHeard(r.id) && Math.hypot(r.x - p.x, r.z - p.z) < 2.6) this.speak(r, false);
     }
     if (this.storyTimer > 0) {
       this.storyTimer -= dt;

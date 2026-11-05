@@ -309,3 +309,6 @@ Se abre el Skatepark al final de la calle del este, con Rulo (el patinador), ram
 
 ## 3D: Fase 2 — interiores que se reviven
 La casa de Miga, la heladería y la tienda de cartas tienen interior gris con algo para revivir (tablero de luz, máquina de helados y vitrina de cartas) usando un cable y su carrera de luz (temas casa, helado y cartas). Al revivirlos vuelve el color adentro y afuera se nota: guirnalda en la casa de Miga y vidrieras encendidas en los locales. La tienda de cartas se destraba cerrando un circuito de tres nodos en el Mundo Voltio. Cada interior esconde una chispita. El objetivo y las pistas guían adentro de cada casa. Pruebas 3D: 22 escenarios. Decisión 045.
+
+## 3D: Fase 3 — cartas de Chispis
+40 Chispis originales en 9 tipos y tres rarezas, dibujados por código. Se consiguen rescatándolos de jaulas en el Mundo Voltio (5), en sobres (8 escondidos + uno por cada lugar que revive, con animación de dar vuelta y la más rara al final) y cambiando repetidas con los vecinos (6). Álbum con siluetas de las que faltan, desde el menú o la vitrina de la tienda; contador 🃏 en el HUD. Arreglos: la carta grande se abría detrás del álbum; el saludo automático de un vecino ya no abre el cambio. Pruebas 3D: 24 escenarios. Decisión 046.
