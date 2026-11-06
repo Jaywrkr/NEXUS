@@ -1846,7 +1846,11 @@ export class WorldMode {
       piecesEl.textContent = `◆ ${this.pieces}/${PIECES_TOTAL}`;
     }
     const qb = document.getElementById('questBtn');
-    if (qb) qb.textContent = `📒 ${this.questsDone}/${QUESTS.length}`;
+    if (qb) {
+      const pending = this.rewardsPending;
+      qb.textContent = `📒 ${this.questsDone}/${QUESTS.length}${pending ? ` 🎁${pending}` : ''}`;
+      qb.classList.toggle('has-reward', pending > 0);
+    }
     const buddy = document.getElementById('buddy');
     if (buddy) {
       const card = this.companion ? CARD_BY_ID.get(this.companion.id) : null;
@@ -2729,14 +2733,23 @@ export class WorldMode {
   }
 
   /** Para la libreta: distritos, Pieza y encargos con su avance. */
-  questBook(): { district: string; name: string; piece: boolean; quests: { id: string; title: string; text: string; giver: string; done: boolean; progress: [number, number] | null }[] }[] {
+  questBook(): { district: string; name: string; piece: boolean; quests: { id: string; title: string; text: string; giver: string; done: boolean; claimed: boolean; reward: string; progress: [number, number] | null }[] }[] {
     return QUEST_DISTRICTS.map((d) => ({
       district: d,
       name: DISTRICT_NAMES[d],
       piece: this.progress.hasFlag(`pieza-${d}`),
       quests: QUESTS.filter((q) => q.district === d).map((q) => {
         const r = q.check(this.questCtx);
-        return { id: q.id, title: q.title, text: q.text, giver: q.giver, done: this.progress.hasFlag(`quest-${q.id}`), progress: Array.isArray(r) ? r : null };
+        return {
+          id: q.id,
+          title: q.title,
+          text: q.text,
+          giver: q.giver,
+          done: this.progress.hasFlag(`quest-${q.id}`),
+          claimed: this.progress.hasFlag(`reward-${q.id}`),
+          reward: q.reward === 'pack' ? '🃏 sobre' : '✦✦',
+          progress: Array.isArray(r) ? r : null,
+        };
       }),
     }));
   }
@@ -2746,6 +2759,31 @@ export class WorldMode {
     if (q.at) return q.at;
     if (q.id.endsWith('-notas')) return this.notes.nearest(this.nexus.position, q.district);
     return null;
+  }
+
+  /** Encargos cumplidos con el premio sin cobrar. */
+  get rewardsPending(): number {
+    return QUESTS.filter((q) => this.progress.hasFlag(`quest-${q.id}`) && !this.progress.hasFlag(`reward-${q.id}`)).length;
+  }
+
+  /** Libreta → «🎁 Cobrar»: 2 chispitas o un sobre de cartas. Devuelve lo que dio. */
+  claimReward(id: string): string | null {
+    const q = QUESTS.find((k) => k.id === id);
+    if (!q || !this.progress.hasFlag(`quest-${id}`) || this.progress.hasFlag(`reward-${id}`)) return null;
+    this.progress.setFlag(`reward-${id}`);
+    this.updateHud();
+    if (q.reward === 'pack') {
+      const ids = rollPack((c) => this.progress.hasCard(c));
+      for (const c of ids) this.progress.addCard(c);
+      this.audio.playCollect();
+      this.updateHud();
+      this.cb.pack?.(ids);
+      return 'sobre';
+    }
+    this.progress.addCharge(2);
+    this.audio.playCollect();
+    this.updateHud();
+    return 'chispitas';
   }
 
   /** Libreta → «📍»: muestra el camino al encargo. */
@@ -2771,9 +2809,7 @@ export class WorldMode {
       this.progress.setFlag(`quest-${q.id}`);
       if (silent) continue;
       this.audio.playSuccess();
-      this.toast(`📒 ¡Encargo cumplido! ${q.title}`, 'ok');
-      if (q.reward === 'pack') this.dropPack(`quest-${q.id}`, this.nexus.position.x + 1.6, this.nexus.position.z + 1.6, true);
-      else this.progress.addCharge(2);
+      this.toast(`📒 ¡Encargo cumplido! ${q.title} — cobrá el premio en la libreta`, 'ok');
     }
     // Gran tarea: todos los encargos de un distrito devuelven su Pieza (después de que la Chispa se partió)
     if (this.progress.hasFlag('chispa-rota')) {

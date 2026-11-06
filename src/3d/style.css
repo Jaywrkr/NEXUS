@@ -1540,3 +1540,24 @@ body.cave-dark #caveDark {
 .travel-sheet {
   grid-template-columns: minmax(0, 1fr);
 }
+
+.quest-claim {
+  padding: 4px 8px;
+  border-radius: 10px;
+  background: #7dffef;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.quest-pill.has-reward {
+  background: #ffd23a;
+  color: #1d1630;
+  animation: reward-pulse 1.2s ease-in-out infinite;
+}
+@keyframes reward-pulse {
+  50% {
+    box-shadow: 0 0 0 4px rgba(255, 210, 58, 0.45);
+  }
+}
+.quest-row.done:has(.quest-claim) {
+  opacity: 1;
+}

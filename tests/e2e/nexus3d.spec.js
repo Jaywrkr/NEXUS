@@ -1643,7 +1643,8 @@ test('3D: libreta de encargos, notas de la canción, carreras de aros y Piezas d
   expect(await text(page, 'msg')).toContain('Ganaste');
   await step(page, 0.6);
   expect(await flag('quest-c-carrera')).toBe(true);
-  expect(await w(() => window.__nexus3d.world.charge)).toBe(Math.min(5, charge0 + 2));
+  expect(await w(() => window.__nexus3d.world.charge)).toBe(charge0); // el premio se cobra en la libreta
+  expect(await text(page, 'questBtn')).toContain('🎁');
 
   // La carrera del Skatepark es en patineta; la del parque se puede perder (y probar otra vez)
   await tp(page, 66, -14);
@@ -1660,6 +1661,10 @@ test('3D: libreta de encargos, notas de la canción, carreras de aros y Piezas d
   await expect.poll(() => w(() => !document.getElementById('questPop').hidden)).toBe(true);
   expect(await w(() => document.querySelectorAll('#questList .quest-row').length)).toBeGreaterThanOrEqual(45);
   expect(await w(() => document.querySelector('[data-quest="c-carrera"]').classList.contains('done'))).toBe(true);
+  await w(() => window.__nexus3d.world.setCharge(0));
+  await page.click('[data-quest="c-carrera"] .quest-claim');
+  expect(await w(() => window.__nexus3d.world.charge)).toBe(2);
+  expect(await w(() => document.querySelector('[data-quest="c-carrera"] .quest-claim'))).toBe(null);
   await page.screenshot({ path: test.info().outputPath('libreta.png') });
   await page.click('[data-quest="c-notas"] .quest-go');
   expect(await w(() => document.getElementById('questPop').hidden)).toBe(true);

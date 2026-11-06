@@ -459,6 +459,19 @@ class Game {
         row.dataset.quest = q.id;
         const prog = !q.done && q.progress ? ` <em>${q.progress[0]}/${q.progress[1]}</em>` : '';
         row.innerHTML = `<b>${q.done ? '✓' : '○'}</b><div><strong>${q.title}${prog}</strong><small>${q.text}</small></div>`;
+        if (q.done && !q.claimed) {
+          const claim = document.createElement('button');
+          claim.type = 'button';
+          claim.className = 'ui-btn quest-claim';
+          claim.textContent = `🎁 ${q.reward}`;
+          claim.title = 'Cobrar el premio';
+          claim.addEventListener('click', () => {
+            const got = w.claimReward(q.id);
+            claim.remove();
+            if (got === 'sobre') this.closePop('questPop');
+          });
+          row.appendChild(claim);
+        }
         if (!q.done) {
           const go = document.createElement('button');
           go.type = 'button';
