@@ -12,6 +12,7 @@ import { Beacon, BridgeLever, Door, EnergySource, FlowerBed, Fountain, Fragment,
 import { Connections } from '../systems/Connections';
 import type { FeedbackKind } from '../systems/Connections';
 import { World } from '../world/World';
+import { mergeParts, referencedParts } from '../core/batch';
 import { SECRET_FRAGMENT, ZONE_FRAGMENTS } from './MuseumMode';
 import { RESIDENTS, connectionSurprise, residentLine } from '../../data/chapter';
 import { Resident3D } from '../entities/Resident3D';
@@ -546,6 +547,8 @@ export class WorldMode {
     for (const [obj, label] of labels) obj.label = label;
 
     for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire, ...millSources, ...this.mills, ghSource, this.greenhouse, barnSource, this.incubator, tractorSource, this.tractor, beltSource, ...this.belts, hallSource, this.boiler, this.gear, this.machine, marketSource, ...this.stalls, cineSource, this.projector, libSource, this.libLamp, fridgeSource, this.fridge, castleSource, this.castle, panelSource, windSource, this.farito, lanchaSource, this.lancha, templeSource, ...this.runes, this.altar, heartSource, this.heart, liftSource, this.chairlift, obsSource, this.telescope]) {
+      // Rendimiento: une las piezas quietas de cada objeto (lo que el objeto guarda en sus campos queda aparte)
+      mergeParts(obj.group, referencedParts(obj, new Set([obj.group])));
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -2426,6 +2429,7 @@ export class WorldMode {
       return [x, z];
     };
     const addObj = (o: Spark | Sleeper) => {
+      mergeParts(o.group, referencedParts(o, new Set([o.group])));
       keepVivid(o.group);
       scene.add(o.group);
       this.connections.register(o);
@@ -4408,6 +4412,7 @@ export class WorldMode {
 
   update(dt: number): void {
     this.time += dt;
+    this.checkOccluded(dt);
     if (this.input.consumeView() && !this.inside) this.setView(!this.iso);
     if (this.input.consumeVolt()) this.toggleVoltio();
 
@@ -4655,6 +4660,69 @@ export class WorldMode {
     this.chaseCam.lookAt(p.x + Math.sin(this.camYaw) * 2, 1.0 + p.y, p.z + Math.cos(this.camYaw) * 2);
   }
 
+  /* ---------- Rendimiento: lo lejano se aparta de la escena (Etapa A) ---------- */
+
+  /** Lo que se aparta cuando queda lejos de la cámara: el objeto, el centro de lo que ocupa (respecto de su posición) y su radio. */
+  private readonly cullables: { o: THREE.Object3D; off: THREE.Vector3; r: number; parked: boolean }[] = [];
+  /** Donde esperan los objetos lejanos: fuera de la escena (no se recorren ni se dibujan). Su transformación es la misma. */
+  private readonly parked = new THREE.Group();
+
+  /**
+   * Registra todo lo que está en la escena al terminar de armar el mundo. Quedan siempre: el Nexus, las luces,
+   * lo enorme (suelo, mar, cielo) y lo que viaja lejos de donde se armó (lancha, telesilla, bote, tren…).
+   */
+  private setupCulling(): void {
+    const scene = this.world.scene;
+    const keep = new Set<THREE.Object3D>([this.nexus.root, this.boat.group, this.lancha.group, this.chairlift.group, this.tractor.group, this.coaster.group, this.train.group]);
+    scene.traverse((o) => {
+      if (o.userData.noCull) keep.add(o);
+    });
+    scene.updateMatrixWorld(true);
+    const box = new THREE.Box3();
+    const sphere = new THREE.Sphere();
+    for (const o of scene.children) {
+      if (keep.has(o) || (o as THREE.Light).isLight || (o as THREE.Camera).isCamera) continue;
+      box.setFromObject(o);
+      if (box.isEmpty()) continue;
+      box.getBoundingSphere(sphere);
+      if (sphere.radius > 70) continue;
+      this.cullables.push({ o, off: sphere.center.clone().sub(o.position), r: sphere.radius, parked: false });
+    }
+  }
+
+  /** Cuántos objetos hay apartados ahora (para las pruebas). */
+  get parkedCount(): number {
+    return this.parked.children.length;
+  }
+
+  /** Aparta lo que no se puede ver desde la cámara actual y devuelve lo que vuelve a estar cerca. */
+  private cullReady = false;
+
+  private cull(halfW: number, halfH: number): void {
+    if (!this.cullReady) {
+      this.cullReady = true;
+      this.setupCulling();
+    }
+    const scene = this.world.scene;
+    const c = this.iso ? this.focus : this.nexus.position;
+    // Isométrica: lo que entra en pantalla, estirado por la inclinación de la cámara (y un margen para lo alto)
+    const R = this.iso ? halfW + halfH / 0.6 + 14 : 230;
+    for (let i = this.cullables.length - 1; i >= 0; i -= 1) {
+      const k = this.cullables[i];
+      const parent = k.o.parent;
+      // El juego lo sacó (una chispita juntada, la patineta agarrada…): ya no se maneja
+      if (parent !== scene && parent !== this.parked) {
+        this.cullables.splice(i, 1);
+        continue;
+      }
+      const far = Math.hypot(k.o.position.x + k.off.x - c.x, k.o.position.z + k.off.z - c.z) - k.r > R;
+      if (far === k.parked) continue;
+      k.parked = far;
+      if (far) this.parked.add(k.o);
+      else scene.add(k.o);
+    }
+  }
+
   /* ---------- Silueta cuando algo tapa al Nexus (solo isométrica) ---------- */
 
   private readonly xrayMat = new THREE.MeshBasicMaterial({
@@ -4691,6 +4759,35 @@ export class WorldMode {
     this.nexus.materialHook = hook;
   }
 
+  /** ¿Algo tapa al Nexus desde la cámara isométrica? (se revisa 5 veces por segundo; la silueta cuesta un dibujo por pieza) */
+  private silhouetteOn = false;
+  private silhouetteT = 0;
+  private readonly ray = new THREE.Raycaster();
+
+  private checkOccluded(dt: number): void {
+    this.silhouetteT -= dt;
+    if (this.silhouetteT > 0) return;
+    this.silhouetteT = 0.2;
+    if (!this.iso || this.inside) {
+      this.silhouetteOn = false;
+      return;
+    }
+    const dir = ISO_OFFSET.clone().normalize();
+    this.ray.far = 40;
+    this.ray.camera = this.isoCam;
+    const p = this.nexus.position;
+    const targets = this.world.scene.children.filter((o) => o !== this.nexus.root && o !== this.companion?.root);
+    this.silhouetteOn = [0.4, 1.3].some((h) => {
+      this.ray.set(new THREE.Vector3(p.x, p.y + h, p.z), dir);
+      return this.ray.intersectObjects(targets, true).some((hit) => {
+        const m = hit.object as THREE.Mesh;
+        if (!m.isMesh || m.userData.isOutline) return false;
+        for (let o: THREE.Object3D | null = m; o; o = o.parent) if (!o.visible) return false;
+        return true;
+      });
+    });
+  }
+
   private renderSilhouette(renderer: Renderer): void {
     this.xraySaved.length = 0;
     this.nexus.root.traverse((o) => {
@@ -4721,12 +4818,13 @@ export class WorldMode {
     this.isoCam.top = half;
     this.isoCam.bottom = -half;
     this.isoCam.updateProjectionMatrix();
+    this.cull(half * aspect, half);
     this.chaseCam.aspect = aspect;
     this.chaseCam.fov = aspect < 1 ? 70 : 55;
     this.chaseCam.updateProjectionMatrix();
     this.world.sky.visible = !this.iso;
     renderer.voltio = this.voltio.amount;
     renderer.night = this.world.night;
-    renderer.render(this.world.scene, this.camera, time, this.iso ? () => this.renderSilhouette(renderer) : undefined);
+    renderer.render(this.world.scene, this.camera, time, this.iso && this.silhouetteOn ? () => this.renderSilhouette(renderer) : undefined);
   }
 }

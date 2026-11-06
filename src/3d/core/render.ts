@@ -410,6 +410,11 @@ export class Renderer {
     else if (this.fastTime > 6 && this.dpr < this.maxDpr) this.setDpr(this.dpr + 0.25);
   }
 
+  /** Resolución actual, para el medidor de rendimiento. */
+  get dprLabel(): string {
+    return `${this.dpr.toFixed(2).replace(/0$/, '')}×`;
+  }
+
   private setDpr(v: number): void {
     this.dpr = Math.min(this.maxDpr, Math.max(this.minDpr, v));
     this.slowTime = this.fastTime = 0;

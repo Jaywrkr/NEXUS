@@ -600,6 +600,14 @@ body:not(.touch) .touch-only {
   background: var(--ink);
   box-shadow: 3px 3px 0 var(--ink);
 }
+.perf-pill {
+  display: none;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+}
+body.show-perf .perf-pill {
+  display: inline-flex;
+}
 .map-zoom {
   margin: 6px 0 0;
   font-size: 13px;
