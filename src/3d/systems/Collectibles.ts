@@ -20,6 +20,7 @@ const NOTE_COLORS: Record<string, string> = {
   granja: '#e0a080',
   fabrica: '#ffc23a',
   alto: '#e77fa6',
+  playa: '#5fd0e8',
 };
 
 function makeNote(color: string): THREE.Group {

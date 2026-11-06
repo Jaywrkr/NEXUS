@@ -7,6 +7,7 @@ import { CREEK, FOREST_FROM_CERRO, FOREST_FROM_PARK, FOREST_REGION, TREE } from 
 import { FARM, FARM_FROM_CENTRO, FARM_FROM_PORT, FARM_REGION } from '../world/Farm';
 import { FACTORY, FACTORY_FROM_PARK, FACTORY_FROM_SKATE, FACTORY_REGION } from '../world/Factory';
 import { ALTO, ALTO_FROM_SKATE, ALTO_REGION } from '../world/BarrioAlto';
+import { JETTY, PLAYA_FROM_PORT, PLAYA_FROM_STATION, PLAYA_REGION } from '../world/Playa';
 import { PIERS, PORT_CORRIDOR, PORT_REGION, SEA_Z } from '../world/Port';
 
 /*
@@ -86,6 +87,10 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
     [FACTORY_FROM_SKATE, [170, 160, 150]],
     [ALTO_REGION, [215, 200, 180]],
     [ALTO_FROM_SKATE, [215, 200, 180]],
+    [PLAYA_REGION, [242, 220, 160]],
+    [PLAYA_FROM_PORT, [242, 220, 160]],
+    [PLAYA_FROM_STATION, [242, 220, 160]],
+    [JETTY, [150, 144, 130]],
     [PORT_REGION, [150, 160, 190]],
     [PORT_CORRIDOR, [150, 160, 190]],
   ] as [{ minX: number; maxX: number; minZ: number; maxZ: number }, number[]][]) {

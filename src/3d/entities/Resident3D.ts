@@ -10,7 +10,7 @@ export interface ResidentLook {
   hair: string;
   /** 1 = normal; >1 = más ancho (Bombo). */
   girth?: number;
-  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor' | 'skater' | 'inventor' | 'lamplighter' | 'barker' | 'conductor' | 'ranger' | 'sailor' | 'farmer';
+  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor' | 'skater' | 'inventor' | 'lamplighter' | 'barker' | 'conductor' | 'ranger' | 'sailor' | 'farmer' | 'lifeguard';
 }
 
 export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
@@ -35,6 +35,8 @@ export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
   nora: { body: '#30406a', pants: '#2c2838', skin: '#c98e6b', hair: '#1d1630', accessory: 'conductor' },
   // Yuyo: botánico del Bosque (Fase 11); sombrero de ala ancha verde, pañuelo y binoculares
   yuyo: { body: '#9be37a', pants: '#5a4630', skin: '#c98e6b', hair: '#d8d8d8', accessory: 'ranger' },
+  // Coral: la salvavidas de la Playa (Fase 16); remera roja, visera y silbato
+  coral: { body: '#e0453f', pants: '#ffd23a', skin: '#b9825f', hair: '#1d1630', accessory: 'lifeguard' },
   // Don Kiosko: el del mercado del Barrio Alto (Fase 15); delantal rojo y sombrero
   kiosko: { body: '#e0453f', pants: '#3d3550', skin: '#d9a77e', hair: '#3a2a22', girth: 1.2, accessory: 'barker' },
   // Luli: la de la biblioteca (Fase 15); siempre con auriculares y un libro
@@ -383,6 +385,18 @@ export class Resident3D {
       horn.rotation.x = Math.PI / 2;
       horn.position.set(0, -0.36, 0.14);
       this.armR.add(horn);
+    } else if (kind === 'lifeguard') {
+      // Visera roja y silbato colgado
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.06, 16, 1, true), toon('#e0453f'));
+      band.position.y = 0.2;
+      h.add(band);
+      const visor = rounded(new THREE.CylinderGeometry(0.2, 0.2, 0.02, 16, 1, false, -Math.PI / 2, Math.PI), toon('#e0453f'), 0.006);
+      visor.position.set(0, 0.18, 0.12);
+      h.add(visor);
+      const whistle = rounded(new THREE.CylinderGeometry(0.03, 0.03, 0.1, 8), toon('#ffd23a'), 0.005);
+      whistle.rotation.x = Math.PI / 2;
+      whistle.position.set(0, 0.5, 0.18);
+      this.body.add(whistle);
     } else if (kind === 'conductor' || kind === 'sailor') {
       // Gorra de visera con galón dorado (jefa de estación) o blanca con ancla (capitana)
       const capColor = kind === 'sailor' ? '#fff3dc' : '#30406a';

@@ -104,7 +104,7 @@ export const CARDS: ChispiCard[] = [
   // Mar
   c('caracolin', 'Caracolín', 'mar', 'comun', 'sobre', 'Si lo acercás a la oreja, se escucha el mar… y chistes.'),
   c('gaviotin', 'Gaviotín', 'mar', 'brillante', 'rescate', 'Le roba las papas fritas a las otras gaviotas.'),
-  c('olita', 'Olita', 'mar', 'brillante', 'sobre', 'Va y viene, va y viene, va y viene…'),
+  c('olita', 'Olita', 'mar', 'brillante', 'rescate', 'Va y viene, va y viene, va y viene…'),
   c('farito', 'Farito', 'mar', 'dorada', 'sobre', 'Guarda la última luz del faro del puerto.'),
 ];
 

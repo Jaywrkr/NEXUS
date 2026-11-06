@@ -84,6 +84,14 @@ export const NOTES: NoteSpot[] = [
     [140, 0.9, -29],
     [102, 0.9, -28],
   ]),
+  ...n('playa', [
+    [104, 3.1, 76], // arriba de la torre de Coral
+    [122, 0.9, 116], // en la punta de la escollera
+    [88, 0.9, 89],
+    [50, 0.9, 93],
+    [130, 0.9, 70],
+    [80, 0.9, 108], // sobre el mar: se llega surfeando
+  ]),
   ...n('puerto', [
     [-3.3, 1.8, 90], // arriba de los cajones
     [16.7, 1.8, 74], // otros cajones
@@ -241,6 +249,22 @@ export const RACES: Race[] = [
       [146.5, 4.2, 11],
       [151.5, 5.2, 11],
       [156.5, 6.2, 11],
+    ],
+  },
+  {
+    id: 'race-playa',
+    district: 'playa',
+    name: 'Surf de Coral',
+    board: true,
+    time: 32,
+    start: { x: 54, z: 92 },
+    rings: [
+      [58, 1.2, 101],
+      [68.5, 2.4, 104],
+      [78, 1.2, 108],
+      [92, 1.2, 104],
+      [108, 1.2, 100],
+      [114, 1.2, 93],
     ],
   },
   {

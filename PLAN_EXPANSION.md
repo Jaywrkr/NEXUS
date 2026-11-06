@@ -85,7 +85,7 @@ Ciclo suave de día y noche (unos 8 minutos de juego). De noche se prenden farol
 | **13. Día y noche** ✅ (hecha, Decisión 057) | Ciclo, faroles y ventanas, encargos nocturnos, cama que cambia la hora | Hay al menos 8 encargos nocturnos |
 | **14. Fábrica de Chispas** ✅ (hecha, Decisión 058) | Distrito, cintas (cables en orden), robots, sala de máquinas, Tuerca, Pieza | Ídem |
 | **15. Barrio Alto y mercado** ✅ (hecha, Decisión 059) | Distrito, mercado, cine, techos, carrera de patineta, vecinos, Pieza | Ídem |
-| **16. Playa** | Distrito, surf, castillos, Coral, Pieza; el bote navega el mar | Ídem |
+| **16. Playa** ✅ (hecha, Decisión 060) | Distrito, surf, castillos, Coral, Pieza; el bote navega el mar | Ídem |
 | **17. Isla misteriosa** | Viaje en bote, templo con circuitos, volcán, Pip, Pieza | Ídem |
 | **18. Montaña nevada y observatorio** | Subida, trineo, telescopio que muestra Piezas, Lupa, Pieza | Ídem |
 | **19. El final de verdad** | Las 12 Piezas en el faro, fiesta con todos, canción de 12 instrumentos, créditos nuevos, epílogos de todos los vecinos | Se puede terminar el juego con todo el mundo nuevo |

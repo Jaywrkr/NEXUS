@@ -53,11 +53,12 @@ export const DISTRICT_NAMES: Record<string, string> = {
   granja: 'Granja y molinos',
   fabrica: 'Fábrica de Chispas',
   alto: 'Barrio Alto y mercado',
+  playa: 'Playa',
   noche: '🌙 De noche',
 };
 
 /** Distritos con libreta (en orden); los de las fases siguientes se suman acá. */
-export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque', 'granja', 'fabrica', 'alto', 'noche'];
+export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque', 'granja', 'fabrica', 'alto', 'playa', 'noche'];
 /** Secciones de la libreta que no tienen Pieza (encargos sueltos). */
 export const NO_PIECE = new Set(['noche']);
 
@@ -188,6 +189,18 @@ export const QUESTS: Quest[] = [
   { id: 'a-turbo', district: 'alto', giver: 'kiosko', title: 'Turbochispa', text: 'Rescatá a Turbochispa en el Mundo Voltio, al lado del mercado.', check: (c) => c.chispi('turbochispa'), at: { x: 150, z: 24 }, reward: 'pack' },
   { id: 'a-carrera', district: 'alto', giver: 'kiosko', title: 'Carrera por los techos', text: 'En patineta: subí por la rampita y pasá los aros de techo en techo.', check: (c) => c.flag('race-alto'), at: { x: 124, z: 7 } },
   { id: 'a-notas', district: 'alto', giver: 'luli', title: 'Canción del barrio', text: 'Juntá las 6 notas del Barrio Alto (hay notas en los techos).', check: (c) => c.notes('alto') },
+  // ---------- Playa (Fase 16) ----------
+  { id: 'p-kiosco', district: 'playa', giver: 'coral', title: 'Algo fresquito', text: 'Llevale energía a la heladera del kiosco: ¡se abren las sombrillas!', check: (c) => c.active('playa-fridge'), at: { x: 57.5, z: 75.5 } },
+  { id: 'p-castillo', district: 'playa', giver: 'coral', title: 'El castillo gigante', text: 'Conectá el balde de chispas con el castillo de arena y miralo crecer.', check: (c) => c.active('playa-castle'), at: { x: 83.5, z: 80.5 } },
+  { id: 'p-torre', district: 'playa', giver: 'coral', title: 'La torre de Coral', text: 'Subí a la torre de la salvavidas (por el escalón de al lado).', check: (c) => c.flag('torre-coral'), at: { x: 105.6, z: 76 } },
+  { id: 'p-muelle', district: 'playa', giver: 'coral', title: 'El portón de la escollera', text: 'Abrí el portón de la escollera cerrando su circuito en el Mundo Voltio.', check: (c) => c.flag('muelle-open'), at: { x: 122, z: 92 } },
+  { id: 'p-farito', district: 'playa', giver: 'coral', title: 'El faro chiquito', text: 'El faro chiquito necesita dos cables: el del panel solar y el del molinito.', check: (c) => c.active('playa-farito'), at: { x: 122, z: 110 }, reward: 'pack' },
+  { id: 'p-surf', district: 'playa', giver: 'coral', title: '¡A surfear!', text: 'Subite a la patineta y andá sobre el mar de la orilla.', check: (c) => c.flag('surf') },
+  { id: 'p-ola', district: 'playa', giver: 'coral', title: 'Saltar una ola', text: 'Surfeando, agarrá una ola de espuma rápido y volá.', check: (c) => c.flag('surf-air'), at: { x: 64, z: 104 } },
+  { id: 'p-cangrejos', district: 'playa', giver: 'coral', title: 'Los cangrejos', text: 'Despertá con la mochila a los 6 cangrejos de la orilla.', check: (c) => c.awakeKind('crab') },
+  { id: 'p-olita', district: 'playa', giver: 'coral', title: 'Olita', text: 'Rescatá a Olita en el Mundo Voltio, cerca del kiosco.', check: (c) => c.chispi('olita'), at: { x: 96, z: 68 }, reward: 'pack' },
+  { id: 'p-carrera', district: 'playa', giver: 'coral', title: 'Carrera de surf', text: 'En patineta: pasá los aros sobre el mar (uno se alcanza saltando una ola).', check: (c) => c.flag('race-playa'), at: { x: 54, z: 92 } },
+  { id: 'p-notas', district: 'playa', giver: 'coral', title: 'Canción del mar', text: 'Juntá las 6 notas de la playa (una en la torre y otra en la punta de la escollera).', check: (c) => c.notes('playa') },
   // ---------- De noche (Fase 13) ----------
   { id: 'n-noche', district: 'noche', giver: 'lucio', title: 'Primera noche', text: 'Esperá a que se haga de noche (o dormí una siesta en tu casa).', check: (c) => c.flag('night-seen') },
   { id: 'n-buhos', district: 'noche', giver: 'lucio', title: 'Los búhos', text: 'Despertá con la mochila a los 4 búhos (solo se despiertan de noche).', check: (c) => c.awakeKind('owl'), reward: 'pack' },

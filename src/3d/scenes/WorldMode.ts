@@ -49,6 +49,8 @@ import { GreenhouseSprinkler, Incubator, Tractor, Windmill } from '../objects/fa
 import { FactoryPart } from '../objects/factory';
 import { MarketStall, Projector, ReadingLamp } from '../objects/alto';
 import { ALTO } from '../world/BarrioAlto';
+import { BeachFridge, SandCastle, SmallLighthouse } from '../objects/playa';
+import { PLAYA, SURF_REGION } from '../world/Playa';
 import { FACTORY, liftHeight } from '../world/Factory';
 import { FARM } from '../world/Farm';
 import { FOREST, MUSHROOM_R, MUSHROOM_TOP, TREE } from '../world/Forest';
@@ -135,6 +137,7 @@ const CAGES: { id: string; x: number; z: number }[] = [
   { id: 'girasolin', x: FARM.chispi.x, z: FARM.chispi.z },
   { id: 'faroluz', x: FACTORY.chispi.x, z: FACTORY.chispi.z },
   { id: 'turbochispa', x: ALTO.chispi.x, z: ALTO.chispi.z },
+  { id: 'olita', x: PLAYA.chispi.x, z: PLAYA.chispi.z },
 ];
 
 /** Sobres escondidos por el mundo (x, z, altura). */
@@ -250,6 +253,9 @@ export class WorldMode {
   private readonly projector: Projector;
   private readonly libLamp: ReadingLamp;
   private filmT = 0;
+  private readonly fridge: BeachFridge;
+  private readonly castle: SandCastle;
+  private readonly farito: SmallLighthouse;
   private readonly lighthouse: Lighthouse;
   private readonly granChispa = new GranChispa();
   /** Expansión (Fase 10): notas de la canción, carreras de aros, libreta y Piezas de la Gran Chispa. */
@@ -452,6 +458,15 @@ export class WorldMode {
     this.libLamp = new ReadingLamp('alto-lamp', ALTO.libLamp.x, ALTO.libLamp.z);
     this.libLamp.unlocked = this.progress.hasFlag('biblio-open');
     if (this.progress.hasFlag('alto-top')) this.addLife(146.5, 11, 15, false);
+    // Fase 16: la Playa
+    const fridgeSource = new EnergySource('playa-fridge-source', PLAYA.kioscoSource.x, PLAYA.kioscoSource.z);
+    this.fridge = new BeachFridge('playa-fridge', PLAYA.fridge.x, PLAYA.fridge.z);
+    const castleSource = new EnergySource('playa-castle-source', PLAYA.castleSource.x, PLAYA.castleSource.z);
+    this.castle = new SandCastle('playa-castle', PLAYA.castle.x, PLAYA.castle.z);
+    const panelSource = new EnergySource('playa-panel', PLAYA.panel.x, PLAYA.panel.z);
+    const windSource = new EnergySource('playa-wind', PLAYA.wind.x, PLAYA.wind.z);
+    this.farito = new SmallLighthouse('playa-farito', PLAYA.farito.x, PLAYA.farito.z);
+    if (this.progress.hasFlag('muelle-open')) this.world.playa.openGate();
     // La casa del Nexus: lo que ya se arregló
     for (const it of HOME_ITEMS) if (this.progress.hasFlag(`casa-${it.id}`)) this.world.home.fix(it.id, false);
     if (this.homeInsideDone) this.world.home.gray.revive(false);
@@ -488,10 +503,14 @@ export class WorldMode {
       [marketSource, 'Energía'],
       [cineSource, 'Energía'],
       [libSource, 'Energía'],
+      [fridgeSource, 'Energía'],
+      [castleSource, 'Balde de chispas'],
+      [panelSource, 'Panel solar'],
+      [windSource, 'Molinito'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire, ...millSources, ...this.mills, ghSource, this.greenhouse, barnSource, this.incubator, tractorSource, this.tractor, beltSource, ...this.belts, hallSource, this.boiler, this.gear, this.machine, marketSource, ...this.stalls, cineSource, this.projector, libSource, this.libLamp]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire, ...millSources, ...this.mills, ghSource, this.greenhouse, barnSource, this.incubator, tractorSource, this.tractor, beltSource, ...this.belts, hallSource, this.boiler, this.gear, this.machine, marketSource, ...this.stalls, cineSource, this.projector, libSource, this.libLamp, fridgeSource, this.fridge, castleSource, this.castle, panelSource, windSource, this.farito]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -593,6 +612,11 @@ export class WorldMode {
       available: () => this.libLamp.unlocked,
       blockedMessage: 'El farol de lectura tiene el mecanismo trabado: mirá sus cables con la capucha ⚡',
     });
+    // Playa: la heladera, el castillo y el faro chiquito (que necesita dos cables a la vez)
+    this.connections.addRule({ sourceId: fridgeSource.id, targetId: this.fridge.id, useTunnel: true });
+    this.connections.addRule({ sourceId: castleSource.id, targetId: this.castle.id, useTunnel: true });
+    this.connections.addRule({ sourceId: panelSource.id, targetId: this.farito.id, useTunnel: true });
+    this.connections.addRule({ sourceId: windSource.id, targetId: this.farito.id, useTunnel: true });
     // El faro: motor trabado (circuito Voltio) y solo prende con toda la ciudad viva
     this.connections.addRule({
       sourceId: portSource.id,
@@ -866,6 +890,8 @@ export class WorldMode {
       [this.machine, 'fabrica', true],
       [this.projector, 'cine', true],
       [this.libLamp, 'biblioteca', true],
+      [this.castle, 'castillo', true],
+      [this.farito, 'farito', this.farito.isActive],
     ];
     for (const [obj, id, ok] of packFor) {
       if (target !== obj || !ok) continue;
@@ -960,6 +986,33 @@ export class WorldMode {
         if (animate) after(0.8, () => this.updateResidentMoods());
       } else {
         say(`¡${name} revivió! Acercate y subite`);
+      }
+    }
+    // Fase 16: la Playa
+    if (target === this.fridge) {
+      this.world.playa.openUmbrellas();
+      this.addLife(66, 78, 16, animate);
+      say('¡La heladera enfría! Y se abrieron las sombrillas');
+    }
+    if (target === this.castle) {
+      this.addLife(PLAYA.castle.x, PLAYA.castle.z, 14, animate);
+      say('¡El castillo de arena creció y levantó sus banderas!');
+    }
+    if (target === this.farito) {
+      if (!this.farito.isActive) say('¡Llegó un cable! El faro chiquito necesita el otro también');
+      else {
+        this.addLife(PLAYA.farito.x, PLAYA.farito.z - 8, 18, animate);
+        this.addLife(112, 86, 22, animate);
+        say('¡El faro chiquito se prendió con el sol y el viento!');
+        if (animate) {
+          after(1.4, () =>
+            this.showStory(
+              'Coral · El faro chiquito',
+              '¡Gracias! Este farito guía a los botes que vuelven de la isla del sur. Marina dice que su bote ya puede salir al mar… ¿Y viste algo que brillaba allá lejos, en la isla?',
+            ),
+          );
+          after(0.8, () => this.updateResidentMoods());
+        }
       }
     }
     // Fase 15: el Barrio Alto
@@ -1535,6 +1588,9 @@ export class WorldMode {
       { name: 'Cine', x: ALTO.cine.x, z: ALTO.cine.z, alive: this.projector.isActive },
       { name: 'Biblioteca', x: ALTO.library.x, z: ALTO.library.z, alive: this.libLamp.isActive },
       { name: 'Terrazas', x: 146.5, z: 11, alive: this.progress.hasFlag('alto-top') },
+      { name: 'Kiosco', x: PLAYA.kiosco.x, z: PLAYA.kiosco.z, alive: this.fridge.isActive },
+      { name: 'Castillo de arena', x: PLAYA.castle.x, z: PLAYA.castle.z, alive: this.castle.isActive },
+      { name: 'Faro chiquito', x: PLAYA.farito.x, z: PLAYA.farito.z, alive: this.farito.isActive },
       { name: 'Cintas', x: 66, z: -63, alive: this.belts[2].isActive },
       { name: 'Faro', x: PORT.lighthouse.x, z: PORT.lighthouse.z - 3, alive: this.lighthouse.isActive },
     ];
@@ -1577,6 +1633,7 @@ export class WorldMode {
         { id: 'cave-lit', nodes: CERRO.caveNodes, door: CERRO.caveNodes[1] },
         { id: 'molino-open', nodes: FARM.millNodes, door: FARM.mills[2] },
         { id: 'biblio-open', nodes: ALTO.libNodes, door: ALTO.libLamp },
+        { id: 'muelle-open', nodes: PLAYA.nodes, door: { x: 122, z: PLAYA.gateZ } },
         { id: 'fabrica-open', nodes: FACTORY.gateNodes, door: { x: FACTORY.hall.doorX, z: FACTORY.hall.z + 6 } },
         { id: 'faro-open', nodes: PORT.nodes, door: PORT.lighthouse },
       ],
@@ -1603,6 +1660,9 @@ export class WorldMode {
           } else if (id === 'faro-open') {
             this.lighthouse.unlocked = true;
             this.setMessage('¡Circuito cerrado! El motor del faro se destrabó');
+          } else if (id === 'muelle-open') {
+            this.world.playa.openGate();
+            this.setMessage('¡Circuito cerrado! Se abrió el portón de la escollera');
           } else if (id === 'biblio-open') {
             this.libLamp.unlocked = true;
             this.setMessage('¡Circuito cerrado! El farol de la biblioteca se destrabó');
@@ -1640,7 +1700,7 @@ export class WorldMode {
         cages: [{ id: 'rueditas', ...this.world.skate.chispi }, ...CAGES]
           .filter((c) => !this.progress.hasChispi(c.id))
           .map((c): CageSpot => ({ ...c, color: TYPES[CARD_BY_ID.get(c.id)!.type].color })),
-        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open', 'molino-open', 'fabrica-open', 'biblio-open'].filter((f) => this.progress.hasFlag(f)),
+        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open', 'molino-open', 'fabrica-open', 'biblio-open', 'muelle-open'].filter((f) => this.progress.hasFlag(f)),
       },
     );
   }
@@ -1721,6 +1781,7 @@ export class WorldMode {
   mount(): void {
     if (!this.hasBoard || this.nexus.riding || this.inside || this.zip) return;
     this.nexus.riding = true;
+    World.setSurf(true);
     this.skate.reset();
     this.skate.speed = Math.min(this.nexus.speed, 4);
     this.audio.tone(330, 0, 0.08, 'triangle', 0.06);
@@ -1731,6 +1792,7 @@ export class WorldMode {
   dismount(): void {
     if (!this.nexus.riding) return;
     this.nexus.riding = false;
+    World.setSurf(false);
     this.nexus.grinding = false;
     this.nexus.lean = 0;
     this.skate.reset();
@@ -1881,7 +1943,7 @@ export class WorldMode {
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
       return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
     }
-    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep() ?? this.farmStep() ?? this.factoryStep() ?? this.altoStep();
+    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep() ?? this.farmStep() ?? this.factoryStep() ?? this.altoStep() ?? this.playaStep();
     if (park) return park;
     if (this.voltio.active && !this.inSkatepark) {
       const me = this.nexus.position;
@@ -2295,6 +2357,8 @@ export class WorldMode {
       ...FACTORY.robots.map(([x, z]): [SleeperKind, number, number] => ['robot', x, z]),
       // Fase 15: gatos del Barrio Alto
       ...ALTO.cats.map(([x, z]): [SleeperKind, number, number] => ['cat', x, z]),
+      // Fase 16: cangrejos de la orilla
+      ...PLAYA.crabs.map(([x, z]): [SleeperKind, number, number] => ['crab', x, z]),
     ] as [SleeperKind, number, number][]) {
       const [px, pz] = place(x, z);
       make(kind, px, pz, Math.PI / 4);
@@ -2424,6 +2488,8 @@ export class WorldMode {
       [[this.incubator, this.tractor], 'granja'],
       [[this.belts[0], this.boiler], 'fabrica'],
       [this.stalls, 'mercado'],
+      [[this.fridge, this.castle], 'playa'],
+      [[this.farito], 'farito'],
       [[this.projector], 'cine'],
       [[this.libLamp], 'biblio'],
     ];
@@ -2551,10 +2617,11 @@ export class WorldMode {
     nora.setHeard(this.progress.hasHeard('nora'));
     this.world.scene.add(nora.root);
     this.residents.push(nora);
-    // Don Kiosko y Luli, del Barrio Alto (Fase 15)
+    // Don Kiosko y Luli, del Barrio Alto (Fase 15); Coral, de la Playa (Fase 16)
     for (const [id, name, at] of [
       ['kiosko', 'Don Kiosko', ALTO.kiosko],
       ['luli', 'Luli', ALTO.luli],
+      ['coral', 'Coral', PLAYA.coral],
     ] as [string, string, { x: number; z: number; faceX: number; faceZ: number }][]) {
       const r = new Resident3D(id, name, at.x, at.z, Math.atan2(at.faceX - at.x, at.faceZ - at.z));
       r.setHeard(this.progress.hasHeard(id));
@@ -2620,6 +2687,7 @@ export class WorldMode {
       tuerca: this.machine.isActive,
       kiosko: this.progress.hasFlag('alto-market'),
       luli: this.libLamp.isActive,
+      coral: this.farito.isActive,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
@@ -2635,6 +2703,7 @@ export class WorldMode {
     if (r.id === 'tuerca') return this.tuercaText();
     if (r.id === 'kiosko') return this.kioskoText();
     if (r.id === 'luli') return this.luliText();
+    if (r.id === 'coral') return this.coralText();
     const info = RESIDENTS.find((i) => i.id === r.id)!;
     // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
     if (r.id === 'bombo' && !this.fountain.isActive) {
@@ -2985,6 +3054,70 @@ export class WorldMode {
   private showMemories(): void {
     const stars = this.fragments.filter((f) => f.isCollected).length;
     this.setMessage(`🏛️ Recuerdos: ★ ${stars} fragmentos · ✦ ${this.awakeCount()} cosas despiertas · 🃏 ${this.progress.uniqueCards} cartas · ⚡ ${this.progress.chispis.length} Chispis`);
+  }
+
+  /* ---------- Fase 16: Playa ---------- */
+
+  private surfAir = false;
+
+  /** Surf: el mar de la orilla es caminable solo en patineta; olas que se mueven; torre de Coral. */
+  private updatePlaya(dt: number): void {
+    const riding = this.nexus.riding && !this.inside;
+    World.setSurf(riding);
+    const t = this.time;
+    this.world.playa.waveMeshes.forEach((m, i) => (m.position.y = -0.05 + Math.sin(t * 1.6 + i) * 0.06));
+    void dt;
+    const p = this.nexus.position;
+    const S = SURF_REGION;
+    const onSea = p.z > S.minZ + 0.6 && p.x > S.minX && p.x < S.maxX && p.z < S.maxZ;
+    if (riding && onSea) {
+      if (!this.progress.hasFlag('surf')) {
+        this.progress.setFlag('surf');
+        this.toast('🏄 ¡Surfeando!', 'ok');
+      }
+      if (!this.grounded && p.y > 1) this.surfAir = true;
+      if (this.surfAir && !this.progress.hasFlag('surf-air')) {
+        this.progress.setFlag('surf-air');
+        this.toast('🌊 ¡Saltaste una ola!', 'ok');
+      }
+    } else this.surfAir = false;
+    const T = PLAYA.tower;
+    if (!this.progress.hasFlag('torre-coral') && p.y > T.h - 0.2 && p.x > T.minX && p.x < T.maxX && p.z > T.minZ && p.z < T.maxZ) {
+      this.progress.setFlag('torre-coral');
+      this.addLife(104, 82, 12, true);
+      this.toast('🛟 ¡Arriba de la torre de Coral!', 'ok');
+    }
+  }
+
+  private coralText(): string {
+    if (!this.fridge.isActive) return '¡Hola! Soy Coral, la salvavidas. Hace un calor… ¿le llevás energía a la heladera del kiosco?';
+    if (!this.castle.isActive) return 'Los chicos dejaron un castillo de arena a medio hacer. Dicen que con el balde de chispas crece solo.';
+    if (!this.progress.hasFlag('muelle-open')) return 'El portón de la escollera se trabó. Sus cables se ven con la capucha ⚡.';
+    if (!this.farito.isActive) return 'El faro chiquito necesita dos cables a la vez: el del panel solar y el del molinito.';
+    if (!this.progress.hasFlag('surf')) return '¿Sabías que con la patineta se puede surfear? Subite y andá derecho al mar.';
+    return '¡La playa está hermosa! Si agarrás una ola rápido, volás.';
+  }
+
+  /** Lo que conviene hacer en la Playa. */
+  private playaStep(): { text: string; at: { x: number; z: number } | null } | null {
+    if (this.districtId !== 'playa' || this.inside) return null;
+    if (this.voltio.active) {
+      const lit = this.voltio.litNodes('muelle-open');
+      if (!this.progress.hasFlag('muelle-open')) return { text: `Tocá los tres nodos de la escollera (${lit}/3)`, at: PLAYA.nodes[Math.min(lit, 2)] };
+      if (this.voltio.isCaged('olita')) return { text: '¡Olita está atrapada! Cerrá un círculo con tu estela alrededor de la jaula', at: PLAYA.chispi };
+      return null;
+    }
+    if (!this.fridge.isActive) return { text: 'Playa: llevale energía a la heladera del kiosco', at: PLAYA.kioscoSource };
+    if (!this.castle.isActive) return { text: 'Playa: el balde de chispas hace crecer el castillo', at: PLAYA.castleSource };
+    if (!this.progress.hasFlag('muelle-open')) {
+      const hood = this.progress.hasFlag('hood');
+      return { text: hood ? 'El portón de la escollera está trabado: ponete la capucha ⚡' : 'El portón de la escollera está trabado… Rulo, en el Skatepark, sabe de cables', at: hood ? PLAYA.nodes[0] : null };
+    }
+    if (!this.farito.isActive) {
+      const n = this.farito.inputCount;
+      return { text: `El faro chiquito necesita dos cables (${n}/2): panel solar y molinito`, at: n === 0 ? PLAYA.panel : PLAYA.wind };
+    }
+    return null;
   }
 
   /* ---------- Fase 15: Barrio Alto y mercado ---------- */
@@ -4142,6 +4275,7 @@ export class WorldMode {
     this.updateClock(dt);
     this.updateFactory(dt);
     this.updateAlto(dt);
+    this.updatePlaya(dt);
     const note = this.voltio.active || this.inside ? null : this.notes.update(dt, this.time, this.nexus.position);
     if (note) this.onNote(note.id);
     this.updateRace(dt);

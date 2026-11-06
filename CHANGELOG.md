@@ -351,3 +351,6 @@ Nuevo distrito al noreste: tres cintas transportadoras que se prenden en orden, 
 
 ## 3D: Fase 15 (expansión) — Barrio Alto y mercado
 Nuevo distrito al este del Skatepark: mercado de seis puestos que se pasan la luz entre ellos, cine que abre con el mercado y pasa una película, biblioteca con farol de lectura trabado (Mundo Voltio), terrazas de cinco techos para subir saltando o en patineta, tirolesa, gatos dormidos, Don Kiosko y Luli, Turbochispa como rescate, notas, carrera «Por los techos» y 10 encargos. La pared de grafitis del Skatepark tiene ahora un hueco hacia la fábrica. Pruebas 3D: 48 escenarios. Decisión 059.
+
+## 3D: Fase 16 (expansión) — Playa
+Nuevo distrito al este del Puerto: kiosco con heladera y sombrillas, castillo de arena que crece, torre de Coral, cangrejos dormidos, escollera con portón trabado (Mundo Voltio) y faro chiquito que necesita dos cables a la vez, y surf: en patineta se anda sobre el mar y las olas hacen volar. Coral, Olita como rescate, notas, carrera «Surf de Coral» y 11 encargos. Arreglo: las 32 manchas de color se juntan en vez de perderse. Pruebas 3D: 49 escenarios. Decisión 060.

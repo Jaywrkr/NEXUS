@@ -31,7 +31,8 @@ export type SleeperKind =
   | 'hen'
   | 'owl'
   | 'robot'
-  | 'cat';
+  | 'cat'
+  | 'crab';
 
 /** Nombre que flota encima y frase al despertarlo. */
 export const SLEEPER_INFO: Record<SleeperKind, { label: string; wake: string }> = {
@@ -49,6 +50,7 @@ export const SLEEPER_INFO: Record<SleeperKind, { label: string; wake: string }> 
   gnome: { label: 'Enano de jardín', wake: '¡Jo, jo! El enano dio una vuelta' },
   pinwheel: { label: 'Molinete', wake: '¡El molinete giró a toda velocidad!' },
   car: { label: 'Auto', wake: '¡BIP BIP! El auto prendió las luces' },
+  crab: { label: 'Cangrejo', wake: '¡Clac clac! El cangrejo saludó con las dos pinzas' },
   cat: { label: 'Gato', wake: '¡Miau! El gato se desperezó y ronronea' },
   robot: { label: 'Robot ayudante', wake: '¡Bip bup! El robot ayudante se reinició y saluda' },
   owl: { label: 'Búho', wake: '¡Uuuh, uuuh! El búho abrió los ojos: de noche es cuando está despierto' },
@@ -645,6 +647,43 @@ export class Sleeper extends Connectable {
         this.plugAnchor.position.set(0, 0.4, 0.2);
         return 1.0;
       }
+      case 'crab': {
+        this.collideRadius = 0.3;
+        const crab = new THREE.Group();
+        const shell = toon('#e0563f');
+        const body = rounded(new THREE.SphereGeometry(0.24, 12, 8), shell, 0.012);
+        body.scale.set(1.3, 0.55, 1);
+        body.position.y = 0.16;
+        crab.add(body);
+        for (const sx of [-1, 1]) {
+          const claw = new THREE.Group();
+          const arm = box(0.05, 0.05, 0.2, '#e0563f', { outline: 0.004 });
+          arm.position.z = 0.1;
+          claw.add(arm);
+          const pincer = rounded(new THREE.SphereGeometry(0.08, 8, 6), shell, 0.005);
+          pincer.scale.set(1, 0.7, 1.3);
+          pincer.position.z = 0.22;
+          claw.add(pincer);
+          claw.position.set(sx * 0.22, 0.14, 0.12);
+          claw.rotation.y = sx * 0.4;
+          crab.add(claw);
+          this.bits.push(claw);
+          for (let k = 0; k < 3; k += 1) {
+            const leg = box(0.16, 0.03, 0.03, '#c8452f', { outline: false });
+            leg.position.set(sx * 0.3, 0.06, -0.1 + k * 0.1);
+            leg.rotation.z = -sx * 0.5;
+            crab.add(leg);
+          }
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 5), toon('#2c2838'));
+          eye.position.set(sx * 0.07, 0.3, 0.12);
+          eye.scale.y = 0.2;
+          crab.add(eye);
+          this.bits.push(eye);
+        }
+        add(crab, 'crab');
+        this.plugAnchor.position.set(0, 0.3, 0.2);
+        return 0.7;
+      }
       case 'cat': {
         this.collideRadius = 0.3;
         const cat = new THREE.Group();
@@ -935,6 +974,9 @@ export class Sleeper extends Connectable {
 
   private awakePose(): void {
     switch (this.kind) {
+      case 'crab':
+        for (const e of this.bits) e.scale.y = 1;
+        break;
       case 'cat':
         this.p.head.rotation.x = -0.1;
         this.p.tail.rotation.x = -0.3;
@@ -1040,6 +1082,9 @@ export class Sleeper extends Connectable {
       case 'firefly':
         [1568, 1760, 2093, 2349, 2637].forEach((f, i) => a.tone(f, i * 0.08, 0.1, 'sine', 0.05));
         break;
+      case 'crab':
+        [1200, 1500, 1200, 1500].forEach((f, i) => a.tone(f, i * 0.08, 0.04, 'square', 0.03));
+        break;
       case 'cat':
         a.tone(740, 0, 0.12, 'sine', 0.06);
         a.tone(620, 0.1, 0.25, 'sine', 0.06);
@@ -1081,6 +1126,11 @@ export class Sleeper extends Connectable {
     const k = r >= 0 ? r : 99;
 
     switch (this.kind) {
+      case 'crab': {
+        this.p.crab.position.x = r >= 0 && k < 1.5 ? Math.sin(k * 14) * 0.15 : Math.sin(T * 0.8) * 0.08;
+        if (r >= 1.6) this.react = -1;
+        break;
+      }
       case 'cat': {
         this.p.tail.rotation.z = r >= 0 && k < 1.5 ? Math.sin(k * 12) * 0.6 : Math.sin(T * 1.5) * 0.3;
         if (r >= 1.6) this.react = -1;

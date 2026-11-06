@@ -316,6 +316,14 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - Llegar al techo de 5 m devuelve el color a las terrazas (`addLife`). **Manchas de vida**: el shader tiene `LIFE_SPOTS` = 32; si ya están todas, `mergeLifeSpots()` junta las dos que menos agrandan en un círculo que las envuelve (antes la vida nueva se perdía en la mancha más cercana), y una mancha que ya queda adentro de otra no se agrega.
 - Cosa dormida `cat` (5, `ALTO.cats`). Turbochispa (150, 24) es rescate. Encargos `a-*` (10), notas `note-alto-*`, `race-alto` (`board: true`).
 
+### Playa (Decisión 060, Fase 16)
+
+- **Región** `PLAYA_REGION` (x 46…132, z 64…96) + `PLAYA_FROM_PORT` (x 43…47, z 76…84) + `PLAYA_FROM_STATION` (x 70…76, z 61…65) + `JETTY` (escollera, x 119,5…124,5, z 95,5…123). Distrito `playa` (antes que `estacion` en la lista), parada de tren (58, 67,5). Archivos: `world/Playa.ts` (`PLAYA`, `SURF_REGION`, `buildPlaya`), `objects/playa.ts` (`BeachFridge`, `SandCastle`, `SmallLighthouse`).
+- `playa-fridge-source` → `playa-fridge` (tema `playa`, `openUmbrellas`); `playa-castle-source` («Balde de chispas») → `playa-castle`; `playa-panel` («Panel solar») y `playa-wind` («Molinito») → `playa-farito` (tema `farito`; `SmallLighthouse.activate` cuenta entradas, `inputCount`, se prende con 2).
+- Portón de la escollera: circuito Voltio `muelle-open` (`PLAYA.nodes`) → `World.playa.openGate()`. Torre `PLAYA.tower` (h 2,2) + escalón `towerStep` (h 1,1) → flag `torre-coral`.
+- **Surf**: `World.setSurf(on)` agrega/quita `SURF_REGION` de `REGIONS` (se llama al subir/bajar de la patineta y en cada cuadro desde `updatePlaya`); sin tabla, `keepInRegions` devuelve al Nexus a la orilla. Olas = `PLAYA.waves`, agregadas a `World.skate.kickers` (mallas en `World.playa.waveMeshes`). Flags `surf`, `surf-air`.
+- Cosa dormida `crab` (6, `PLAYA.crabs`). Coral (`PLAYA.coral`, accesorio `lifeguard`), `coralText()`, `playaStep()`. Olita (96, 68) es rescate. Encargos `p-*` (11), notas `note-playa-*`, `race-playa` (`board: true`).
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -360,7 +368,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–057).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fases 11–15 hechas (Decisiones 055–059). Sigue la Fase 16: Playa.**
+> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fases 11–16 hechas (Decisiones 055–060). Sigue la Fase 17: Isla misteriosa.**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 

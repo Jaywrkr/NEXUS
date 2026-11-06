@@ -14,6 +14,7 @@ import { FOREST_FROM_CERRO, FOREST_FROM_PARK, FOREST_REGION, buildForest, type F
 import { FARM_FROM_CENTRO, FARM_FROM_PORT, FARM_REGION, buildFarm, type FarmInfo } from './Farm';
 import { FACTORY_FROM_PARK, FACTORY_FROM_SKATE, FACTORY_REGION, buildFactory, type FactoryInfo } from './Factory';
 import { ALTO, ALTO_FROM_SKATE, ALTO_REGION, buildAlto, type AltoInfo } from './BarrioAlto';
+import { JETTY, PLAYA, PLAYA_FROM_PORT, PLAYA_FROM_STATION, PLAYA_REGION, SURF_REGION, buildPlaya, type PlayaInfo } from './Playa';
 import { SKATE_REGION, buildSkatepark, type SkateparkInfo } from './Skatepark';
 
 export interface Rect {
@@ -79,6 +80,11 @@ const REGIONS: Rect[] = [
   // Fase 15: Barrio Alto y mercado (por la reja este del Skatepark)
   ALTO_FROM_SKATE,
   ALTO_REGION,
+  // Fase 16: la Playa (desde el Puerto y desde la Estación) y la escollera
+  PLAYA_FROM_PORT,
+  PLAYA_FROM_STATION,
+  PLAYA_REGION,
+  JETTY,
 ];
 /** Jardín municipal (zona 5): borde de cercos, entradas al norte y al este. */
 export const GARDEN = { minX: -26, maxX: 4, minZ: 47, maxZ: 61.5 };
@@ -190,6 +196,8 @@ export class World {
   readonly factory: FactoryInfo;
   /** Fase 15: Barrio Alto (mercado, cine en x = 1300, biblioteca, terrazas). */
   readonly alto: AltoInfo;
+  /** Fase 16: la Playa (olas, sombrillas, portón de la escollera). */
+  readonly playa: PlayaInfo;
 
   constructor() {
     const s = this.scene;
@@ -251,6 +259,8 @@ export class World {
     this.alto = buildAlto(s, this.rects, this.circles);
     this.zipLines.push(this.alto.zipLine);
     this.skate.kickers.push(ALTO.kicker);
+    this.playa = buildPlaya(s, this.rects, this.circles);
+    this.skate.kickers.push(...PLAYA.waves);
     this.zipLines.push(this.cerro.zipLine);
     this.espejos = buildMirrorRoom(s, this.rects);
     this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller, this.espejos, this.cerro.cave, this.home.info, this.farm.barn, this.factory.hall, this.alto.hall);
@@ -322,6 +332,13 @@ export class World {
   }
 
   /** ¿El punto está en alguna zona caminable (con margen)? */
+  /** Fase 16: el mar de la orilla es caminable solo arriba de la patineta (surf). */
+  static setSurf(on: boolean): void {
+    const i = REGIONS.indexOf(SURF_REGION);
+    if (on && i < 0) REGIONS.push(SURF_REGION);
+    else if (!on && i >= 0) REGIONS.splice(i, 1);
+  }
+
   static inRegions(x: number, z: number, margin = 0): boolean {
     return REGIONS.some((g) => x > g.minX + margin && x < g.maxX - margin && z > g.minZ + margin && z < g.maxZ - margin);
   }

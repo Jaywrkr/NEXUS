@@ -306,8 +306,8 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     return { nests, sleepers: wm.sleepers.map((s) => ({ id: s.id, x: s.x, z: s.z })) };
   });
   expect(info.nests.length).toBe(6);
-  expect(info.sleepers.length).toBe(55);
-  expect(await text(page, 'awake')).toBe('✦ 0/55');
+  expect(info.sleepers.length).toBe(61);
+  expect(await text(page, 'awake')).toBe('✦ 0/61');
   expect(await text(page, 'charge')).toBe('🎒 ○○○○○');
 
   // Con la mochila vacía no se despierta nada
@@ -350,7 +350,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     woken += 1;
     expect(await w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, sl.id), `despierta ${sl.id}`).toBe(true);
     expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
-    expect(await text(page, 'awake')).toBe(`✦ ${woken}/55`);
+    expect(await text(page, 'awake')).toBe(`✦ ${woken}/61`);
     if (woken === 1) {
       await touch(page);
       expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
@@ -372,7 +372,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
-  expect(await text(page, 'awake')).toBe('✦ 55/55');
+  expect(await text(page, 'awake')).toBe('✦ 61/61');
   expect(await text(page, 'charge')).toBe('🎒 ●○○○○');
   expect(await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id?.startsWith('spark-hidden')).length)).toBe(9);
 
@@ -2233,4 +2233,129 @@ test('3D: Barrio Alto — mercado que se pasa la luz, cine con película, farol 
   expect(await active('alto-projector')).toBe(true);
   expect(await active('alto-lamp')).toBe(true);
   expect(await w(() => window.__nexus3d.world.questBook().some((d) => d.district === 'alto'))).toBe(true);
+});
+
+test('3D: Playa — kiosco, castillo, torre de Coral, escollera Voltio, faro chiquito de dos cables, surf y cangrejos', async ({ page }) => {
+  test.setTimeout(360_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const active = (id) => w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, id);
+  const pos = () => w(() => window.__nexus3d.world.nexus.position.toArray());
+  const flag = (f) => w((f) => window.__nexus3d.world.progress.hasFlag(f), f);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Se llega caminando desde el Puerto por la costanera
+  await tp(page, 41, 80);
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  await step(page, 2);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  expect((await pos())[0]).toBeGreaterThan(47);
+  await step(page, 0.6);
+  expect(await text(page, 'districtBanner')).toContain('Playa');
+
+  // Kiosco y castillo de arena
+  await connect(page, [58.3, 76.3], [65.2, 74.4]);
+  expect(await active('playa-fridge')).toBe(true);
+  await connect(page, [84.3, 81.3], [89.6, 86.6]);
+  expect(await active('playa-castle')).toBe(true);
+
+  // La torre de Coral: escalón y plataforma
+  await tp(page, 107, 76);
+  await page.keyboard.down('KeyA');
+  await page.keyboard.down('KeyW');
+  await step(page, 0.15);
+  await w(() => window.__nexus3d.world.jump());
+  await step(page, 0.6);
+  await w(() => window.__nexus3d.world.jump());
+  await step(page, 0.7);
+  await page.keyboard.up('KeyA');
+  await page.keyboard.up('KeyW');
+  await step(page, 0.3);
+  expect(await flag('torre-coral')).toBe(true);
+
+  // La escollera está cerrada: el portón se abre en el Mundo Voltio
+  await tp(page, 122, 94.5);
+  await page.keyboard.down('KeyS');
+  await page.keyboard.down('KeyA');
+  await step(page, 1);
+  await page.keyboard.up('KeyS');
+  await page.keyboard.up('KeyA');
+  expect((await pos())[2]).toBeLessThan(97);
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    p.setFlag('hood');
+    p.setFlag('voltio-seen');
+    document.body.classList.add('has-hood');
+  });
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  const nodes = await w(() => window.__nexus3d.world.voltio.nodes.filter((n) => n.circuit === 'muelle-open').map((n) => [n.x, n.z]));
+  expect(nodes.length).toBe(3);
+  for (const [x, z] of nodes) await tp(page, x, z);
+  await step(page, 0.1);
+  expect(await flag('muelle-open')).toBe(true);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.3);
+
+  // Faro chiquito: con un cable no alcanza; con los dos se prende
+  await connect(page, [121.3, 113.3], [122.6, 118.2]);
+  expect(await active('playa-farito')).toBe(false);
+  expect(await w(() => window.__nexus3d.world.connections.all.find((o) => o.id === 'playa-farito').inputCount)).toBe(1);
+  await connect(page, [122.6, 109.3], [122.6, 118.2]);
+  expect(await active('playa-farito')).toBe(true);
+  await step(page, 2);
+  expect(await text(page, 'storyWho')).toContain('Coral');
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Surf: caminando el mar no se puede; en patineta sí, y las olas hacen volar
+  await tp(page, 60, 95);
+  await page.keyboard.down('KeyS');
+  await page.keyboard.down('KeyA');
+  await step(page, 1.2);
+  await page.keyboard.up('KeyS');
+  await page.keyboard.up('KeyA');
+  expect((await pos())[2]).toBeLessThanOrEqual(96.01);
+  await w(() => window.__nexus3d.world.progress.setFlag('board'));
+  await tp(page, 58, 104);
+  expect((await pos())[2]).toBeLessThanOrEqual(96.01); // sin tabla, el mar empuja a la orilla
+  await w(() => window.__nexus3d.world.mount());
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(52, 0, 104);
+    g.focus.set(52, 0, 104);
+  });
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  for (let i = 0; i < 16 && !(await flag('surf-air')); i += 1) {
+    await step(page, 0.25);
+  }
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  expect(await flag('surf')).toBe(true);
+  expect(await flag('surf-air')).toBe(true);
+  // Bajarse en el mar: vuelve a la orilla
+  await w(() => window.__nexus3d.world.dismount());
+  await step(page, 0.3);
+  expect((await pos())[2]).toBeLessThanOrEqual(96.01);
+
+  // Un cangrejo dormido se despierta con la mochila
+  const crab = await w(() => {
+    const s = window.__nexus3d.world.sleepers.find((k) => k.kind === 'crab');
+    return [s.x, s.z];
+  });
+  await w(() => window.__nexus3d.world.setCharge(5));
+  await tp(page, crab[0], crab[1] - 0.9);
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.sleepers.find((k) => k.kind === 'crab').isActive)).toBe(true);
+
+  // Coral está contenta; se guarda (el faro chiquito con sus dos cables)
+  await step(page, 1);
+  expect(await w(() => window.__nexus3d.world.residents.find((r) => r.id === 'coral').isHappy)).toBe(true);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await active('playa-farito')).toBe(true);
+  expect(await active('playa-castle')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.questBook().some((d) => d.district === 'playa'))).toBe(true);
 });

@@ -62,6 +62,8 @@ export const TUNNEL_THEMES: Record<string, TunnelTheme> = {
   fogon: { name: 'Cable del fogón', base: '#1a0a04', near: '#ff9f43', pulse: '#fff3a8', spark: '#ffd23a', bg: '#100604', deco: 'hojas' },
   molino: { name: 'Cable de viento', base: '#0a1210', near: '#cfeefa', pulse: '#fff3dc', spark: '#7be07a', bg: '#060c0a', deco: 'hojas' },
   granja: { name: 'Cable de la granja', base: '#160e04', near: '#ffd23a', pulse: '#ff9f43', spark: '#fff3dc', bg: '#0e0802', deco: 'petalos' },
+  playa: { name: 'Cable de la playa', base: '#0a1a20', near: '#5fd0e8', pulse: '#ffd23a', spark: '#ff9f43', bg: '#04100f', deco: 'ondas' },
+  farito: { name: 'Cable del faro chiquito', base: '#0c0c1c', near: '#fff6c0', pulse: '#e0453f', spark: '#5fd0e8', bg: '#05050e', deco: 'estrellas' },
   mercado: { name: 'Cable del mercado', base: '#1a0c10', near: '#e0453f', pulse: '#ffd23a', spark: '#9be37a', bg: '#10080a', deco: 'ondas' },
   cine: { name: 'Cable del cine', base: '#0e0a18', near: '#ffd23a', pulse: '#fff6c0', spark: '#e77fa6', bg: '#06040c', deco: 'estrellas' },
   biblio: { name: 'Cable de la biblioteca', base: '#0c1020', near: '#c7a0ef', pulse: '#fff3dc', spark: '#4fa8e0', bg: '#060812', deco: 'ondas' },
