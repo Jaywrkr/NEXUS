@@ -188,6 +188,12 @@ class Game {
     $('travelNo').addEventListener('click', () => this.closePop('travelPop'));
     $('creditsOk').addEventListener('click', () => this.closePop('creditsPop'));
     $('wardrobeOk').addEventListener('click', () => this.closePop('wardrobePop'));
+    $('questOk').addEventListener('click', () => this.closePop('questPop'));
+    $('questBtn').addEventListener('click', () => this.showQuests());
+    $('mQuests').addEventListener('click', () => {
+      $('menu').hidden = true;
+      this.showQuests();
+    });
     $('mWardrobe').addEventListener('click', () => {
       if (this.world.progress.hasFlag('casa-armario')) {
         $('menu').hidden = true;
@@ -271,7 +277,7 @@ class Game {
     this.paused = false;
     this.mapOpen = false;
     $('menu').hidden = true;
-    for (const k of ['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop', 'travelPop', 'creditsPop', 'wardrobePop']) $(k).hidden = true;
+    for (const k of ['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop', 'travelPop', 'creditsPop', 'wardrobePop', 'questPop']) $(k).hidden = true;
     $('mapPanel').hidden = true;
     document.body.classList.remove('paused');
     this.input.flush();
@@ -315,7 +321,7 @@ class Game {
 
   private closePop(id: string): void {
     $(id).hidden = true;
-    if (['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop', 'travelPop', 'creditsPop', 'wardrobePop'].some((k) => !$(k).hidden)) return;
+    if (['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop', 'travelPop', 'creditsPop', 'wardrobePop', 'questPop'].some((k) => !$(k).hidden)) return;
     this.closeMenu();
   }
 
@@ -427,6 +433,49 @@ class Game {
     for (const el of Array.from(document.querySelectorAll<HTMLElement>('#albumGrid .mini-card'))) {
       el.classList.toggle('is-buddy', el.dataset.card === this.world.companionId);
     }
+  }
+
+  /** Libreta de encargos: por distrito, con su Pieza y el avance de cada encargo. */
+  private showQuests(): void {
+    if (this.mode !== 'world') return;
+    const w = this.world;
+    const book = w.questBook();
+    const total = book.reduce((n, d) => n + d.quests.length, 0);
+    const done = book.reduce((n, d) => n + d.quests.filter((q) => q.done).length, 0);
+    const broken = w.progress.hasFlag('chispa-rota');
+    $('questSub').textContent = broken
+      ? `◆ Piezas de la Gran Chispa: ${w.pieces}/12 · Encargos: ${done}/${total}. Terminá todos los encargos de un lugar y su Pieza vuelve.`
+      : `Encargos: ${done}/${total}. Los vecinos te piden ayuda: cada encargo da chispitas o un sobre.`;
+    const list = $('questList');
+    list.innerHTML = '';
+    for (const d of book) {
+      const sec = document.createElement('section');
+      sec.className = 'quest-district';
+      const n = d.quests.filter((q) => q.done).length;
+      sec.innerHTML = `<h3><span>${d.name}</span><small>${n}/${d.quests.length}${broken ? (d.piece ? ' · ◆' : ' · ◇') : ''}</small></h3>`;
+      for (const q of d.quests) {
+        const row = document.createElement('div');
+        row.className = `quest-row${q.done ? ' done' : ''}`;
+        row.dataset.quest = q.id;
+        const prog = !q.done && q.progress ? ` <em>${q.progress[0]}/${q.progress[1]}</em>` : '';
+        row.innerHTML = `<b>${q.done ? '✓' : '○'}</b><div><strong>${q.title}${prog}</strong><small>${q.text}</small></div>`;
+        if (!q.done) {
+          const go = document.createElement('button');
+          go.type = 'button';
+          go.className = 'ui-btn quest-go';
+          go.textContent = '📍';
+          go.title = 'Mostrame dónde';
+          go.addEventListener('click', () => {
+            this.closePop('questPop');
+            w.pointQuest(q.id);
+          });
+          row.appendChild(go);
+        }
+        sec.appendChild(row);
+      }
+      list.appendChild(sec);
+    }
+    this.pauseFor('questPop');
   }
 
   /** Armario: cada parte con sus opciones; lo bloqueado dice cómo se gana. */

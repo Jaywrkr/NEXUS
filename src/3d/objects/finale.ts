@@ -263,11 +263,41 @@ export class GranChispa {
     this.group.scale.setScalar(1);
   }
 
+  private shards: { m: THREE.Mesh; v: THREE.Vector3 }[] = [];
+
+  /** Se parte en 12 Piezas que salen volando hacia todos lados (y se pierden de vista). */
+  shatter(): void {
+    const at = this.group.position.clone();
+    this.group.visible = false;
+    this.t = -1;
+    const parent = this.group.parent;
+    if (!parent) return;
+    const colors = ['#ffd23a', '#5ec8ff', '#ff5a6e', '#7be07a', '#b77cff', '#ff9f43'];
+    for (let i = 0; i < 12; i += 1) {
+      const m = new THREE.Mesh(new THREE.OctahedronGeometry(0.35, 0), new THREE.MeshBasicMaterial({ color: colors[i % colors.length] }));
+      m.position.copy(at);
+      parent.add(m);
+      const a = (i / 12) * Math.PI * 2;
+      this.shards.push({ m, v: new THREE.Vector3(Math.cos(a) * 9, 7 + (i % 3) * 2, Math.sin(a) * 9) });
+    }
+  }
+
   get risen(): boolean {
     return this.t >= 3;
   }
 
   update(dt: number, time: number): void {
+    for (let i = this.shards.length - 1; i >= 0; i -= 1) {
+      const s = this.shards[i];
+      s.v.y -= dt * 2;
+      s.m.position.addScaledVector(s.v, dt);
+      s.m.rotation.x += dt * 5;
+      s.m.rotation.y += dt * 3;
+      if (s.m.position.y > 40 || s.m.position.y < -5 || s.m.position.length() > 400) {
+        s.m.removeFromParent();
+        this.shards.splice(i, 1);
+      }
+    }
     if (this.t < 0) return;
     this.t += dt;
     const k = Math.min(1, this.t / 3);
@@ -280,5 +310,43 @@ export class GranChispa {
     }
     this.rays.rotation.y += dt * 0.6;
     this.halos.forEach((h, i) => h.scale.setScalar(1 + Math.sin(time * 2 + i) * 0.08));
+  }
+}
+
+/** Doce pedestales alrededor del faro: cada Pieza de la Gran Chispa que vuelve se apoya en el suyo. */
+export class PiecePedestals {
+  readonly group = new THREE.Group();
+  private readonly gems: THREE.Mesh[] = [];
+  private t = 0;
+
+  constructor(x: number, z: number, radius: number, count: number, circles: { x: number; z: number; r: number }[]) {
+    const colors = ['#ffd23a', '#5ec8ff', '#ff5a6e', '#7be07a', '#b77cff', '#ff9f43'];
+    for (let i = 0; i < count; i += 1) {
+      const a = (i / count) * Math.PI * 2;
+      const px = x + Math.cos(a) * radius;
+      const pz = z + Math.sin(a) * radius;
+      const col = rounded(new THREE.CylinderGeometry(0.22, 0.28, 0.9, 10), toon('#e8dcc6'), 0.01);
+      col.position.set(px, 0.45, pz);
+      this.group.add(col);
+      const gem = new THREE.Mesh(new THREE.OctahedronGeometry(0.28, 0), new THREE.MeshBasicMaterial({ color: colors[i % colors.length] }));
+      gem.position.set(px, 1.3, pz);
+      gem.visible = false;
+      this.group.add(gem);
+      this.gems.push(gem);
+      circles.push({ x: px, z: pz, r: 0.3 });
+    }
+  }
+
+  /** Muestra las primeras `n` Piezas. */
+  show(n: number): void {
+    this.gems.forEach((g, i) => (g.visible = i < n));
+  }
+
+  update(dt: number): void {
+    this.t += dt;
+    this.gems.forEach((g, i) => {
+      g.rotation.y = this.t * 1.5 + i;
+      g.position.y = 1.3 + Math.sin(this.t * 2 + i) * 0.08;
+    });
   }
 }

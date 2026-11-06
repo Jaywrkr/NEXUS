@@ -270,6 +270,14 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Casa** (`world/NexusHome.ts`): `HOME_LOT` (−36, 51), 7 × 6, puerta (−34,4, 54,9); interior `World.home` en x = 1000 (id de interior `casa-nexus`). `HOME_ITEMS`: 8 adentro (luz 1, ventana 1, alfombra 1, planta 1, cama 2, radio 2, estante 2, armario 2 ✦) y 2 afuera (techo 3, jardín 2 ✦). Cada una tiene vista rota y arreglada (`home.fix(id, animate)`). `findHomeSpot()` (< 1,7 m) → botón «🔧 Arreglar · n✦» o su uso (`🧥 Armario`, `🎵 Música`, `💤 Siesta`, `🏛️ Recuerdos`) → `useHomeItem`. Flags `casa-<id>`; con las 8 de adentro `home.gray.revive`; con las 10, `casa-lista`.
 - **Armario** (`data/wardrobe.ts`): `HOODIES`, `PACKS`, `EARS`, `CABLES`, `HATS` con `need` (flag que la desbloquea) y `hint`; `loadLook`/`saveLook` (clave `los-nexus-3d-look`, aparte de la partida). `Nexus3D.applyLook(look)` cambia los materiales propios de cada pieza (`mat.hoodie`, `hoodieDark`, `pack`, `tipL`, `tipR`, `cable`: copias de `toon`, sin `withLife`, así el Nexus nunca se apaga) y arma el accesorio en `hat` (se esconde con la capucha). Interfaz `#wardrobePop` (`showWardrobe` en main.ts; chips `[data-part][data-look]`). Menú «🧥 Mi Nexus»: abre el armario si `casa-armario`, si no avisa dónde está la casa.
 
+### Expansión, Fase 10: Chispa rota, libreta, notas y carreras (Decisión 054)
+
+- **Chispa rota**: `finale(true)` → a los 9 s `granChispa.shatter()` (12 octaedros que vuelan) y flag `chispa-rota`; sin créditos. Al cargar con el faro prendido se marca `chispa-rota`. `cb.credits`/`#creditsPop` quedan para la Fase 19.
+- **Libreta** (`data/quests.ts`): `QUESTS` (47; `district`, `giver`, `title`, `text`, `check(ctx)` → `true` o `[hecho, total]`, `reward: 'pack'` o 2 chispitas, `at` opcional). `QuestCtx` lo arma `WorldMode.questCtx` (flags, activos, dormidas/notas por distrito con `districtAt`, chispis, contadores, lugares, recuerdos, casa, paradas, cartas). `checkQuests()` cada 0,5 s (la primera pasada marca en silencio lo ya hecho). Gran tarea: todos los encargos de un distrito + `chispa-rota` → flag `pieza-<distrito>` y `pedestals.show(n)`. Para sumar un distrito: agregarlo a `QUEST_DISTRICTS`/`DISTRICT_NAMES` y sus encargos a `QUESTS`.
+- **Objetivo**: con los 7 lugares del Centro hechos, `statusMessage` muestra `📒 <próximo encargo>` (primero los del distrito actual); la pista (H) lleva a `questPlace(q)` (su `at` o la nota más cercana).
+- **Notas** (`NOTES`, 31, id `note-<distrito>-<n>`, flag al juntarlas; se juntan a < 1 m y con la altura del Nexus cerca de la de la nota). **Carreras** (`RACES`, una por distrito; `start`, `rings` [x, y, z], `time`, `board`): cartel 🏁 → botón «🏁 Carrera» → `Races.start`; flag `race-<id>` al ganar, récord en `best-race-<id>`, contador `races-won`; perder solo avisa.
+- Contadores del guardado: `zip`, `trips`, `trick-ollie|air|grind`, `races-won`, `best-*`.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -288,7 +296,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
 6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
 
-Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–053).
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–054).
 
 ### 6. Trampas técnicas ya conocidas (no repetirlas)
 
@@ -314,7 +322,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–053).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 9 hechas (Decisiones 043–052): el plan maestro está completo. El capítulo 1 en 3D tiene final (la Gran Chispa vuelve) y se puede seguir jugando.**
+> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Sigue la Fase 11: Bosque de las luciérnagas.**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 

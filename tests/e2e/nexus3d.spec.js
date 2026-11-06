@@ -1477,17 +1477,19 @@ test('3D: Puerto y faro — el bote del canal, el circuito del faro y la Gran Ch
   const back = await pos();
   expect(Math.hypot(back[0] + 38, back[2] - 28.2)).toBeLessThan(1);
 
-  // El faro trae la Gran Chispa: toda la ciudad revive y llegan los créditos
+  // El faro trae la Gran Chispa: toda la ciudad revive… y la Chispa se parte en 12 Piezas (Fase 10)
   expect(await w(() => window.__nexus3d.world.finalMissing)).toEqual([]);
   await connect(page, [31.4, 92.9], [34, 101.8]);
   expect(await active('port-lighthouse')).toBe(true);
   expect(await w(() => window.__nexus3d.world.gameDone)).toBe(true);
   await step(page, 7);
   expect(await w(() => window.__nexus3d.world.lifeAt(-80, 0))).toBeGreaterThan(0.9);
-  await step(page, 1.5);
-  await expect.poll(() => w(() => !document.getElementById('creditsPop').hidden)).toBe(true);
-  await page.screenshot({ path: test.info().outputPath('final-creditos.png') });
-  await page.click('#creditsOk');
+  expect(await w(() => window.__nexus3d.world.progress.hasFlag('chispa-rota'))).toBe(false);
+  await step(page, 3);
+  expect(await w(() => window.__nexus3d.world.progress.hasFlag('chispa-rota'))).toBe(true);
+  expect(await w(() => document.getElementById('creditsPop').hidden)).toBe(true);
+  expect(await w(() => document.getElementById('piecesCount').hidden)).toBe(false);
+  await page.screenshot({ path: test.info().outputPath('chispa-rota.png') });
   expect(await w(() => window.__nexus3d.world.residents.find((r) => r.id === 'marina').isHappy)).toBe(true);
   await w(() => window.__nexus3d.world.playSong());
   expect(await text(page, 'msg')).toContain('6/6');
@@ -1603,4 +1605,83 @@ test('3D: la casa del Nexus se arregla con chispitas y el armario cambia la ropa
   expect(await w(() => (() => { let c = ''; window.__nexus3d.world.nexus.root.traverse((o) => { if (o.userData.look === 'hoodie') c = o.material.color.getHexString(); }); return c; })())).toBe('ec8575');
   expect(await w(() => window.__nexus3d.world.homeFixed)).toBe(10);
   expect(await w(() => window.__nexus3d.world.world.home.gray.alive)).toBe(true);
+});
+
+test('3D: libreta de encargos, notas de la canción, carreras de aros y Piezas de la Gran Chispa', async ({ page }) => {
+  test.setTimeout(300_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const flag = (f) => w((f) => window.__nexus3d.world.progress.hasFlag(f), f);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Notas: una en el piso y otra arriba del techo de un auto
+  await tp(page, 10, 44);
+  await step(page, 0.2);
+  expect(await flag('note-centro-5')).toBe(true);
+  expect(await text(page, 'toast')).toContain('🎵');
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(-34.2, 1.9, 2.6);
+    g.focus.set(-34.2, 0, 2.6);
+  });
+  await step(page, 0.3);
+  expect(await flag('note-centro-0')).toBe(true);
+  expect(await text(page, 'notesCount')).toContain('2/');
+
+  // Carrera de aros del Centro: cartel 🏁, aros en orden, gana y cumple el encargo
+  await tp(page, -42, 3);
+  expect(await text(page, 'interact')).toBe('🏁 Carrera');
+  await touch(page);
+  expect(await w(() => !document.getElementById('raceHud').hidden)).toBe(true);
+  const rings = await w(async () => (await import('/src/3d/data/collectibles.ts')).RACES.find((r) => r.id === 'race-centro').rings);
+  const charge0 = await w(() => window.__nexus3d.world.charge);
+  for (const [x, , z] of rings) {
+    await tp(page, x, z);
+    await step(page, 0.1);
+  }
+  expect(await flag('race-centro')).toBe(true);
+  expect(await text(page, 'msg')).toContain('Ganaste');
+  await step(page, 0.6);
+  expect(await flag('quest-c-carrera')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.charge)).toBe(Math.min(5, charge0 + 2));
+
+  // La carrera del Skatepark es en patineta; la del parque se puede perder (y probar otra vez)
+  await tp(page, 66, -14);
+  await touch(page);
+  expect(await text(page, 'msg')).toContain('patineta');
+  await tp(page, 0, -54);
+  await touch(page);
+  await step(page, 41);
+  expect(await text(page, 'msg')).toContain('Se acabó el tiempo');
+  expect(await flag('race-parque')).toBe(false);
+
+  // La libreta muestra todos los encargos con su avance
+  await page.click('#questBtn');
+  await expect.poll(() => w(() => !document.getElementById('questPop').hidden)).toBe(true);
+  expect(await w(() => document.querySelectorAll('#questList .quest-row').length)).toBeGreaterThanOrEqual(45);
+  expect(await w(() => document.querySelector('[data-quest="c-carrera"]').classList.contains('done'))).toBe(true);
+  await page.screenshot({ path: test.info().outputPath('libreta.png') });
+  await page.click('[data-quest="c-notas"] .quest-go');
+  expect(await w(() => document.getElementById('questPop').hidden)).toBe(true);
+  expect(await text(page, 'storyWho')).toContain('Melodía');
+
+  // Con la Chispa rota, terminar todos los encargos de un lugar devuelve su Pieza al faro
+  await w(async () => {
+    const { QUESTS } = await import('/src/3d/data/quests.ts');
+    const p = window.__nexus3d.world.progress;
+    p.setFlag('chispa-rota');
+    for (const q of QUESTS) if (q.district === 'cerro') p.setFlag(`quest-${q.id}`);
+  });
+  await step(page, 0.6);
+  expect(await flag('pieza-cerro')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.pieces)).toBe(1);
+  expect(await text(page, 'piecesCount')).toContain('1/12');
+  await step(page, 1);
+  expect(await text(page, 'storyWho')).toContain('Pieza');
+
+  // Se guarda
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await w(() => window.__nexus3d.world.pieces)).toBe(1);
+  expect(await w(() => window.__nexus3d.world.progress.hasFlag('note-centro-0'))).toBe(true);
 });

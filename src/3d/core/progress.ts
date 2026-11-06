@@ -23,12 +23,14 @@ interface State3D {
   cards: Record<string, number>;
   /** Chispi compañero elegido (id de carta) o null. */
   companion: string | null;
+  /** Contadores (grinds, carreras ganadas, mejores tiempos…) para la libreta de encargos. */
+  counts: Record<string, number>;
 }
 
 /** Cuántas chispitas entran en la mochila. */
 export const MAX_CHARGE = 5;
 
-const empty = (): State3D => ({ fragmentsCollected: [], seenCompletion: false, connections: [], heard: [], charge: 0, sparks: [], tunnelSkill: 0.15, flags: [], chispis: [], cards: {}, companion: null });
+const empty = (): State3D => ({ fragmentsCollected: [], seenCompletion: false, connections: [], heard: [], charge: 0, sparks: [], tunnelSkill: 0.15, flags: [], chispis: [], cards: {}, companion: null, counts: {} });
 
 /**
  * Progreso guardado de la versión 3D, separado del de la 2D. Guarda fragmentos, festejo final,
@@ -62,10 +64,19 @@ export class Progress3D {
         chispis: strings(parsed.chispis),
         cards: Progress3D.cleanCards(parsed.cards, strings(parsed.chispis)),
         companion: typeof parsed.companion === 'string' ? parsed.companion : null,
+        counts: Progress3D.cleanCounts(parsed.counts),
       };
     } catch {
       return empty();
     }
+  }
+
+  private static cleanCounts(v: unknown): Record<string, number> {
+    const out: Record<string, number> = {};
+    if (v && typeof v === 'object') {
+      for (const [k, n] of Object.entries(v as Record<string, unknown>)) if (typeof n === 'number' && Number.isFinite(n)) out[k] = n;
+    }
+    return out;
   }
 
   private static cleanCards(v: unknown, rescued: string[]): Record<string, number> {
@@ -173,6 +184,25 @@ export class Progress3D {
   }
 
   /* ---------- Cosas destrabadas y Chispis ---------- */
+
+  count(key: string): number {
+    return this.state.counts[key] ?? 0;
+  }
+
+  addCount(key: string, n = 1): number {
+    this.state.counts[key] = this.count(key) + n;
+    this.save();
+    return this.state.counts[key];
+  }
+
+  /** Guarda un récord si es mejor (menor) que el anterior. */
+  setBest(key: string, value: number): boolean {
+    const old = this.state.counts[key];
+    if (old !== undefined && old <= value) return false;
+    this.state.counts[key] = value;
+    this.save();
+    return true;
+  }
 
   hasFlag(id: string): boolean {
     return this.state.flags.includes(id);

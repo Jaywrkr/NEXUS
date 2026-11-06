@@ -43,7 +43,10 @@ import { Train, makeStop } from '../objects/train';
 import { Cascade } from '../objects/cascade';
 import { CERRO, TOP_H } from '../world/Cerro';
 import { BOAT, PORT } from '../world/Port';
-import { CanalBoat, GranChispa, Lighthouse } from '../objects/finale';
+import { CanalBoat, GranChispa, Lighthouse, PiecePedestals } from '../objects/finale';
+import { Notes, Races } from '../systems/Collectibles';
+import { NOTES, type Race } from '../data/collectibles';
+import { DISTRICT_NAMES, PIECES_TOTAL, QUESTS, QUEST_DISTRICTS, questDone, type Quest, type QuestCtx } from '../data/quests';
 import { CitySong, INSTRUMENTS, INSTRUMENT_NAMES, type Instrument } from '../systems/CitySong';
 import { HOME_ITEMS, type HomeItemInfo } from '../world/NexusHome';
 import { loadLook } from '../data/wardrobe';
@@ -222,6 +225,14 @@ export class WorldMode {
   private readonly boat: CanalBoat;
   private readonly lighthouse: Lighthouse;
   private readonly granChispa = new GranChispa();
+  /** Expansión (Fase 10): notas de la canción, carreras de aros, libreta y Piezas de la Gran Chispa. */
+  private notes!: Notes;
+  private races!: Races;
+  private pedestals!: PiecePedestals;
+  private raceSpot: Race | null = null;
+  private lastRace: Race | null = null;
+  private questTimer = 0;
+  private questsPrimed = false;
   private readonly song: CitySong;
   /** Paradas del tren construidas (Fase 7). */
   private readonly stops: { id: string; name: string; x: number; z: number }[] = [];
@@ -373,6 +384,11 @@ export class WorldMode {
     this.lighthouse.unlocked = this.progress.hasFlag('faro-open');
     this.world.circles.push({ x: PORT.lighthouse.x, z: PORT.lighthouse.z, r: 2.4 });
     scene.add(this.granChispa.group);
+    this.notes = new Notes(scene, (id) => this.progress.hasFlag(id));
+    this.races = new Races(scene);
+    this.pedestals = new PiecePedestals(PORT.lighthouse.x, PORT.lighthouse.z, 4.6, PIECES_TOTAL, this.world.circles);
+    keepVivid(this.pedestals.group);
+    scene.add(this.pedestals.group);
     this.song = new CitySong(this.audio);
     // La casa del Nexus: lo que ya se arregló
     for (const it of HOME_ITEMS) if (this.progress.hasFlag(`casa-${it.id}`)) this.world.home.fix(it.id, false);
@@ -601,7 +617,10 @@ export class WorldMode {
     const st = this.skateStep();
     if (st) return st.text;
     const done = this.zonesDone();
-    if (done === ZONE_COUNT) return 'Ya le devolviste la vida a todo el barrio';
+    if (done === ZONE_COUNT) {
+      const q = this.nextQuest();
+      return q ? `📒 ${q.title}: ${q.text}` : 'Ya le devolviste la vida a todo el barrio';
+    }
     if (done === 0) return 'El barrio está triste y sin color. Conecta la fuente con la farola';
     return `Le devolviste la vida a ${done} de ${ZONE_COUNT} lugares — sigue explorando`;
   }
@@ -970,7 +989,10 @@ export class WorldMode {
         text = n ? 'Tu mochila está vacía: tocá un nido de chispitas y atrapalas.' : 'Buscá chispitas escondidas por el barrio (¡algunas están arriba de los autos!).';
         where = n;
       } else {
-        text = '¡El barrio está lleno de vida! Explorá: hay chispitas escondidas, techos y tirolesas.';
+        const q = this.nextQuest();
+        const qa = q ? this.questPlace(q) : null;
+        text = q ? `📒 ${q.title}: ${q.text}` : '¡El barrio está lleno de vida! Explorá: hay chispitas escondidas, techos y tirolesas.';
+        if (qa) where = qa;
       }
     }
     this.showStory('Pista', text);
@@ -1425,6 +1447,7 @@ export class WorldMode {
     this.audio.tone(880, 0, 0.08, 'square', 0.04);
     this.audio.tone(1175, 0.06, 0.1, 'square', 0.04);
     const flag = `trick-${kind}`;
+    this.progress.addCount(flag);
     if (this.progress.hasFlag(flag)) return;
     this.progress.setFlag(flag);
     const done = TRICKS.filter((t) => this.progress.hasFlag(`trick-${t}`)).length;
@@ -1704,6 +1727,8 @@ export class WorldMode {
       this.setMessage('Para arriba no se puede: ¡subí saltando por las rocas!');
       return;
     }
+    this.progress.addCount('zip');
+    if (np.line === this.world.cerro.zipLine && !this.progress.hasFlag('zip-cerro')) this.progress.setFlag('zip-cerro');
     this.zip = { a, b, t: 0, dur: Math.hypot(b.x - a.x, b.z - a.z) / ZIP_SPEED, climb: 0, from: this.nexus.position.clone() };
     this.nexus.hanging = true;
     this.nexus.airborne = false;
@@ -1813,6 +1838,15 @@ export class WorldMode {
     const n = ZONE_FRAGMENTS.filter((f) => this.progress.hasFragment(f.id)).length;
     if (this.el.stars) this.el.stars.textContent = `★ ${n}/${ZONE_COUNT}`;
     if (this.el.awake) this.el.awake.textContent = `✦ ${this.awakeCount()}/${this.sleepers.length}`;
+    const notesEl = document.getElementById('notesCount');
+    if (notesEl) notesEl.textContent = `🎵 ${NOTES.filter((nt) => this.progress.hasFlag(nt.id)).length}/${NOTES.length}`;
+    const piecesEl = document.getElementById('piecesCount');
+    if (piecesEl) {
+      piecesEl.hidden = !this.progress.hasFlag('chispa-rota');
+      piecesEl.textContent = `◆ ${this.pieces}/${PIECES_TOTAL}`;
+    }
+    const qb = document.getElementById('questBtn');
+    if (qb) qb.textContent = `📒 ${this.questsDone}/${QUESTS.length}`;
     const buddy = document.getElementById('buddy');
     if (buddy) {
       const card = this.companion ? CARD_BY_ID.get(this.companion.id) : null;
@@ -2434,6 +2468,7 @@ export class WorldMode {
       this.nexus.position.set(tx, 0, tz);
       this.nexus.velocity.set(0, 0, 0);
       this.progress.setFlag(`train-${id}`);
+      this.progress.addCount('trips');
       const visited = this.stops.filter((s) => this.progress.hasFlag(`train-${s.id}`)).length;
       this.toast(`🚂 ¡Llegaste a ${st.name}!`, 'ok');
       if (visited >= 4 && !this.progress.hasFlag('train-tour')) {
@@ -2612,11 +2647,11 @@ export class WorldMode {
     const n = this.nexus.position;
     const sky = new THREE.Vector3(n.x - 3, 6.5, n.z - 4);
     if (!animate) {
-      this.granChispa.park(new THREE.Vector3(L.x - 6, 8, L.z - 9));
+      // La Gran Chispa ya se partió (o se parte ahora, en partidas de antes de la expansión)
       this.reviveWholeTown(false);
+      if (!this.progress.hasFlag('chispa-rota')) this.progress.setFlag('chispa-rota');
       return;
     }
-    const first = !this.progress.hasFlag('gran-chispa');
     this.progress.setFlag('gran-chispa');
     this.audio.playSuccess();
     flashScreen(450);
@@ -2641,22 +2676,183 @@ export class WorldMode {
         r.dance(i * 0.12);
       });
       this.nexus.dance();
-      this.song.play(['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto'], 3);
-      this.showStory('Marina · ¡La Gran Chispa!', '¡Volvió! La Gran Chispa brilla otra vez sobre la ciudad. Escuchá: cada distrito toca su instrumento. ¡Esta es la canción de la ciudad!');
+      this.song.play(['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto'], 2);
+      this.showStory('Marina · ¡La Gran Chispa!', '¡Volvió! La Gran Chispa brilla otra vez sobre la ciudad. Escuchá: cada distrito toca su instrumento…');
     });
-    if (first) {
-      after(7.5, () =>
-        this.cb.credits?.({
-          places: this.zonesDone(),
-          placesTotal: ZONE_COUNT,
-          awake: this.awakeCount(),
-          awakeTotal: this.sleepers.length,
-          cards: this.progress.uniqueCards,
-          cardsTotal: TOTAL_CARDS,
-          chispis: this.progress.chispis.length,
-        }),
+    // …pero era tanta energía que se parte en 12 Piezas y salen volando lejos
+    after(9, () => {
+      flashScreen(500);
+      this.audio.tone(220, 0, 0.5, 'sawtooth', 0.06);
+      this.audio.noise(0, 0.6, 0.1, 2400);
+      this.granChispa.shatter();
+      this.progress.setFlag('chispa-rota');
+      this.refreshObjectiveSoon();
+      after(1.6, () =>
+        this.showStory(
+          'Marina · ¡Se partió!',
+          '¡No puede ser! La Gran Chispa tenía tanta energía que se partió en 12 Piezas y volaron por toda la ciudad… y más lejos. Abrí tu libreta 📒: cada lugar que termines te devuelve una Pieza. ¡Con las 12, la Gran Chispa vuelve para siempre!',
+        ),
       );
+    });
+  }
+
+  /* ---------- Expansión (Fase 10): libreta de encargos, notas, carreras y Piezas ---------- */
+
+  /** Lo que los encargos le preguntan al mundo. */
+  private readonly questCtx: QuestCtx = {
+    flag: (id) => this.progress.hasFlag(id),
+    active: (id) => this.connections.all.find((o) => o.id === id)?.isActive ?? false,
+    awake: (d) => {
+      const list = this.sleepers.filter((sl) => districtAt(sl.x, sl.z)?.id === d);
+      return [list.filter((sl) => sl.isActive).length, list.length];
+    },
+    notes: (d) => {
+      const list = NOTES.filter((nt) => nt.district === d);
+      return [list.filter((nt) => this.progress.hasFlag(nt.id)).length, list.length];
+    },
+    chispi: (id) => this.progress.hasChispi(id),
+    count: (k) => this.progress.count(k),
+    zones: () => this.zonesDone(),
+    fragments: () => ZONE_FRAGMENTS.filter((f) => this.progress.hasFragment(f.id)).length,
+    fragment: (id) => this.progress.hasFragment(id),
+    homeFixed: () => this.homeFixed,
+    stopsVisited: () => TRAIN_STOPS.filter((st) => this.progress.hasFlag(`train-${st.id}`)).length,
+    cards: () => this.progress.uniqueCards,
+  };
+
+  get pieces(): number {
+    return QUEST_DISTRICTS.filter((d) => this.progress.hasFlag(`pieza-${d}`)).length;
+  }
+
+  get questsDone(): number {
+    return QUESTS.filter((q) => this.progress.hasFlag(`quest-${q.id}`)).length;
+  }
+
+  /** Para la libreta: distritos, Pieza y encargos con su avance. */
+  questBook(): { district: string; name: string; piece: boolean; quests: { id: string; title: string; text: string; giver: string; done: boolean; progress: [number, number] | null }[] }[] {
+    return QUEST_DISTRICTS.map((d) => ({
+      district: d,
+      name: DISTRICT_NAMES[d],
+      piece: this.progress.hasFlag(`pieza-${d}`),
+      quests: QUESTS.filter((q) => q.district === d).map((q) => {
+        const r = q.check(this.questCtx);
+        return { id: q.id, title: q.title, text: q.text, giver: q.giver, done: this.progress.hasFlag(`quest-${q.id}`), progress: Array.isArray(r) ? r : null };
+      }),
+    }));
+  }
+
+  /** Dónde queda un encargo (su lugar, o la nota/cosa pendiente más cercana). */
+  private questPlace(q: Quest): { x: number; z: number } | null {
+    if (q.at) return q.at;
+    if (q.id.endsWith('-notas')) return this.notes.nearest(this.nexus.position, q.district);
+    return null;
+  }
+
+  /** Libreta → «📍»: muestra el camino al encargo. */
+  pointQuest(id: string): void {
+    const q = QUESTS.find((k) => k.id === id);
+    if (!q) return;
+    const at = this.questPlace(q);
+    this.showStory(`📒 ${q.title}`, q.text);
+    if (at) this.pointTo(at.x, at.z);
+  }
+
+  /** El próximo encargo sugerido: primero los del distrito donde está el Nexus. */
+  private nextQuest(): Quest | null {
+    const open = QUESTS.filter((q) => !this.progress.hasFlag(`quest-${q.id}`));
+    return open.find((q) => q.district === this.districtId) ?? open[0] ?? null;
+  }
+
+  private checkQuests(): void {
+    const silent = !this.questsPrimed;
+    this.questsPrimed = true;
+    for (const q of QUESTS) {
+      if (this.progress.hasFlag(`quest-${q.id}`) || !questDone(q, this.questCtx)) continue;
+      this.progress.setFlag(`quest-${q.id}`);
+      if (silent) continue;
+      this.audio.playSuccess();
+      this.toast(`📒 ¡Encargo cumplido! ${q.title}`, 'ok');
+      if (q.reward === 'pack') this.dropPack(`quest-${q.id}`, this.nexus.position.x + 1.6, this.nexus.position.z + 1.6, true);
+      else this.progress.addCharge(2);
     }
+    // Gran tarea: todos los encargos de un distrito devuelven su Pieza (después de que la Chispa se partió)
+    if (this.progress.hasFlag('chispa-rota')) {
+      for (const d of QUEST_DISTRICTS) {
+        if (this.progress.hasFlag(`pieza-${d}`)) continue;
+        if (!QUESTS.filter((q) => q.district === d).every((q) => this.progress.hasFlag(`quest-${q.id}`))) continue;
+        this.progress.setFlag(`pieza-${d}`);
+        if (silent) continue;
+        flashScreen(300);
+        this.nexus.celebrate();
+        this.audio.playSuccess();
+        after(0.8, () =>
+          this.showStory(
+            `◆ Pieza de la Gran Chispa (${this.pieces}/${PIECES_TOTAL})`,
+            `¡Terminaste todo en ${DISTRICT_NAMES[d]}! Una Pieza de la Gran Chispa bajó del cielo y voló hasta su pedestal en el faro.`,
+          ),
+        );
+      }
+    }
+    this.pedestals.show(this.pieces);
+    this.updateHud();
+  }
+
+  private onNote(id: string): void {
+    this.progress.setFlag(id);
+    const nt = NOTES.find((k) => k.id === id)!;
+    const [got, total] = this.questCtx.notes(nt.district);
+    const scale = [523, 587, 659, 784, 880, 1047];
+    this.audio.tone(scale[got % scale.length], 0, 0.18, 'triangle', 0.08);
+    this.audio.tone(scale[(got + 2) % scale.length], 0.12, 0.22, 'triangle', 0.07);
+    this.nexus.sparkle();
+    this.toast(`🎵 Nota ${got}/${total} de ${DISTRICT_NAMES[nt.district] ?? nt.district}`, 'ok');
+    this.updateHud();
+  }
+
+  private startRace(race: Race): void {
+    if (race.board && !this.nexus.riding) {
+      this.setMessage(this.hasBoard ? 'Esta carrera es en patineta: subite y tocá el cartel 🏁' : 'Esta carrera es en patineta: pedile la suya a Rulo');
+      return;
+    }
+    this.races.start(race);
+    this.lastRace = race;
+    this.audio.tone(440, 0, 0.15, 'square', 0.05);
+    this.audio.tone(440, 0.4, 0.15, 'square', 0.05);
+    this.audio.tone(880, 0.8, 0.3, 'square', 0.06);
+    this.toast(`🏁 ¡${race.name}! Pasá por los aros`, 'info');
+  }
+
+  private updateRace(dt: number): void {
+    const ev = this.races.update(dt, this.time, this.nexus.position);
+    const hud = document.getElementById('raceHud');
+    if (hud) {
+      hud.hidden = !this.races.active;
+      if (this.races.active) {
+        const [n, total] = this.races.progress;
+        hud.textContent = `⏱ ${Math.ceil(this.races.timeLeft)} s · aro ${n + 1}/${total}`;
+      }
+    }
+    if (!ev) return;
+    if (ev.kind === 'ring') {
+      this.audio.tone(660 + ev.n * 80, 0, 0.12, 'triangle', 0.07);
+      return;
+    }
+    const race = this.lastRace;
+    if (ev.kind === 'fail') {
+      this.audio.playError();
+      this.setMessage('¡Se acabó el tiempo! Volvé al cartel 🏁 y probá otra vez');
+      return;
+    }
+    const id = race?.id ?? '';
+    const t = Math.round(ev.time * 10) / 10;
+    const first = !this.progress.hasFlag(id);
+    const best = this.progress.setBest(`best-${id}`, t);
+    this.progress.setFlag(id);
+    this.progress.addCount('races-won');
+    this.audio.playSuccess();
+    this.nexus.celebrate();
+    this.pickups.burst(3, this.nexus.position.x, this.nexus.position.z, 1.2);
+    this.setMessage(first ? `🏁 ¡Ganaste ${race?.name ?? 'la carrera'} en ${t} s!` : best ? `🏁 ¡Récord nuevo: ${t} s!` : `🏁 Llegaste en ${t} s`);
   }
 
   private marinaText(): string {
@@ -3186,13 +3382,17 @@ export class WorldMode {
     this.stopSpot = !this.rideOn && !this.rideSpot && !this.nearest && !this.doorway && !this.connections.hasSelection() ? this.nearStop() : null;
     this.homeSpot = !this.rideOn && !this.rideSpot && !this.stopSpot && !this.doorway && !this.connections.hasSelection() ? this.findHomeSpot() : null;
     if (this.homeSpot) this.nearest = null;
-    if (this.rideOn || this.rideSpot || this.stopSpot || this.homeSpot) {
+    this.raceSpot = !this.rideOn && !this.rideSpot && !this.stopSpot && !this.homeSpot && !this.doorway && !this.inside && !this.voltio.active && !this.connections.hasSelection() ? this.races.nearStart(this.nexus.position) : null;
+    if (this.raceSpot) this.nearest = null;
+    if (this.rideOn || this.rideSpot || this.stopSpot || this.homeSpot || this.raceSpot) {
       this.nearestResident = null;
       this.nearestPole = null;
       this.boardToggle = null;
     }
     const pressed = this.input.consumeInteract();
-    if (pressed && !this.busy && !this.zip && this.homeSpot) {
+    if (pressed && !this.busy && !this.zip && this.raceSpot) {
+      this.startRace(this.raceSpot);
+    } else if (pressed && !this.busy && !this.zip && this.homeSpot) {
       this.useHomeItem(this.homeSpot);
     } else if (pressed && !this.busy && !this.zip && this.stopSpot) {
       if (this.train.isActive) this.cb.travel?.();
@@ -3211,8 +3411,10 @@ export class WorldMode {
       else if (this.boardToggle === 'off') this.dismount();
     }
     if (this.el.interact) {
-      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway && !this.nearBoard && !this.boardToggle && !this.rideSpot && !this.rideOn && !this.stopSpot && !this.homeSpot) || this.busy || !!this.zip || (this.rideOn === this.coaster && !!this.rideOn);
-      this.el.interact.textContent = this.homeSpot
+      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway && !this.nearBoard && !this.boardToggle && !this.rideSpot && !this.rideOn && !this.stopSpot && !this.homeSpot && !this.raceSpot) || this.busy || !!this.zip || (this.rideOn === this.coaster && !!this.rideOn);
+      this.el.interact.textContent = this.raceSpot
+        ? '🏁 Carrera'
+        : this.homeSpot
         ? this.homeLabel(this.homeSpot)
         : this.stopSpot
         ? '🚂 Viajar'
@@ -3242,6 +3444,15 @@ export class WorldMode {
     }
     this.checkFragments();
     this.checkSummit();
+    const note = this.voltio.active || this.inside ? null : this.notes.update(dt, this.time, this.nexus.position);
+    if (note) this.onNote(note.id);
+    this.updateRace(dt);
+    this.pedestals.update(dt);
+    this.questTimer -= dt;
+    if (this.questTimer <= 0) {
+      this.questTimer = 0.5;
+      this.checkQuests();
+    }
     // La cueva está a oscuras hasta prender los cristales (con la capucha se ven igual)
     document.body.classList.toggle('cave-dark', this.inside?.id === 'cueva' && !this.voltio.active && !this.progress.hasFlag('cave-lit'));
 

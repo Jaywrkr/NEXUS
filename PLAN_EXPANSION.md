@@ -79,7 +79,7 @@ Ciclo suave de día y noche (unos 8 minutos de juego). De noche se prenden farol
 
 | Fase | Qué | Terminada cuando… |
 |---|---|---|
-| **10. La Gran Chispa rota + libreta** | Escena nueva del faro (la Chispa se parte en 12 Piezas), contador ◆, pedestales en el faro, libreta de encargos con los primeros ~40 encargos en los distritos actuales, créditos movidos al final de verdad | El faro ya no termina el juego; hay 6 Piezas posibles en lo que ya existe y la libreta guía los encargos |
+| **10. La Gran Chispa rota + libreta** ✅ (hecha, Decisión 054) | Escena nueva del faro (la Chispa se parte en 12 Piezas), contador ◆, pedestales en el faro, libreta de encargos con los primeros ~40 encargos en los distritos actuales, créditos movidos al final de verdad | El faro ya no termina el juego; hay 6 Piezas posibles en lo que ya existe y la libreta guía los encargos |
 | **11. Bosque de las luciérnagas** | Distrito, árbol gigante, hongos que rebotan, puente colgante, Yuyo, encargos, Pieza | Se juega de punta a punta y da su Pieza |
 | **12. Granja y molinos** | Distrito, molinos, granero, tractor, animales, Abuela Trigo, encargos, Pieza | Ídem |
 | **13. Día y noche** | Ciclo, faroles y ventanas, encargos nocturnos, cama que cambia la hora | Hay al menos 8 encargos nocturnos |
@@ -98,6 +98,10 @@ En cada fase: build, pruebas (escritorio y celular), capturas, documentación (d
 - **Que no aburra**: los encargos son cortos (1–3 minutos), siempre hay uno «a mano» cerca y la pista lleva hasta él. Nada es obligatorio salvo las grandes tareas.
 - **Partidas viejas**: todo lo ganado se conserva; los distritos y encargos nuevos se suman.
 - **Prueba con Luca** cuando Jay quiera: sobre todo la dificultad de las carreras y de los cables en orden.
+
+## 6 bis. Todavía más grande (pedido de Jay al aprobar el plan)
+
+Jay aprobó el plan pidiendo «mucho más grande y con muchas cosas más que hacer». Además de los 7 distritos, cada fase suma su lote de encargos, notas, carreras y cartas, y al terminar la Fase 18 se pueden sumar más lugares (ideas: barrio chino de faroles, parque acuático, castillo en las nubes con globo aerostático, ciudad subterránea de cables, aeropuerto de juguete).
 
 ## 7. Para decidir más adelante (no frena nada)
 

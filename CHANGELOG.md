@@ -333,3 +333,6 @@ Nuevo distrito al sur: el Puerto, con muelles, mar, barcos y el faro. El bote de
 
 ## 3D: la casa del Nexus y el armario
 El Nexus tiene casa propia, vieja y rota, al lado del jardín municipal. Con chispitas de la mochila se arregla de a una cosa (lámpara, ventana, alfombra, planta, cama, radio, estante, armario, techo y jardín) y se nota adentro y afuera. El armario cambia la ropa del Nexus (buzo, mochila, orejas, cable y algo en la cabeza); hay prendas que se ganan jugando. La radio toca la canción de la ciudad y la cama recarga la capucha. Pruebas 3D: 38 escenarios. Decisión 053.
+
+## 3D: Fase 10 (expansión) — la Gran Chispa rota, libreta, notas y carreras
+El faro ya no es el final: la Gran Chispa vuelve y se parte en 12 Piezas que salen volando. Libreta de encargos 📒 con 47 encargos de los vecinos en los 6 distritos; terminar todos los de un lugar devuelve su Pieza al faro (pedestales ◆). 31 notas de la canción escondidas 🎵 y 6 carreras de aros contra el reloj 🏁 (una en patineta). Pruebas 3D: 40 escenarios. Decisión 054.
