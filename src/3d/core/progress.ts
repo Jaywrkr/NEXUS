@@ -195,6 +195,11 @@ export class Progress3D {
     return this.state.counts[key];
   }
 
+  setCount(key: string, value: number): void {
+    this.state.counts[key] = value;
+    this.save();
+  }
+
   /** Guarda un récord si es mejor (menor) que el anterior. */
   setBest(key: string, value: number): boolean {
     const old = this.state.counts[key];

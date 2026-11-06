@@ -45,10 +45,12 @@ import { CERRO, TOP_H } from '../world/Cerro';
 import { BOAT, PORT } from '../world/Port';
 import { CanalBoat, GranChispa, Lighthouse, PiecePedestals } from '../objects/finale';
 import { Campfire, RopeBridgeLever } from '../objects/forest';
+import { GreenhouseSprinkler, Incubator, Tractor, Windmill } from '../objects/farm';
+import { FARM } from '../world/Farm';
 import { FOREST, MUSHROOM_R, MUSHROOM_TOP, TREE } from '../world/Forest';
 import { Notes, Races } from '../systems/Collectibles';
 import { NOTES, type Race } from '../data/collectibles';
-import { DISTRICT_NAMES, PIECES_TOTAL, QUESTS, QUEST_DISTRICTS, questDone, type Quest, type QuestCtx } from '../data/quests';
+import { DISTRICT_NAMES, NO_PIECE, PIECES_TOTAL, QUESTS, QUEST_DISTRICTS, questDone, type Quest, type QuestCtx } from '../data/quests';
 import { CitySong, INSTRUMENTS, INSTRUMENT_NAMES, type Instrument } from '../systems/CitySong';
 import { HOME_ITEMS, type HomeItemInfo } from '../world/NexusHome';
 import { loadLook } from '../data/wardrobe';
@@ -126,6 +128,7 @@ const CAGES: { id: string; x: number; z: number }[] = [
   { id: 'musguito', x: CERRO.caveChispi.x, z: CERRO.caveChispi.z },
   { id: 'gaviotin', x: PORT.chispi.x, z: PORT.chispi.z },
   { id: 'pinita', x: FOREST.chispi.x, z: FOREST.chispi.z },
+  { id: 'girasolin', x: FARM.chispi.x, z: FARM.chispi.z },
 ];
 
 /** Sobres escondidos por el mundo (x, z, altura). */
@@ -228,6 +231,10 @@ export class WorldMode {
   private readonly boat: CanalBoat;
   private readonly forestLever: RopeBridgeLever;
   private readonly campfire: Campfire;
+  private readonly mills: Windmill[] = [];
+  private readonly greenhouse: GreenhouseSprinkler;
+  private readonly incubator: Incubator;
+  private readonly tractor: Tractor;
   private readonly lighthouse: Lighthouse;
   private readonly granChispa = new GranChispa();
   /** Expansión (Fase 10): notas de la canción, carreras de aros, libreta y Piezas de la Gran Chispa. */
@@ -400,10 +407,22 @@ export class WorldMode {
     this.forestLever = new RopeBridgeLever('forest-bridge', FOREST.bridge.x, FOREST.bridge.z);
     const fireSource = new EnergySource('forest-fire-source', FOREST.fireSource.x, FOREST.fireSource.z);
     this.campfire = new Campfire('forest-fire', FOREST.fire.x, FOREST.fire.z);
+    // Fase 12: Granja y molinos
+    const millSources = FARM.mills.map((m, i) => new EnergySource(`farm-mill-source-${i}`, m.source.x, m.source.z));
+    FARM.mills.forEach((m, i) => this.mills.push(new Windmill(`farm-mill-${i}`, m.x, m.z)));
+    this.mills[2].unlocked = this.progress.hasFlag('molino-open');
+    const ghSource = new EnergySource('farm-sprinkler-source', FARM.sprinklerSource.x, FARM.sprinklerSource.z);
+    this.greenhouse = new GreenhouseSprinkler('farm-sprinkler', FARM.sprinkler.x, FARM.sprinkler.z);
+    const barn = this.world.farm.barn;
+    const barnSource = new EnergySource('farm-barn-source', barn.source.x, barn.source.z);
+    this.incubator = new Incubator('farm-incubator', barn.incubator.x, barn.incubator.z);
+    const tractorSource = new EnergySource('farm-tractor-source', FARM.tractorDock.x + 0.5, FARM.tractorDock.z - 4);
+    this.tractor = new Tractor('farm-tractor', FARM.tractorDock, FARM.tractorRoute);
     // La casa del Nexus: lo que ya se arregló
     for (const it of HOME_ITEMS) if (this.progress.hasFlag(`casa-${it.id}`)) this.world.home.fix(it.id, false);
     if (this.homeInsideDone) this.world.home.gray.revive(false);
     this.nexus.applyLook(loadLook());
+    this.clock = this.progress.count('clock') || 0.1;
     if (this.progress.hasFlag('cave-lit')) {
       this.world.cerro.cave.light();
       this.world.cerro.cave.gray.revive(false);
@@ -426,10 +445,14 @@ export class WorldMode {
       [portSource, 'Energía'],
       [forestBridgeSource, 'Energía'],
       [fireSource, 'Energía'],
+      ...millSources.map((s): [Connectable, string] => [s, 'Energía']),
+      [ghSource, 'Energía'],
+      [barnSource, 'Energía'],
+      [tractorSource, 'Energía'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire, ...millSources, ...this.mills, ghSource, this.greenhouse, barnSource, this.incubator, tractorSource, this.tractor]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -499,6 +522,18 @@ export class WorldMode {
     this.connections.addRule({ sourceId: boatSource.id, targetId: this.boat.id, useTunnel: true });
     this.connections.addRule({ sourceId: forestBridgeSource.id, targetId: this.forestLever.id, useTunnel: true });
     this.connections.addRule({ sourceId: fireSource.id, targetId: this.campfire.id, useTunnel: true });
+    this.mills.forEach((m, i) =>
+      this.connections.addRule({
+        sourceId: millSources[i].id,
+        targetId: m.id,
+        useTunnel: true,
+        available: () => m.unlocked,
+        blockedMessage: 'Este molino tiene el motor trabado: mirá sus cables con la capucha ⚡',
+      }),
+    );
+    this.connections.addRule({ sourceId: ghSource.id, targetId: this.greenhouse.id, useTunnel: true });
+    this.connections.addRule({ sourceId: barnSource.id, targetId: this.incubator.id, useTunnel: true });
+    this.connections.addRule({ sourceId: tractorSource.id, targetId: this.tractor.id, useTunnel: true });
     // El faro: motor trabado (circuito Voltio) y solo prende con toda la ciudad viva
     this.connections.addRule({
       sourceId: portSource.id,
@@ -532,6 +567,9 @@ export class WorldMode {
       { s: boatSource, t: this.boat, sName: 'la energía del embarcadero', tName: 'el bote de Marina' },
       { s: forestBridgeSource, t: this.forestLever, sName: 'la energía junto al arroyo', tName: 'la palanca del puente colgante' },
       { s: fireSource, t: this.campfire, sName: 'la energía del claro', tName: 'el fogón' },
+      ...this.mills.map((m, i) => ({ s: millSources[i] as Connectable, t: m as Connectable, sName: 'la energía del molino', tName: 'el molino', when: () => m.unlocked })),
+      { s: ghSource, t: this.greenhouse, sName: 'la energía del invernadero', tName: 'el regador' },
+      { s: tractorSource, t: this.tractor, sName: 'la energía del galpón', tName: 'el tractor' },
       { s: portSource, t: this.lighthouse, sName: 'la energía del puerto', tName: 'el faro', when: () => this.lighthouse.unlocked && this.finalMissing.length === 0 },
     ];
 
@@ -729,6 +767,7 @@ export class WorldMode {
       [this.cascade, 'cascada', true],
       [this.boat, 'bote', true],
       [this.campfire, 'fogon', true],
+      [this.incubator, 'granero', true],
     ];
     for (const [obj, id, ok] of packFor) {
       if (target !== obj || !ok) continue;
@@ -825,6 +864,32 @@ export class WorldMode {
         say(`¡${name} revivió! Acercate y subite`);
       }
     }
+    // Fase 12: la granja
+    if (target instanceof Windmill) {
+      this.addLife(target.x, target.z, 9, animate);
+      const n = this.mills.filter((m) => m.isActive).length;
+      if (n === 3) {
+        if (!this.progress.hasFlag('fields-grown')) this.progress.setFlag('fields-grown');
+        this.world.farm.growFields(animate);
+        this.addLife(-76, 70, 34, animate);
+        if (animate) this.dropPack('lugar-molinos', -60, 62, true);
+        say('¡Los tres molinos giran! El agua llega a los campos y todo crece');
+        if (animate) after(0.8, () => this.updateResidentMoods());
+      } else {
+        say(`¡El molino gira! (${n}/3)`);
+      }
+    }
+    if (target === this.greenhouse) {
+      this.world.farm.bloomGreenhouse();
+      this.addLife(FARM.greenhouse.x, FARM.greenhouse.z, 8, animate);
+      say('¡El regador tira agua y el invernadero florece!');
+    }
+    if (target === this.incubator) {
+      this.world.farm.barn.gray.revive(animate);
+      this.world.farm.barn.chicks.visible = true;
+      say('¡Pío pío! Nacieron los pollitos y el granero recuperó el color');
+    }
+    if (target === this.tractor) say('¡El tractor arrancó! Subite al lado y dá una vuelta a los campos');
     // Fase 11: el bosque
     if (target === this.forestLever) {
       this.world.forest.openBridge();
@@ -1138,6 +1203,15 @@ export class WorldMode {
         story: ['Tu casa', 'Esta casita vieja es tuya, Nexus. Está toda rota… pero con chispitas de la mochila la podés ir arreglando, cosa por cosa.'],
       },
       {
+        id: 'granero',
+        info: this.world.farm.barn,
+        door: { x: FARM.barn.doorX, z: FARM.barn.z + FARM.barn.d / 2 + 0.9 },
+        out: { x: FARM.barn.doorX, z: FARM.barn.z + FARM.barn.d / 2 + 1.7 },
+        open: () => true,
+        story: ['Abuela Trigo · El granero', 'Desde el apagón la incubadora no calienta y los huevitos no nacen. ¿Le llevás energía?'],
+        target: this.incubator,
+      },
+      {
         id: 'cueva',
         info: this.world.cerro.cave,
         door: { x: CERRO.cave.doorX, z: CERRO.cave.z + 0.9 },
@@ -1270,6 +1344,9 @@ export class WorldMode {
       { name: 'Bote', x: BOAT.dock.x, z: BOAT.dock.z, alive: this.boat.isActive },
       { name: 'Árbol gigante', x: TREE.x, z: TREE.z, alive: this.progress.hasFlag('tree-top') },
       { name: 'Fogón', x: FOREST.fire.x, z: FOREST.fire.z, alive: this.campfire.isActive },
+      { name: 'Molinos', x: -96, z: 59, alive: this.progress.hasFlag('fields-grown') },
+      { name: 'Maizal', x: FARM.mazeCenter.x, z: FARM.mazeCenter.z, alive: this.progress.hasFlag('maze-center') },
+      { name: 'Granero', x: FARM.barn.x, z: FARM.barn.z, alive: this.incubator.isActive },
       { name: 'Faro', x: PORT.lighthouse.x, z: PORT.lighthouse.z - 3, alive: this.lighthouse.isActive },
     ];
     return {
@@ -1309,6 +1386,7 @@ export class WorldMode {
         { id: 'coaster-open', nodes: PARK.coasterNodes, door: { x: PARK.coasterStation.x, z: PARK.coasterStation.z } },
         { id: 'train-open', nodes: STATION.nodes, door: { x: STATION.train.x, z: STATION.train.z } },
         { id: 'cave-lit', nodes: CERRO.caveNodes, door: CERRO.caveNodes[1] },
+        { id: 'molino-open', nodes: FARM.millNodes, door: FARM.mills[2] },
         { id: 'faro-open', nodes: PORT.nodes, door: PORT.lighthouse },
       ],
       {
@@ -1334,6 +1412,9 @@ export class WorldMode {
           } else if (id === 'faro-open') {
             this.lighthouse.unlocked = true;
             this.setMessage('¡Circuito cerrado! El motor del faro se destrabó');
+          } else if (id === 'molino-open') {
+            this.mills[2].unlocked = true;
+            this.setMessage('¡Circuito cerrado! El motor del molino se destrabó');
           } else if (id === 'cave-lit') {
             this.lightCave(true);
           }
@@ -1362,7 +1443,7 @@ export class WorldMode {
         cages: [{ id: 'rueditas', ...this.world.skate.chispi }, ...CAGES]
           .filter((c) => !this.progress.hasChispi(c.id))
           .map((c): CageSpot => ({ ...c, color: TYPES[CARD_BY_ID.get(c.id)!.type].color })),
-        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open'].filter((f) => this.progress.hasFlag(f)),
+        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open', 'molino-open'].filter((f) => this.progress.hasFlag(f)),
       },
     );
   }
@@ -1603,7 +1684,7 @@ export class WorldMode {
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
       return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
     }
-    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep();
+    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep() ?? this.farmStep();
     if (park) return park;
     if (this.voltio.active && !this.inSkatepark) {
       const me = this.nexus.position;
@@ -2004,6 +2085,13 @@ export class WorldMode {
       ['pinwheel', 29, -80],
       // Fase 11: frascos de luciérnagas en el bosque
       ...FOREST.fireflies.map(([x, z]): [SleeperKind, number, number] => ['firefly', x, z]),
+      // Fase 12: vacas y gallinas de la granja
+      ...FARM.animals,
+      // Fase 13: búhos (solo despiertan de noche)
+      ['owl', -40, -18],
+      ['owl', 30, -66],
+      ['owl', -68, -8],
+      ['owl', -98, -60],
     ] as [SleeperKind, number, number][]) {
       const [px, pz] = place(x, z);
       make(kind, px, pz, Math.PI / 4);
@@ -2083,6 +2171,10 @@ export class WorldMode {
       sl.poke();
       return;
     }
+    if (sl.kind === 'owl' && !this.isNight) {
+      this.setMessage('El búho duerme de día: volvé de noche 🌙 (o dormí una siesta en tu casa)');
+      return;
+    }
     if (this.progress.charge <= 0) {
       this.toast('Tu mochila está vacía: junta chispitas ✦', 'info');
       if (!this.progress.hasHeard('empty-pack')) {
@@ -2124,6 +2216,9 @@ export class WorldMode {
       [[this.lighthouse], 'faro'],
       [[this.forestLever], 'bridge'],
       [[this.campfire], 'fogon'],
+      [this.mills, 'molino'],
+      [[this.greenhouse], 'garden'],
+      [[this.incubator, this.tractor], 'granja'],
     ];
     const zone = zones.find(([list]) => list.includes(target))?.[1] ?? 'garden';
     return planTunnel(zone, this.progress.tunnelSkill);
@@ -2249,6 +2344,12 @@ export class WorldMode {
     nora.setHeard(this.progress.hasHeard('nora'));
     this.world.scene.add(nora.root);
     this.residents.push(nora);
+    // Abuela Trigo, la granjera (Fase 12)
+    const ts = FARM.trigo;
+    const trigo = new Resident3D('trigo', 'Abuela Trigo', ts.x, ts.z, Math.atan2(ts.faceX - ts.x, ts.faceZ - ts.z));
+    trigo.setHeard(this.progress.hasHeard('trigo'));
+    this.world.scene.add(trigo.root);
+    this.residents.push(trigo);
     // Yuyo, el botánico del Bosque (Fase 11)
     const ys = FOREST.yuyo;
     const yuyo = new Resident3D('yuyo', 'Yuyo', ys.x, ys.z, Math.atan2(ys.faceX - ys.x, ys.faceZ - ys.z));
@@ -2292,6 +2393,7 @@ export class WorldMode {
       lalo: this.cerroDone,
       marina: this.boat.isActive,
       yuyo: this.campfire.isActive,
+      trigo: this.progress.hasFlag('fields-grown'),
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
@@ -2303,6 +2405,7 @@ export class WorldMode {
     if (r.id === 'lalo') return this.laloText();
     if (r.id === 'marina') return this.marinaText();
     if (r.id === 'yuyo') return this.yuyoText();
+    if (r.id === 'trigo') return this.trigoText();
     const info = RESIDENTS.find((i) => i.id === r.id)!;
     // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
     if (r.id === 'bombo' && !this.fountain.isActive) {
@@ -2376,7 +2479,7 @@ export class WorldMode {
   private findRideSpot(): (Ride & Connectable) | null {
     if (this.rideOn || this.busy || this.zip || this.inside || this.voltio.active || this.connections.hasSelection() || this.nexus.riding) return null;
     const p = this.nexus.position;
-    for (const r of [this.carousel, this.wheel, this.coaster, this.boat] as (Ride & Connectable)[]) {
+    for (const r of [this.carousel, this.wheel, this.coaster, this.boat, this.tractor] as (Ride & Connectable)[]) {
       if (!r.isActive) continue;
       if (Math.hypot(p.x - r.boardAt.x, p.z - r.boardAt.z) < 1.9) return r;
     }
@@ -2642,13 +2745,121 @@ export class WorldMode {
   private nap(): void {
     this.crossDoor(() => {
       this.voltio.voltage = this.voltio.maxVolt;
-      this.setMessage('💤 ¡Qué buena siesta! La capucha quedó cargada a full');
+      const wasNight = this.isNight;
+      this.clock = wasNight ? 0.05 : 0.64;
+      this.progress.setCount('clock', this.clock);
+      if (!this.progress.hasFlag('napped')) this.progress.setFlag('napped');
+      this.setMessage(wasNight ? '☀️ ¡Buen día! Dormiste toda la noche (y la capucha quedó cargada)' : '🌙 Dormiste hasta la noche… ¡salí a ver las estrellas! (la capucha quedó cargada)');
     });
   }
 
   private showMemories(): void {
     const stars = this.fragments.filter((f) => f.isCollected).length;
     this.setMessage(`🏛️ Recuerdos: ★ ${stars} fragmentos · ✦ ${this.awakeCount()} cosas despiertas · 🃏 ${this.progress.uniqueCards} cartas · ⚡ ${this.progress.chispis.length} Chispis`);
+  }
+
+  /* ---------- Fase 13: Día y noche ---------- */
+
+  /** Hora del día (0 = amanecer … 1 = amanecer siguiente). Un día dura DAY_LENGTH segundos de juego. */
+  clock = 0.1;
+  private clockSave = 0;
+  private lantern: THREE.PointLight | null = null;
+  static DAY_LENGTH = 480;
+
+  /** 0 = día, 1 = noche cerrada (con atardecer y amanecer suaves). */
+  get night(): number {
+    const c = this.clock;
+    const s = (a: number, b: number, x: number) => Math.min(1, Math.max(0, (x - a) / (b - a)));
+    const up = s(0.55, 0.63, c);
+    const down = s(0.92, 0.99, c);
+    const k = up * (1 - down);
+    return k * k * (3 - 2 * k);
+  }
+
+  get isNight(): boolean {
+    return this.night > 0.6;
+  }
+
+  /** Para pruebas y la cama: pone la hora (0..1). */
+  setClock(c: number): void {
+    this.clock = ((c % 1) + 1) % 1;
+    this.progress.setCount('clock', this.clock);
+  }
+
+  private updateClock(dt: number): void {
+    if (!this.inside) this.clock = (this.clock + dt / WorldMode.DAY_LENGTH) % 1;
+    this.clockSave -= dt;
+    if (this.clockSave <= 0) {
+      this.clockSave = 5;
+      this.progress.setCount('clock', this.clock);
+    }
+    const n = this.inside ? 0 : this.night;
+    this.world.night = n;
+    if (!this.lantern) {
+      this.lantern = new THREE.PointLight('#ffd9a0', 0, 12, 1.5);
+      this.lantern.position.set(0, 3.2, -0.4);
+      this.nexus.root.add(this.lantern);
+    }
+    this.lantern.intensity = 5 * n;
+    const pill = document.getElementById('clockPill');
+    if (pill) pill.textContent = this.isNight ? '🌙' : this.night > 0.05 ? '🌆' : '☀️';
+    if (this.isNight && !this.progress.hasFlag('night-seen')) {
+      this.progress.setFlag('night-seen');
+      this.showStory('Lucio · ¡Se hizo de noche!', 'De noche la ciudad cambia: se prenden los faroles, salen las estrellas y los búhos se despiertan. Mirá la libreta 📒: hay encargos que solo se pueden hacer de noche.');
+    }
+    if (!this.isNight || this.inside) return;
+    const p = this.nexus.position;
+    const T = CERRO.top;
+    const mark = (f: string) => {
+      if (this.progress.hasFlag(f)) return;
+      this.progress.setFlag(f);
+      this.toast('🌙 ¡Encargo de noche!', 'ok');
+    };
+    if (p.y > TOP_H - 0.4 && p.x > T.minX && p.x < T.maxX && p.z > T.minZ && p.z < T.maxZ) mark('stars-cerro');
+    if (p.y > TREE.top - 0.4 && Math.hypot(p.x - TREE.x, p.z - TREE.z) < TREE.r + 0.8) mark('tree-night');
+    if (this.rideOn === this.wheel) mark('wheel-night');
+    if (this.lighthouse.isActive && Math.hypot(p.x - PORT.lighthouse.x, p.z - PORT.lighthouse.z) < 9) mark('faro-night');
+    if (this.nexus.dancing && this.districtId === 'bosque') mark('dance-fireflies');
+  }
+
+  /* ---------- Fase 12: Granja y molinos ---------- */
+
+  private checkMaze(): void {
+    if (this.progress.hasFlag('maze-center') || this.inside) return;
+    const p = this.nexus.position;
+    if (Math.hypot(p.x - FARM.mazeCenter.x, p.z - FARM.mazeCenter.z) > 2) return;
+    this.progress.setFlag('maze-center');
+    this.audio.playSuccess();
+    this.nexus.celebrate();
+    this.showStory('Abuela Trigo · ¡Llegaste!', '¡Encontraste al espantapájaros! Se llama Don Paja y dice que hace años que nadie lo visitaba.');
+    this.refreshObjectiveSoon();
+  }
+
+  private trigoText(): string {
+    const n = this.mills.filter((m) => m.isActive).length;
+    if (n < 3) return `Soy la Abuela Trigo. Sin la Gran Chispa los molinos no giran y los campos no crecen. Ya giran ${n} de 3. El último tiene el motor trabado: dicen que con una capucha especial se ven sus cables.`;
+    if (!this.incubator.isActive) return '¡Qué lindos los campos! Ahora el granero: la incubadora no calienta y los huevitos esperan.';
+    if (!this.progress.hasFlag('maze-center')) return 'En el maizal vive Don Paja, el espantapájaros. ¿Te animás a encontrarlo en el laberinto?';
+    return '¡La granja está más viva que nunca! Subite al tractor cuando quieras: da la vuelta a los campos.';
+  }
+
+  /** Lo que conviene hacer en la granja. */
+  private farmStep(): { text: string; at: { x: number; z: number } | null } | null {
+    if (this.districtId !== 'granja' || this.inside) return null;
+    if (this.voltio.active) {
+      const lit = this.voltio.litNodes('molino-open');
+      if (!this.mills[2].unlocked) return { text: `Tocá los tres nodos del molino (${lit}/3)`, at: FARM.millNodes[Math.min(lit, 2)] };
+      if (this.voltio.isCaged('girasolin')) return { text: '¡Girasolín está atrapado! Cerrá un círculo con tu estela alrededor de la jaula', at: FARM.chispi };
+      return null;
+    }
+    const next = this.mills.findIndex((m) => !m.isActive && m.unlocked);
+    if (next >= 0) return { text: `Granja: llevale energía al molino (${this.mills.filter((m) => m.isActive).length}/3)`, at: FARM.mills[next].source };
+    if (!this.mills[2].unlocked) {
+      const hood = this.progress.hasFlag('hood');
+      return { text: hood ? 'El último molino tiene el motor trabado: ponete la capucha ⚡ y mirá sus cables' : 'El último molino tiene el motor trabado… Rulo, en el Skatepark, sabe de cables', at: hood ? FARM.millNodes[0] : null };
+    }
+    if (!this.incubator.isActive) return { text: 'Entrá al granero y prendé la incubadora', at: { x: FARM.barn.doorX, z: FARM.barn.z + 4.4 } };
+    return null;
   }
 
   /* ---------- Fase 11: Bosque de las luciérnagas ---------- */
@@ -2806,10 +3017,14 @@ export class WorldMode {
     homeFixed: () => this.homeFixed,
     stopsVisited: () => TRAIN_STOPS.filter((st) => this.progress.hasFlag(`train-${st.id}`)).length,
     cards: () => this.progress.uniqueCards,
+    awakeKind: (kind) => {
+      const list = this.sleepers.filter((sl) => sl.kind === kind);
+      return [list.filter((sl) => sl.isActive).length, list.length];
+    },
   };
 
   get pieces(): number {
-    return QUEST_DISTRICTS.filter((d) => this.progress.hasFlag(`pieza-${d}`)).length;
+    return QUEST_DISTRICTS.filter((d) => !NO_PIECE.has(d) && this.progress.hasFlag(`pieza-${d}`)).length;
   }
 
   get questsDone(): number {
@@ -2817,11 +3032,12 @@ export class WorldMode {
   }
 
   /** Para la libreta: distritos, Pieza y encargos con su avance. */
-  questBook(): { district: string; name: string; piece: boolean; quests: { id: string; title: string; text: string; giver: string; done: boolean; claimed: boolean; reward: string; progress: [number, number] | null }[] }[] {
+  questBook(): { district: string; name: string; piece: boolean; hasPiece: boolean; quests: { id: string; title: string; text: string; giver: string; done: boolean; claimed: boolean; reward: string; progress: [number, number] | null }[] }[] {
     return QUEST_DISTRICTS.map((d) => ({
       district: d,
       name: DISTRICT_NAMES[d],
       piece: this.progress.hasFlag(`pieza-${d}`),
+      hasPiece: !NO_PIECE.has(d),
       quests: QUESTS.filter((q) => q.district === d).map((q) => {
         const r = q.check(this.questCtx);
         return {
@@ -2898,7 +3114,7 @@ export class WorldMode {
     // Gran tarea: todos los encargos de un distrito devuelven su Pieza (después de que la Chispa se partió)
     if (this.progress.hasFlag('chispa-rota')) {
       for (const d of QUEST_DISTRICTS) {
-        if (this.progress.hasFlag(`pieza-${d}`)) continue;
+        if (NO_PIECE.has(d) || this.progress.hasFlag(`pieza-${d}`)) continue;
         if (!QUESTS.filter((q) => q.district === d).every((q) => this.progress.hasFlag(`quest-${q.id}`))) continue;
         this.progress.setFlag(`pieza-${d}`);
         if (silent) continue;
@@ -2969,6 +3185,7 @@ export class WorldMode {
     const best = this.progress.setBest(`best-${id}`, t);
     this.progress.setFlag(id);
     this.progress.addCount('races-won');
+    if (this.isNight && !this.progress.hasFlag('race-night')) this.progress.setFlag('race-night');
     this.audio.playSuccess();
     this.nexus.celebrate();
     this.pickups.burst(3, this.nexus.position.x, this.nexus.position.z, 1.2);
@@ -3543,6 +3760,8 @@ export class WorldMode {
         : this.rideSpot
           ? this.rideSpot === this.boat
             ? '⛵ Subir'
+            : this.rideSpot === this.tractor
+            ? '🚜 Subir'
             : '🎠 Subir'
           : this.nearBoard
         ? 'Patineta'
@@ -3565,6 +3784,8 @@ export class WorldMode {
     this.checkFragments();
     this.checkSummit();
     this.checkTreeTop();
+    this.checkMaze();
+    this.updateClock(dt);
     const note = this.voltio.active || this.inside ? null : this.notes.update(dt, this.time, this.nexus.position);
     if (note) this.onNote(note.id);
     this.updateRace(dt);
@@ -3700,6 +3921,7 @@ export class WorldMode {
     this.chaseCam.updateProjectionMatrix();
     this.world.sky.visible = !this.iso;
     renderer.voltio = this.voltio.amount;
+    renderer.night = this.world.night;
     renderer.render(this.world.scene, this.camera, time, this.iso ? () => this.renderSilhouette(renderer) : undefined);
   }
 }

@@ -24,6 +24,7 @@ export const DISTRICTS: District[] = [
   { id: 'skatepark', name: 'Skatepark', minX: 62, maxX: 120, minZ: -30, maxZ: 30, open: true, color: '#ff9f43' },
   { id: 'parque', name: 'Parque de diversiones', minX: -40, maxX: 40, minZ: -110, maxZ: -45, open: true, color: '#ff6b81' },
   { id: 'bosque', name: 'Bosque de las luciérnagas', minX: -110, maxX: -40, minZ: -110, maxZ: -45, open: true, color: '#9be37a' },
+  { id: 'granja', name: 'Granja y molinos', minX: -110, maxX: -45, minZ: 40, maxZ: 110, open: true, color: '#e0a080' },
   { id: 'cerro', name: 'Cerro y cascada', minX: -110, maxX: -45, minZ: -40, maxZ: 40, open: true, color: '#7ed6df' },
   { id: 'estacion', name: 'Estación de tren', minX: 46, maxX: 110, minZ: 30, maxZ: 70, open: true, color: '#c7a17a' },
   { id: 'puerto', name: 'Puerto y faro', minX: -45, maxX: 46, minZ: 63, maxZ: 120, open: true, color: '#4a90e2' },

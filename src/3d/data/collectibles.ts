@@ -60,6 +60,14 @@ export const NOTES: NoteSpot[] = [
     [-100, 0.9, -60],
     [-92, 0.9, -100],
   ]),
+  ...n('granja', [
+    [-90.6, 0.9, 85.6], // con el espantapájaros
+    [-102, 0.9, 90],
+    [-100, 0.9, 44],
+    [-56, 0.9, 70],
+    [-84, 0.9, 62],
+    [-70, 0.9, 96],
+  ]),
   ...n('puerto', [
     [-3.3, 1.8, 90], // arriba de los cajones
     [16.7, 1.8, 74], // otros cajones
@@ -172,6 +180,20 @@ export const RACES: Race[] = [
       [-66, 3.8, -92],
       [-72, 3.8, -96],
       [-62, 1.2, -100],
+    ],
+  },
+  {
+    id: 'race-granja',
+    district: 'granja',
+    name: 'Carrera del maizal',
+    time: 30,
+    start: { x: -78, z: 81.5 },
+    rings: [
+      [-82, 1.2, 81.5],
+      [-82, 1.2, 96],
+      [-86, 1.2, 96],
+      [-86, 1.2, 86],
+      [-90, 1.2, 86],
     ],
   },
   {

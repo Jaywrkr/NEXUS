@@ -287,6 +287,19 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Fogón** `forest-fire` (−62, −60), fuente (−56, −64), tema `fogon`; vida en todo el bosque. **Frascos de luciérnagas**: `SleeperKind` `firefly`, 8 en `FOREST.fireflies` (agregados al final de la lista para no cambiar ids).
 - Yuyo (`FOREST.yuyo`, look `ranger` verde), `yuyoText()`, `forestStep()`. Piñita (−96, −96). Encargos `b-*` (9). Notas `note-bosque-*` (6) y `race-bosque` (aros a 3,8 m sobre los hongos).
 
+### Granja y molinos (Decisión 056, Fase 12)
+
+- **Región** `FARM_REGION` (x −104…−48, z 40…100) + `FARM_FROM_CENTRO` (x −49…−44, z 42…47) + `FARM_FROM_PORT` (x −50…−39, z 74…80). Distrito `granja`.
+- **Molinos** `farm-mill-0..2` en `FARM.mills` (fuentes `farm-mill-source-*`, tema `molino`); el 3.º con `available: unlocked` (flag `molino-open`, nodos `FARM.millNodes`). Con los tres: flag `fields-grown`, `World.farm.growFields()` y sobre `lugar-molinos`.
+- **Granero** puerta (−58, 60,4), interior `World.farm.barn` (x = 1100): `farm-barn-source` → `farm-incubator` (tema `granja`), revive la habitación y muestra `barn.chicks`. **Invernadero**: `farm-sprinkler-source` → `farm-sprinkler` (`bloomGreenhouse`). **Maizal**: paredes en `mazeWalls()`, centro `FARM.mazeCenter` (−90, 87) → flag `maze-center`. **Tractor** `farm-tractor` (se sube en `FARM.tractorDock` (−49,5, 64), recorre `FARM.tractorRoute`).
+- Cosas dormidas `cow`/`hen` (`FARM.animals`, al final de la lista). Abuela Trigo (`FARM.trigo`), `trigoText()`, `farmStep()`. Girasolín (−84, 58). Encargos `g-*` (11), notas `note-granja-*`, `race-granja`.
+
+### Día y noche (Decisión 057, Fase 13)
+
+- `WorldMode.clock` (0..1; se guarda en `progress.count('clock')` cada 5 s; adentro de las casas no avanza y se ve de día). `night` (0..1: atardecer 0,55–0,63, amanecer 0,92–0,99), `isNight` (> 0,6), `setClock(c)` (pruebas y cama).
+- Render: `Renderer.night` (uniform `night` del post-proceso: oscurece y azula conservando lo brillante), `World.night` (sol/ambiente, niebla y fondo azul noche, `skyNight` del cielo con estrellas). Linterna `PointLight` en el Nexus.
+- Búhos: `SleeperKind` `owl` (4), `wakeWithBackpack` no los despierta de día. Flags nocturnos en `updateClock`: `night-seen`, `stars-cerro`, `tree-night`, `wheel-night`, `faro-night`, `dance-fireflies`; `race-night` al ganar una carrera; `napped` en la cama. Libreta: sección `noche` sin Pieza (`NO_PIECE`, `hasPiece` en `questBook`).
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -305,7 +318,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
 6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
 
-Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–055).
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–057).
 
 ### 6. Trampas técnicas ya conocidas (no repetirlas)
 
@@ -331,7 +344,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–055).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fase 11 hecha (Decisión 055). Sigue la Fase 12: Granja y molinos.**
+> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fases 11–13 hechas (Decisiones 055–057). Sigue la Fase 14: Fábrica de Chispas.**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 

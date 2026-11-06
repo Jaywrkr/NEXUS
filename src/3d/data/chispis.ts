@@ -78,7 +78,7 @@ export const CARDS: ChispiCard[] = [
   c('brotecito', 'Brotecito', 'flor', 'brillante', 'rescate', 'Crece un centímetro cada vez que alguien sonríe.'),
   c('petalo', 'Pétalo', 'flor', 'comun', 'sobre', 'Se pone colorado cuando le dicen que es lindo.'),
   c('regadin', 'Regadín', 'flor', 'brillante', 'cambio', 'El Alcalde Goteo lo nombró ministro del riego.', 'goteo'),
-  c('girasolin', 'Girasolín', 'flor', 'comun', 'sobre', 'Siempre mira hacia donde está la diversión.'),
+  c('girasolin', 'Girasolín', 'flor', 'brillante', 'rescate', 'Siempre mira hacia donde está la diversión.'),
   c('floripon', 'Floripón', 'flor', 'dorada', 'sobre', 'Su perfume hace estornudar a las Estáticas.'),
   // Ruedas
   c('rueditas', 'Rueditas', 'ruedas', 'brillante', 'rescate', 'Le encanta la velocidad y hacer chispas al frenar.'),

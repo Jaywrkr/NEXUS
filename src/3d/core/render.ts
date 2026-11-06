@@ -299,9 +299,10 @@ export class Renderer {
         flash: { value: 0 },
         step: { value: 1.5 },
         voltio: { value: 0 },
+        night: { value: 0 },
       },
       vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
-      fragmentShader: `uniform sampler2D tDiffuse; uniform float time; uniform vec2 res; uniform float flash; uniform float step; uniform float voltio; varying vec2 vUv;
+      fragmentShader: `uniform sampler2D tDiffuse; uniform float time; uniform vec2 res; uniform float flash; uniform float step; uniform float voltio; uniform float night; varying vec2 vUv;
         float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         vec3 toSRGB(vec3 c){ return pow(max(c, 0.0), vec3(1.0 / 2.2)); }
         void main(){
@@ -359,6 +360,12 @@ export class Renderer {
             v *= 1.0 - dot(q, q) * 0.6;
             c = mix(c, v, voltio);
           }
+          // Noche: todo más oscuro y azul, pero lo que brilla (faroles, ventanas, chispitas) sigue encendido
+          if (night > 0.001) {
+            float glowK = smoothstep(0.62, 0.9, max(max(sharp.r, sharp.g), sharp.b));
+            vec3 n = c * vec3(0.46, 0.52, 0.8) + vec3(0.01, 0.015, 0.04);
+            c = mix(c, mix(n, c * 1.08, glowK), night);
+          }
           c = mix(c, vec3(1.0, 0.95, 0.75), flash);                          // destello de celebración
           gl_FragColor = vec4(c, 1.0);
         }`,
@@ -370,6 +377,11 @@ export class Renderer {
 
   set flash(v: number) {
     this.postMat.uniforms.flash.value = v;
+  }
+
+  /** 0 = día, 1 = noche cerrada (oscurece y azula sin apagar lo que brilla). */
+  set night(v: number) {
+    this.postMat.uniforms.night.value = v;
   }
 
   /** 0 = mundo normal, 1 = Mundo Voltio (bordes de neón sobre negro). */
@@ -446,14 +458,20 @@ export function makeSky(): THREE.Mesh {
       fog: false,
       depthWrite: false,
       vertexShader: `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      uniforms: { skyLife: { value: 0 } },
-      fragmentShader: `varying vec3 vP; uniform float skyLife;
+      uniforms: { skyLife: { value: 0 }, skyNight: { value: 0 } },
+      fragmentShader: `varying vec3 vP; uniform float skyLife; uniform float skyNight;
+        float sh(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
         vec3 toLinear(vec3 c){ return pow(c, vec3(2.2)); }
         void main(){ float h = vP.y; vec3 top = vec3(0.08, 0.20, 0.58); vec3 mid = vec3(0.16, 0.36, 0.78); vec3 hor = vec3(0.58, 0.70, 0.90);
           vec3 c = mix(hor, mid, smoothstep(0.0, 0.18, h)); c = mix(c, top, smoothstep(0.18, 0.7, h));
           c = mix(c, vec3(0.62, 0.72, 0.86), smoothstep(0.0, -0.2, h));
           float g = dot(c, vec3(0.299, 0.587, 0.114));
           c = mix(vec3(g) * vec3(0.92, 0.95, 1.0), c, 0.25 + 0.75 * skyLife);
+          // Noche: azul profundo con estrellas
+          vec3 nightSky = mix(vec3(0.05, 0.07, 0.2), vec3(0.01, 0.02, 0.08), smoothstep(0.0, 0.6, h));
+          float star = step(0.9965, sh(floor(vP * 260.0))) * smoothstep(0.05, 0.3, h);
+          nightSky += vec3(star);
+          c = mix(c, nightSky, skyNight);
           gl_FragColor = vec4(toLinear(c), 1.0); }`,
     }),
   );

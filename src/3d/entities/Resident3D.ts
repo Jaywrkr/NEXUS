@@ -10,7 +10,7 @@ export interface ResidentLook {
   hair: string;
   /** 1 = normal; >1 = más ancho (Bombo). */
   girth?: number;
-  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor' | 'skater' | 'inventor' | 'lamplighter' | 'barker' | 'conductor' | 'ranger' | 'sailor';
+  accessory: 'hardhat' | 'raincoat' | 'headphones' | 'tophat' | 'mayor' | 'skater' | 'inventor' | 'lamplighter' | 'barker' | 'conductor' | 'ranger' | 'sailor' | 'farmer';
 }
 
 export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
@@ -35,6 +35,8 @@ export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
   nora: { body: '#30406a', pants: '#2c2838', skin: '#c98e6b', hair: '#1d1630', accessory: 'conductor' },
   // Yuyo: botánico del Bosque (Fase 11); sombrero de ala ancha verde, pañuelo y binoculares
   yuyo: { body: '#9be37a', pants: '#5a4630', skin: '#c98e6b', hair: '#d8d8d8', accessory: 'ranger' },
+  // Abuela Trigo: granjera (Fase 12); sombrero de paja, pañuelo y canasta
+  trigo: { body: '#e0a080', pants: '#3f7fd6', skin: '#e3a986', hair: '#e8e2d6', girth: 1.1, accessory: 'farmer' },
   // Lalo: guardaparque del Cerro (Fase 8); sombrero de ala ancha, pañuelo y binoculares
   lalo: { body: '#6f8f3a', pants: '#5a4630', skin: '#e3a986', hair: '#7a4a2e', accessory: 'ranger' },
   // Marina: capitana del Puerto (Fase 9); gorra de capitán, rayas y catalejo
@@ -409,6 +411,23 @@ export class Resident3D {
         whistle.position.set(0, -0.34, 0.1);
         this.armR.add(whistle);
       }
+    } else if (kind === 'farmer') {
+      // Sombrero de paja ancho, pañuelo y canasta de huevos
+      const crown = rounded(new THREE.CylinderGeometry(0.16, 0.18, 0.12, 14), toon('#f2d38a'), 0.01);
+      crown.position.y = 0.33;
+      h.add(crown);
+      const brim = rounded(new THREE.CylinderGeometry(0.36, 0.36, 0.02, 20), toon('#f2d38a'), 0.008);
+      brim.position.y = 0.28;
+      h.add(brim);
+      const bib = box(0.2, 0.18, 0.02, '#3f7fd6', { outline: 0.006 });
+      bib.position.set(0, 0.55, 0.17);
+      this.body.add(bib);
+      const basket = rounded(new THREE.CylinderGeometry(0.12, 0.09, 0.12, 10), toon('#a97a52'), 0.008);
+      basket.position.set(0, -0.36, 0.12);
+      this.armR.add(basket);
+      const egg = new THREE.Mesh(new THREE.SphereGeometry(0.05, 8, 6), toon('#fff3dc'));
+      egg.position.set(0, -0.28, 0.12);
+      this.armR.add(egg);
     } else if (kind === 'ranger') {
       // Sombrero de ala ancha, pañuelo rojo y binoculares colgando
       const crown = rounded(new THREE.CylinderGeometry(0.15, 0.18, 0.16, 14), toon('#a97a52'), 0.01);

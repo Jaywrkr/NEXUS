@@ -26,7 +26,10 @@ export type SleeperKind =
   | 'pinwheel'
   | 'car'
   | 'drain'
-  | 'firefly';
+  | 'firefly'
+  | 'cow'
+  | 'hen'
+  | 'owl';
 
 /** Nombre que flota encima y frase al despertarlo. */
 export const SLEEPER_INFO: Record<SleeperKind, { label: string; wake: string }> = {
@@ -44,6 +47,9 @@ export const SLEEPER_INFO: Record<SleeperKind, { label: string; wake: string }> 
   gnome: { label: 'Enano de jardín', wake: '¡Jo, jo! El enano dio una vuelta' },
   pinwheel: { label: 'Molinete', wake: '¡El molinete giró a toda velocidad!' },
   car: { label: 'Auto', wake: '¡BIP BIP! El auto prendió las luces' },
+  owl: { label: 'Búho', wake: '¡Uuuh, uuuh! El búho abrió los ojos: de noche es cuando está despierto' },
+  cow: { label: 'Vaca', wake: '¡Muuu! La vaca se despertó con ganas de pastar' },
+  hen: { label: 'Gallina', wake: '¡Cocoroco! La gallina puso un huevo de la emoción' },
   firefly: { label: 'Frasco de luciérnagas', wake: '¡Las luciérnagas se prendieron y salieron a bailar!' },
   drain: { label: 'Desagüe', wake: '¡Glu glu! El caño echó agua al canal' },
 };
@@ -635,6 +641,105 @@ export class Sleeper extends Connectable {
         this.plugAnchor.position.set(0, 0.4, 0.2);
         return 1.0;
       }
+      case 'owl': {
+        this.collideRadius = 0.2;
+        const post = box(0.16, 1.6, 0.16, '#6a4a32', { outline: 0.008 });
+        post.position.y = 0.8;
+        add(post);
+        const bird = new THREE.Group();
+        const b = rounded(new THREE.SphereGeometry(0.26, 12, 10), toon('#a97a52'), 0.012);
+        b.scale.set(1, 1.2, 0.9);
+        bird.add(b);
+        const belly = new THREE.Mesh(new THREE.SphereGeometry(0.17, 10, 8), toon('#f2d38a'));
+        belly.position.set(0, -0.05, 0.12);
+        bird.add(belly);
+        for (const sx of [-0.1, 0.1]) {
+          const ear = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.14, 6), toon('#6a4a32'));
+          ear.position.set(sx, 0.3, 0);
+          bird.add(ear);
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 8, 6), toon('#4a4452'));
+          eye.position.set(sx, 0.08, 0.2);
+          eye.scale.y = 0.2;
+          bird.add(eye);
+          this.bits.push(eye);
+        }
+        bird.position.y = 1.85;
+        add(bird, 'owl');
+        this.plugAnchor.position.set(0, 1.6, 0.2);
+        return 2.2;
+      }
+      case 'cow': {
+        this.collideRadius = 0.8;
+        const white = toon('#f4efe6');
+        const spot = toon('#2c2838');
+        const body = rounded(new THREE.CapsuleGeometry(0.42, 0.9, 6, 12), white, 0.02);
+        body.rotation.x = Math.PI / 2;
+        body.position.y = 0.95;
+        add(body);
+        for (const [x, z] of [
+          [0.25, 0.2],
+          [-0.2, -0.3],
+        ] as [number, number][]) {
+          const s = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), spot);
+          s.scale.set(1, 0.6, 1.2);
+          s.position.set(x, 1.2, z);
+          add(s);
+        }
+        for (const [x, z] of [
+          [-0.25, 0.45],
+          [0.25, 0.45],
+          [-0.25, -0.45],
+          [0.25, -0.45],
+        ] as [number, number][]) {
+          const leg = box(0.14, 0.6, 0.14, '#f4efe6', { outline: 0.006 });
+          leg.position.set(x, 0.3, z);
+          add(leg);
+        }
+        const head = new THREE.Group();
+        const skull = rounded(new THREE.BoxGeometry(0.45, 0.4, 0.5), white, 0.015);
+        head.add(skull);
+        const snout = box(0.4, 0.22, 0.2, '#f2b8b0', { outline: 0.008 });
+        snout.position.set(0, -0.08, 0.3);
+        head.add(snout);
+        for (const sx of [-0.25, 0.25]) {
+          const horn = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.18, 6), toon('#e8dcc6'));
+          horn.position.set(sx, 0.25, 0);
+          head.add(horn);
+        }
+        head.position.set(0, 1.15, 0.95);
+        head.rotation.x = 0.5;
+        add(head, 'head');
+        this.plugAnchor.position.set(0, 1, 0.6);
+        return 1.6;
+      }
+      case 'hen': {
+        this.collideRadius = 0.3;
+        const body = new THREE.Group();
+        const b = rounded(new THREE.SphereGeometry(0.28, 12, 10), toon('#f4efe6'), 0.012);
+        b.scale.set(1, 0.9, 1.2);
+        body.add(b);
+        const comb = new THREE.Mesh(new THREE.SphereGeometry(0.08, 8, 6), toon('#e0453f'));
+        comb.position.set(0, 0.32, 0.22);
+        body.add(comb);
+        const beak = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.12, 6), toon('#ff9f43'));
+        beak.rotation.x = Math.PI / 2;
+        beak.position.set(0, 0.15, 0.4);
+        body.add(beak);
+        const tail = rounded(new THREE.ConeGeometry(0.14, 0.3, 6), toon('#c8a24a'), 0.006);
+        tail.rotation.x = -0.9;
+        tail.position.set(0, 0.18, -0.35);
+        body.add(tail);
+        body.position.y = 0.4;
+        body.rotation.x = 0.35;
+        add(body, 'hen');
+        for (const sx of [-0.1, 0.1]) {
+          const leg = box(0.04, 0.2, 0.04, '#ff9f43', { outline: false });
+          leg.position.set(sx, 0.1, 0);
+          add(leg);
+        }
+        this.plugAnchor.position.set(0, 0.5, 0.3);
+        return 0.9;
+      }
       case 'firefly': {
         this.collideRadius = 0.2;
         const post = box(0.08, 1.1, 0.08, '#6a4a32', { outline: 0.006 });
@@ -757,6 +862,18 @@ export class Sleeper extends Connectable {
 
   private awakePose(): void {
     switch (this.kind) {
+      case 'owl':
+        for (const e of this.bits) {
+          e.scale.y = 1;
+          (e as THREE.Mesh).material = glow('#ffd23a');
+        }
+        break;
+      case 'cow':
+        this.p.head.rotation.x = 0;
+        break;
+      case 'hen':
+        this.p.hen.rotation.x = 0;
+        break;
       case 'firefly':
         ((this.p.jar as THREE.Mesh).material as THREE.MeshBasicMaterial).color.set('#f4ffb0');
         for (const b of this.bits) b.visible = true;
@@ -841,6 +958,17 @@ export class Sleeper extends Connectable {
       case 'firefly':
         [1568, 1760, 2093, 2349, 2637].forEach((f, i) => a.tone(f, i * 0.08, 0.1, 'sine', 0.05));
         break;
+      case 'owl':
+        a.tone(392, 0, 0.35, 'sine', 0.08);
+        a.tone(330, 0.4, 0.5, 'sine', 0.08);
+        break;
+      case 'cow':
+        a.tone(140, 0, 0.9, 'sawtooth', 0.07);
+        a.tone(110, 0.3, 0.7, 'sawtooth', 0.06);
+        break;
+      case 'hen':
+        [700, 760, 700, 900].forEach((f, i) => a.tone(f, i * 0.11, 0.08, 'square', 0.04));
+        break;
       case 'car':
         for (const t of [0, 0.42]) {
           a.tone(330, t, 0.3, 'square', 0.05);
@@ -864,6 +992,24 @@ export class Sleeper extends Connectable {
     const k = r >= 0 ? r : 99;
 
     switch (this.kind) {
+      case 'owl': {
+        this.p.owl.rotation.y = r >= 0 && k < 1.5 ? Math.sin(k * 8) * 0.8 : Math.sin(T * 0.5) * 0.4;
+        if (r >= 1.6) this.react = -1;
+        break;
+      }
+      case 'cow': {
+        // Mastica (y en la reacción mueve la cabeza)
+        this.p.head.rotation.x = r >= 0 ? Math.sin(k * 6) * 0.3 : Math.sin(T * 2) * 0.05;
+        if (r >= 2) this.react = -1;
+        break;
+      }
+      case 'hen': {
+        const hop = r >= 0 && k < 1.2 ? Math.abs(Math.sin(k * 10)) * 0.25 : 0;
+        this.p.hen.position.y = 0.4 + hop;
+        this.p.hen.rotation.x = Math.sin(T * 4) > 0.8 ? 0.4 : 0;
+        if (r >= 1.5) this.react = -1;
+        break;
+      }
       case 'firefly': {
         const spread = r >= 0 ? 0.35 + Math.min(1, k) * 1.2 : 0.55;
         this.bits.forEach((b, i) => {

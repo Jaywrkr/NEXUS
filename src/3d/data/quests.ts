@@ -20,6 +20,8 @@ export interface QuestCtx {
   homeFixed(): number;
   stopsVisited(): number;
   cards(): number;
+  /** [despiertos, total] de un tipo de cosa dormida (búhos…). */
+  awakeKind(kind: string): [number, number];
 }
 
 export interface Quest {
@@ -48,10 +50,14 @@ export const DISTRICT_NAMES: Record<string, string> = {
   cerro: 'Cerro',
   puerto: 'Puerto',
   bosque: 'Bosque de las luciérnagas',
+  granja: 'Granja y molinos',
+  noche: '🌙 De noche',
 };
 
 /** Distritos con libreta (en orden); los de las fases siguientes se suman acá. */
-export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque'];
+export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque', 'granja', 'noche'];
+/** Secciones de la libreta que no tienen Pieza (encargos sueltos). */
+export const NO_PIECE = new Set(['noche']);
 
 /** Cuántas Piezas de la Gran Chispa hay en total (una por gran tarea; las demás llegan con los distritos nuevos). */
 export const PIECES_TOTAL = 12;
@@ -139,6 +145,36 @@ export const QUESTS: Quest[] = [
   { id: 'b-pinita', district: 'bosque', giver: 'yuyo', title: 'Piñita', text: 'Rescatá a Piñita en el Mundo Voltio, del otro lado del arroyo.', check: (c) => c.chispi('pinita'), at: { x: -96, z: -96 } },
   { id: 'b-carrera', district: 'bosque', giver: 'yuyo', title: 'Carrera de los hongos', text: 'Ganá la carrera de aros saltando en los hongos.', check: (c) => c.flag('race-bosque'), at: { x: -52, z: -84 } },
   { id: 'b-notas', district: 'bosque', giver: 'yuyo', title: 'Canto del bosque', text: 'Juntá las 6 notas del bosque (una está en la casa del árbol).', check: (c) => c.notes('bosque') },
+  // ---------- Granja y molinos (Fase 12) ----------
+  {
+    id: 'g-molinos',
+    district: 'granja',
+    giver: 'trigo',
+    title: 'Que giren los molinos',
+    text: 'Llevale energía a los tres molinos (uno tiene el motor trabado: ¡capucha ⚡!).',
+    check: (c) => [['farm-mill-0', 'farm-mill-1', 'farm-mill-2'].filter((id) => c.active(id)).length, 3],
+    at: { x: -90, z: 54 },
+  },
+  { id: 'g-motor', district: 'granja', giver: 'trigo', title: 'El motor del molino', text: 'Destrabá el tercer molino cerrando su circuito en el Mundo Voltio.', check: (c) => c.flag('molino-open'), at: { x: -66, z: 86 } },
+  { id: 'g-campos', district: 'granja', giver: 'trigo', title: 'Campos que crecen', text: 'Con los tres molinos girando, el agua llega y los campos crecen.', check: (c) => c.flag('fields-grown'), reward: 'pack' },
+  { id: 'g-regador', district: 'granja', giver: 'trigo', title: 'El invernadero', text: 'Prendé el regador del invernadero.', check: (c) => c.active('farm-sprinkler'), at: { x: -68, z: 53 } },
+  { id: 'g-pollitos', district: 'granja', giver: 'trigo', title: '¡Pío pío!', text: 'Entrá al granero y prendé la incubadora.', check: (c) => c.active('farm-incubator'), at: { x: -58, z: 60.5 }, reward: 'pack' },
+  { id: 'g-animales', district: 'granja', giver: 'trigo', title: 'Buenos días, granja', text: 'Despertá con la mochila a las vacas y las gallinas.', check: (c) => c.awake('granja') },
+  { id: 'g-tractor', district: 'granja', giver: 'trigo', title: 'Paseo en tractor', text: 'Despertá el tractor y dá una vuelta a los campos.', check: (c) => c.flag('ride-farm-tractor'), at: { x: -49.5, z: 64 } },
+  { id: 'g-laberinto', district: 'granja', giver: 'trigo', title: 'El laberinto de maíz', text: 'Encontrá al espantapájaros en el centro del maizal.', check: (c) => c.flag('maze-center'), at: { x: -81, z: 81.5 } },
+  { id: 'g-girasolin', district: 'granja', giver: 'trigo', title: 'Girasolín', text: 'Rescatá a Girasolín en el Mundo Voltio.', check: (c) => c.chispi('girasolin'), at: { x: -84, z: 58 } },
+  { id: 'g-carrera', district: 'granja', giver: 'trigo', title: 'Carrera del maizal', text: 'Ganá la carrera de aros por adentro del laberinto.', check: (c) => c.flag('race-granja'), at: { x: -78, z: 81.5 } },
+  { id: 'g-notas', district: 'granja', giver: 'trigo', title: 'Canción de la granja', text: 'Juntá las 6 notas de la granja (una está con el espantapájaros).', check: (c) => c.notes('granja') },
+  // ---------- De noche (Fase 13) ----------
+  { id: 'n-noche', district: 'noche', giver: 'lucio', title: 'Primera noche', text: 'Esperá a que se haga de noche (o dormí una siesta en tu casa).', check: (c) => c.flag('night-seen') },
+  { id: 'n-buhos', district: 'noche', giver: 'lucio', title: 'Los búhos', text: 'Despertá con la mochila a los 4 búhos (solo se despiertan de noche).', check: (c) => c.awakeKind('owl'), reward: 'pack' },
+  { id: 'n-estrellas', district: 'noche', giver: 'lalo', title: 'Lluvia de estrellas', text: 'Mirá las estrellas desde el mirador del cerro, de noche.', check: (c) => c.flag('stars-cerro'), at: { x: -91, z: 14 } },
+  { id: 'n-arbol', district: 'noche', giver: 'yuyo', title: 'Noche en el árbol', text: 'Subí a la casa del árbol de noche.', check: (c) => c.flag('tree-night'), at: { x: -92, z: -74 } },
+  { id: 'n-vuelta', district: 'noche', giver: 'tita', title: 'Luces de feria', text: 'Subite a la vuelta al mundo de noche.', check: (c) => c.flag('wheel-night') },
+  { id: 'n-luciernagas', district: 'noche', giver: 'yuyo', title: 'Baile de luciérnagas', text: 'Bailá en el bosque de noche.', check: (c) => c.flag('dance-fireflies') },
+  { id: 'n-faro', district: 'noche', giver: 'marina', title: 'El faro en la noche', text: 'Visitá el faro prendido de noche.', check: (c) => c.flag('faro-night') },
+  { id: 'n-carrera', district: 'noche', giver: 'don-paso', title: 'Carrera a la luz de la luna', text: 'Ganá cualquier carrera de aros de noche.', check: (c) => c.flag('race-night'), reward: 'pack' },
+  { id: 'n-dormir', district: 'noche', giver: 'pipa', title: 'Dulces sueños', text: 'Dormí una siesta en la cama de tu casa.', check: (c) => c.flag('napped') },
   { id: 'pu-cartas', district: 'puerto', giver: 'marina', title: 'Coleccionista', text: 'Juntá 25 cartas distintas de Chispis.', check: (c) => [Math.min(25, c.cards()), 25] },
 ];
 

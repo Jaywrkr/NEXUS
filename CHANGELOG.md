@@ -339,3 +339,9 @@ El faro ya no es el final: la Gran Chispa vuelve y se parte en 12 Piezas que sal
 
 ## 3D: Fase 11 (expansión) — Bosque de las luciérnagas
 Nuevo distrito al noroeste: arroyo con puente colgante que se arma con cable, árbol gigante con plataformas en espiral, casa del árbol y tirolesa, hongos que hacen rebotar, fogón que devuelve el color, ocho frascos de luciérnagas dormidos, Yuyo el botánico, Piñita, notas, carrera de los hongos y 9 encargos (Pieza del bosque). Los premios de la libreta ahora se cobran con 🎁. Pruebas 3D: 42 escenarios. Decisión 055.
+
+## 3D: Fase 12 (expansión) — Granja y molinos
+Nuevo distrito al suroeste: tres molinos (uno con motor trabado en el Mundo Voltio) que hacen crecer los campos, granero con incubadora y pollitos, invernadero, laberinto de maíz con espantapájaros, tractor para pasear, vacas y gallinas dormidas, la Abuela Trigo, Girasolín, notas, carrera del maizal y 11 encargos. Decisión 056.
+
+## 3D: Fase 13 (expansión) — Día y noche
+Ciclo de día y noche con estrellas, faroles que se destacan y linterna del Nexus; búhos que solo despiertan de noche; la cama pasa la noche; 9 encargos «De noche» en la libreta. Pruebas 3D: 46 escenarios. Decisión 057.

@@ -298,14 +298,16 @@ test('3D: el jardín: la broma de Goteo, el aspersor que pasa el agua y las flor
 test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se despiertan', async ({ page }) => {
   test.setTimeout(240_000);
   const w = (fn, arg) => page.evaluate(fn, arg);
+  // De noche, así también se pueden despertar los búhos
+  await w(() => window.__nexus3d.world.setClock(0.75));
   const info = await w(() => {
     const wm = window.__nexus3d.world;
     const nests = wm.connections.all.filter((o) => o.id.startsWith('spark-')).map((s) => ({ id: s.id, x: s.x, z: s.z }));
     return { nests, sleepers: wm.sleepers.map((s) => ({ id: s.id, x: s.x, z: s.z })) };
   });
   expect(info.nests.length).toBe(6);
-  expect(info.sleepers.length).toBe(35);
-  expect(await text(page, 'awake')).toBe('✦ 0/35');
+  expect(info.sleepers.length).toBe(45);
+  expect(await text(page, 'awake')).toBe('✦ 0/45');
   expect(await text(page, 'charge')).toBe('🎒 ○○○○○');
 
   // Con la mochila vacía no se despierta nada
@@ -348,7 +350,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     woken += 1;
     expect(await w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, sl.id), `despierta ${sl.id}`).toBe(true);
     expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
-    expect(await text(page, 'awake')).toBe(`✦ ${woken}/35`);
+    expect(await text(page, 'awake')).toBe(`✦ ${woken}/45`);
     if (woken === 1) {
       await touch(page);
       expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
@@ -370,7 +372,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
-  expect(await text(page, 'awake')).toBe('✦ 35/35');
+  expect(await text(page, 'awake')).toBe('✦ 45/45');
   expect(await text(page, 'charge')).toBe('🎒 ●○○○○');
   expect(await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id?.startsWith('spark-hidden')).length)).toBe(9);
 
@@ -1789,4 +1791,181 @@ test('3D: Bosque de las luciérnagas — puente colgante, fogón, árbol gigante
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   expect(await active('forest-bridge')).toBe(true);
   expect(await w(() => window.__nexus3d.world.world.isWalkable(-78, -75, 0.3))).toBe(true);
+});
+
+test('3D: Granja y molinos — molinos, motor en el Mundo Voltio, campos, granero, tractor, laberinto y animales', async ({ page }) => {
+  test.setTimeout(360_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const active = (id) => w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, id);
+  const pos = () => w(() => window.__nexus3d.world.nexus.position.toArray());
+  const flag = (f) => w((f) => window.__nexus3d.world.progress.hasFlag(f), f);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Se llega caminando desde el Centro, al oeste de la casa del Nexus
+  await tp(page, -42, 44.5);
+  await page.keyboard.down('KeyA');
+  await page.keyboard.down('KeyW');
+  await step(page, 2);
+  await page.keyboard.up('KeyA');
+  await page.keyboard.up('KeyW');
+  expect((await pos())[0]).toBeLessThan(-46);
+  await step(page, 0.6);
+  expect(await text(page, 'districtBanner')).toContain('Granja');
+  expect(await text(page, 'msg')).toContain('molino');
+
+  // Dos molinos con cable; el tercero tiene el motor trabado
+  await connect(page, [-89.1, 54.9], [-93, 52.5]);
+  await connect(page, [-89.1, 64.9], [-93, 66]);
+  expect([await active('farm-mill-0'), await active('farm-mill-1')]).toEqual([true, true]);
+  await connect(page, [-55.1, 89.1], [-59, 93]);
+  expect(await active('farm-mill-2')).toBe(false);
+  expect(await text(page, 'toast')).toContain('motor trabado');
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    p.setFlag('hood');
+    p.setFlag('voltio-seen');
+    document.body.classList.add('has-hood');
+  });
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  const nodes = await w(() => window.__nexus3d.world.voltio.nodes.filter((n) => n.circuit === 'molino-open').map((n) => [n.x, n.z]));
+  expect(nodes.length).toBe(3);
+  for (const [x, z] of nodes) await tp(page, x, z);
+  await step(page, 0.1);
+  expect(await flag('molino-open')).toBe(true);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.3);
+  await connect(page, [-55.1, 89.1], [-59, 93]);
+  expect(await active('farm-mill-2')).toBe(true);
+  expect(await flag('fields-grown')).toBe(true);
+  await step(page, 3);
+  expect(await w(() => window.__nexus3d.world.lifeAt(-76, 70))).toBeGreaterThan(0.9);
+
+  // Regador del invernadero
+  await connect(page, [-67.1, 53.9], [-73.2, 53.4]);
+  expect(await active('farm-sprinkler')).toBe(true);
+
+  // Granero: la incubadora hace nacer pollitos
+  await tp(page, -58, 60.4);
+  expect(await text(page, 'interact')).toBe('Entrar');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  const barn = await w(() => ({ s: window.__nexus3d.world.world.farm.barn.source, t: window.__nexus3d.world.world.farm.barn.incubator }));
+  await connect(page, [barn.s.x + 0.9, barn.s.z + 0.9], [barn.t.x + 0.9, barn.t.z + 1.2]);
+  expect(await active('farm-incubator')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.world.farm.barn.chicks.visible)).toBe(true);
+  await tp(page, 1103.5, 3.7);
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(false);
+
+  // Tractor: se despierta y da la vuelta a los campos
+  await connect(page, [-49.1, 60.9], [-49.5, 64.6]);
+  expect(await active('farm-tractor')).toBe(true);
+  await tp(page, -49.5, 64.4);
+  expect(await text(page, 'interact')).toBe('🚜 Subir');
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.onRide)).toBe('farm-tractor');
+  for (let i = 0; i < 60 && (await w(() => window.__nexus3d.world.onRide)); i += 1) await step(page, 0.5);
+  expect(await flag('ride-farm-tractor')).toBe(true);
+
+  // Laberinto de maíz: el espantapájaros del centro
+  await tp(page, -89.5, 86.2);
+  await step(page, 0.2);
+  expect(await flag('maze-center')).toBe(true);
+
+  // Animales dormidos: una vaca
+  const cow = await w(() => {
+    const s = window.__nexus3d.world.sleepers.find((k) => k.kind === 'cow');
+    return [s.x, s.z];
+  });
+  await w(() => window.__nexus3d.world.setCharge(5));
+  await tp(page, cow[0], cow[1] + 1.4);
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.sleepers.find((k) => k.kind === 'cow').isActive)).toBe(true);
+
+  // La Abuela Trigo está contenta; se guarda
+  await step(page, 1);
+  expect(await w(() => window.__nexus3d.world.residents.find((r) => r.id === 'trigo').isHappy)).toBe(true);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await active('farm-mill-2')).toBe(true);
+  expect(await active('farm-incubator')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.questBook().some((d) => d.district === 'granja'))).toBe(true);
+});
+
+test('3D: día y noche — búhos nocturnos, estrellas, siesta que cambia la hora y encargos de noche', async ({ page }) => {
+  test.setTimeout(240_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const flag = (f) => w((f) => window.__nexus3d.world.progress.hasFlag(f), f);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // De día: sol, y el búho no se despierta
+  await w(() => window.__nexus3d.world.setClock(0.3));
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.isNight)).toBe(false);
+  expect(await text(page, 'clockPill')).toBe('☀️');
+  const owl = await w(() => {
+    const s = window.__nexus3d.world.sleepers.find((k) => k.kind === 'owl');
+    return [s.x, s.z];
+  });
+  await w(() => window.__nexus3d.world.setCharge(5));
+  await tp(page, owl[0], owl[1] + 0.9);
+  await touch(page);
+  expect(await text(page, 'msg')).toContain('duerme de día');
+  expect(await w(() => window.__nexus3d.world.sleepers.find((k) => k.kind === 'owl').isActive)).toBe(false);
+
+  // Se hace de noche: luna, la escena se oscurece y aparece el aviso
+  await w(() => window.__nexus3d.world.setClock(0.75));
+  await step(page, 0.2);
+  expect(await w(() => window.__nexus3d.world.isNight)).toBe(true);
+  expect(await w(() => window.__nexus3d.world.world.night)).toBeGreaterThan(0.9);
+  expect(await text(page, 'clockPill')).toBe('🌙');
+  expect(await flag('night-seen')).toBe(true);
+  expect(await text(page, 'storyWho')).toContain('noche');
+  await page.screenshot({ path: test.info().outputPath('noche.png') });
+
+  // De noche el búho sí se despierta
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.sleepers.find((k) => k.kind === 'owl').isActive)).toBe(true);
+
+  // Estrellas desde el mirador y baile en el bosque
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(-92, 7.2, 20);
+    g.focus.set(-92, 0, 20);
+  });
+  await step(page, 0.3);
+  expect(await flag('stars-cerro')).toBe(true);
+  await tp(page, -60, -60);
+  await page.keyboard.press('KeyB');
+  await step(page, 0.3);
+  expect(await flag('dance-fireflies')).toBe(true);
+
+  // La cama de la casa: siesta que pasa la noche hasta la mañana
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    p.setFlag('casa-cama');
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  await page.evaluate(() => (document.getElementById('continue').hidden ? document.getElementById('play') : document.getElementById('continue')).click());
+  await expect.poll(() => mode(page)).toContain('mode-world');
+  expect(await w(() => window.__nexus3d.world.isNight)).toBe(true); // la hora se guardó
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.enterHouse(g.interiors.find((i) => i.id === 'casa-nexus'));
+  });
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  await tp(page, 997.5, -2);
+  expect(await text(page, 'interact')).toBe('💤 Siesta');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isNight)).toBe(false);
+  expect(await flag('napped')).toBe(true);
+
+  // La libreta tiene la sección «De noche» (sin Pieza)
+  const book = await w(() => window.__nexus3d.world.questBook().find((d) => d.district === 'noche'));
+  expect(book.hasPiece).toBe(false);
+  expect(book.quests.length).toBeGreaterThanOrEqual(8);
 });

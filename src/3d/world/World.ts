@@ -11,6 +11,7 @@ import { CERRO_CORRIDOR, CERRO_REGION, buildCerro, type CerroInfo } from './Cerr
 import { PIERS, PORT_CORRIDOR, PORT_REGION, buildPort } from './Port';
 import { buildNexusHome, type NexusHome } from './NexusHome';
 import { FOREST_FROM_CERRO, FOREST_FROM_PARK, FOREST_REGION, buildForest, type ForestInfo } from './Forest';
+import { FARM_FROM_CENTRO, FARM_FROM_PORT, FARM_REGION, buildFarm, type FarmInfo } from './Farm';
 import { SKATE_REGION, buildSkatepark, type SkateparkInfo } from './Skatepark';
 
 export interface Rect {
@@ -65,6 +66,10 @@ const REGIONS: Rect[] = [
   FOREST_FROM_CERRO,
   FOREST_FROM_PARK,
   FOREST_REGION,
+  // Fase 12: la Granja y molinos (desde el Centro y desde el Puerto)
+  FARM_FROM_CENTRO,
+  FARM_FROM_PORT,
+  FARM_REGION,
 ];
 /** Jardín municipal (zona 5): borde de cercos, entradas al norte y al este. */
 export const GARDEN = { minX: -26, maxX: 4, minZ: 47, maxZ: 61.5 };
@@ -139,11 +144,14 @@ export class World {
   readonly circles: Circle[] = [];
   readonly sun: THREE.DirectionalLight;
   readonly sky: THREE.Mesh;
+  /** 0 = día, 1 = noche (lo maneja el reloj de WorldMode). */
+  night = 0;
   private readonly hemi: THREE.HemisphereLight;
   /** Ánimo del barrio (0 = triste y gris, 1 = todo restaurado): cielo, niebla y luz. Lo fija WorldMode. */
   mood = 0;
   private moodShown = 0;
   private static readonly FOG_ALIVE = new THREE.Color('#9fbbe6');
+  static readonly FOG_NIGHT = new THREE.Color('#0b1030');
   private static readonly FOG_GLOOM = new THREE.Color('#a9adb4');
   private static readonly BG_ALIVE = new THREE.Color('#2a4fb0');
   private static readonly BG_GLOOM = new THREE.Color('#5d636e');
@@ -167,6 +175,8 @@ export class World {
   readonly home: NexusHome;
   /** Fase 11: el bosque (puente del arroyo y tirolesa del árbol). */
   readonly forest: ForestInfo;
+  /** Fase 12: la granja (campos, invernadero y granero en x = 1100). */
+  readonly farm: FarmInfo;
 
   constructor() {
     const s = this.scene;
@@ -222,9 +232,10 @@ export class World {
     this.home = buildNexusHome(s, this.rects);
     this.forest = buildForest(s, this.rects, this.circles);
     this.zipLines.push(this.forest.zipLine);
+    this.farm = buildFarm(s, this.rects, this.circles);
     this.zipLines.push(this.cerro.zipLine);
     this.espejos = buildMirrorRoom(s, this.rects);
-    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller, this.espejos, this.cerro.cave, this.home.info);
+    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller, this.espejos, this.cerro.cave, this.home.info, this.farm.barn);
     this.buildOutsideFx();
 
     // Rendimiento: toda la escenografía quieta se junta en pocas mallas.
@@ -1703,11 +1714,16 @@ export class World {
     this.moodShown += (this.mood - this.moodShown) * Math.min(1, dt * 1.2);
     const m = this.moodShown;
     (this.sky.material as THREE.ShaderMaterial).uniforms.skyLife.value = m;
+    (this.sky.material as THREE.ShaderMaterial).uniforms.skyNight.value = this.night;
     FOG_COLOR.copy(World.FOG_GLOOM).lerp(World.FOG_ALIVE, m);
     (this.scene.fog as THREE.Fog).color.copy(FOG_COLOR);
     (this.scene.background as THREE.Color).copy(World.BG_GLOOM).lerp(World.BG_ALIVE, m);
-    this.hemi.intensity = 1.35 + 0.35 * m;
-    this.sun.intensity = 1.9 + 0.5 * m;
+    this.hemi.intensity = (1.35 + 0.35 * m) * (1 - 0.45 * this.night);
+    this.sun.intensity = (1.9 + 0.5 * m) * (1 - 0.7 * this.night);
+    if (this.night > 0.01) {
+      (this.scene.fog as THREE.Fog).color.lerp(World.FOG_NIGHT, this.night);
+      (this.scene.background as THREE.Color).lerp(World.FOG_NIGHT, this.night);
+    }
     for (const c of this.clouds) c.position.x += dt * 0.6;
     // Corriente del canal (hacia el este) y el bote que se mece amarrado
     for (const d of this.drifting) {

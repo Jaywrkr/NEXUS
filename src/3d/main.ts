@@ -452,7 +452,7 @@ class Game {
       const sec = document.createElement('section');
       sec.className = 'quest-district';
       const n = d.quests.filter((q) => q.done).length;
-      sec.innerHTML = `<h3><span>${d.name}</span><small>${n}/${d.quests.length}${broken ? (d.piece ? ' · ◆' : ' · ◇') : ''}</small></h3>`;
+      sec.innerHTML = `<h3><span>${d.name}</span><small>${n}/${d.quests.length}${broken && d.hasPiece ? (d.piece ? ' · ◆' : ' · ◇') : ''}</small></h3>`;
       for (const q of d.quests) {
         const row = document.createElement('div');
         row.className = `quest-row${q.done ? ' done' : ''}`;
