@@ -1,0 +1,332 @@
+/*
+ * Expansión, Fase 10 (PLAN_EXPANSION.md): notas de la canción escondidas y carreras de aros.
+ * Coordenadas en metros (+X este, +Z sur). `y` = altura del centro de la nota/aro.
+ */
+
+export interface NoteSpot {
+  id: string;
+  district: string;
+  x: number;
+  y: number;
+  z: number;
+}
+
+const n = (district: string, list: [number, number, number][]): NoteSpot[] =>
+  list.map(([x, y, z], i) => ({ id: `note-${district}-${i}`, district, x, y, z }));
+
+/** Notas de la canción de la ciudad: algunas en el piso, otras arriba de autos, bancos, rampas y rocas. */
+export const NOTES: NoteSpot[] = [
+  ...n('centro', [
+    [-34.2, 2.8, 2.6], // techo de un auto
+    [30.2, 2.8, -2.6], // techo de otro auto
+    [-2.6, 2.8, -36.2], // auto de la calle norte
+    [-24, 1.5, -22], // banco de la plaza
+    [-42, 0.9, -38.8], // rincón del noroeste
+    [10, 0.9, 44], // canal sur
+  ]),
+  ...n('skatepark', [
+    [75, 1.6, 2], // arriba de la rampa grande
+    [65, 1.5, -16], // banco
+    [86.7, 0.9, -14.6],
+    [91.6, 0.9, 17.8],
+    [68, 0.9, 12],
+  ]),
+  ...n('parque', [
+    [-30, 0.9, -60],
+    [25, 0.9, -90],
+    [0, 0.9, -75],
+    [-28, 0.9, -92],
+    [30, 0.9, -58],
+  ]),
+  ...n('estacion', [
+    [64, 1.5, 46.5], // banco del andén
+    [90, 0.9, 60],
+    [55, 0.9, 56],
+    [86, 0.9, 50],
+    [92, 0.9, 38.6],
+  ]),
+  ...n('cerro', [
+    [-70, 3.6, 20], // tercera roca
+    [-96, 8.1, 26], // arriba de la meseta
+    [-60, 0.9, -20],
+    [-95, 0.9, -26],
+    [-75, 0.9, 6],
+  ]),
+  ...n('bosque', [
+    [-92.4, 9.0, -78.6], // en la casa del árbol
+    [-60, 4.5, -88], // arriba de un hongo (hay que rebotar)
+    [-50, 0.9, -95],
+    [-66, 0.9, -58],
+    [-100, 0.9, -60],
+    [-92, 0.9, -100],
+  ]),
+  ...n('granja', [
+    [-90.6, 0.9, 85.6], // con el espantapájaros
+    [-102, 0.9, 90],
+    [-100, 0.9, 44],
+    [-56, 0.9, 70],
+    [-84, 0.9, 62],
+    [-70, 0.9, 96],
+  ]),
+  ...n('fabrica', [
+    [62, 6.9, -90], // en el techo del depósito
+    [66, 1.8, -60], // arriba de una cinta
+    [50.6, 1.9, -47.1], // arriba de los barriles
+    [100, 0.9, -50],
+    [110, 0.9, -96],
+    [48, 0.9, -90],
+  ]),
+  ...n('alto', [
+    [156.5, 5.9, 11], // en el techo más alto
+    [146.5, 3.9, 9.5], // en el tercer techo
+    [123, 0.9, 20],
+    [114, 0.9, -8],
+    [140, 0.9, -29],
+    [102, 0.9, -28],
+  ]),
+  ...n('playa', [
+    [104, 3.1, 76], // arriba de la torre de Coral
+    [122, 0.9, 116], // en la punta de la escollera
+    [88, 0.9, 89],
+    [50, 0.9, 93],
+    [130, 0.9, 70],
+    [80, 0.9, 108], // sobre el mar: se llega surfeando
+  ]),
+  ...n('isla', [
+    [30, 7.2, 179.5], // en la cima del volcán
+    [-18, 0.9, 164], // en la cueva del eco
+    [-6, 0.9, 189],
+    [40, 0.9, 160],
+    [2, 0.9, 194],
+    [10, 0.9, 146], // en el muelle de la isla
+  ]),
+  ...n('nieve', [
+    [6, 9.9, -150], // en la cima
+    [-22, 5.4, -118], // en el saliente
+    [15.3, 6.3, -145], // en la escalera
+    [-26, 0.9, -140],
+    [34, 0.9, -104],
+    [-12, 0.9, -128],
+  ]),
+  ...n('puerto', [
+    [-3.3, 1.8, 90], // arriba de los cajones
+    [16.7, 1.8, 74], // otros cajones
+    [-19.5, 0.9, 110], // punta del muelle oeste
+    [38, 0.9, 108], // muelle del faro
+    [-35, 0.9, 70],
+  ]),
+];
+
+export interface Race {
+  id: string;
+  district: string;
+  name: string;
+  /** Hay que hacerla en patineta. */
+  board?: boolean;
+  /** Segundos para llegar. */
+  time: number;
+  start: { x: number; z: number };
+  /** Aros en orden: x, y (centro), z. */
+  rings: [number, number, number][];
+}
+
+/** Carreras de aros contra el reloj: si no se llega, se prueba otra vez (sin perder nada). */
+export const RACES: Race[] = [
+  {
+    id: 'race-centro',
+    district: 'centro',
+    name: 'Vuelta al barrio',
+    time: 30,
+    start: { x: -42, z: 3 },
+    rings: [
+      [-35, 1.2, 0],
+      [-20, 1.2, 0],
+      [-5, 1.2, 0],
+      [0, 1.2, -12],
+      [0, 1.2, -26],
+      [0, 1.2, -40],
+    ],
+  },
+  {
+    id: 'race-skate',
+    district: 'skatepark',
+    name: 'Slalom de Rulo',
+    board: true,
+    time: 26,
+    start: { x: 66, z: -14 },
+    rings: [
+      [70, 1.2, -9],
+      [79, 1.2, -4],
+      [70, 1.2, 4],
+      [81, 1.2, 11],
+      [90, 1.2, 4],
+      [87, 1.2, -9],
+    ],
+  },
+  {
+    id: 'race-parque',
+    district: 'parque',
+    name: 'La gran vuelta del parque',
+    time: 40,
+    start: { x: 0, z: -54 },
+    rings: [
+      [-25, 1.2, -58],
+      [-31, 1.2, -75],
+      [-18, 1.2, -91],
+      [5, 1.2, -91],
+      [26, 1.2, -72],
+      [10, 1.2, -57],
+    ],
+  },
+  {
+    id: 'race-estacion',
+    district: 'estacion',
+    name: 'Andén express',
+    time: 24,
+    start: { x: 55, z: 44.5 },
+    rings: [
+      [62, 1.2, 44.5],
+      [70, 1.2, 44.5],
+      [79, 1.2, 44.5],
+      [88, 1.2, 44.5],
+      [90, 1.2, 52],
+      [92, 1.2, 59],
+    ],
+  },
+  {
+    id: 'race-cerro',
+    district: 'cerro',
+    name: 'Carrera del cerro',
+    time: 40,
+    start: { x: -58, z: 22 },
+    rings: [
+      [-62, 1.2, 20],
+      [-67, 2.9, 20],
+      [-73, 4.7, 20],
+      [-79, 6.5, 20],
+      [-86, 8.3, 20],
+      [-94, 8.3, 16],
+    ],
+  },
+  {
+    id: 'race-bosque',
+    district: 'bosque',
+    name: 'Carrera de los hongos',
+    time: 28,
+    start: { x: -52, z: -84 },
+    rings: [
+      [-56, 3.8, -80],
+      [-60, 3.8, -88],
+      [-66, 3.8, -92],
+      [-72, 3.8, -96],
+      [-62, 1.2, -100],
+    ],
+  },
+  {
+    id: 'race-granja',
+    district: 'granja',
+    name: 'Carrera del maizal',
+    time: 30,
+    start: { x: -78, z: 81.5 },
+    rings: [
+      [-82, 1.2, 81.5],
+      [-82, 1.2, 96],
+      [-86, 1.2, 96],
+      [-86, 1.2, 86],
+      [-90, 1.2, 86],
+    ],
+  },
+  {
+    id: 'race-fabrica',
+    district: 'fabrica',
+    name: 'Turno rápido',
+    time: 30,
+    start: { x: 60, z: -44 },
+    rings: [
+      [72, 1.2, -44],
+      [86, 1.2, -46],
+      [100, 1.2, -56],
+      [104, 1.2, -70],
+      [90, 1.2, -66],
+      [76, 1.2, -74],
+    ],
+  },
+  {
+    id: 'race-alto',
+    district: 'alto',
+    name: 'Por los techos',
+    board: true,
+    time: 30,
+    start: { x: 124, z: 7 },
+    rings: [
+      [129, 1.2, 11],
+      [136.5, 2.2, 11],
+      [141.5, 3.2, 11],
+      [146.5, 4.2, 11],
+      [151.5, 5.2, 11],
+      [156.5, 6.2, 11],
+    ],
+  },
+  {
+    id: 'race-playa',
+    district: 'playa',
+    name: 'Surf de Coral',
+    board: true,
+    time: 32,
+    start: { x: 54, z: 92 },
+    rings: [
+      [58, 1.2, 101],
+      [68.5, 2.4, 104],
+      [78, 1.2, 108],
+      [92, 1.2, 104],
+      [108, 1.2, 100],
+      [114, 1.2, 93],
+    ],
+  },
+  {
+    id: 'race-isla',
+    district: 'isla',
+    name: 'Carrera de la selva',
+    time: 32,
+    start: { x: 14, z: 153 },
+    rings: [
+      [4, 1.2, 160],
+      [-10, 1.2, 162],
+      [-16, 1.2, 176],
+      [2, 1.2, 190],
+      [18, 1.2, 176],
+      [16, 1.2, 160],
+    ],
+  },
+  {
+    id: 'race-nieve',
+    district: 'nieve',
+    name: 'Bajada en trineo',
+    board: true,
+    time: 34,
+    start: { x: -24, z: -101 },
+    rings: [
+      [-18, 1.2, -112],
+      [-9.5, 2.4, -112],
+      [0, 1.2, -122],
+      [-4, 1.2, -130],
+      [-22, 1.2, -132],
+      [-26, 1.2, -146],
+    ],
+  },
+  {
+    id: 'race-puerto',
+    district: 'puerto',
+    name: 'Muelle a toda velocidad',
+    time: 32,
+    start: { x: -35, z: 85 },
+    rings: [
+      [-25, 1.2, 92],
+      [-19.5, 1.2, 102],
+      [-19.5, 1.2, 109],
+      [0, 1.2, 93],
+      [20, 1.2, 93],
+      [31, 1.2, 100],
+    ],
+  },
+];

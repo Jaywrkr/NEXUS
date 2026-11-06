@@ -1,6 +1,77 @@
 # Los Nexus — Guía rápida para Claude
 
-Este archivo existe para que una sesión nueva de Claude Code entienda el proyecto en segundos, sin tener que releer todo el historial de conversación. Léelo primero.
+Este archivo existe para que una sesión nueva de Claude Code entienda el proyecto en segundos. Léelo primero.
+
+> **Desde el 2026-11-04 el juego principal es 3D**: `index.html` → `src/3d/` (Three.js r187, estilo *Calle 85*).
+> La versión 2D completa (Phaser, 7 zonas, capítulo 1, historias, armario...) sigue en `2d.html` y se documenta más abajo, en "Versión 2D".
+> **`CONTEXTO.md` es la fuente principal y autocontenida** (también se usa para seguir en ChatGPT/Codex). Si cambiás algo importante, actualizá **los dos** archivos.
+
+## Los Nexus 3D — lo esencial
+
+- **Idea central:** el pueblo empieza **triste y gris** y el Nexus le devuelve la vida conectando (Decisión 036: `LIFE`/`withLife`/`keepVivid` en `render.ts`, círculos en `WorldMode.addLife`). **Mundo abierto**, sin niveles (Decisión 037). Lo nuevo tiene que sumarse a esto.
+- Vecinos en 3D: Miga, Bombo, Vera, Don Paso y el Alcalde Goteo (`entities/Resident3D.ts`, textos de `src/data/chapter.ts`, Decisión 038).
+
+- Barrio abierto en 3D con **5 lugares** (plaza con farola y puerta, fuente de agua, antena con dos fuentes + señuelo, puente sobre un canal que bloquea el paso, y el **jardín municipal** al otro lado del canal: fuente → aspersor → cantero, Decisión 039), fragmento secreto detrás de la casa, museo 3D con 6 vitrinas, carteles con el nombre de cada objeto al acercarse, sorpresas en parejas graciosas, mini-túnel del cable en 3D con práctica, cuenta 3-2-1 y panel Reintentar/Volver (joystick también en el túnel en celular: clase `play-only`), cámara isométrica con silueta + vista "detrás" (V), controles PC y celular, progreso propio (`src/3d/core/progress.ts`, clave `los-nexus-3d-progress`).
+- **Todavía no están en 3D**: historias secundarias y radio CUAC FM de la 2D (el armario ya está: Decisión 053). Se pasan de a una (orden sugerido en `CONTEXTO.md`, "Qué sigue en el 3D"), reutilizando datos y textos de `src/data/*`.
+- **La Gran Chispa y la mochila Atrapachispas** (Decisiones 040–041): lo grande se conecta con cable desde una fuente y **siempre** abre una carrera de luz distinta (forma, tema por lugar, compuertas, chispitas; dificultad adaptable, `TunnelMode.planTunnel`); lo chico (20 cosas dormidas con «Zzz») se despierta **solo con la mochila** gastando 1 chispita (máx. 5). Chispitas: dentro de las carreras, al revivir lugares, 10 escondidas y 6 nidos que se recargan (`systems/SparkPickups.ts`). **Barrio que reacciona**: palomas, charcos, hojas y pelotas (`systems/Playground.ts`). Pruebas: `connect()` recorre la carrera con `tunnel.autopilot`.
+- **Saltar, tirolesa y bailar** (Decisión 042): Espacio/botón salta (plataformas con `h`: bancos, tacho, capó y techo de autos; `World.groundAt`), tirolesa entre postes con el botón (`World.zipLines`), B/botón baila y los vecinos cercanos se suman. E = tocar (Espacio ya no toca).
+- **Fase 0 del plan hecha** (Decisión 043): HUD nuevo (☰, 🎒, objetivo que da pista al tocarlo o con H, ★ ✦), menú de pausa con mapa (M), opciones (`core/settings.ts`), ayuda, gestos; título nuevo; distritos (`world/districts.ts`) con cartel; calle al portón del Skatepark (x 57,5); **casa de Miga** como primer interior (`world/MigaHouse.ts`, x = 300; Entrar/Salir con `findDoorway`). **Sigue la Fase 1** (skatepark, patineta, Mundo Voltio).
+- **Fase 1 hecha** (Decisión 044): Skatepark (`world/Skatepark.ts`, x 61–96) con Rulo, rampa grande (`objects/skate.ts`, carrera de luz `skate`), rampitas, barandas y sala; **patineta** (`systems/Skate.ts`; E sube/baja, Espacio ollie, vuela en rampitas, grinda barandas); tres trucos → **capucha**; **Mundo Voltio** (⚡/Q, `systems/Voltio.ts` + `Renderer.voltio`): estela que encierra, Estáticas, voltaje, Chispi Rueditas con carta, circuito que abre la sala. Progreso: `flags` y `chispis`. **Sigue la Fase 2** (interiores).
+- **Fase 2 hecha** (Decisión 045): interiores grises que se reviven con cable + carrera de luz y se notan afuera: casa de Miga (tablero → guirnalda), heladería (máquina de helados → vidriera), tienda de cartas (vitrina → vidriera; se destraba con un circuito del Mundo Voltio). `world/ShopRooms.ts`, `world/revive.ts`, `objects/indoor.ts`. **Sigue la Fase 3** (cartas de Chispis).
+- **Fase 3 hecha** (Decisión 046): 40 cartas de Chispis (`data/chispis.ts`, dibujo en `ui/cardArt.ts`); se juntan rescatando jaulas en Voltio, en sobres (escondidos + uno por lugar revivido) y cambiando repetidas con los vecinos; álbum (menú o vitrina de la tienda), contador 🃏. **Sigue la Fase 4** (Chispi compañero).
+- **Fase 4 hecha** (Decisión 047): Chispi compañero elegido desde la carta (`entities/Companion.ts`, `WorldMode.setCompanion`), sigue al Nexus en los dos mundos, con una ayudita por tipo (`helps()`). **Sigue la Fase 5** (Centro completo: taller de Pipa y faroles de Lucio).
+- **Fase 5 hecha** (Decisión 048): el capítulo 1 completo en 3D. Barrio del canal sur: taller de Pipa (interior, motor → pato + campana → desfile) y faroles de Lucio (directo o curioso con el farol tímido); con todos los preparativos, escenario → confeti = fiesta y pantalla final (`objects/festival.ts`, `world/Festival.ts`). 7 lugares, 24 cosas dormidas. **Sigue la Fase 6** (Parque de diversiones).
+- **Fase 6 hecha** (Decisión 049): Parque de diversiones al norte (`world/Park.ts`, `objects/rides.ts`): calesita, vuelta al mundo y montaña rusa que se reviven y a las que el Nexus se sube (`boardRide`/`leaveRide`); dos motores se destraban con circuitos del Mundo Voltio; Tita, casa de los espejos (x = 800). `keepVivid` ya no copia materiales `toonUnique`. **Sigue la Fase 7** (Estación y tren).
+- **Fase 7 hecha** (Decisión 050): Estación al sureste (`world/Station.ts`, `objects/train.ts`; pasaje x 44–53, z 42,5–48,5): tren con motor trabado (circuito Voltio `train-open`) que se despierta con cable (tema `via`); paradas 🚂 por distrito (`TRAIN_STOPS`, `travelTo(id)`, `#travelPop`, botón del mapa `#mapTravel`); Nora, Rielito. **Sigue la Fase 8** (Cerro y cascada).
+- **Fase 8 hecha** (Decisión 051): Cerro al oeste (`world/Cerro.ts`, `objects/cascade.ts`): cascada congelada con cable (tema `hielo`), rocas-escalón con `h` hasta la meseta del mirador (`TOP_H` 7,2; flag `cerro-top`, `checkSummit`), tirolesa larga (`World.zipLines`; el cable baja de altura, no se sube), cueva oscura en x = 900 (`#caveDark`; Voltio permitido solo ahí; circuito `cave-lit` con los cristales); Lalo, Ventarrón, Musguito. **Sigue la Fase 9** (Puerto y faro).
+- **Fase 9 hecha** (Decisión 052), **plan maestro completo**: Puerto al sur (`world/Port.ts`; pasaje x 4,6–8,6), bote del canal (`CanalBoat` en `objects/finale.ts`, es un `Ride`; embarcadero (−38, 28,2)), faro (`Lighthouse`, circuito Voltio `faro-open`, regla con `available` = desbloqueado y `finalMissing` vacío), `finale()` → `GranChispa`, `reviveWholeTown`, vecinos al puerto, `CitySong` (`systems/CitySong.ts`) y `cb.credits` → `#creditsPop`. Flag `gran-chispa` (`gameDone`). Marina, Gaviotín. Menú: «Canción de la ciudad» (`playSong`).
+- **Casa del Nexus y armario** (Decisión 053): `world/NexusHome.ts` (lote (−36, 51), interior x = 1000, `HOME_ITEMS` con costo en ✦; flags `casa-<id>`, `casa-lista`; `findHomeSpot`/`useHomeItem`), ropa en `data/wardrobe.ts` (`los-nexus-3d-look`, `Nexus3D.applyLook`, materiales propios por pieza que **no** usan `withLife`), `#wardrobePop` (`showWardrobe` en main.ts), menú «Mi Nexus».
+- Nitidez: resolución real hasta 2× con ajuste automático según fps (`Renderer.adapt`), pincel fino + detalle nítido mezclado, sombras ajustadas a la vista.
+- **Manchas de vida** (color del pueblo): máximo `LIFE_SPOTS` = 32 en el shader; `addLife` junta las dos más cercanas (`mergeLifeSpots`) cuando no hay lugar.
+- Look: toon de 3 bandas + contorno por casco invertido + textura de pincel + post-proceso Kuwahara con grading (`src/3d/core/render.ts`). Todo con primitivas, sin modelos ni imágenes (Decisiones 033–035).
+- Arquitectura, cómo agregar conexiones, coordenadas del barrio: `CONTEXTO.md`.
+- **Expansión en curso: `PLAN_EXPANSION.md`** (aprobada: la Gran Chispa se parte en 12 Piezas, 7 distritos nuevos, libreta de encargos, día y noche; fases 10–19).
+- **Fase 10 hecha** (Decisión 054): el faro parte la Gran Chispa (`finale` → `granChispa.shatter()`, flag `chispa-rota`; los créditos quedan para el final de verdad). Libreta (`data/quests.ts`: `QUESTS`, `QuestCtx`, `questDone`; `WorldMode.checkQuests` cada 0,5 s, flags `quest-<id>`, primera pasada en silencio; `questBook()`, `pointQuest(id)`; `#questPop`/`#questBtn` en main.ts). Piezas: `pieza-<distrito>` → `PiecePedestals` alrededor del faro, contador `#piecesCount`. Notas y carreras: `data/collectibles.ts` (`NOTES`, `RACES`) + `systems/Collectibles.ts` (`Notes`, `Races`, `#raceHud`). Contadores en el guardado: `progress.count/addCount/setBest` (`zip`, `trips`, `trick-*`, `best-race-*`). **Sigue la Fase 11** (Bosque de las luciérnagas).
+- **Fase 11 hecha** (Decisión 055): Bosque al noroeste (`world/Forest.ts`, `objects/forest.ts`): arroyo con barrera y puente colgante (`RopeBridgeLever` `forest-bridge` → `World.forest.openBridge()`), árbol gigante (`TREE`, `TREE_STEPS`, flag `tree-top`, tirolesa con flag `zip-tree`), hongos que rebotan (`FOREST.mushrooms`, `MUSHROOM_TOP`, contador `bounce`), fogón (`Campfire` `forest-fire`, tema `fogon`), cosa dormida nueva `firefly` (8), Yuyo, Piñita. **Sigue la Fase 12** (Granja y molinos).
+- **Fase 12 hecha** (Decisión 056): Granja al suroeste (`world/Farm.ts`, `objects/farm.ts`): `Windmill` ×3 (`farm-mill-*`, el 3.º con circuito Voltio `molino-open`; los tres → `fields-grown`, `growFields`), granero x = 1100 (`Incubator` `farm-incubator`, pollitos), `GreenhouseSprinkler`, maizal-laberinto (`maze-center`), `Tractor` (Ride, «🚜 Subir»), cosas dormidas `cow`/`hen`, Abuela Trigo (`farmer`), Girasolín.
+- **Fase 13 hecha** (Decisión 057): día y noche (`WorldMode.clock`, `night`, `isNight`, `setClock`, `DAY_LENGTH` 480 s; `Renderer.night` en el post-proceso, `skyNight` con estrellas, `World.night` baja sol y ambiente; linterna `PointLight`), búhos (`owl`, solo de noche), la cama cambia la hora, sección de libreta `noche` (`NO_PIECE`).
+- **Fase 14 hecha** (Decisión 058): Fábrica de Chispas al noreste (`world/Factory.ts`, `objects/factory.ts`): cintas `factory-belt-0..2` en orden (`FactoryPart.canInitiate` = prendida), montacargas (`liftHeight`, `updateFactory` lleva al Nexus) al techo del depósito (`roof-factory`) y tirolesa (`zip-factory`), portón con circuito Voltio `fabrica-open`, sala de máquinas x = 1200 (caldera → engranaje → `factory-machine`), robots (`robot`, 5), Ingeniera Tuerca, Faroluz rescate.
+- **Fase 15 hecha** (Decisión 059): Barrio Alto al este del Skatepark (`world/BarrioAlto.ts`, `objects/alto.ts`): mercado de 6 `MarketStall` que se pasan la luz (flag `alto-market`), cine x = 1300 con `Projector` y película en canvas (`World.alto.film`), biblioteca con `ReadingLamp` (circuito Voltio `biblio-open`), terrazas `ALTO.roofs` (h 1…5) con rampita en `World.skate.kickers` (`alto-top`, `roof-board`, `zip-alto`), gatos (`cat`, 5), Don Kiosko y Luli, Turbochispa rescate.
+- **Fase 16 hecha** (Decisión 060): Playa al este del Puerto (`world/Playa.ts`, `objects/playa.ts`): heladera del kiosco, castillo de arena, torre de Coral (`torre-coral`), escollera con portón Voltio `muelle-open`, faro chiquito de **dos cables** (`SmallLighthouse`, panel solar + molinito), **surf** (`World.setSurf`: `SURF_REGION` caminable solo en patineta; olas en `World.skate.kickers`; flags `surf`, `surf-air`), cangrejos (`crab`, 6), Coral (`lifeguard`), Olita rescate.
+- **Fase 17 hecha** (Decisión 061): Isla misteriosa al sur (`world/Isla.ts`, `objects/isla.ts`): lancha `SeaBoat` de dos muelles (necesita el faro chiquito; lado guardado en `count('lancha-side')`), cueva del eco, templo x = 1400 con puerta Voltio `templo-open` y piedras luna → sol → estrella → altar (órdenes equivocados con `available: () => false`), volcán con rocas en espiral (`VOLCANO_STEPS`) y `VolcanoHeart` a 6,3 m (`lift`), tortugas (`turtle`, 5), Pip, Caracolín rescate.
+- **Fase 18 hecha** (Decisión 062): Montaña nevada al norte del Parque (`world/Nieve.ts`, `objects/nieve.ts`): meseta a 9 m con escalera de 10 piedras o telesilla `Chairlift` de dos estaciones (`boardAt.y`), tirolesa de 3 postes (cima → saliente → campo), observatorio con puerta en altura (`door.y`/`out.y`), circuito Voltio `domo-open`, `Telescope` (flag `telescopio`) que marca en el mapa las Piezas que faltan (`missingPieces`, `MapData.pieces`); **mapa con dos zooms** (`drawMap(…, 'near'|'all')`, se toca el mapa); muñecos de nieve (`snowman`, 5), Lupa, Frecuencio rescate. La Montaña no tiene Pieza (`NO_PIECE`). **Sigue la Fase 19** (el final de verdad).
+- **Rumbo de todo lo que viene: `PLAN_MAESTRO.md`** (Mundo Voltio, distritos, interiores, patineta, cartas de Chispis, interfaz, fases 0–9). Leelo antes de agregar algo nuevo.
+
+### Probar el 3D
+
+```bash
+npm run build                                   # siempre
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/opt/pw-browsers/chromium npx playwright test tests/e2e/nexus3d.spec.js
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/opt/pw-browsers/chromium npm test   # todo (2D + 3D), tarda
+```
+
+- **Sin GPU el 3D corre a ~2 fps**: no esperar tiempo real. Hook `window.__nexus3d`:
+  - `__nexus3d.step(seg)` avanza la lógica a 60 Hz sin dibujar (determinista).
+  - `__nexus3d.world` = `WorldMode` (`nexus.position`, `focus`, `connections.all`, `connections.interact(obj)`, `progress`, `world.resolve(...)`); `__nexus3d.tunnel` = túnel (`offset`, `done`).
+  - Teletransportar: `w.nexus.position.set(x,0,z); w.focus.set(x,0,z)`; teclas con `page.keyboard.press('KeyE')` y después `step(0.05)`.
+  - Capturas: esperar ~1.3 s reales tras el cambio para que se dibuje un cuadro. Lanzar Chromium con `--use-angle=swiftshader --enable-unsafe-swiftshader`.
+  - Celular: contexto con `isMobile: true, hasTouch: true` → `pointer: coarse` (joystick + botón grande).
+- Ejemplos completos en `tests/e2e/nexus3d.spec.js`.
+
+### Trampas del 3D (detalle en `CONTEXTO.md` §6)
+- **`batchStatic`** fusiona la escenografía quieta al final de `new World()`: lo que se anima o cambia de material necesita `userData.dynamic = true` o agregarse después. Para cosas que cambian de color, `toonUnique()`; `toon()`/`flat()` son compartidos, nunca mutarlos.
+- **Color**: un `ShaderMaterial` que dibuja la escena devuelve color lineal (`pow(c, 2.2)`); el post-proceso pasa a sRGB. Las luces son físicas (intensidades ~π veces las viejas).
+- **Cámara isométrica desde +X+Z**: puertas y carteles deben mirar a +Z o +X; lo alto al sur/este de una zona la tapa.
+- `tsconfig` con `erasableSyntaxOnly`: sin `enum` ni propiedades en constructor.
+- Objetos grandes se alcanzan por su borde: `distanceFrom()` en `Connectable` (ej. el cantero). Texto sobre objetos: HTML proyectado, no sprites (el Kuwahara los borronea).
+- Editar `index.html` con el dev server abierto recarga la página (rompe un test en curso).
+
+---
+
+## Versión 2D (`2d.html`)
+
+Lo que sigue es la guía de la versión 2D en Phaser tal como quedó antes del paso a 3D. Sus pruebas E2E abren `/2d.html` (ver `tests/e2e/helpers.js`).
+
 
 ## Qué es esto
 

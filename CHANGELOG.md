@@ -268,3 +268,95 @@ mensajes, botones, joystick y túnel pasan a papel cálido y grafito, con fuente
 manuscrita local. Se retiraron los antiguos PNG del Nexus y WebP de la plaza.
 La ropa y el cable se recolorean conservando textura; las partidas y reglas siguen
 compatibles. Ver `SKETCH_ART_DIRECTION.md` y `SKETCH_PLAYTEST.md`.
+
+## Paso a 3D (estilo Calle 85)
+El juego principal (`index.html`) se rehace en **Three.js** con el look de *Calle 85*: barrio abierto con calles, casas de estuco y teja, palmeras, postes con cables, tiendas y un canal; toon shading, contornos, textura de pincel y filtro Kuwahara con grading cálido. Contenido: las 4 zonas originales (plaza con farola y puerta, fuente de agua, antena con dos fuentes y señuelo, puente sobre el canal que bloquea el paso), fragmentos, fragmento secreto detrás de la casa, museo 3D con 5 vitrinas, celebración final, progreso guardado con clave propia y el mini-túnel del cable en 3D (dentro del tubo). Nexus armado con primitivas y animación procedural. Cámara isométrica con silueta + vista "detrás" (V). El cable sale de la mochila del Nexus mientras se elige el destino y las conexiones hechas quedan en el mundo. Controles de PC y celular. La escenografía quieta se fusiona en pocas mallas para el celular. La versión 2D completa pasa a `2d.html` (sus E2E ahora abren esa página) y se agrega `tests/e2e/nexus3d.spec.js` para el 3D, que avanza la lógica con un paso de simulación determinista porque sin GPU el navegador de pruebas corre a ~2 fps. Zonas 5–7, capítulo, historias, radio, armario, final y pistas quedan pendientes de pasar al 3D.
+
+## 3D: pueblo triste que recupera la vida, y los primeros vecinos
+El barrio 3D empieza gris y triste; cada conexión le devuelve el color alrededor de lo que se encendió, resolver una zona colorea toda la zona y con las cuatro vuelve el color a todo el pueblo (cielo y niebla incluidos). El Nexus, los objetos conectables y los fragmentos conservan su color. Las mariposas solo vuelan donde ya hay vida. El progreso 3D ahora guarda las conexiones (Continuar recupera trabajos a medias) y las visitas a los vecinos. Llegan Miga, Bombo, Vera y Don Paso con los textos del capítulo 1: tristes y grises hasta que su lugar revive, hablan solos la primera vez y con el botón "Hablar" después. Decisiones 036–038.
+
+## 3D: túnel jugable en el celular y el jardín municipal
+**Túnel:** en el celular no se podía manejar la chispa dentro del cable (el joystick estaba oculto en ese modo). Ahora el joystick se muestra también en el túnel y toda la pantalla sirve para manejar. El túnel tiene fases claras: práctica sin avanzar ni chocar con botón EMPEZAR, cuenta 3-2-1-¡YA! (con vibración), carrera, y panel de REINTENTAR / VOLVER al fallar. Volver sin terminar avisa que el cable quedó pendiente. Pulsos dorados recorren el tubo.
+**Jardín (zona 5):** al cruzar el puente, un jardín municipal con setos, arco y cartel, glorieta, bebedero, bancos y faroles. Cadena fuente → aspersor → cantero: el aspersor gira y riega cuando tiene energía y recién entonces puede llevar el agua a las flores; el cantero pasa de tierra seca y agrietada con flores grises caídas a tierra húmeda con 24 flores que se enderezan y abren. Llega el Alcalde Goteo, triste hasta que el jardín florece. Cuenta como quinto lugar (`★ n/5`, vitrina «Flor del jardín»).
+**Pulido:** carteles con el nombre de cada objeto al acercarse, sorpresas (parejas graciosas) con tarjeta y tambaleo en vez de error, museo reordenado para cualquier cantidad de vitrinas (filas de 2 en el celular), un árbol que tapaba el aspersor pasó a ser arbusto. Pruebas 3D: 10 escenarios (escritorio y celular), incluidos túnel y jardín. Decisión 039.
+
+## 3D: imagen más nítida y definida
+El juego se dibuja a la resolución real de la pantalla (antes el celular dibujaba a 1.25× y estiraba la imagen, por eso se veía borroso y con escalones). La pincelada es más fina y conserva bordes, ojos, letras y piezas chicas; texturas del piso con filtrado anisótropo; sombras más definidas que cubren solo lo que se ve. Si el equipo no da abasto, la resolución baja sola de a poco para mantener la fluidez y vuelve a subir cuando puede. La cámara está un poco más cerca (todo se ve más grande) y en el celular el objetivo ya no queda tapado por el botón VISTA.
+
+## 3D: modelos más detallados
+El Nexus gana detalle (brillo en los ojos, sonrisa, borde del visor, cachetes, interior de las orejas, puños, pulgares, tirantes y una mochila con manija, bolsillos, rejilla y hebilla) y al quedarse quieto gira hacia la cámara para que se le vea la cara (también en el título). Las casas tienen zócalo, alero, cumbrera, chimenea, ventanas con marco, cruz, alféizar, postigos y jardineras, y puertas con marco, ventanita, picaporte, farolito y número. Las tiendas suman cornisa, toldos a rayas con volado, vidrieras, puertas vidriadas y macetas. La fuente de energía y la farola tienen pernos, franjas de luz, anillos y remates.
+
+## 3D: vecinos, antena y puente con detalle
+Los vecinos tienen cara expresiva (cejas y boca pasan de tristes a contentos cuando su lugar revive), nariz, orejas, brillo en los ojos y ropa con cinturón, botones y puños, más detalles propios: mameluco y herramientas de Miga, capucha, botas y palillos de Bombo, cola de caballo, bufanda y luz "al aire" de Vera, solapas, flor y bastón de Don Paso, botones dorados y reloj de Goteo. La antena es una torre reticulada con base de hormigón, escalera, cartel de peligro, receptor en el plato y luz roja que parpadea al transmitir. El puente suma palanca con franjas de peligro y rueda dentada que gira, tablones con clavos, vigas, baranda doble y pilares de piedra en las orillas.
+
+## 3D: fuente de agua, canal y autos con detalle
+La fuente tiene escalón de piedra, cuatro caños con chorritos, ondas en el agua, pico central, plaqueta y un fondo seco con hojas y monedas; su plaza suma baldosas, bancos y un tacho. El canal tiene cordón de piedra, juntas, caños de desagüe, juncos, nenúfares, corriente animada con hojas que flotan y un bote amarrado que se mece. Los autos tienen vidrios, paragolpes, parrilla, faros, luces traseras, patentes, puertas, manijas, espejos y llantas con taza; las camionetas, caja de carga.
+
+## 3D: cosas dormidas y un barrio que reacciona
+Seis chisperos y veinte cosas dormidas por todo el barrio (buzón, tacho con ojos, hidrante, radio, cartel de la heladería, carrito de helados, bici, tendedero, pato de goma, globos, enano, molinete, casitas de pájaros, luces de los autos y desagües del canal). Se despiertan con un cable desde un chispero, reaccionan con animación y sonido, devuelven un poco de color y se pueden volver a tocar. Contador ✦ n/20 y celebración al despertarlas todas. Además, palomas que se espantan, charcos que salpican, hojas que vuelan al correr y pelotas para patear. Prueba nueva: se despiertan las 20 caminando, quedan guardadas y la pelota se patea. Decisión 040.
+
+## 3D: la Gran Chispa, la mochila Atrapachispas y carreras de luz distintas
+Nueva historia: la Gran Chispa del barrio se rompió en chispitas y la mochila del Nexus las junta. Las cosas dormidas se despiertan solo con la mochila (1 chispita cada una, hasta 5 guardadas, con indicador y lente que brilla). Las chispitas salen de las carreras de luz, de los lugares que reviven, de 10 escondites (que se escapan un poquito) y de 6 nidos que se recargan. Todas las conexiones grandes abren ahora una carrera de luz que se arma distinta cada vez: cinco formas, colores y decoración según el lugar, compuertas giratorias, chispitas para juntar y dificultad adaptable (dos choques seguidos la hacen más fácil). Pruebas 3D actualizadas: 12 escenarios. Decisión 041.
+
+## 3D: saltar, tirolesa y bailar
+El Nexus salta (Espacio o botón SALTAR) y puede subirse a bancos, tachos y autos (capó y techo), con chispitas escondidas arriba de los techos. Hace tirolesa entre los postes de luz colgado de su cable, con chispitas en el medio de los cables. Baila (B o botón BAILAR) y los vecinos cercanos se suman; al hablar con un vecino lo saluda con la mano. La cámara sube un poco cuando el Nexus está alto. Prueba nueva (14 escenarios 3D). Decisión 042.
+
+## 3D: Fase 0 — interfaz pulida, mapa y la casa de Miga
+Interfaz nueva con un solo estilo: título, HUD (menú ☰, mochila, objetivo, contadores ★ ✦), tarjetas con retrato, avisos que vuelven solos al objetivo y pistas al tocar el objetivo (flecha en el piso y aro en el destino). Menú de pausa con mapa de la ciudad (también con M), museo, bailar y saludar, cómo se juega y opciones (sonido, vibración, efectos suaves, cámara detrás, botones grandes, borrar partida). Sonido suave en todos los botones. Cartel al entrar a un distrito. La calle del este llega al portón cerrado del Skatepark. Primer interior: la casa de Miga, con una chispita escondida arriba del banco de trabajo. Pruebas 3D: 18 escenarios. Decisión 043.
+
+## 3D: Fase 1 — Skatepark, patineta y Mundo Voltio
+Se abre el Skatepark al final de la calle del este, con Rulo (el patinador), rampa grande que revive con su carrera de luz de grafiti, rampitas, barandas, cajón, grafitis y la sala del skatepark. La patineta se agarra junto a Rulo: se sube y se baja con el botón, hace ollie, vuela en las rampitas y grinda las barandas. Los tres trucos destraban la capucha, que lleva al Mundo Voltio: todo negro con líneas de neón, estela de luz, Estáticas que deambulan (si te tocan, volvés), barra de voltaje, la jaula de Rueditas (primer Chispi, con su carta) y el circuito de tres nodos que abre la sala en el mundo normal. Las carreras de luz ya no repiten ninguna de las dos formas anteriores. Pruebas 3D: 20 escenarios. Decisión 044.
+
+## 3D: Fase 2 — interiores que se reviven
+La casa de Miga, la heladería y la tienda de cartas tienen interior gris con algo para revivir (tablero de luz, máquina de helados y vitrina de cartas) usando un cable y su carrera de luz (temas casa, helado y cartas). Al revivirlos vuelve el color adentro y afuera se nota: guirnalda en la casa de Miga y vidrieras encendidas en los locales. La tienda de cartas se destraba cerrando un circuito de tres nodos en el Mundo Voltio. Cada interior esconde una chispita. El objetivo y las pistas guían adentro de cada casa. Pruebas 3D: 22 escenarios. Decisión 045.
+
+## 3D: Fase 3 — cartas de Chispis
+40 Chispis originales en 9 tipos y tres rarezas, dibujados por código. Se consiguen rescatándolos de jaulas en el Mundo Voltio (5), en sobres (8 escondidos + uno por cada lugar que revive, con animación de dar vuelta y la más rara al final) y cambiando repetidas con los vecinos (6). Álbum con siluetas de las que faltan, desde el menú o la vitrina de la tienda; contador 🃏 en el HUD. Arreglos: la carta grande se abría detrás del álbum; el saludo automático de un vecino ya no abre el cambio. Pruebas 3D: 24 escenarios. Decisión 046.
+
+## 3D: Fase 4 — Chispi compañero
+Cualquier Chispi del álbum se puede elegir de compañero: sigue al Nexus en los dos mundos, salta y baila con él y tiene una ayudita según su tipo (imán y chispitas señaladas, impulso en charcos, sobres escuchados, más color, más velocidad en patineta, más chispitas en las carreras, salto más alto, caminar más rápido, más voltaje). Su nombre se ve en el HUD. Pruebas 3D: 26 escenarios. Decisión 047.
+
+## 3D: Fase 5 — el Centro completo y la fiesta
+Pasan al 3D las zonas 6 y 7 del capítulo, en el barrio del canal sur: el taller de Pipa (interior gris que revive: motor → pato y campana → desfile) y los faroles de Lucio (camino directo o curioso, con el farol tímido). Con todos los preparativos, la salida de los faroles enciende el escenario y el cañón de confeti: fiesta con todos los vecinos bailando y pantalla final con los resultados del capítulo. Ahora son 7 lugares (★ n/7) y 8 vitrinas en el museo; el color vuelve a todo el pueblo con los siete. Vecinos nuevos Pipa y Lucio, 4 cosas dormidas más, sobres nuevos y un Chispi más para rescatar. Pruebas 3D: 27 escenarios. Decisión 048.
+
+## 3D: Fase 6 — Parque de diversiones
+Nuevo distrito al norte: calesita, vuelta al mundo y montaña rusa que se reviven con su carrera de luz y a las que el Nexus se sube (la montaña rusa da una vuelta sola juntando chispitas de la vía). Los motores de la vuelta al mundo y de la montaña rusa se destraban con circuitos del Mundo Voltio. Feriante Tita, casa de los espejos (interior que revive), puestos de feria, cosas dormidas, sobres y el Chispi Pochoclín. Arreglo: las piezas que cambian de color al revivir ya se ven encendidas. Pruebas 3D: 28 escenarios. Decisión 049.
+
+## 3D: Fase 7 — Estación y tren
+Nuevo distrito al sureste: la Estación, con andén, vías, hall con reloj y un tren dormido. Su motor se destraba con un circuito del Mundo Voltio y se despierta con cable (carrera de luz «cable de vías»). Despierto, cada distrito tiene una parada 🚂 para viajar al instante (también desde el mapa). Jefa de estación Nora, rescate de Rielito y un sobre más. Cada carrera de luz usa el tema de su lugar. Pruebas 3D: 32 escenarios. Decisión 050.
+
+## 3D: Fase 8 — Cerro, cascada y cueva
+Nuevo distrito al oeste: el Cerro. La cascada congelada se descongela con cable (carrera «cable de hielo»); siete rocas se suben saltando hasta el mirador (premio: una carta) y desde arriba baja la tirolesa más larga del barrio. La cueva oscura solo se ve con la capucha ⚡: sus cristales son el circuito del Mundo Voltio que la ilumina. Guardaparque Lalo, rescates de Ventarrón y Musguito, parada del tren. La cámara sigue al Nexus cuando está muy alto. Pruebas 3D: 34 escenarios. Decisión 051.
+
+## 3D: Fase 9 — Puerto y faro: ¡el final!
+Nuevo distrito al sur: el Puerto, con muelles, mar, barcos y el faro. El bote de Marina se despierta en el canal y lleva al Nexus a pasear hasta el Cerro. El faro (circuito del Mundo Voltio + cable) solo prende con toda la ciudad viva: entonces vuelve la Gran Chispa, el color llega a todos lados, los vecinos festejan en el puerto, suena la canción de la ciudad (un instrumento por distrito) y aparecen los créditos. Se puede seguir jugando; la canción también está en el menú. Capitana Marina, rescate de Gaviotín. Pruebas 3D: 36 escenarios. Decisión 052.
+
+## 3D: la casa del Nexus y el armario
+El Nexus tiene casa propia, vieja y rota, al lado del jardín municipal. Con chispitas de la mochila se arregla de a una cosa (lámpara, ventana, alfombra, planta, cama, radio, estante, armario, techo y jardín) y se nota adentro y afuera. El armario cambia la ropa del Nexus (buzo, mochila, orejas, cable y algo en la cabeza); hay prendas que se ganan jugando. La radio toca la canción de la ciudad y la cama recarga la capucha. Pruebas 3D: 38 escenarios. Decisión 053.
+
+## 3D: Fase 10 (expansión) — la Gran Chispa rota, libreta, notas y carreras
+El faro ya no es el final: la Gran Chispa vuelve y se parte en 12 Piezas que salen volando. Libreta de encargos 📒 con 47 encargos de los vecinos en los 6 distritos; terminar todos los de un lugar devuelve su Pieza al faro (pedestales ◆). 31 notas de la canción escondidas 🎵 y 6 carreras de aros contra el reloj 🏁 (una en patineta). Pruebas 3D: 40 escenarios. Decisión 054.
+
+## 3D: Fase 11 (expansión) — Bosque de las luciérnagas
+Nuevo distrito al noroeste: arroyo con puente colgante que se arma con cable, árbol gigante con plataformas en espiral, casa del árbol y tirolesa, hongos que hacen rebotar, fogón que devuelve el color, ocho frascos de luciérnagas dormidos, Yuyo el botánico, Piñita, notas, carrera de los hongos y 9 encargos (Pieza del bosque). Los premios de la libreta ahora se cobran con 🎁. Pruebas 3D: 42 escenarios. Decisión 055.
+
+## 3D: Fase 12 (expansión) — Granja y molinos
+Nuevo distrito al suroeste: tres molinos (uno con motor trabado en el Mundo Voltio) que hacen crecer los campos, granero con incubadora y pollitos, invernadero, laberinto de maíz con espantapájaros, tractor para pasear, vacas y gallinas dormidas, la Abuela Trigo, Girasolín, notas, carrera del maizal y 11 encargos. Decisión 056.
+
+## 3D: Fase 13 (expansión) — Día y noche
+Ciclo de día y noche con estrellas, faroles que se destacan y linterna del Nexus; búhos que solo despiertan de noche; la cama pasa la noche; 9 encargos «De noche» en la libreta. Pruebas 3D: 46 escenarios. Decisión 057.
+
+## 3D: Fase 14 (expansión) — Fábrica de Chispas
+Nuevo distrito al noreste: tres cintas transportadoras que se prenden en orden, montacargas al techo del depósito y tirolesa, portón trabado que se abre en el Mundo Voltio, sala de máquinas con caldera → engranaje → Gran Máquina (donde nació la Gran Chispa), cinco robots ayudantes dormidos, la Ingeniera Tuerca, Faroluz como rescate, notas, carrera «Turno rápido» y 9 encargos. Pruebas 3D: 47 escenarios. Decisión 058.
+
+## 3D: Fase 15 (expansión) — Barrio Alto y mercado
+Nuevo distrito al este del Skatepark: mercado de seis puestos que se pasan la luz entre ellos, cine que abre con el mercado y pasa una película, biblioteca con farol de lectura trabado (Mundo Voltio), terrazas de cinco techos para subir saltando o en patineta, tirolesa, gatos dormidos, Don Kiosko y Luli, Turbochispa como rescate, notas, carrera «Por los techos» y 10 encargos. La pared de grafitis del Skatepark tiene ahora un hueco hacia la fábrica. Pruebas 3D: 48 escenarios. Decisión 059.
+
+## 3D: Fase 16 (expansión) — Playa
+Nuevo distrito al este del Puerto: kiosco con heladera y sombrillas, castillo de arena que crece, torre de Coral, cangrejos dormidos, escollera con portón trabado (Mundo Voltio) y faro chiquito que necesita dos cables a la vez, y surf: en patineta se anda sobre el mar y las olas hacen volar. Coral, Olita como rescate, notas, carrera «Surf de Coral» y 11 encargos. Arreglo: las 32 manchas de color se juntan en vez de perderse. Pruebas 3D: 49 escenarios. Decisión 060.
+
+## 3D: Fase 17 (expansión) — Isla misteriosa
+La lancha de Marina cruza el mar (con el faro chiquito prendido) hasta una isla con selva, cueva del eco, tortugas dormidas, un templo con puerta Voltio y piedras que se prenden en el orden del mural, y un volcán dormido que se sube por rocas en espiral para despertar su corazón y la vertiente tibia. Pip el ermitaño, Caracolín como rescate, notas, carrera de la selva y 11 encargos. Pruebas 3D: 50 escenarios. Decisión 061.
+
+## 3D: Fase 18 (expansión) — Montaña nevada y observatorio
+Nuevo distrito al norte del Parque: campo de nieve con muñecos dormidos y rampas para el trineo-patineta, montaña que se sube por una escalera larga o con la telesilla, dos tirolesas en cadena para bajar, y el observatorio de la cima (línea de energía en el Mundo Voltio) con un telescopio que marca en el mapa las Piezas que faltan. Profesora Lupa, Frecuencio como rescate, notas, carrera «Bajada en trineo», 10 encargos y uno de noche. El mapa ahora tiene dos zooms: cerca del Nexus y toda la ciudad. Pruebas 3D: 51 escenarios. Decisión 062.

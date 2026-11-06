@@ -26,7 +26,8 @@ export const test = base.extend({
         window.__nexusTest = new Phaser.Game(gameConfig)`;
       await route.fulfill({ response, body: body.replace('new Phaser.Game(gameConfig)', instrumentation) });
     });
-    await page.goto('/');
+    // La versión 2D vive en 2d.html desde el paso a 3D (index.html es Los Nexus 3D)
+    await page.goto('/2d.html');
     await ready(page, 'BootScene');
     await use(page);
     expect(errors, 'No runtime errors or failed resource loads').toEqual([]);
