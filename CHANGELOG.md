@@ -366,3 +366,6 @@ Piezas unidas en personajes y objetos, sombras más livianas, lo lejano apartado
 
 ## 3D: Aspecto, Etapa B — brillo, maqueta, luz de borde, agua, pasto y flores
 Halo suave en lo que brilla (más de noche), efecto maqueta en la isométrica, luz de borde en el Nexus y su compañero, sombra de contacto bajo los personajes, ondas que se mueven en el mar y el canal, y ~1.000 matas de pasto y flores que se pintan al revivir. Opción «✨ Efectos de luz» para equipos lentos. Pruebas 3D: 53 escenarios. Decisión 064.
+
+## 3D: Pulido, Etapa C — el mundo se siente vivo
+Partículas de ambiente por lugar (nieve, hojas, polen, brillitos en el mar, luciérnagas de noche), sombras de nubes, una ola de luz al revivir un lugar, un acercamiento de cámara al conectar y sonidos suaves de cada lugar (pajaritos, grillos, olas, viento). Pruebas 3D: 54 escenarios. Decisión 065.
