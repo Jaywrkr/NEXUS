@@ -136,6 +136,8 @@ export class MuseumMode {
   }
 
   render(renderer: Renderer, time: number): void {
+    renderer.bloom = 0.8;
+    renderer.tilt = 0;
     const aspect = renderer.width / renderer.height;
     if ((aspect < 1) !== this.portrait || this.camera.aspect !== aspect) {
       this.camera.aspect = aspect;

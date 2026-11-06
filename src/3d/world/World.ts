@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { batchStatic } from '../core/batch';
-import { FOG_COLOR, FOG_FAR, FOG_NEAR, LIFE, box, flat, gradientMap, makeSky, outline, outlineScaled, rounded, sharedOutline, toon, toonUnique, withLife } from '../core/render';
+import { buildDetail } from './Detail';
+import { FOG_COLOR, FOG_FAR, FOG_NEAR, LIFE, box, flat, gradientMap, makeSky, outline, outlineScaled, rounded, sharedOutline, toon, toonUnique, withLife, rippleTexture } from '../core/render';
 import { clamp, pick, rnd } from '../core/util';
 import { buildMigaHouse, type InteriorInfo, type ReviveRoom } from './MigaHouse';
 import { buildCardRoom, buildIceCreamRoom } from './ShopRooms';
@@ -17,6 +18,7 @@ import { ALTO, ALTO_FROM_SKATE, ALTO_REGION, buildAlto, type AltoInfo } from './
 import { JETTY, PLAYA, PLAYA_FROM_PORT, PLAYA_FROM_STATION, PLAYA_REGION, SURF_REGION, buildPlaya, type PlayaInfo } from './Playa';
 import { ISLA_PIER, ISLA_REGION, buildIsla, type IslaInfo } from './Isla';
 import { NIEVE, NIEVE_FROM_PARK, NIEVE_REGION, buildNieve, type NieveInfo } from './Nieve';
+import { SEA_Z } from './Port';
 import { SKATE_REGION, buildSkatepark, type SkateparkInfo } from './Skatepark';
 
 export interface Rect {
@@ -274,6 +276,7 @@ export class World {
     this.playa = buildPlaya(s, this.rects, this.circles);
     this.skate.kickers.push(...PLAYA.waves);
     this.isla = buildIsla(s, this.rects, this.circles);
+    this.buildWaterFx();
     this.nieve = buildNieve(s, this.rects, this.circles);
     this.zipLines.push(this.nieve.zipLine);
     this.skate.kickers.push(...NIEVE.ramps);
@@ -285,6 +288,8 @@ export class World {
     // Rendimiento: toda la escenografía quieta se junta en pocas mallas.
     // Lo que se anima (árbol de la plaza, ventana, mariposas, nubes) queda marcado como dinámico.
     batchStatic(s, sharedOutline);
+    // Etapa B: pasto y flores (de a cientos, después de agrupar la escenografía)
+    buildDetail(s, (x, z) => this.isWalkable(x, z, 0.5));
     this.swaying.splice(0, this.swaying.length, ...this.swaying.filter((w) => w.g.userData.dynamic));
   }
 
@@ -508,6 +513,35 @@ export class World {
       c.position.set(x0, 0.09, ROAD + 0.08);
       this.scene.add(c);
     }
+  }
+
+  /** Etapa B: ondas que se mueven sobre el mar y el canal (dos capas que se cruzan despacio). */
+  private readonly ripples: THREE.Texture[] = [];
+
+  private buildWaterFx(): void {
+    for (const [cx, cz, w, d, y, rx, rz] of [
+      [0, SEA_Z + 60, 400, 120, -0.56, 50, 15],
+      [0, (CANAL_MIN_Z + CANAL_MAX_Z) / 2, 800, CANAL_MAX_Z - CANAL_MIN_Z - 0.4, -0.86, 100, 0.8],
+    ] as [number, number, number, number, number, number, number][]) {
+      for (let k = 0; k < 2; k += 1) {
+        const t = rippleTexture();
+        t.repeat.set(rx * (k ? 0.7 : 1), rz * (k ? 0.7 : 1));
+        this.ripples.push(t);
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, opacity: k ? 0.5 : 0.8 }));
+        m.rotation.x = -Math.PI / 2;
+        m.position.set(cx, y + k * 0.01, cz);
+        m.userData.dynamic = true;
+        this.scene.add(m);
+      }
+    }
+  }
+
+  /** Mueve las ondas del agua. */
+  updateWater(t: number): void {
+    this.ripples.forEach((r, i) => {
+      const s = i % 2 ? -1 : 1;
+      r.offset.set(t * 0.012 * s, t * 0.02 * (i % 2 ? 0.6 : 1));
+    });
   }
 
   private buildCanal(): void {

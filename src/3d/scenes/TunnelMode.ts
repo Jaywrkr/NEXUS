@@ -617,6 +617,8 @@ export class TunnelMode {
   }
 
   render(renderer: Renderer, time: number): void {
+    renderer.bloom = 1.3;
+    renderer.tilt = 0;
     this.tubeMat.uniforms.time.value = time;
     const course = this.course;
     const c = course.center(this.z);

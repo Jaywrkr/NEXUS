@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { AudioSystem } from '../../systems/AudioSystem';
 import type { Input } from '../core/input';
 import { Progress3D } from '../core/progress';
-import { LIFE, LIFE_SPOTS, keepVivid } from '../core/render';
+import { LIFE, LIFE_SPOTS, keepVivid, withRim } from '../core/render';
 import type { Renderer } from '../core/render';
 import { after, tween } from '../core/tween';
 import { damp, dampAngle } from '../core/util';
@@ -4592,6 +4592,12 @@ export class WorldMode {
     this.checkMaze();
     this.updateClock(dt);
     this.updateFactory(dt);
+    this.world.updateWater(this.time);
+    {
+      // Etapa B: la sombra de contacto del Nexus queda en el piso (en paseos y tirolesas no se muestra)
+      const p = this.nexus.position;
+      this.nexus.setGroundGap(this.rideOn || this.zip ? null : Math.max(0, p.y - this.world.groundAt(p.x, p.z, p.y + 0.05)));
+    }
     this.updateAlto(dt);
     this.updatePlaya(dt);
     this.updateIsla(dt);
@@ -4745,6 +4751,7 @@ export class WorldMode {
   private prepareSilhouette(): void {
     const hook = (m: THREE.Mesh) => {
       m.material = (m.material as THREE.Material).clone();
+      if (!m.userData.isOutline && !m.userData.noXray && (m.material as THREE.MeshToonMaterial).isMeshToonMaterial) withRim(m.material as THREE.Material);
       Object.assign(m.material, {
         stencilWrite: true,
         stencilRef: 1,
@@ -4794,7 +4801,7 @@ export class WorldMode {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
       this.xraySaved.push({ mesh: m, mat: m.material, visible: m.visible });
-      if (m.userData.isOutline) m.visible = false;
+      if (m.userData.isOutline || m.userData.noXray) m.visible = false;
       else m.material = this.xrayMat;
     });
     renderer.gl.autoClear = false;
@@ -4825,6 +4832,9 @@ export class WorldMode {
     this.world.sky.visible = !this.iso;
     renderer.voltio = this.voltio.amount;
     renderer.night = this.world.night;
+    // Etapa B: brillo (más de noche y en el Mundo Voltio) y efecto maqueta solo afuera, en la isométrica
+    renderer.bloom = 0.55 + this.world.night * 1.1 + this.voltio.amount * 0.6;
+    renderer.tilt = this.iso && !this.inside ? 0.75 : 0;
     renderer.render(this.world.scene, this.camera, time, this.iso && this.silhouetteOn ? () => this.renderSilhouette(renderer) : undefined);
   }
 }

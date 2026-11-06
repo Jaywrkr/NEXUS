@@ -363,3 +363,6 @@ Nuevo distrito al norte del Parque: campo de nieve con muñecos dormidos y rampa
 
 ## 3D: Rendimiento, Etapa A — más rápido sin cambiar cómo se ve
 Piezas unidas en personajes y objetos, sombras más livianas, lo lejano apartado de la escena, silueta del Nexus solo cuando algo lo tapa y medidor de rendimiento en Opciones. La escena pasa de 9.370 a ~1.900 mallas recorridas por cuadro y la plaza de 703 a ~350 dibujos. Pruebas 3D: 52 escenarios. Decisión 063.
+
+## 3D: Aspecto, Etapa B — brillo, maqueta, luz de borde, agua, pasto y flores
+Halo suave en lo que brilla (más de noche), efecto maqueta en la isométrica, luz de borde en el Nexus y su compañero, sombra de contacto bajo los personajes, ondas que se mueven en el mar y el canal, y ~1.000 matas de pasto y flores que se pintan al revivir. Opción «✨ Efectos de luz» para equipos lentos. Pruebas 3D: 53 escenarios. Decisión 064.

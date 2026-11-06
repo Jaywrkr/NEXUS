@@ -349,6 +349,13 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - Silueta: `checkOccluded` (rayo desde el Nexus hacia la cámara a 0,4 y 1,3 m, cada 0,2 s) → `silhouetteOn`.
 - Medidor: `Settings.perf` (`los-nexus-3d-perf`, clase `show-perf`), `#perfPill`; `main.ts` cuenta cuadros y lee `renderer.gl.info.render.calls` (con `autoReset = false`), `Renderer.dprLabel`.
 
+### Aspecto, Etapa B (Decisión 064)
+
+- `Renderer` (`core/render.ts`): después de dibujar la escena, si `fancy` y hay `bloom`/`tilt`, achica la imagen a ¼ (`downMat`) y la desenfoca (gaussiana separable ×2, `blurMat`) en `small`/`smallB`; el post-proceso (`tBlur`) suma el brillo (claro y saturado) y mezcla la versión desenfocada arriba y abajo (`tilt`, solo en la isométrica afuera). `WorldMode.render` pone `bloom = 0,55 + noche·1,1 + Voltio·0,6`; túnel 1,3; museo 0,8. Opción `Settings.fx` (`los-nexus-3d-fx`, `#optFx`) → `renderer.fancy`.
+- `withRim(mat)` (luz de borde, usa `isOrthographic`): en las copias de materiales del Nexus (`prepareSilhouette`) y del compañero. `contactShadow(r)` (círculo con degradé, `userData.noXray` para que la silueta no lo dibuje): Nexus (`setGroundGap`, desde `WorldMode.update` con `groundAt`; oculto en paseos y tirolesa), compañero y vecinos.
+- Agua: `World.buildWaterFx()` (dos capas con `rippleTexture()` sobre el mar y el canal) y `World.updateWater(t)`.
+- Pasto y flores: `world/Detail.ts` (`buildDetail`, `AREAS` con densidades; semilla fija; `InstancedMesh` por celda de 24 m, `userData.dynamic`, sin sombra). `withLife` usa `instanceMatrix` cuando hay `USE_INSTANCING`.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).

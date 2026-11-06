@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mergeParts } from '../core/batch';
+import { contactShadow, withRim } from '../core/render';
 import { damp, dampAngle } from '../core/util';
 import { CARD_BY_ID, TYPES, type ChispiType } from '../data/chispis';
 
@@ -137,8 +138,14 @@ export class Companion {
     this.type = card.type;
     this.model = makeBuddy(card.type);
     mergeParts(this.model);
+    // Etapa B: luz de borde (copias propias de los materiales) y sombra de contacto en el piso
+    this.model.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (m.isMesh && !m.userData.isOutline && (m.material as THREE.MeshToonMaterial).isMeshToonMaterial) m.material = withRim((m.material as THREE.Material).clone());
+    });
     this.model.scale.setScalar(0.85);
     this.root.add(this.model);
+    this.root.add(this.blob);
   }
 
   get name(): string {
@@ -168,8 +175,11 @@ export class Companion {
     this.root.position.set(p.x - Math.sin(heading) * 0.9 + Math.cos(heading) * 0.6, p.y + 1.4, p.z - Math.cos(heading) * 0.9 - Math.sin(heading) * 0.6);
   }
 
+  private readonly blob = contactShadow(0.35);
+
   update(dt: number, p: THREE.Vector3, heading: number, dancing: boolean): void {
     this.time += dt;
+    this.blob.position.y = p.y - this.root.position.y + 0.04;
     let tx: number;
     let tz: number;
     let ty: number;

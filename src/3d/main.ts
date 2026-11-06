@@ -42,6 +42,7 @@ class Game {
     const canvas = $('game') as HTMLCanvasElement;
     this.renderer = new Renderer(canvas);
     this.renderer.resize();
+    this.renderer.fancy = Settings.fx;
     window.addEventListener('resize', () => this.renderer.resize());
 
     if (this.input.touch) document.body.classList.add('touch');
@@ -247,6 +248,10 @@ class Game {
     toggle('optChase', () => Settings.chase, (v) => this.world.setView(!v));
     toggle('optBig', () => Settings.bigButtons, (v) => (Settings.bigButtons = v));
     toggle('optPerf', () => Settings.perf, (v) => (Settings.perf = v));
+    toggle('optFx', () => Settings.fx, (v) => {
+      Settings.fx = v;
+      this.renderer.fancy = v;
+    });
     $('optReset').addEventListener('click', () => this.resetGame(true));
   }
 
