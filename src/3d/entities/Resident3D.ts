@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { mergeParts, referencedParts } from '../core/batch';
-import { box, glow, rounded, toon } from '../core/render';
+import { box, contactShadow, glow, rounded, toon } from '../core/render';
 import { damp, dampAngle } from '../core/util';
 
 /** Cómo se ve cada habitante del capítulo 1 en 3D (los textos vienen de src/data/chapter.ts). */
@@ -198,6 +198,8 @@ export class Resident3D {
     });
     // Rendimiento: une las piezas quietas (piernas, torso, cara…); cejas y boca se cambian aparte
     mergeParts(this.root, referencedParts(this, new Set<THREE.Object3D>([this.root, this.body, this.head, this.armL, this.armR])));
+    // Etapa B: sombra de contacto
+    this.root.add(contactShadow(0.5 * this.g));
   }
 
   private addAccessory(kind: ResidentLook['accessory']): void {

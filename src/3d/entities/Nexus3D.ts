@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeParts, referencedParts } from '../core/batch';
 import { makeBoard } from '../objects/skate';
-import { box, glow, rounded, toon } from '../core/render';
+import { box, contactShadow, glow, rounded, toon } from '../core/render';
 import { clamp, damp, dampAngle } from '../core/util';
 import { CABLES, EARS, HATS, HOODIES, PACKS, option, type NexusLook } from '../data/wardrobe';
 
@@ -353,6 +353,19 @@ export class Nexus3D {
     // Rendimiento: une las piezas quietas de cada parte (cuerpo, brazos, cabeza…); lo que se anima aparte queda igual
     const parts = new Set<THREE.Object3D>([this.root, this.body, this.legL, this.legR, this.armL, this.armR, this.head, this.earL, this.earR, this.hat, this.hoodUp]);
     mergeParts(this.root, referencedParts(this, parts));
+    // Etapa B: sombra de contacto (sigue al piso cuando salta)
+    this.root.add(this.blob);
+  }
+
+  /** Sombra de contacto, en el piso debajo de los pies. */
+  private readonly blob = contactShadow(0.55);
+
+  /** Distancia de los pies al piso (al saltar la sombra queda abajo y se achica); null = sin sombra (paseos). */
+  setGroundGap(h: number | null): void {
+    this.blob.visible = h !== null && h < 12;
+    if (h === null) return;
+    this.blob.position.y = 0.03 - h;
+    this.blob.scale.setScalar(1 / (1 + h * 0.35));
   }
 
   /** Ajuste que se aplica a cada material nuevo del Nexus (la silueta usa el stencil). */

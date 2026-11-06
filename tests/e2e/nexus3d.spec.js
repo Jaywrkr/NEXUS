@@ -2720,3 +2720,63 @@ test('3D: rendimiento — piezas unidas, lo lejano apartado, silueta solo si alg
   expect(await w(() => getComputedStyle(document.getElementById('perfPill')).display)).not.toBe('none');
   expect(await text(page, 'perfPill')).toMatch(/fps/);
 });
+
+test('3D: aspecto — brillo y maqueta, luz de borde, sombra de contacto, agua que se mueve, pasto y flores', async ({ page }) => {
+  test.setTimeout(240_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+  await page.waitForTimeout(1200);
+
+  // Brillo y efecto maqueta (solo afuera, en la isométrica); se apagan desde Opciones
+  const post = () => w(() => {
+    const r = window.__nexus3d.renderer;
+    return { fancy: r.fancy, bloom: r.postMat.uniforms.bloom.value, tilt: r.postMat.uniforms.tilt.value };
+  });
+  let p = await post();
+  expect(p.fancy).toBe(true);
+  expect(p.bloom).toBeGreaterThan(0.3);
+  expect(p.tilt).toBeGreaterThan(0.3);
+  await page.evaluate(() => {
+    const box = document.getElementById('optFx');
+    box.checked = false;
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  expect((await post()).fancy).toBe(false);
+  expect(await w(() => localStorage.getItem('los-nexus-3d-fx'))).toBe('false');
+
+  // Luz de borde en el Nexus y sombra de contacto que se queda en el piso al saltar
+  expect(await w(() => {
+    let rim = 0;
+    window.__nexus3d.world.nexus.root.traverse((o) => o.isMesh && o.material.customProgramCacheKey?.() === 'rim' && rim++);
+    return rim;
+  })).toBeGreaterThan(5);
+  await w(() => window.__nexus3d.world.jump());
+  await step(page, 0.35);
+  const blob = await w(() => {
+    const n = window.__nexus3d.world.nexus;
+    const v = n.root.position.clone();
+    const b = n.blob.getWorldPosition(v.clone());
+    return { feet: n.root.position.y, blob: b.y, visible: n.blob.visible };
+  });
+  expect(blob.feet).toBeGreaterThan(0.4);
+  expect(blob.blob).toBeLessThan(0.1);
+  expect(blob.visible).toBe(true);
+
+  // El agua se mueve
+  const off = () => w(() => window.__nexus3d.world.world.ripples[0].offset.toArray());
+  const a = await off();
+  await step(page, 1);
+  expect(await off()).not.toEqual(a);
+
+  // Pasto y flores: cientos de matas en pocos dibujos (una malla por celda)
+  const detail = await w(() => {
+    const g = window.__nexus3d.world;
+    let meshes = 0;
+    let n = 0;
+    for (const root of [g.world.scene, g.parked]) root.traverse((o) => o.isInstancedMesh && (meshes++, (n += o.count)));
+    return { meshes, n };
+  });
+  expect(detail.n).toBeGreaterThan(800);
+  expect(detail.meshes).toBeLessThan(detail.n / 10);
+});

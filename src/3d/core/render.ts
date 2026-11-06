@@ -111,7 +111,7 @@ export function withLife<T extends THREE.Material>(mat: T): T {
     shader.uniforms.lifeGlobal = lifeUniforms.lifeGlobal;
     shader.vertexShader = 'varying vec3 vLifePos;\n' + shader.vertexShader.replace(
       '#include <project_vertex>',
-      '#include <project_vertex>\n  vLifePos = (modelMatrix * vec4(transformed, 1.0)).xyz;',
+      '#include <project_vertex>\n  #ifdef USE_INSTANCING\n  vLifePos = (modelMatrix * instanceMatrix * vec4(transformed, 1.0)).xyz;\n  #else\n  vLifePos = (modelMatrix * vec4(transformed, 1.0)).xyz;\n  #endif',
     );
     shader.fragmentShader =
       `varying vec3 vLifePos;\nuniform vec4 lifeSpots[${LIFE_SPOTS}];\nuniform float lifeGlobal;\n` +
@@ -158,6 +158,80 @@ export function toon(color: THREE.ColorRepresentation, brush = 0): THREE.MeshToo
   const mat = withLife(new THREE.MeshToonMaterial(params));
   toonCache.set(key, mat);
   return mat;
+}
+
+/**
+ * Etapa B: luz de borde (rim) para los personajes: el contorno que mira de costado a la cámara se aclara
+ * un poco, como en las películas animadas, y el personaje se despega del fondo. Reemplaza el onBeforeCompile
+ * del material (usar en copias propias, no en materiales compartidos).
+ */
+export function withRim<T extends THREE.Material>(mat: T, color = '#fff2d0', strength = 0.32): T {
+  const c = new THREE.Color(color);
+  mat.onBeforeCompile = (shader) => {
+    shader.uniforms.rimColor = { value: c };
+    shader.uniforms.rimStrength = { value: strength };
+    shader.fragmentShader =
+      'uniform vec3 rimColor;\nuniform float rimStrength;\n' +
+      shader.fragmentShader.replace(
+        '#include <opaque_fragment>',
+        `{ vec3 rv = isOrthographic ? vec3(0.0, 0.0, 1.0) : normalize(vViewPosition);
+           float rim = pow(1.0 - clamp(dot(normalize(normal), rv), 0.0, 1.0), 3.0);
+           outgoingLight += rimColor * smoothstep(0.25, 0.8, rim) * rimStrength; }
+        #include <opaque_fragment>`,
+      );
+  };
+  mat.customProgramCacheKey = () => 'rim';
+  mat.needsUpdate = true;
+  return mat;
+}
+
+/** Etapa B: textura de ondas (líneas claras curvas) para el agua animada; se repite y se desplaza. */
+export function rippleTexture(): THREE.CanvasTexture {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = 256;
+  const g = cv.getContext('2d')!;
+  g.clearRect(0, 0, 256, 256);
+  g.lineCap = 'round';
+  for (let i = 0; i < 26; i += 1) {
+    const x = (i * 97) % 256;
+    const y = (i * 61) % 256;
+    const w = 18 + ((i * 13) % 30);
+    g.strokeStyle = `rgba(235, 250, 255, ${0.22 + ((i * 7) % 5) * 0.06})`;
+    g.lineWidth = 2 + (i % 3);
+    g.beginPath();
+    g.moveTo(x - w / 2, y);
+    g.quadraticCurveTo(x, y - 5, x + w / 2, y);
+    g.stroke();
+  }
+  const t = new THREE.CanvasTexture(cv);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+let blobTex: THREE.Texture | null = null;
+/** Sombra de contacto: un círculo oscuro y difuso en el piso, debajo de un personaje. */
+export function contactShadow(radius: number): THREE.Mesh {
+  if (!blobTex) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 64;
+    const g = cv.getContext('2d')!;
+    const grd = g.createRadialGradient(32, 32, 2, 32, 32, 32);
+    grd.addColorStop(0, 'rgba(20,14,40,0.55)');
+    grd.addColorStop(0.6, 'rgba(20,14,40,0.22)');
+    grd.addColorStop(1, 'rgba(20,14,40,0)');
+    g.fillStyle = grd;
+    g.fillRect(0, 0, 64, 64);
+    blobTex = new THREE.CanvasTexture(cv);
+  }
+  const m = new THREE.Mesh(
+    new THREE.PlaneGeometry(radius * 2, radius * 2),
+    new THREE.MeshBasicMaterial({ map: blobTex, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }),
+  );
+  m.rotation.x = -Math.PI / 2;
+  m.position.y = 0.03;
+  m.renderOrder = -1;
+  m.userData.noXray = true;
+  return m;
 }
 
 /** Material toon propio (no compartido), para objetos que cambian de color al conectarse. */
@@ -272,6 +346,15 @@ export class Renderer {
   private readonly postScene = new THREE.Scene();
   private readonly postCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
   private readonly postMat: THREE.ShaderMaterial;
+  /** Etapa B: imagen chica desenfocada (sirve para el brillo y para el efecto maqueta). */
+  private small: THREE.WebGLRenderTarget | null = null;
+  private smallB: THREE.WebGLRenderTarget | null = null;
+  private readonly downMat: THREE.ShaderMaterial;
+  private readonly blurMat: THREE.ShaderMaterial;
+  private readonly passScene = new THREE.Scene();
+  private readonly passQuad: THREE.Mesh;
+  /** Brillo y efecto maqueta (Opciones → Efectos de luz). */
+  fancy = true;
   width = 1;
   height = 1;
 
@@ -300,9 +383,12 @@ export class Renderer {
         step: { value: 1.5 },
         voltio: { value: 0 },
         night: { value: 0 },
+        tBlur: { value: null },
+        bloom: { value: 0 },
+        tilt: { value: 0 },
       },
       vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
-      fragmentShader: `uniform sampler2D tDiffuse; uniform float time; uniform vec2 res; uniform float flash; uniform float step; uniform float voltio; uniform float night; varying vec2 vUv;
+      fragmentShader: `uniform sampler2D tDiffuse; uniform sampler2D tBlur; uniform float bloom; uniform float tilt; uniform float time; uniform vec2 res; uniform float flash; uniform float step; uniform float voltio; uniform float night; varying vec2 vUv;
         float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
         vec3 toSRGB(vec3 c){ return pow(max(c, 0.0), vec3(1.0 / 2.2)); }
         void main(){
@@ -366,6 +452,19 @@ export class Renderer {
             vec3 n = c * vec3(0.46, 0.52, 0.8) + vec3(0.01, 0.015, 0.04);
             c = mix(c, mix(n, c * 1.08, glowK), night);
           }
+          // Etapa B: brillo suave alrededor de lo que se ilumina (faroles, chispas, el cable) y efecto
+          // maqueta (arriba y abajo de la pantalla un poco desenfocado, como una ciudad en miniatura)
+          if (bloom > 0.001 || tilt > 0.001) {
+            vec3 bl = texture2D(tBlur, vUv).rgb;
+            float edgeY = smoothstep(0.28, 0.5, abs(vUv.y - 0.5));
+            c = mix(c, toSRGB(bl) * (1.0 - dot(q, q) * 0.35), tilt * edgeY);
+            // Lo que brilla: claro y con color (luces, chispas, el cable); lo blanco apagado casi no suma
+            float hi = max(max(bl.r, bl.g), bl.b);
+            float lo = min(min(bl.r, bl.g), bl.b);
+            float sat = hi > 0.0 ? (hi - lo) / hi : 0.0;
+            float k = smoothstep(0.55, 0.92, hi) * mix(0.35, 1.0, smoothstep(0.15, 0.55, sat));
+            c += toSRGB(bl * k) * bloom * 0.55;
+          }
           c = mix(c, vec3(1.0, 0.95, 0.75), flash);                          // destello de celebración
           gl_FragColor = vec4(c, 1.0);
         }`,
@@ -373,6 +472,44 @@ export class Renderer {
       depthWrite: false,
     });
     this.postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.postMat));
+
+    // Achicar (promedio de 4 lecturas) y desenfocar en dos pasadas (horizontal y vertical), a un cuarto de resolución
+    const vs = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`;
+    this.downMat = new THREE.ShaderMaterial({
+      uniforms: { src: { value: null }, texel: { value: new THREE.Vector2(1, 1) } },
+      vertexShader: vs,
+      fragmentShader: `uniform sampler2D src; uniform vec2 texel; varying vec2 vUv;
+        void main(){ vec2 o = texel * 0.75;
+          vec3 c = texture2D(src, vUv + vec2(-o.x, -o.y)).rgb + texture2D(src, vUv + vec2(o.x, -o.y)).rgb
+                 + texture2D(src, vUv + vec2(-o.x, o.y)).rgb + texture2D(src, vUv + vec2(o.x, o.y)).rgb;
+          gl_FragColor = vec4(min(c * 0.25, vec3(4.0)), 1.0); }`,
+      depthTest: false,
+      depthWrite: false,
+    });
+    this.blurMat = new THREE.ShaderMaterial({
+      uniforms: { src: { value: null }, dir: { value: new THREE.Vector2(1, 0) } },
+      vertexShader: vs,
+      fragmentShader: `uniform sampler2D src; uniform vec2 dir; varying vec2 vUv;
+        void main(){
+          vec3 c = texture2D(src, vUv).rgb * 0.2270270;
+          c += (texture2D(src, vUv + dir * 1.3846153).rgb + texture2D(src, vUv - dir * 1.3846153).rgb) * 0.3162162;
+          c += (texture2D(src, vUv + dir * 3.2307692).rgb + texture2D(src, vUv - dir * 3.2307692).rgb) * 0.0702702;
+          gl_FragColor = vec4(c, 1.0); }`,
+      depthTest: false,
+      depthWrite: false,
+    });
+    this.passQuad = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), this.downMat);
+    this.passScene.add(this.passQuad);
+  }
+
+  /** Brillo (0 = nada). WorldMode lo sube un poco de noche. */
+  set bloom(v: number) {
+    this.postMat.uniforms.bloom.value = v;
+  }
+
+  /** Efecto maqueta (0 = nada): solo en la vista isométrica. */
+  set tilt(v: number) {
+    this.postMat.uniforms.tilt.value = v;
   }
 
   set flash(v: number) {
@@ -439,6 +576,14 @@ export class Renderer {
     });
     this.postMat.uniforms.tDiffuse.value = this.target.texture;
     this.postMat.uniforms.res.value.set(W, H);
+    const sw = Math.max(1, Math.floor(W / 4));
+    const sh = Math.max(1, Math.floor(H / 4));
+    this.small?.dispose();
+    this.smallB?.dispose();
+    this.small = new THREE.WebGLRenderTarget(sw, sh, { type: THREE.HalfFloatType, depthBuffer: false });
+    this.smallB = new THREE.WebGLRenderTarget(sw, sh, { type: THREE.HalfFloatType, depthBuffer: false });
+    this.downMat.uniforms.texel.value.set(1 / W, 1 / H);
+    this.postMat.uniforms.tBlur.value = this.small.texture;
     // La pincelada mide lo mismo en pantalla sea cual sea la resolución (~0.8 px de pantalla por paso).
     this.postMat.uniforms.step.value = Math.max(1, 0.8 * this.dpr);
   }
@@ -449,8 +594,37 @@ export class Renderer {
     this.gl.setRenderTarget(this.target);
     this.gl.render(scene, camera);
     extra?.();
+    const on = this.fancy && (this.postMat.uniforms.bloom.value > 0.001 || this.postMat.uniforms.tilt.value > 0.001);
+    if (on && this.small && this.smallB && this.target) {
+      // Achicar → desenfocar horizontal → vertical (dos veces, para que el brillo sea amplio y suave)
+      this.passQuad.material = this.downMat;
+      this.downMat.uniforms.src.value = this.target.texture;
+      this.gl.setRenderTarget(this.small);
+      this.gl.render(this.passScene, this.postCam);
+      this.passQuad.material = this.blurMat;
+      const w = this.small.width;
+      const h = this.small.height;
+      for (let k = 0; k < 2; k += 1) {
+        this.blurMat.uniforms.src.value = this.small.texture;
+        this.blurMat.uniforms.dir.value.set((1 + k) / w, 0);
+        this.gl.setRenderTarget(this.smallB);
+        this.gl.render(this.passScene, this.postCam);
+        this.blurMat.uniforms.src.value = this.smallB.texture;
+        this.blurMat.uniforms.dir.value.set(0, (1 + k) / h);
+        this.gl.setRenderTarget(this.small);
+        this.gl.render(this.passScene, this.postCam);
+      }
+    }
+    const savedBloom = this.postMat.uniforms.bloom.value;
+    const savedTilt = this.postMat.uniforms.tilt.value;
+    if (!on) {
+      this.postMat.uniforms.bloom.value = 0;
+      this.postMat.uniforms.tilt.value = 0;
+    }
     this.gl.setRenderTarget(null);
     this.gl.render(this.postScene, this.postCam);
+    this.postMat.uniforms.bloom.value = savedBloom;
+    this.postMat.uniforms.tilt.value = savedTilt;
   }
 }
 

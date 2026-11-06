@@ -11,6 +11,7 @@ const KEYS = {
   big: 'los-nexus-big-buttons',
   view: 'los-nexus-3d-view',
   perf: 'los-nexus-3d-perf',
+  fx: 'los-nexus-3d-fx',
 };
 
 function read(key: string): string | null {
@@ -61,6 +62,14 @@ export const Settings = {
   set bigButtons(on: boolean) {
     write(KEYS.big, String(on));
     document.body.classList.toggle('big-buttons', on);
+  },
+
+  /** Efectos de luz (brillo y efecto maqueta). Se pueden apagar en equipos lentos. */
+  get fx(): boolean {
+    return read(KEYS.fx) !== 'false';
+  },
+  set fx(on: boolean) {
+    write(KEYS.fx, String(on));
   },
 
   /** Medidor de rendimiento (cuadros por segundo y dibujos por cuadro) en la pantalla. */
