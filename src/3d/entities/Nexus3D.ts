@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { makeBoard } from '../objects/skate';
 import { box, glow, rounded, toon } from '../core/render';
 import { clamp, damp, dampAngle } from '../core/util';
+import { CABLES, EARS, HATS, HOODIES, PACKS, option, type NexusLook } from '../data/wardrobe';
 
 const SPEED = 4.6; // m/s
 const ACCEL = 11; // qué tan rápido llega a la velocidad deseada (equivale al ACCEL_MS de 90 ms del 2D)
@@ -37,6 +38,18 @@ const C = {
 export class Nexus3D {
   readonly root = new THREE.Group();
   readonly velocity = new THREE.Vector3();
+  /** Materiales propios de cada pieza, para el armario (copias de `toon`: el Nexus no se apaga con el pueblo). */
+  private readonly mat = {
+    hoodie: toon(C.hoodie, 2).clone(),
+    hoodieDark: toon(C.hoodieDark).clone(),
+    pack: toon(C.pack).clone(),
+    tipL: toon(C.earTipL).clone(),
+    tipR: toon(C.earTipR).clone(),
+    cable: toon(C.cable).clone(),
+  };
+  /** Accesorio de la cabeza (armario). */
+  private readonly hat = new THREE.Group();
+  private hatId = 'nada';
   heading = 0;
   /**
    * Hacia dónde mira cuando se queda quieto (o null para no girar). En la vista isométrica
@@ -117,12 +130,12 @@ export class Nexus3D {
     hips.position.y = 0.36;
     this.body.add(hips);
 
-    const torso = rounded(new THREE.CapsuleGeometry(0.155, 0.12, 6, 14), toon(C.hoodie, 2), 0.016);
+    const torso = rounded(new THREE.CapsuleGeometry(0.155, 0.12, 6, 14), this.mat.hoodie, 0.016);
     torso.scale.set(1.12, 1, 0.86);
     torso.position.y = 0.52;
     this.body.add(torso);
 
-    const pocket = rounded(new THREE.CylinderGeometry(0.15, 0.16, 0.07, 14), toon(C.hoodieDark), 0);
+    const pocket = rounded(new THREE.CylinderGeometry(0.15, 0.16, 0.07, 14), this.mat.hoodieDark, 0);
     pocket.scale.set(1.12, 1, 0.86);
     pocket.position.y = 0.42;
     this.body.add(pocket);
@@ -142,7 +155,7 @@ export class Nexus3D {
     collar.position.y = 0.68;
     this.body.add(collar);
 
-    const hood = rounded(new THREE.SphereGeometry(0.15, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), toon(C.hoodie, 2), 0.014);
+    const hood = rounded(new THREE.SphereGeometry(0.15, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2), this.mat.hoodie, 0.014);
     hood.rotation.x = -Math.PI / 2 - 0.3;
     hood.position.set(0, 0.68, -0.1);
     this.body.add(hood);
@@ -151,7 +164,7 @@ export class Nexus3D {
     // Brazos (pivote en el hombro) con guantes oscuros
     for (const [arm, x] of [[this.armL, 0.2], [this.armR, -0.2]] as const) {
       arm.position.set(x, 0.62, 0);
-      const sleeve = rounded(new THREE.CapsuleGeometry(0.056, 0.15, 4, 10), toon(C.hoodie, 2), 0.014);
+      const sleeve = rounded(new THREE.CapsuleGeometry(0.056, 0.15, 4, 10), this.mat.hoodie, 0.014);
       sleeve.position.y = -0.12;
       arm.add(sleeve);
       const cuff = rounded(new THREE.TorusGeometry(0.052, 0.018, 6, 14), toon(C.collar), 0.008);
@@ -172,7 +185,7 @@ export class Nexus3D {
     // Mochila con lente y cable de energía colgando
     const pack = new THREE.Group();
     pack.position.set(0, 0.54, -0.2);
-    const packBody = box(0.24, 0.27, 0.13, C.pack, { outline: 0.014 });
+    const packBody = box(0.24, 0.27, 0.13, '', { mat: this.mat.pack, outline: 0.014 });
     pack.add(packBody);
     const lensRim = rounded(new THREE.CylinderGeometry(0.07, 0.07, 0.04, 16), toon('#2a2f3c'), 0.01);
     lensRim.rotation.x = Math.PI / 2;
@@ -230,7 +243,7 @@ export class Nexus3D {
       new THREE.Vector3(0.1, 0.2, -0.26),
       new THREE.Vector3(0.06, 0.16, -0.24),
     ]);
-    this.cable = new THREE.Mesh(new THREE.TubeGeometry(this.cableCurve, 12, 0.014, 6), toon(C.cable));
+    this.cable = new THREE.Mesh(new THREE.TubeGeometry(this.cableCurve, 12, 0.014, 6), this.mat.cable);
     this.cable.castShadow = true;
     this.body.add(this.cable);
 
@@ -295,7 +308,7 @@ export class Nexus3D {
       ear.add(inner);
       const tipGeo = new THREE.CapsuleGeometry(0.068, 0.06, 6, 12);
       tipGeo.translate(0, 0.33, 0);
-      const tipMesh = new THREE.Mesh(tipGeo, toon(tip));
+      const tipMesh = new THREE.Mesh(tipGeo, tip === C.earTipL ? this.mat.tipL : this.mat.tipR);
       tipMesh.scale.set(1, 1, 0.82);
       tipMesh.castShadow = true;
       ear.add(tipMesh);
@@ -305,7 +318,7 @@ export class Nexus3D {
 
     // Capucha puesta (Modo Voltio): cubre la cabeza dejando la cara al aire, con costuras de neón
     const hoodGeo = new THREE.SphereGeometry(0.31, 22, 14, Math.PI / 2 + 1.0, Math.PI * 2 - 2.0, 0, Math.PI * 0.7);
-    const hoodUp = rounded(hoodGeo, toon(C.hoodie, 2), 0.016);
+    const hoodUp = rounded(hoodGeo, this.mat.hoodie, 0.016);
     hoodUp.scale.set(1.08, 0.98, 1.05);
     hoodUp.position.y = 0.25;
     this.hoodUp.add(hoodUp);
@@ -321,15 +334,25 @@ export class Nexus3D {
     this.hoodUp.add(crest);
     this.hoodUp.visible = false;
     this.head.add(this.hoodUp);
+    this.head.add(this.hat);
 
     // Patineta (se ve solo al andar en ella)
     this.board.visible = false;
     this.root.add(this.board);
 
+    // Cada malla recuerda qué pieza es (el armario la recolorea aunque después le copien el material)
+    const roles = Object.entries(this.mat) as [keyof typeof this.mat, THREE.MeshToonMaterial][];
     this.root.traverse((o) => {
-      if ((o as THREE.Mesh).isMesh) o.castShadow = true;
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      m.castShadow = true;
+      const role = roles.find(([, mat]) => mat === m.material);
+      if (role) m.userData.look = role[0];
     });
   }
+
+  /** Ajuste que se aplica a cada material nuevo del Nexus (la silueta usa el stencil). */
+  materialHook: ((m: THREE.Mesh) => void) | null = null;
 
   /** Punto del que sale el cable de energía (la lente de la mochila), en coordenadas de mundo. */
   plugPoint(out = new THREE.Vector3()): THREE.Vector3 {
@@ -345,8 +368,78 @@ export class Nexus3D {
   }
 
   /** Capucha arriba (Modo Voltio) o abajo. */
+  /** Ropa del armario: colores y accesorio. */
+  applyLook(look: NexusLook): void {
+    const h = option(HOODIES, look.hoodie);
+    this.mat.hoodie.color.set(h.color!);
+    this.mat.hoodieDark.color.set(h.color2!);
+    this.mat.pack.color.set(option(PACKS, look.pack).color!);
+    const e = option(EARS, look.ears);
+    this.mat.tipL.color.set(e.color!);
+    this.mat.tipR.color.set(e.color2!);
+    this.mat.cable.color.set(option(CABLES, look.cable).color!);
+    this.root.traverse((o) => {
+      const m = o as THREE.Mesh;
+      const role = m.userData.look as keyof typeof this.mat | undefined;
+      if (m.isMesh && role) (m.material as THREE.MeshToonMaterial).color.copy(this.mat[role].color);
+    });
+    this.setHat(option(HATS, look.hat).id);
+  }
+
+  private setHat(id: string): void {
+    if (id === this.hatId) return;
+    this.hatId = id;
+    this.hat.clear();
+    const add = (m: THREE.Object3D, x: number, y: number, z: number) => {
+      m.position.set(x, y, z);
+      this.hat.add(m);
+      m.traverse((o) => {
+        o.castShadow = true;
+        if ((o as THREE.Mesh).isMesh) this.materialHook?.(o as THREE.Mesh);
+      });
+      return m;
+    };
+    if (id === 'lazo') {
+      for (const s of [-1, 1]) {
+        const loop = rounded(new THREE.ConeGeometry(0.06, 0.12, 8), toon('#ff5a6e'), 0.008);
+        loop.rotation.z = (s * Math.PI) / 2;
+        add(loop, 0.11 + s * 0.06, 0.5, 0.02);
+      }
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 6), toon('#ff5a6e')), 0.11, 0.5, 0.02);
+    } else if (id === 'gorra') {
+      add(rounded(new THREE.SphereGeometry(0.24, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon('#ff9f43'), 0.012), 0, 0.42, 0);
+      const visor = box(0.24, 0.025, 0.18, '#2c3f66', { outline: 0.008 });
+      add(visor, 0, 0.43, -0.28);
+    } else if (id === 'paja') {
+      add(rounded(new THREE.CylinderGeometry(0.17, 0.2, 0.14, 16), toon('#f2d38a'), 0.01), 0, 0.53, 0);
+      add(rounded(new THREE.CylinderGeometry(0.36, 0.36, 0.02, 22), toon('#f2d38a'), 0.008), 0, 0.47, 0);
+      add(new THREE.Mesh(new THREE.CylinderGeometry(0.175, 0.2, 0.04, 16), toon('#ff5a6e')), 0, 0.5, 0);
+    } else if (id === 'corona') {
+      add(rounded(new THREE.CylinderGeometry(0.17, 0.17, 0.1, 16, 1, true), toon('#ffd23a'), 0.01), 0, 0.53, 0);
+      for (let i = 0; i < 6; i += 1) {
+        const a = (i / 6) * Math.PI * 2;
+        add(new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.1, 6), toon('#ffd23a')), Math.cos(a) * 0.16, 0.62, Math.sin(a) * 0.16);
+      }
+      add(new THREE.Mesh(new THREE.OctahedronGeometry(0.035, 0), glow('#ff4fd8')), 0, 0.55, 0.17);
+    } else if (id === 'pato') {
+      const body = add(rounded(new THREE.SphereGeometry(0.12, 12, 10), toon('#ffd23a'), 0.01), 0, 0.56, 0);
+      body.scale.set(1, 0.8, 1.2);
+      add(rounded(new THREE.SphereGeometry(0.075, 10, 8), toon('#ffd23a'), 0.008), 0, 0.68, 0.08);
+      const beak = new THREE.Mesh(new THREE.ConeGeometry(0.03, 0.07, 6), toon('#ff9f43'));
+      beak.rotation.x = Math.PI / 2;
+      add(beak, 0, 0.67, 0.17);
+      for (const s of [-1, 1]) add(new THREE.Mesh(new THREE.SphereGeometry(0.012, 6, 5), toon('#1d1630')), s * 0.03, 0.7, 0.14);
+    } else if (id === 'capitan') {
+      add(rounded(new THREE.CylinderGeometry(0.22, 0.19, 0.12, 16), toon('#fff3dc'), 0.012), 0, 0.53, 0);
+      add(new THREE.Mesh(new THREE.CylinderGeometry(0.195, 0.195, 0.035, 16), toon('#1d1630')), 0, 0.49, 0);
+      add(box(0.22, 0.02, 0.14, '#1d1630', { outline: 0.008 }), 0, 0.48, 0.22);
+      add(new THREE.Mesh(new THREE.OctahedronGeometry(0.03, 0), glow('#ffd23a')), 0, 0.53, 0.2);
+    }
+  }
+
   setHood(up: boolean): void {
     this.hoodUp.visible = up;
+    this.hat.visible = !up;
     this.hoodBack.visible = !up;
   }
 

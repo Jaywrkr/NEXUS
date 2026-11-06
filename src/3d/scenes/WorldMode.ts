@@ -42,6 +42,11 @@ import { STATION, TRAIN_STOPS } from '../world/Station';
 import { Train, makeStop } from '../objects/train';
 import { Cascade } from '../objects/cascade';
 import { CERRO, TOP_H } from '../world/Cerro';
+import { BOAT, PORT } from '../world/Port';
+import { CanalBoat, GranChispa, Lighthouse } from '../objects/finale';
+import { CitySong, INSTRUMENTS, INSTRUMENT_NAMES, type Instrument } from '../systems/CitySong';
+import { HOME_ITEMS, type HomeItemInfo } from '../world/NexusHome';
+import { loadLook } from '../data/wardrobe';
 import type { CageSpot } from '../systems/Voltio';
 import { Companion } from '../entities/Companion';
 import type { ChispiType } from '../data/chispis';
@@ -81,6 +86,10 @@ export interface WorldCallbacks {
   album?: () => void;
   /** Tocaste una parada con el tren despierto: elegir destino (llama a `travelTo`). */
   travel?: () => void;
+  /** Abrir el armario del Nexus (ropa). */
+  wardrobe?: () => void;
+  /** Volvió la Gran Chispa: créditos del final. */
+  credits?: (stats: { places: number; placesTotal: number; awake: number; awakeTotal: number; cards: number; cardsTotal: number; chispis: number }) => void;
   /** La fiesta terminó el capítulo: pantalla de resultados. */
   ending?: (stats: { places: number; placesTotal: number; awake: number; awakeTotal: number; cards: number; cardsTotal: number; chispis: number }) => void;
 }
@@ -110,6 +119,7 @@ const CAGES: { id: string; x: number; z: number }[] = [
   { id: 'rielito', x: STATION.chispi.x, z: STATION.chispi.z },
   { id: 'ventarron', x: CERRO.chispi.x, z: CERRO.chispi.z },
   { id: 'musguito', x: CERRO.caveChispi.x, z: CERRO.caveChispi.z },
+  { id: 'gaviotin', x: PORT.chispi.x, z: PORT.chispi.z },
 ];
 
 /** Sobres escondidos por el mundo (x, z, altura). */
@@ -209,9 +219,15 @@ export class WorldMode {
   /** Juego en el que está subido el Nexus. */
   private readonly train: Train;
   private readonly cascade: Cascade;
+  private readonly boat: CanalBoat;
+  private readonly lighthouse: Lighthouse;
+  private readonly granChispa = new GranChispa();
+  private readonly song: CitySong;
   /** Paradas del tren construidas (Fase 7). */
   private readonly stops: { id: string; name: string; x: number; z: number }[] = [];
   private stopSpot: { id: string; name: string; x: number; z: number } | null = null;
+  /** Algo de la casa del Nexus para arreglar (o usar) al lado. */
+  private homeSpot: HomeItemInfo | null = null;
   private rideOn: (Ride & Connectable) | null = null;
   private rideSpot: (Ride & Connectable) | null = null;
   private readonly labels: { obj: Connectable; el: HTMLElement; alpha: number }[] = [];
@@ -349,6 +365,19 @@ export class WorldMode {
     // Fase 8: Cerro y cascada
     const cascadeSource = new EnergySource('cerro-cascade-source', CERRO.cascadeSource.x, CERRO.cascadeSource.z);
     this.cascade = new Cascade('cerro-cascade', CERRO.cascade.x, CERRO.cascade.z);
+    // Fase 9: Puerto, bote y faro
+    const boatSource = new EnergySource('boat-source', BOAT.source.x, BOAT.source.z);
+    this.boat = new CanalBoat('canal-boat', BOAT.route[0][0], BOAT.route[0][1], BOAT.dock, BOAT.route);
+    const portSource = new EnergySource('port-source', PORT.source.x, PORT.source.z);
+    this.lighthouse = new Lighthouse('port-lighthouse', PORT.lighthouse.x, PORT.lighthouse.z);
+    this.lighthouse.unlocked = this.progress.hasFlag('faro-open');
+    this.world.circles.push({ x: PORT.lighthouse.x, z: PORT.lighthouse.z, r: 2.4 });
+    scene.add(this.granChispa.group);
+    this.song = new CitySong(this.audio);
+    // La casa del Nexus: lo que ya se arregló
+    for (const it of HOME_ITEMS) if (this.progress.hasFlag(`casa-${it.id}`)) this.world.home.fix(it.id, false);
+    if (this.homeInsideDone) this.world.home.gray.revive(false);
+    this.nexus.applyLook(loadLook());
     if (this.progress.hasFlag('cave-lit')) {
       this.world.cerro.cave.light();
       this.world.cerro.cave.gray.revive(false);
@@ -367,10 +396,12 @@ export class WorldMode {
       [carouselSource, 'Energía'], [wheelSource, 'Energía'], [coasterSource, 'Energía'], [espejosSource, 'Energía'],
       [stationSource, 'Energía'],
       [cascadeSource, 'Energía'],
+      [boatSource, 'Energía'],
+      [portSource, 'Energía'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -437,6 +468,16 @@ export class WorldMode {
       blockedMessage: 'El tren tiene el motor trabado: mirá sus cables con la capucha ⚡',
     });
     this.connections.addRule({ sourceId: cascadeSource.id, targetId: this.cascade.id, useTunnel: true });
+    this.connections.addRule({ sourceId: boatSource.id, targetId: this.boat.id, useTunnel: true });
+    // El faro: motor trabado (circuito Voltio) y solo prende con toda la ciudad viva
+    this.connections.addRule({
+      sourceId: portSource.id,
+      targetId: this.lighthouse.id,
+      useTunnel: true,
+      available: () => this.lighthouse.unlocked && this.finalMissing.length === 0,
+      blockedMessage: () =>
+        !this.lighthouse.unlocked ? 'El faro tiene el motor trabado: mirá sus cables con la capucha ⚡' : `Para traer la Gran Chispa falta: ${this.finalMissing.join(', ')}`,
+    });
     this.bigSteps = [
       { s: source, t: this.lamp, sName: 'la energía de la plaza', tName: 'la farola' },
       { s: this.lamp, t: this.door, sName: 'la farola', tName: 'la puerta de la casa' },
@@ -458,6 +499,8 @@ export class WorldMode {
       { s: coasterSource, t: this.coaster, sName: 'la energía de la montaña rusa', tName: 'la montaña rusa', when: () => this.coaster.unlocked },
       { s: stationSource, t: this.train, sName: 'la energía de la estación', tName: 'el tren', when: () => this.train.unlocked },
       { s: cascadeSource, t: this.cascade, sName: 'la energía del cerro', tName: 'la cascada congelada' },
+      { s: boatSource, t: this.boat, sName: 'la energía del embarcadero', tName: 'el bote de Marina' },
+      { s: portSource, t: this.lighthouse, sName: 'la energía del puerto', tName: 'el faro', when: () => this.lighthouse.unlocked && this.finalMissing.length === 0 },
     ];
 
     // Fragmentos: uno por zona + el secreto detrás de la casa (Decisión 019), que ya está visible
@@ -649,6 +692,7 @@ export class WorldMode {
       [this.mirrorBall, 'espejos', true],
       [this.train, 'estacion', true],
       [this.cascade, 'cascada', true],
+      [this.boat, 'bote', true],
     ];
     for (const [obj, id, ok] of packFor) {
       if (target !== obj || !ok) continue;
@@ -745,6 +789,13 @@ export class WorldMode {
         say(`¡${name} revivió! Acercate y subite`);
       }
     }
+    // Fase 9: el bote de Marina y el faro (final)
+    if (target === this.boat) {
+      this.addLife(BOAT.dock.x, BOAT.dock.z, 10, animate);
+      say('¡El bote despertó! Subite en el embarcadero y paseá por el canal');
+      if (animate) after(0.8, () => this.updateResidentMoods());
+    }
+    if (target === this.lighthouse) this.finale(animate);
     // Fase 8: la cascada se descongela
     if (target === this.cascade) {
       this.addLife(-74, -22, 18, animate);
@@ -1029,6 +1080,14 @@ export class WorldMode {
         target: this.mirrorBall,
       },
       {
+        id: 'casa-nexus',
+        info: this.world.home.info,
+        door: this.world.home.door,
+        out: { x: this.world.home.door.x, z: this.world.home.door.z + 0.8 },
+        open: () => true,
+        story: ['Tu casa', 'Esta casita vieja es tuya, Nexus. Está toda rota… pero con chispitas de la mochila la podés ir arreglando, cosa por cosa.'],
+      },
+      {
         id: 'cueva',
         info: this.world.cerro.cave,
         door: { x: CERRO.cave.doorX, z: CERRO.cave.z + 0.9 },
@@ -1158,6 +1217,8 @@ export class WorldMode {
       { name: 'Cascada', x: CERRO.cascade.x, z: CERRO.cascade.z + 2, alive: this.cascade.isActive },
       { name: 'Mirador', x: CERRO.mirador.x, z: CERRO.mirador.z + 4, alive: this.progress.hasFlag('cerro-top') },
       { name: 'Cueva', x: CERRO.cave.doorX, z: CERRO.cave.z + 1, alive: this.progress.hasFlag('cave-lit') },
+      { name: 'Bote', x: BOAT.dock.x, z: BOAT.dock.z, alive: this.boat.isActive },
+      { name: 'Faro', x: PORT.lighthouse.x, z: PORT.lighthouse.z - 3, alive: this.lighthouse.isActive },
     ];
     return {
       life: (x, z) => LIFE.at(x, z),
@@ -1196,6 +1257,7 @@ export class WorldMode {
         { id: 'coaster-open', nodes: PARK.coasterNodes, door: { x: PARK.coasterStation.x, z: PARK.coasterStation.z } },
         { id: 'train-open', nodes: STATION.nodes, door: { x: STATION.train.x, z: STATION.train.z } },
         { id: 'cave-lit', nodes: CERRO.caveNodes, door: CERRO.caveNodes[1] },
+        { id: 'faro-open', nodes: PORT.nodes, door: PORT.lighthouse },
       ],
       {
         rescue: (id, x, z) => this.onRescue(id, x, z),
@@ -1217,6 +1279,9 @@ export class WorldMode {
           } else if (id === 'train-open') {
             this.train.unlocked = true;
             this.setMessage('¡Circuito cerrado! El motor del tren se destrabó');
+          } else if (id === 'faro-open') {
+            this.lighthouse.unlocked = true;
+            this.setMessage('¡Circuito cerrado! El motor del faro se destrabó');
           } else if (id === 'cave-lit') {
             this.lightCave(true);
           }
@@ -1245,7 +1310,7 @@ export class WorldMode {
         cages: [{ id: 'rueditas', ...this.world.skate.chispi }, ...CAGES]
           .filter((c) => !this.progress.hasChispi(c.id))
           .map((c): CageSpot => ({ ...c, color: TYPES[CARD_BY_ID.get(c.id)!.type].color })),
-        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit'].filter((f) => this.progress.hasFlag(f)),
+        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open'].filter((f) => this.progress.hasFlag(f)),
       },
     );
   }
@@ -1466,6 +1531,11 @@ export class WorldMode {
       }
       return { text: 'El pato y la campana tienen que llegar los dos al desfile', at: tal.parade };
     }
+    if (this.inside?.id === 'casa-nexus') {
+      const next = HOME_ITEMS.filter((i) => !i.outside && !this.progress.hasFlag(`casa-${i.id}`)).sort((a, b) => a.cost - b.cost)[0];
+      if (next) return { text: `Arreglá ${next.name} con chispitas de la mochila (${next.cost} ✦)`, at: next };
+      return { text: '¡Tu casa quedó hermosa! Probá el armario, la radio y la cama', at: null };
+    }
     if (this.inside?.id === 'cueva' && !this.progress.hasFlag('cave-lit')) {
       if (!this.progress.hasFlag('hood')) return { text: 'Está muy oscuro… Con la capucha ⚡ de Rulo se verían los cristales', at: null };
       if (!this.voltio.active) return { text: 'Ponete la capucha ⚡ para ver los cristales', at: null };
@@ -1480,7 +1550,7 @@ export class WorldMode {
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
       return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
     }
-    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep();
+    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep();
     if (park) return park;
     if (this.voltio.active && !this.inSkatepark) {
       const me = this.nexus.position;
@@ -1971,6 +2041,8 @@ export class WorldMode {
       [[this.mirrorBall], 'espejos'],
       [[this.train], 'via'],
       [[this.cascade], 'hielo'],
+      [[this.boat], 'mar'],
+      [[this.lighthouse], 'faro'],
     ];
     const zone = zones.find(([list]) => list.includes(target))?.[1] ?? 'garden';
     return planTunnel(zone, this.progress.tunnelSkill);
@@ -2096,6 +2168,12 @@ export class WorldMode {
     nora.setHeard(this.progress.hasHeard('nora'));
     this.world.scene.add(nora.root);
     this.residents.push(nora);
+    // Marina, la capitana del Puerto (Fase 9)
+    const ms = PORT.marina;
+    const marina = new Resident3D('marina', 'Marina', ms.x, ms.z, Math.atan2(ms.faceX - ms.x, ms.faceZ - ms.z));
+    marina.setHeard(this.progress.hasHeard('marina'));
+    this.world.scene.add(marina.root);
+    this.residents.push(marina);
     // Lalo, el guardaparque del Cerro (Fase 8)
     const ls = CERRO.lalo;
     const lalo = new Resident3D('lalo', 'Lalo', ls.x, ls.z, Math.atan2(ls.faceX - ls.x, ls.faceZ - ls.z));
@@ -2125,6 +2203,7 @@ export class WorldMode {
       tita: this.parkDone === 3,
       nora: this.train.isActive,
       lalo: this.cerroDone,
+      marina: this.boat.isActive,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
@@ -2134,6 +2213,7 @@ export class WorldMode {
     if (r.id === 'tita') return this.titaText();
     if (r.id === 'nora') return this.noraText();
     if (r.id === 'lalo') return this.laloText();
+    if (r.id === 'marina') return this.marinaText();
     const info = RESIDENTS.find((i) => i.id === r.id)!;
     // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
     if (r.id === 'bombo' && !this.fountain.isActive) {
@@ -2207,7 +2287,7 @@ export class WorldMode {
   private findRideSpot(): (Ride & Connectable) | null {
     if (this.rideOn || this.busy || this.zip || this.inside || this.voltio.active || this.connections.hasSelection() || this.nexus.riding) return null;
     const p = this.nexus.position;
-    for (const r of [this.carousel, this.wheel, this.coaster] as (Ride & Connectable)[]) {
+    for (const r of [this.carousel, this.wheel, this.coaster, this.boat] as (Ride & Connectable)[]) {
       if (!r.isActive) continue;
       if (Math.hypot(p.x - r.boardAt.x, p.z - r.boardAt.z) < 1.9) return r;
     }
@@ -2388,6 +2468,225 @@ export class WorldMode {
     if (!this.train.isActive) return { text: 'Estación: conectá la energía con el tren', at: STATION.source };
     if (!this.progress.hasFlag('train-tour')) return { text: 'Subite al tren en una parada 🚂 y conocé cuatro paradas', at: this.stops.find((s) => s.id === 'estacion') ?? null };
     return null;
+  }
+
+  /* ---------- La casa del Nexus y el armario ---------- */
+
+  /** ¿Están arregladas todas las cosas de adentro? */
+  get homeInsideDone(): boolean {
+    return HOME_ITEMS.filter((i) => !i.outside).every((i) => this.progress.hasFlag(`casa-${i.id}`));
+  }
+
+  /** Las cosas de la casa (para el objetivo y las pruebas). */
+  get homeItems(): HomeItemInfo[] {
+    return HOME_ITEMS;
+  }
+
+  get homeFixed(): number {
+    return HOME_ITEMS.filter((i) => this.progress.hasFlag(`casa-${i.id}`)).length;
+  }
+
+  private findHomeSpot(): HomeItemInfo | null {
+    if (this.voltio.active || this.busy || this.zip) return null;
+    const inHome = this.inside?.id === 'casa-nexus';
+    if (this.inside && !inHome) return null;
+    const p = this.nexus.position;
+    let best: HomeItemInfo | null = null;
+    let bd = 1.7;
+    for (const it of HOME_ITEMS) {
+      if (!!it.outside === inHome) continue;
+      const fixed = this.progress.hasFlag(`casa-${it.id}`);
+      if (fixed && !it.use) continue;
+      const d = Math.hypot(it.x - p.x, it.z - p.z);
+      if (d < bd) {
+        bd = d;
+        best = it;
+      }
+    }
+    return best;
+  }
+
+  private homeLabel(it: HomeItemInfo): string {
+    return this.progress.hasFlag(`casa-${it.id}`) ? it.use! : `🔧 Arreglar · ${it.cost}✦`;
+  }
+
+  /** Arreglar una cosa de la casa (con chispitas) o usarla si ya está arreglada. */
+  useHomeItem(it: HomeItemInfo): void {
+    if (this.progress.hasFlag(`casa-${it.id}`)) {
+      if (it.id === 'armario') this.cb.wardrobe?.();
+      else if (it.id === 'radio') this.playSong();
+      else if (it.id === 'cama') this.nap();
+      else if (it.id === 'estante') this.showMemories();
+      return;
+    }
+    if (this.charge < it.cost) {
+      this.setMessage(`Para arreglar ${it.name} hacen falta ${it.cost} ✦ (tenés ${this.charge}). Juntá chispitas en los nidos y en las carreras de luz`);
+      this.audio.playError();
+      return;
+    }
+    this.progress.addCharge(-it.cost);
+    this.progress.setFlag(`casa-${it.id}`);
+    this.world.home.fix(it.id, true);
+    this.audio.playSuccess();
+    this.nexus.celebrate();
+    this.toast(`🔧 ¡Arreglaste ${it.name}!`, 'ok');
+    if (it.use) after(0.6, () => this.setMessage(`¡Listo! Ahora ${it.name} sirve: ${it.use}`));
+    if (!it.outside && this.homeInsideDone) {
+      this.world.home.gray.revive(true);
+      after(0.8, () => this.showStory('Tu casa', '¡Tu casa quedó hermosa! Ahora tenés armario para cambiarte, radio con la canción de la ciudad y una cama para la siesta.'));
+    }
+    if (it.outside) this.addLife(it.x, it.z, 6, true);
+    if (this.homeFixed === HOME_ITEMS.length && !this.progress.hasFlag('casa-lista')) {
+      this.progress.setFlag('casa-lista');
+      after(1.2, () => this.setMessage('¡La casa del Nexus está completa! Es la más linda del barrio'));
+    }
+    this.refreshObjectiveSoon();
+  }
+
+  /** Menú → «Mi Nexus» sin armario todavía. */
+  wardrobeLocked(): void {
+    this.setMessage('Tu ropa está en el armario de tu casa (cruzando el canal, al lado del jardín municipal): arreglalo con chispitas');
+  }
+
+  /** La cama: siesta cortita que recarga la capucha. */
+  private nap(): void {
+    this.crossDoor(() => {
+      this.voltio.voltage = this.voltio.maxVolt;
+      this.setMessage('💤 ¡Qué buena siesta! La capucha quedó cargada a full');
+    });
+  }
+
+  private showMemories(): void {
+    const stars = this.fragments.filter((f) => f.isCollected).length;
+    this.setMessage(`🏛️ Recuerdos: ★ ${stars} fragmentos · ✦ ${this.awakeCount()} cosas despiertas · 🃏 ${this.progress.uniqueCards} cartas · ⚡ ${this.progress.chispis.length} Chispis`);
+  }
+
+  /* ---------- Fase 9: Puerto y faro (final) ---------- */
+
+  /** Lo que falta para que el faro pueda traer la Gran Chispa. */
+  get finalMissing(): string[] {
+    const out: string[] = [];
+    if (!this.chapterDone) out.push('la fiesta del Centro');
+    if (this.parkDone < 3) out.push('los juegos del parque');
+    if (!this.train.isActive) out.push('el tren');
+    if (!this.cascade.isActive) out.push('la cascada del cerro');
+    if (!this.boat.isActive) out.push('el bote de Marina');
+    return out;
+  }
+
+  get gameDone(): boolean {
+    return this.progress.hasFlag('gran-chispa');
+  }
+
+  /** Los instrumentos de la canción de la ciudad que ya suenan (uno por distrito con vida). */
+  get songLayers(): Instrument[] {
+    // Con la Gran Chispa de vuelta, canta la ciudad entera
+    if (this.gameDone) return [...INSTRUMENTS];
+    const out: Instrument[] = [];
+    if (this.zonesDone() >= 4) out.push('centro');
+    if (this.ramp.isActive) out.push('skatepark');
+    if (this.parkDone === 3) out.push('parque');
+    if (this.train.isActive) out.push('estacion');
+    if (this.cascade.isActive) out.push('cerro');
+    if (this.lighthouse.isActive || this.boat.isActive) out.push('puerto');
+    return out;
+  }
+
+  /** Menú → «Canción de la ciudad»: suena con los instrumentos de los distritos que ya revivieron. */
+  playSong(): void {
+    const layers = this.songLayers;
+    if (!layers.length) {
+      this.setMessage('La ciudad todavía no tiene música: cada distrito que revive suma un instrumento');
+      return;
+    }
+    this.song.play(layers, 2);
+    this.nexus.dance();
+    this.setMessage(`🎵 ${layers.map((l) => INSTRUMENT_NAMES[l]).join(' · ')} (${layers.length}/6)`);
+  }
+
+  /** El faro prendió: vuelve la Gran Chispa, toda la ciudad recupera la vida y llegan los créditos. */
+  private finale(animate: boolean): void {
+    const L = PORT.lighthouse;
+    const top = new THREE.Vector3(L.x, this.lighthouse.lampY, L.z);
+    // Queda flotando a la vista, arriba del Nexus (que está en el muelle del faro)
+    const n = this.nexus.position;
+    const sky = new THREE.Vector3(n.x - 3, 6.5, n.z - 4);
+    if (!animate) {
+      this.granChispa.park(new THREE.Vector3(L.x - 6, 8, L.z - 9));
+      this.reviveWholeTown(false);
+      return;
+    }
+    const first = !this.progress.hasFlag('gran-chispa');
+    this.progress.setFlag('gran-chispa');
+    this.audio.playSuccess();
+    flashScreen(450);
+    this.granChispa.launch(top, sky);
+    this.setMessage('¡El faro prendió! Mirá: ¡vuelve la Gran Chispa!');
+    after(3, () => {
+      flashScreen(600);
+      this.reviveWholeTown(true);
+      for (let i = 0; i < 6; i += 1) after(i * 0.3, () => this.connections.celebrate(new THREE.Vector3(L.x + Math.cos(i) * 4, 4 + i, L.z + Math.sin(i) * 4)));
+      // Todos los vecinos llegan al puerto a festejar alrededor del Nexus
+      const c = this.nexus.position;
+      this.residents.forEach((r, i) => {
+        const a = (i / this.residents.length) * Math.PI * 2;
+        let x = c.x + Math.cos(a) * 3.2;
+        let z = c.z + Math.sin(a) * 3.2;
+        if (!this.world.isWalkable(x, z, 0.3)) {
+          x = PORT.plaza.x + Math.cos(a) * 3.2;
+          z = PORT.plaza.z + Math.sin(a) * 3.2;
+        }
+        r.root.position.set(x, 0, z);
+        r.setHappy(true);
+        r.dance(i * 0.12);
+      });
+      this.nexus.dance();
+      this.song.play(['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto'], 3);
+      this.showStory('Marina · ¡La Gran Chispa!', '¡Volvió! La Gran Chispa brilla otra vez sobre la ciudad. Escuchá: cada distrito toca su instrumento. ¡Esta es la canción de la ciudad!');
+    });
+    if (first) {
+      after(7.5, () =>
+        this.cb.credits?.({
+          places: this.zonesDone(),
+          placesTotal: ZONE_COUNT,
+          awake: this.awakeCount(),
+          awakeTotal: this.sleepers.length,
+          cards: this.progress.uniqueCards,
+          cardsTotal: TOTAL_CARDS,
+          chispis: this.progress.chispis.length,
+        }),
+      );
+    }
+  }
+
+  private marinaText(): string {
+    if (!this.boat.isActive) return 'Soy Marina, la capitana. Mi bote quedó dormido en el canal, al lado del embarcadero del oeste. ¿Le llevás energía?';
+    if (!this.lighthouse.unlocked) return 'El faro guarda un secreto: ahí adentro se escondió lo que queda de la Gran Chispa. Pero su motor está trabado… ¿y si mirás sus cables con la capucha ⚡?';
+    if (!this.lighthouse.isActive) {
+      const miss = this.finalMissing;
+      return miss.length ? `Para que el faro brille tan fuerte, la ciudad entera tiene que estar viva. Falta: ${miss.join(', ')}.` : '¡Ya está todo listo! Llevale energía al faro y vas a ver…';
+    }
+    return '¡Lo lograste! La Gran Chispa volvió y la ciudad canta. Podés seguir paseando: siempre hay algo para descubrir.';
+  }
+
+  /** Lo que conviene hacer en el Puerto. */
+  private portStep(): { text: string; at: { x: number; z: number } | null } | null {
+    if (this.districtId !== 'puerto' || this.inside) return null;
+    if (this.voltio.active) {
+      const lit = this.voltio.litNodes('faro-open');
+      if (!this.lighthouse.unlocked) return { text: `Tocá los tres nodos del faro (${lit}/3)`, at: PORT.nodes[Math.min(lit, 2)] };
+      if (this.voltio.isCaged('gaviotin')) return { text: '¡Gaviotín está atrapado! Cerrá un círculo con tu estela alrededor de la jaula', at: PORT.chispi };
+      return null;
+    }
+    if (this.lighthouse.isActive) return null;
+    if (!this.boat.isActive) return { text: 'Marina perdió su bote: está dormido en el canal, al oeste del Centro', at: null };
+    if (!this.lighthouse.unlocked) {
+      const hood = this.progress.hasFlag('hood');
+      return { text: hood ? 'El faro tiene el motor trabado: ponete la capucha ⚡ y mirá sus cables' : 'El faro tiene el motor trabado… Rulo, en el Skatepark, sabe de cables', at: hood ? PORT.nodes[0] : null };
+    }
+    const miss = this.finalMissing;
+    if (miss.length) return { text: `Para traer la Gran Chispa falta: ${miss[0]}`, at: null };
+    return { text: '¡Todo listo! Conectá la energía del puerto con el faro', at: PORT.source };
   }
 
   /* ---------- Fase 8: Cerro y cascada ---------- */
@@ -2772,6 +3071,8 @@ export class WorldMode {
     this.nexus.idleFacing = ISO_FACING;
     this.nexus.animate(dt);
     for (const obj of this.connections.all) obj.update(dt, this.time);
+    this.granChispa.update(dt, this.time);
+    this.world.home.update(dt, this.time);
     for (const f of this.fragments) f.update(this.time);
     for (const r of this.residents) r.update(dt, this.nexus.position);
     this.updateCameras(dt);
@@ -2883,13 +3184,17 @@ export class WorldMode {
     }
     this.rideSpot = this.findRideSpot();
     this.stopSpot = !this.rideOn && !this.rideSpot && !this.nearest && !this.doorway && !this.connections.hasSelection() ? this.nearStop() : null;
-    if (this.rideOn || this.rideSpot || this.stopSpot) {
+    this.homeSpot = !this.rideOn && !this.rideSpot && !this.stopSpot && !this.doorway && !this.connections.hasSelection() ? this.findHomeSpot() : null;
+    if (this.homeSpot) this.nearest = null;
+    if (this.rideOn || this.rideSpot || this.stopSpot || this.homeSpot) {
       this.nearestResident = null;
       this.nearestPole = null;
       this.boardToggle = null;
     }
     const pressed = this.input.consumeInteract();
-    if (pressed && !this.busy && !this.zip && this.stopSpot) {
+    if (pressed && !this.busy && !this.zip && this.homeSpot) {
+      this.useHomeItem(this.homeSpot);
+    } else if (pressed && !this.busy && !this.zip && this.stopSpot) {
       if (this.train.isActive) this.cb.travel?.();
       else this.setMessage(this.train.unlocked ? 'El tren está dormido: llevale energía en la Estación' : 'El tren está dormido en la Estación, al sureste. Nora sabe qué le pasa');
     } else if (pressed && !this.busy && !this.zip && (this.rideOn || this.rideSpot)) {
@@ -2906,13 +3211,17 @@ export class WorldMode {
       else if (this.boardToggle === 'off') this.dismount();
     }
     if (this.el.interact) {
-      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway && !this.nearBoard && !this.boardToggle && !this.rideSpot && !this.rideOn && !this.stopSpot) || this.busy || !!this.zip || (this.rideOn === this.coaster && !!this.rideOn);
-      this.el.interact.textContent = this.stopSpot
+      this.el.interact.hidden = (!this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway && !this.nearBoard && !this.boardToggle && !this.rideSpot && !this.rideOn && !this.stopSpot && !this.homeSpot) || this.busy || !!this.zip || (this.rideOn === this.coaster && !!this.rideOn);
+      this.el.interact.textContent = this.homeSpot
+        ? this.homeLabel(this.homeSpot)
+        : this.stopSpot
         ? '🚂 Viajar'
         : this.rideOn
         ? 'Bajar'
         : this.rideSpot
-          ? '🎠 Subir'
+          ? this.rideSpot === this.boat
+            ? '⛵ Subir'
+            : '🎠 Subir'
           : this.nearBoard
         ? 'Patineta'
         : this.boardToggle && !this.nearest && !this.nearestResident && !this.nearestPole && !this.doorway
@@ -3008,9 +3317,7 @@ export class WorldMode {
   private readonly xraySaved: { mesh: THREE.Mesh; mat: THREE.Material | THREE.Material[]; visible: boolean }[] = [];
 
   private prepareSilhouette(): void {
-    this.nexus.root.traverse((o) => {
-      const m = o as THREE.Mesh;
-      if (!m.isMesh) return;
+    const hook = (m: THREE.Mesh) => {
       m.material = (m.material as THREE.Material).clone();
       Object.assign(m.material, {
         stencilWrite: true,
@@ -3018,7 +3325,12 @@ export class WorldMode {
         stencilFunc: THREE.AlwaysStencilFunc,
         stencilZPass: THREE.ReplaceStencilOp,
       });
+    };
+    this.nexus.root.traverse((o) => {
+      if ((o as THREE.Mesh).isMesh) hook(o as THREE.Mesh);
     });
+    // Los accesorios del armario que se agregan después también entran en la silueta
+    this.nexus.materialHook = hook;
   }
 
   private renderSilhouette(renderer: Renderer): void {

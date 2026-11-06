@@ -32,7 +32,7 @@ export const TRAIN_STOPS: { id: string; name: string; x: number; z: number; need
   { id: 'parque', name: 'Parque', x: 8, z: -55 },
   { id: 'estacion', name: 'Estación', x: 72, z: 44.5 },
   { id: 'cerro', name: 'Cerro', x: -55, z: -7.5, need: 'district-cerro' },
-  { id: 'puerto', name: 'Puerto', x: 34, z: 70, need: 'district-puerto' },
+  { id: 'puerto', name: 'Puerto', x: 11, z: 70.5, need: 'district-puerto' },
 ];
 
 function texture(text: string, bg: string, w = 512, h = 128, size = 60): THREE.CanvasTexture {

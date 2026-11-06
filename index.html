@@ -67,6 +67,25 @@
       </div>
     </div>
 
+    <!-- Final: vuelve la Gran Chispa (Fase 9) -->
+    <div id="creditsPop" class="overlay" hidden>
+      <div class="sheet end-sheet credits-sheet">
+        <p class="card-kicker">Capítulo 1 · ¡Completo!</p>
+        <h2>¡Volvió la Gran Chispa!</h2>
+        <p class="end-text">La ciudad entera brilla otra vez: el Centro, el Skatepark, el Parque, la Estación, el Cerro y el Puerto. Todos los vecinos vinieron a festejar. ¡Gracias, Nexus!</p>
+        <ul class="end-stats" id="creditsStats"></ul>
+        <div class="credits-roll">
+          <p><b>Los Nexus</b></p>
+          <p>Idea, personajes y pruebas<br /><b>Luca</b></p>
+          <p>Con su papá<br /><b>Jay</b></p>
+          <p>Vecinos<br />Miga · Bombo · Vera · Don Paso · Goteo · Rulo · Pipa · Lucio · Tita · Nora · Lalo · Marina</p>
+          <p>Canción de la ciudad<br />🔔 🥁 🎹 🚂 🪈 📯</p>
+          <p><i>Hecho con Luca</i></p>
+        </div>
+        <button class="ui-btn menu-btn primary" id="creditsOk" type="button">Seguir jugando</button>
+      </div>
+    </div>
+
     <!-- Sobre de cartas: se dan vuelta de a una -->
     <div id="packPop" class="overlay" hidden>
       <div class="pack-stage">
@@ -90,6 +109,15 @@
     </div>
 
     <div id="caveDark" aria-hidden="true"></div>
+
+    <!-- Armario del Nexus -->
+    <div id="wardrobePop" class="overlay" hidden>
+      <div class="sheet wardrobe-sheet">
+        <h2>🧥 Armario</h2>
+        <div id="wardrobeParts" class="wardrobe-parts"></div>
+        <button class="ui-btn menu-btn primary" id="wardrobeOk" type="button">¡Listo!</button>
+      </div>
+    </div>
 
     <!-- Viaje en tren (Fase 7) -->
     <div id="travelPop" class="overlay" hidden>
@@ -123,6 +151,8 @@
           <button class="ui-btn menu-btn small" id="mDance" type="button">💃 Bailar</button>
           <button class="ui-btn menu-btn small" id="mWave" type="button">👋 Saludar</button>
         </div>
+        <button class="ui-btn menu-btn" id="mSong" type="button">🎵 Canción de la ciudad</button>
+        <button class="ui-btn menu-btn" id="mWardrobe" type="button">🧥 Mi Nexus</button>
         <button class="ui-btn menu-btn" id="mHelp" type="button">🎮 Cómo se juega</button>
         <button class="ui-btn menu-btn" id="mOptions" type="button">⚙️ Opciones</button>
         <button class="ui-btn menu-btn ghost" id="mTitle" type="button">Volver al título</button>

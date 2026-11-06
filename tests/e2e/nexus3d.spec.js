@@ -1409,3 +1409,198 @@ test('3D: Cerro y cascada — cascada congelada, subida al mirador, tirolesa lar
   expect(await active('cerro-cascade')).toBe(true);
   expect(await w(() => window.__nexus3d.world.world.cerro.cave.gray.alive)).toBe(true);
 });
+
+test('3D: Puerto y faro — el bote del canal, el circuito del faro y la Gran Chispa con créditos', async ({ page }) => {
+  test.setTimeout(360_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const active = (id) => w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, id);
+  const pos = () => w(() => window.__nexus3d.world.nexus.position.toArray());
+  // Partida con todo listo menos el puerto: fiesta, parque, tren y cascada
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    for (const f of ['chapter-done', 'wheel-open', 'coaster-open', 'train-open', 'hood', 'voltio-seen']) p.setFlag(f);
+    for (const [s, t] of [
+      ['park-carousel-source', 'park-carousel'],
+      ['park-wheel-source', 'park-wheel'],
+      ['park-coaster-source', 'park-coaster'],
+      ['station-source', 'station-train'],
+      ['cerro-cascade-source', 'cerro-cascade'],
+    ]) p.saveConnection(s, t);
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  await page.evaluate(() => (document.getElementById('continue')?.offsetParent ? document.getElementById('continue') : document.getElementById('play')).click());
+  await expect.poll(() => mode(page)).toContain('mode-world');
+  await step(page, 0.3);
+  await page.evaluate(() => document.getElementById('story').click());
+  expect(await w(() => window.__nexus3d.world.finalMissing)).toEqual(['el bote de Marina']);
+
+  // Se llega caminando al sur, entre el jardín y los faroles
+  await tp(page, 5.2, 59);
+  await page.keyboard.down('KeyS');
+  await page.keyboard.down('KeyA');
+  await step(page, 2.5);
+  await page.keyboard.up('KeyS');
+  await page.keyboard.up('KeyA');
+  expect((await pos())[2]).toBeGreaterThan(66);
+  await step(page, 0.6);
+  expect(await text(page, 'districtBanner')).toContain('Puerto');
+  expect(await text(page, 'msg')).toContain('bote');
+
+  // Circuito del faro en el Mundo Voltio
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  const nodes = await w(() => window.__nexus3d.world.voltio.nodes.filter((n) => n.circuit === 'faro-open').map((n) => [n.x, n.z]));
+  expect(nodes.length).toBe(3);
+  for (const [x, z] of nodes) await tp(page, x, z);
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.lighthouse.unlocked)).toBe(true);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.3);
+
+  // Todavía falta el bote: el faro avisa qué falta
+  await connect(page, [31.4, 92.9], [34, 101.8]);
+  expect(await active('port-lighthouse')).toBe(false);
+  expect(await text(page, 'toast')).toContain('bote');
+
+  // El bote de Marina: cable en el embarcadero y paseo por el canal
+  await connect(page, [-41.6, 26.4], [-38, 28.4]);
+  expect(await active('canal-boat')).toBe(true);
+  await tp(page, -38, 28.4);
+  expect(await text(page, 'interact')).toBe('⛵ Subir');
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.onRide)).toBe('canal-boat');
+  await step(page, 3);
+  expect((await pos())[0]).toBeLessThan(-50); // navega hacia el oeste
+  for (let i = 0; i < 60 && (await w(() => window.__nexus3d.world.onRide)); i += 1) await step(page, 0.5);
+  expect(await w(() => window.__nexus3d.world.onRide)).toBe(null);
+  const back = await pos();
+  expect(Math.hypot(back[0] + 38, back[2] - 28.2)).toBeLessThan(1);
+
+  // El faro trae la Gran Chispa: toda la ciudad revive y llegan los créditos
+  expect(await w(() => window.__nexus3d.world.finalMissing)).toEqual([]);
+  await connect(page, [31.4, 92.9], [34, 101.8]);
+  expect(await active('port-lighthouse')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.gameDone)).toBe(true);
+  await step(page, 7);
+  expect(await w(() => window.__nexus3d.world.lifeAt(-80, 0))).toBeGreaterThan(0.9);
+  await step(page, 1.5);
+  await expect.poll(() => w(() => !document.getElementById('creditsPop').hidden)).toBe(true);
+  await page.screenshot({ path: test.info().outputPath('final-creditos.png') });
+  await page.click('#creditsOk');
+  expect(await w(() => window.__nexus3d.world.residents.find((r) => r.id === 'marina').isHappy)).toBe(true);
+  await w(() => window.__nexus3d.world.playSong());
+  expect(await text(page, 'msg')).toContain('6/6');
+
+  // Se guarda
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await active('port-lighthouse')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.gameDone)).toBe(true);
+});
+
+test('3D: la casa del Nexus se arregla con chispitas y el armario cambia la ropa', async ({ page }) => {
+  test.setTimeout(300_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const flag = (f) => w((f) => window.__nexus3d.world.progress.hasFlag(f), f);
+  const charge = (n) => w((n) => window.__nexus3d.world.setCharge(n), n);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Sin armario arreglado, «Mi Nexus» dice dónde está la casa
+  await page.keyboard.press('Escape');
+  await page.click('#mWardrobe');
+  expect(await text(page, 'msg')).toContain('jardín municipal');
+
+  // Entrar a la casa (cruzando el canal, al lado del jardín)
+  const door = await w(() => window.__nexus3d.world.world.home.door);
+  await tp(page, door.x, door.z);
+  expect(await text(page, 'interact')).toBe('Entrar');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  await step(page, 6);
+  expect(await text(page, 'msg')).toContain('Arreglá');
+
+  // Sin chispitas no se puede
+  await charge(0);
+  await tp(page, 999.5, -0.4);
+  expect(await text(page, 'interact')).toBe('🔧 Arreglar · 1✦');
+  await touch(page);
+  expect(await text(page, 'msg')).toContain('hacen falta');
+  expect(await flag('casa-luz')).toBe(false);
+
+  // Con chispitas: la lámpara (1) y el armario (2)
+  await charge(5);
+  await touch(page);
+  expect(await flag('casa-luz')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.charge)).toBe(4);
+  await tp(page, 995.4, 2.6);
+  expect(await text(page, 'interact')).toBe('🔧 Arreglar · 2✦');
+  await touch(page);
+  expect(await flag('casa-armario')).toBe(true);
+  await step(page, 0.1);
+  expect(await text(page, 'interact')).toBe('🧥 Armario');
+
+  // El armario: elegir buzo coral y gorra; lo bloqueado dice cómo se gana
+  await touch(page);
+  await expect.poll(() => w(() => !document.getElementById('wardrobePop').hidden)).toBe(true);
+  await page.click('[data-part="hoodie"][data-look="coral"]');
+  await page.click('[data-part="hat"][data-look="lazo"]');
+  await page.click('[data-part="hoodie"][data-look="chispa"]');
+  expect(await text(page, 'wardrobeParts')).toContain('Gran Chispa');
+  await page.screenshot({ path: test.info().outputPath('armario.png') });
+  await page.click('#wardrobeOk');
+  expect(await w(() => (() => { let c = ''; window.__nexus3d.world.nexus.root.traverse((o) => { if (o.userData.look === 'hoodie') c = o.material.color.getHexString(); }); return c; })())).toBe('ec8575');
+  expect(await w(() => JSON.parse(localStorage.getItem('los-nexus-3d-look')).hat)).toBe('lazo');
+
+  // El resto de la casa: cada cosa con sus chispitas
+  for (const [x, z] of [
+    [997.5, -2], // cama
+    [1004.6, 1.7], // radio
+    [1003.2, -2.2], // estante
+    [1001.5, -2.4], // ventana
+    [1000.2, 1.2], // alfombra
+    [1005.3, -2.4], // planta
+  ]) {
+    await charge(5);
+    await tp(page, x, z);
+    await touch(page);
+  }
+  const missing = [];
+  for (const id of ['cama', 'radio', 'estante', 'ventana', 'alfombra', 'planta']) if (!(await flag(`casa-${id}`))) missing.push(id);
+  expect(missing).toEqual([]);
+  expect(await w(() => window.__nexus3d.world.homeInsideDone)).toBe(true);
+  expect(await w(() => window.__nexus3d.world.world.home.gray.alive)).toBe(true);
+  // La radio toca la canción y la cama recarga la capucha
+  await tp(page, 1004.6, 1.7);
+  expect(await text(page, 'interact')).toBe('🎵 Música');
+  await page.screenshot({ path: test.info().outputPath('casa-arreglada.png') });
+
+  // Afuera: el techo y el jardín
+  await tp(page, 1003.5, 3.7);
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(false);
+  const items = await w(() => window.__nexus3d.world.homeItems);
+  for (const id of ['techo', 'jardin']) {
+    const it = items.find((i) => i.id === id);
+    await charge(5);
+    await tp(page, it.x, it.z);
+    expect(await text(page, 'interact')).toBe(`🔧 Arreglar · ${it.cost}✦`);
+    await touch(page);
+    expect(await flag(`casa-${id}`)).toBe(true);
+  }
+  expect(await flag('casa-lista')).toBe(true);
+  await step(page, 1.5);
+  await page.screenshot({ path: test.info().outputPath('casa-afuera.png') });
+
+  // Desde el menú, «Mi Nexus» ya abre el armario; todo se guarda
+  await page.keyboard.press('Escape');
+  await page.click('#mWardrobe');
+  await expect.poll(() => w(() => !document.getElementById('wardrobePop').hidden)).toBe(true);
+  await page.click('#wardrobeOk');
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await w(() => (() => { let c = ''; window.__nexus3d.world.nexus.root.traverse((o) => { if (o.userData.look === 'hoodie') c = o.material.color.getHexString(); }); return c; })())).toBe('ec8575');
+  expect(await w(() => window.__nexus3d.world.homeFixed)).toBe(10);
+  expect(await w(() => window.__nexus3d.world.world.home.gray.alive)).toBe(true);
+});

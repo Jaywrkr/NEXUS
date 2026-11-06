@@ -1354,3 +1354,70 @@ body.voltio #labels {
 body.cave-dark #caveDark {
   opacity: 1;
 }
+
+/* ---------- Fase 9: créditos ---------- */
+.credits-sheet {
+  max-height: 94dvh;
+  overflow-y: auto;
+}
+.credits-sheet h2 {
+  font-size: clamp(26px, 6vw, 40px);
+}
+.credits-roll {
+  display: grid;
+  gap: 8px;
+  max-height: 24dvh;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(29, 22, 48, 0.08);
+  text-align: center;
+}
+.credits-roll p {
+  margin: 0;
+  line-height: 1.35;
+}
+
+/* ---------- Armario del Nexus ---------- */
+.wardrobe-sheet {
+  max-height: 92dvh;
+}
+.wardrobe-parts {
+  display: grid;
+  gap: 10px;
+  max-height: 64dvh;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.wardrobe-part h3 {
+  margin: 0 0 6px;
+  font-size: 15px;
+}
+.wardrobe-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.look-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #fff3dc;
+  color: #1d1630;
+  font-size: 13px;
+}
+.look-chip i {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid #1d1630;
+}
+.look-chip.on {
+  background: #ffd23a;
+  outline: 3px solid #1d1630;
+}
+.look-chip.locked {
+  opacity: 0.6;
+}

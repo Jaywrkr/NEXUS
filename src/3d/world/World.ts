@@ -8,6 +8,8 @@ import { buildFestivalStreet, buildWorkshopRoom, type WorkshopRoom } from './Fes
 import { PARK_REGION, buildMirrorRoom, buildPark } from './Park';
 import { STATION_CORRIDOR, STATION_REGION, buildStation } from './Station';
 import { CERRO_CORRIDOR, CERRO_REGION, buildCerro, type CerroInfo } from './Cerro';
+import { PIERS, PORT_CORRIDOR, PORT_REGION, buildPort } from './Port';
+import { buildNexusHome, type NexusHome } from './NexusHome';
 import { SKATE_REGION, buildSkatepark, type SkateparkInfo } from './Skatepark';
 
 export interface Rect {
@@ -54,6 +56,10 @@ const REGIONS: Rect[] = [
   // Fase 8: la calle este-oeste sigue al oeste hasta el Cerro
   CERRO_CORRIDOR,
   CERRO_REGION,
+  // Fase 9: el Puerto (al sur) y sus muelles
+  PORT_CORRIDOR,
+  PORT_REGION,
+  ...PIERS,
 ];
 /** Jardín municipal (zona 5): borde de cercos, entradas al norte y al este. */
 export const GARDEN = { minX: -26, maxX: 4, minZ: 47, maxZ: 61.5 };
@@ -152,6 +158,8 @@ export class World {
   readonly zipLines: THREE.Vector3[][] = [];
   /** Fase 8: el Cerro (tirolesa larga y la cueva en x = 900). */
   readonly cerro: CerroInfo;
+  /** La casa del Nexus (interior en x = 1000) que se va arreglando. */
+  readonly home: NexusHome;
 
   constructor() {
     const s = this.scene;
@@ -203,9 +211,11 @@ export class World {
     buildPark(s, this.rects);
     buildStation(s, this.rects);
     this.cerro = buildCerro(s, this.rects, this.circles);
+    buildPort(s, this.rects, this.circles);
+    this.home = buildNexusHome(s, this.rects);
     this.zipLines.push(this.cerro.zipLine);
     this.espejos = buildMirrorRoom(s, this.rects);
-    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller, this.espejos, this.cerro.cave);
+    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller, this.espejos, this.cerro.cave, this.home.info);
     this.buildOutsideFx();
 
     // Rendimiento: toda la escenografía quieta se junta en pocas mallas.

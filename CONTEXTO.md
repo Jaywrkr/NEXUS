@@ -256,6 +256,20 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - Lalo (`CERRO.lalo`, look `ranger`), `laloText()`, `cerroStep()`, `cerroDone`. Rescates: Ventarrón (−86, −14), Musguito (en la cueva). Parada del tren del Cerro (−55, −7,5).
 - Cámara: `focus.y` sigue `p.y − 1` cuando el Nexus está a más de 2,5 m.
 
+### Puerto y faro: el final (Decisión 052, Fase 9)
+
+- **Región** `PORT_REGION` (x −40…44, z 67…96) + `PORT_CORRIDOR` (x 4,6…8,6, z 61…68) + `PIERS` (muelles caminables que entran al mar, `SEA_Z` = 96). Distrito `puerto` abierto.
+- **Bote** `canal-boat` (`CanalBoat`): está en el canal en (−38, 33); se alcanza desde el embarcadero `BOAT.dock` (−38, 28,2) (`distanceFrom` mide al embarcadero). Fuente `boat-source` (−42,5, 25,5), túnel `mar`. Es un `Ride`: «⛵ Subir» → recorre `BOAT.route` (oeste hasta x −92 y este hasta x 10) a 9 m/s y vuelve solo al embarcadero.
+- **Faro** `port-lighthouse` (`Lighthouse`) en (34, 105) sobre el muelle este; fuente `port-source` (30,5, 92). Regla con túnel `faro`, `available = lighthouse.unlocked && finalMissing.length === 0` y `blockedMessage` como función. Circuito Voltio `faro-open` (`PORT.nodes`).
+- **`finalMissing`**: fiesta (`chapter-done`), `parkDone === 3`, tren, cascada y bote. **`finale(animate)`**: flag `gran-chispa`, `GranChispa.launch` (de la lámpara al cielo), a los 3 s `reviveWholeTown`, vecinos alrededor del Nexus bailando, `CitySong.play` con los 6 instrumentos y `cb.credits(stats)` → `#creditsPop` (solo la primera vez). Al cargar: `granChispa.park` y vida global.
+- **Canción**: `songLayers` (centro con 4+ lugares, skatepark, parque, estación, cerro, puerto) y `playSong()` (menú «Canción de la ciudad»).
+- Marina (`PORT.marina`, look `sailor`), `marinaText()`, `portStep()`. Rescate de Gaviotín (−28, 84). Parada del tren (11, 70,5).
+
+### La casa del Nexus y el armario (Decisión 053)
+
+- **Casa** (`world/NexusHome.ts`): `HOME_LOT` (−36, 51), 7 × 6, puerta (−34,4, 54,9); interior `World.home` en x = 1000 (id de interior `casa-nexus`). `HOME_ITEMS`: 8 adentro (luz 1, ventana 1, alfombra 1, planta 1, cama 2, radio 2, estante 2, armario 2 ✦) y 2 afuera (techo 3, jardín 2 ✦). Cada una tiene vista rota y arreglada (`home.fix(id, animate)`). `findHomeSpot()` (< 1,7 m) → botón «🔧 Arreglar · n✦» o su uso (`🧥 Armario`, `🎵 Música`, `💤 Siesta`, `🏛️ Recuerdos`) → `useHomeItem`. Flags `casa-<id>`; con las 8 de adentro `home.gray.revive`; con las 10, `casa-lista`.
+- **Armario** (`data/wardrobe.ts`): `HOODIES`, `PACKS`, `EARS`, `CABLES`, `HATS` con `need` (flag que la desbloquea) y `hint`; `loadLook`/`saveLook` (clave `los-nexus-3d-look`, aparte de la partida). `Nexus3D.applyLook(look)` cambia los materiales propios de cada pieza (`mat.hoodie`, `hoodieDark`, `pack`, `tipL`, `tipR`, `cable`: copias de `toon`, sin `withLife`, así el Nexus nunca se apaga) y arma el accesorio en `hat` (se esconde con la capucha). Interfaz `#wardrobePop` (`showWardrobe` en main.ts; chips `[data-part][data-look]`). Menú «🧥 Mi Nexus»: abre el armario si `casa-armario`, si no avisa dónde está la casa.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -274,7 +288,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
 6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
 
-Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–051).
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–053).
 
 ### 6. Trampas técnicas ya conocidas (no repetirlas)
 
@@ -300,7 +314,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–051).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 8 hechas (Decisiones 043–051). Sigue la Fase 9: Puerto y faro (el final).**
+> **Fases 0 a 9 hechas (Decisiones 043–052): el plan maestro está completo. El capítulo 1 en 3D tiene final (la Gran Chispa vuelve) y se puede seguir jugando.**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 

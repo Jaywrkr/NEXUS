@@ -2,6 +2,7 @@ import './style.css';
 import { Input } from './core/input';
 import { Renderer } from './core/render';
 import { Settings, flashScreen, vibrate } from './core/settings';
+import { LOOK_PARTS, loadLook, saveLook } from './data/wardrobe';
 import { CARDS, CARD_BY_ID, RARITY_NAMES, TOTAL_CARDS, TYPES, TYPE_ORDER } from './data/chispis';
 import { drawCard, drawChispi } from './ui/cardArt';
 import { updateTweens } from './core/tween';
@@ -69,6 +70,8 @@ class Game {
       album: () => this.showAlbum(),
       ending: (s) => this.showEnding(s),
       travel: () => this.showTravel(),
+      credits: (s) => this.showCredits(s),
+      wardrobe: () => this.showWardrobe(),
     });
   }
 
@@ -183,6 +186,21 @@ class Game {
     $('tradeNo').addEventListener('click', () => this.closePop('tradePop'));
     $('albumBack').addEventListener('click', () => this.closePop('albumPop'));
     $('travelNo').addEventListener('click', () => this.closePop('travelPop'));
+    $('creditsOk').addEventListener('click', () => this.closePop('creditsPop'));
+    $('wardrobeOk').addEventListener('click', () => this.closePop('wardrobePop'));
+    $('mWardrobe').addEventListener('click', () => {
+      if (this.world.progress.hasFlag('casa-armario')) {
+        $('menu').hidden = true;
+        this.showWardrobe();
+      } else {
+        this.closeMenu();
+        this.world.wardrobeLocked();
+      }
+    });
+    $('mSong').addEventListener('click', () => {
+      this.closeMenu();
+      this.world.playSong();
+    });
     $('mapTravel').addEventListener('click', () => {
       $('mapPanel').hidden = true;
       this.mapOpen = false;
@@ -253,7 +271,7 @@ class Game {
     this.paused = false;
     this.mapOpen = false;
     $('menu').hidden = true;
-    for (const k of ['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop', 'travelPop']) $(k).hidden = true;
+    for (const k of ['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop', 'travelPop', 'creditsPop', 'wardrobePop']) $(k).hidden = true;
     $('mapPanel').hidden = true;
     document.body.classList.remove('paused');
     this.input.flush();
@@ -297,7 +315,7 @@ class Game {
 
   private closePop(id: string): void {
     $(id).hidden = true;
-    if (['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop', 'travelPop'].some((k) => !$(k).hidden)) return;
+    if (['cardPop', 'packPop', 'tradePop', 'albumPop', 'endPop', 'travelPop', 'creditsPop', 'wardrobePop'].some((k) => !$(k).hidden)) return;
     this.closeMenu();
   }
 
@@ -409,6 +427,56 @@ class Game {
     for (const el of Array.from(document.querySelectorAll<HTMLElement>('#albumGrid .mini-card'))) {
       el.classList.toggle('is-buddy', el.dataset.card === this.world.companionId);
     }
+  }
+
+  /** Armario: cada parte con sus opciones; lo bloqueado dice cómo se gana. */
+  private showWardrobe(): void {
+    const look = loadLook();
+    const box = $('wardrobeParts');
+    box.innerHTML = '';
+    for (const part of LOOK_PARTS) {
+      const sec = document.createElement('section');
+      sec.className = 'wardrobe-part';
+      sec.innerHTML = `<h3>${part.title}</h3>`;
+      const row = document.createElement('div');
+      row.className = 'wardrobe-row';
+      for (const o of part.options) {
+        const locked = !!o.need && !this.world.progress.hasFlag(o.need);
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = `ui-btn look-chip${look[part.key] === o.id ? ' on' : ''}${locked ? ' locked' : ''}`;
+        b.dataset.part = part.key;
+        b.dataset.look = o.id;
+        const sw = o.color ? `<i style="background:${o.color2 && o.color2 !== o.color ? `linear-gradient(90deg, ${o.color} 50%, ${o.color2} 50%)` : o.color}"></i>` : '';
+        b.innerHTML = `${sw}<span>${locked ? '🔒 ' : ''}${o.label}</span>`;
+        b.addEventListener('click', () => {
+          if (locked) {
+            b.querySelector('span')!.textContent = `🔒 ${o.hint ?? 'Todavía no'}`;
+            return;
+          }
+          look[part.key] = o.id;
+          saveLook(look);
+          this.world.nexus.applyLook(look);
+          for (const other of Array.from(row.querySelectorAll('.look-chip'))) other.classList.toggle('on', other === b);
+        });
+        row.appendChild(b);
+      }
+      sec.appendChild(row);
+      box.appendChild(sec);
+    }
+    this.pauseFor('wardrobePop');
+  }
+
+  /** Final del juego: vuelve la Gran Chispa (créditos). */
+  private showCredits(s: { places: number; placesTotal: number; awake: number; awakeTotal: number; cards: number; cardsTotal: number; chispis: number }): void {
+    const items: [string, string][] = [
+      ['★ Lugares con vida', `${s.places}/${s.placesTotal}`],
+      ['✦ Cosas despiertas', `${s.awake}/${s.awakeTotal}`],
+      ['🃏 Cartas', `${s.cards}/${s.cardsTotal}`],
+      ['⚡ Chispis rescatados', `${s.chispis}`],
+    ];
+    $('creditsStats').innerHTML = items.map(([k, v]) => `<li><b>${v}</b>${k}</li>`).join('');
+    this.pauseFor('creditsPop');
   }
 
   /** Cartel del tren: una parada por distrito abierto. */

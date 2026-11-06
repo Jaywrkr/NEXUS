@@ -16,7 +16,7 @@ export interface ConnectionRule {
   /** Si devuelve false, la conexión todavía no se puede hacer (ej.: el escenario de la fiesta). */
   available?: () => boolean;
   /** Qué se dice cuando todavía no está disponible. */
-  blockedMessage?: string;
+  blockedMessage?: string | (() => string);
 }
 
 export type FeedbackKind = 'info' | 'ok' | 'error';
@@ -133,7 +133,8 @@ export class Connections {
     }
     if (rule.available && !rule.available()) {
       this.drawCable(source, target, false);
-      this.events.feedback(rule.blockedMessage ?? 'Todavía no se puede conectar', 'info');
+      const msg = typeof rule.blockedMessage === 'function' ? rule.blockedMessage() : rule.blockedMessage;
+      this.events.feedback(msg ?? 'Todavía no se puede conectar', 'info');
       this.audio.playError();
       return;
     }

@@ -327,3 +327,9 @@ Nuevo distrito al sureste: la Estación, con andén, vías, hall con reloj y un 
 
 ## 3D: Fase 8 — Cerro, cascada y cueva
 Nuevo distrito al oeste: el Cerro. La cascada congelada se descongela con cable (carrera «cable de hielo»); siete rocas se suben saltando hasta el mirador (premio: una carta) y desde arriba baja la tirolesa más larga del barrio. La cueva oscura solo se ve con la capucha ⚡: sus cristales son el circuito del Mundo Voltio que la ilumina. Guardaparque Lalo, rescates de Ventarrón y Musguito, parada del tren. La cámara sigue al Nexus cuando está muy alto. Pruebas 3D: 34 escenarios. Decisión 051.
+
+## 3D: Fase 9 — Puerto y faro: ¡el final!
+Nuevo distrito al sur: el Puerto, con muelles, mar, barcos y el faro. El bote de Marina se despierta en el canal y lleva al Nexus a pasear hasta el Cerro. El faro (circuito del Mundo Voltio + cable) solo prende con toda la ciudad viva: entonces vuelve la Gran Chispa, el color llega a todos lados, los vecinos festejan en el puerto, suena la canción de la ciudad (un instrumento por distrito) y aparecen los créditos. Se puede seguir jugando; la canción también está en el menú. Capitana Marina, rescate de Gaviotín. Pruebas 3D: 36 escenarios. Decisión 052.
+
+## 3D: la casa del Nexus y el armario
+El Nexus tiene casa propia, vieja y rota, al lado del jardín municipal. Con chispitas de la mochila se arregla de a una cosa (lámpara, ventana, alfombra, planta, cama, radio, estante, armario, techo y jardín) y se nota adentro y afuera. El armario cambia la ropa del Nexus (buzo, mochila, orejas, cable y algo en la cabeza); hay prendas que se ganan jugando. La radio toca la canción de la ciudad y la cama recarga la capucha. Pruebas 3D: 38 escenarios. Decisión 053.

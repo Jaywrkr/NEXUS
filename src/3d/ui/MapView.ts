@@ -3,6 +3,7 @@ import { SKATE_REGION } from '../world/Skatepark';
 import { PARK_REGION } from '../world/Park';
 import { STATION_CORRIDOR, STATION_REGION } from '../world/Station';
 import { CERRO, CERRO_CORRIDOR, CERRO_REGION } from '../world/Cerro';
+import { PIERS, PORT_CORRIDOR, PORT_REGION, SEA_Z } from '../world/Port';
 
 /*
  * Mapa de la ciudad visto desde arriba (menú → Mapa, o tecla M). Muestra dónde volvió el color,
@@ -70,6 +71,8 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
     [STATION_CORRIDOR, [190, 160, 120]],
     [CERRO_REGION, [110, 170, 120]],
     [CERRO_CORRIDOR, [110, 170, 120]],
+    [PORT_REGION, [150, 160, 190]],
+    [PORT_CORRIDOR, [150, 160, 190]],
   ] as [{ minX: number; maxX: number; minZ: number; maxZ: number }, number[]][]) {
     for (let x = area.minX; x < area.maxX; x += step) {
       for (let z = area.minZ; z < area.maxZ; z += step) {
@@ -87,6 +90,11 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
   ctx.fillRect(px(-60), pz(-4), (62 + 60) * sx, 8 * sz);
   ctx.fillRect(px(-4), pz(-60), 8 * sx, (data.canal.minZ - 1.2 + 60) * sz);
   ctx.fillRect(px(-4), pz(PARK_REGION.maxZ), 8 * sx, (-45 - PARK_REGION.maxZ) * sz);
+  // Mar y muelles del puerto
+  ctx.fillStyle = '#2f78c8';
+  ctx.fillRect(px(-76), pz(SEA_Z), 176 * sx, 30 * sz);
+  ctx.fillStyle = '#a97a52';
+  for (const p of PIERS) ctx.fillRect(px(p.minX), pz(p.minZ), (p.maxX - p.minX) * sx, (p.maxZ - p.minZ) * sz);
   // Meseta del cerro y acantilado
   ctx.fillStyle = 'rgba(120,108,98,0.85)';
   ctx.fillRect(px(CERRO.top.minX), pz(CERRO.top.minZ), (CERRO.top.maxX - CERRO.top.minX) * sx, (CERRO.top.maxZ - CERRO.top.minZ) * sz);
