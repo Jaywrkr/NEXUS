@@ -307,6 +307,14 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Portón**: circuito Voltio `fabrica-open` (`FACTORY.gateNodes`) → `World.factory.openGate()` (saca la barrera). Puerta (92, −79,1). **Sala** x = 1200: `factory-hall-source` → `factory-boiler` (tema `fabrica`) → `factory-gear` → `factory-machine` (revive la sala, relato de Tuerca).
 - Cosa dormida `robot` (5, `FACTORY.robots`, al final de la lista). Tuerca (`FACTORY.tuerca`), `tuercaText()`, `factoryStep()`. Faroluz (104, −52) es rescate. Encargos `f-*` (9), notas `note-fabrica-*`, `race-fabrica`.
 
+### Barrio Alto y mercado (Decisión 059, Fase 15)
+
+- **Región** `ALTO_REGION` (x 100…160, z −32…34) + `ALTO_FROM_SKATE` (x 95,5…101, z −3…3; abertura en la reja este del Skatepark). Distrito `alto` (el del Skatepark ahora llega hasta x = 97), parada de tren (103, 7). Archivos: `world/BarrioAlto.ts` (`ALTO`, `buildAlto`), `objects/alto.ts` (`MarketStall`, `Projector`, `ReadingLamp`).
+- **Mercado**: `alto-market-source` → cualquier `alto-stall-<kind>` (tema `mercado`); cada puesto prendido → cualquier otro (`MarketStall.canInitiate` = prendido; 30 reglas). Con los 6: flag `alto-market`, `World.alto.lightMarquee()`.
+- **Cine** puerta (114, −13,1), abre con `alto-market`; sala x = 1300: `alto-cine-source` → `alto-projector` (tema `cine`); `World.alto.film(t)` dibuja la película en un canvas (solo con el Nexus adentro). **Biblioteca**: `alto-lamp-source` → `alto-lamp` (tema `biblio`, `available` = flag `biblio-open`, circuito Voltio `ALTO.libNodes`), `lightLibrary()`.
+- **Terrazas** `ALTO.roofs` (rects con `h` 1…5, x 134…159, z 8…14), rampita `ALTO.kicker` agregada a `World.skate.kickers`; flags `alto-top` (techo de 5 m), `roof-board` (techo en patineta), tirolesa `World.alto.zipLine` → `zip-alto`. `updateAlto`, `altoStep`, `kioskoText`, `luliText`.
+- Cosa dormida `cat` (5, `ALTO.cats`). Turbochispa (150, 24) es rescate. Encargos `a-*` (10), notas `note-alto-*`, `race-alto` (`board: true`).
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -351,7 +359,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–057).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fases 11–14 hechas (Decisiones 055–058). Sigue la Fase 15: Barrio Alto y mercado.**
+> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fases 11–15 hechas (Decisiones 055–059). Sigue la Fase 16: Playa.**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 

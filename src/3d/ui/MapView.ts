@@ -6,6 +6,7 @@ import { CERRO, CERRO_CORRIDOR, CERRO_REGION } from '../world/Cerro';
 import { CREEK, FOREST_FROM_CERRO, FOREST_FROM_PARK, FOREST_REGION, TREE } from '../world/Forest';
 import { FARM, FARM_FROM_CENTRO, FARM_FROM_PORT, FARM_REGION } from '../world/Farm';
 import { FACTORY, FACTORY_FROM_PARK, FACTORY_FROM_SKATE, FACTORY_REGION } from '../world/Factory';
+import { ALTO, ALTO_FROM_SKATE, ALTO_REGION } from '../world/BarrioAlto';
 import { PIERS, PORT_CORRIDOR, PORT_REGION, SEA_Z } from '../world/Port';
 
 /*
@@ -83,6 +84,8 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
     [FACTORY_REGION, [170, 160, 150]],
     [FACTORY_FROM_PARK, [170, 160, 150]],
     [FACTORY_FROM_SKATE, [170, 160, 150]],
+    [ALTO_REGION, [215, 200, 180]],
+    [ALTO_FROM_SKATE, [215, 200, 180]],
     [PORT_REGION, [150, 160, 190]],
     [PORT_CORRIDOR, [150, 160, 190]],
   ] as [{ minX: number; maxX: number; minZ: number; maxZ: number }, number[]][]) {
@@ -107,6 +110,16 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
   ctx.fillRect(px(-76), pz(SEA_Z), 176 * sx, 30 * sz);
   ctx.fillStyle = '#a97a52';
   for (const p of PIERS) ctx.fillRect(px(p.minX), pz(p.minZ), (p.maxX - p.minX) * sx, (p.maxZ - p.minZ) * sz);
+  // Cine, biblioteca y terrazas del Barrio Alto
+  for (const [b, col] of [
+    [ALTO.cine, '#a0565e'],
+    [ALTO.library, '#b8a888'],
+  ] as [{ x: number; z: number; w: number; d: number }, string][]) {
+    ctx.fillStyle = col;
+    ctx.fillRect(px(b.x - b.w / 2), pz(b.z - b.d / 2), b.w * sx, b.d * sz);
+  }
+  ctx.fillStyle = '#e77fa6';
+  for (const r of ALTO.roofs) ctx.fillRect(px(r.minX), pz(r.minZ), (r.maxX - r.minX) * sx, (r.maxZ - r.minZ) * sz);
   // Sala de máquinas y depósito de la fábrica
   ctx.fillStyle = '#4a4656';
   const fh = FACTORY.hall;

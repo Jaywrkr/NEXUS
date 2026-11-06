@@ -47,6 +47,8 @@ import { CanalBoat, GranChispa, Lighthouse, PiecePedestals } from '../objects/fi
 import { Campfire, RopeBridgeLever } from '../objects/forest';
 import { GreenhouseSprinkler, Incubator, Tractor, Windmill } from '../objects/farm';
 import { FactoryPart } from '../objects/factory';
+import { MarketStall, Projector, ReadingLamp } from '../objects/alto';
+import { ALTO } from '../world/BarrioAlto';
 import { FACTORY, liftHeight } from '../world/Factory';
 import { FARM } from '../world/Farm';
 import { FOREST, MUSHROOM_R, MUSHROOM_TOP, TREE } from '../world/Forest';
@@ -132,6 +134,7 @@ const CAGES: { id: string; x: number; z: number }[] = [
   { id: 'pinita', x: FOREST.chispi.x, z: FOREST.chispi.z },
   { id: 'girasolin', x: FARM.chispi.x, z: FARM.chispi.z },
   { id: 'faroluz', x: FACTORY.chispi.x, z: FACTORY.chispi.z },
+  { id: 'turbochispa', x: ALTO.chispi.x, z: ALTO.chispi.z },
 ];
 
 /** Sobres escondidos por el mundo (x, z, altura). */
@@ -243,6 +246,10 @@ export class WorldMode {
   private readonly gear: FactoryPart;
   private readonly machine: FactoryPart;
   private liftT = 0;
+  private readonly stalls: MarketStall[] = [];
+  private readonly projector: Projector;
+  private readonly libLamp: ReadingLamp;
+  private filmT = 0;
   private readonly lighthouse: Lighthouse;
   private readonly granChispa = new GranChispa();
   /** Expansión (Fase 10): notas de la canción, carreras de aros, libreta y Piezas de la Gran Chispa. */
@@ -435,6 +442,15 @@ export class WorldMode {
     this.gear = new FactoryPart('factory-gear', 'gear', hall.gear.x, hall.gear.z);
     this.machine = new FactoryPart('factory-machine', 'machine', hall.machine.x, hall.machine.z);
     if (this.progress.hasFlag('fabrica-open')) this.world.factory.openGate();
+    // Fase 15: Barrio Alto y mercado
+    const marketSource = new EnergySource('alto-market-source', ALTO.marketSource.x, ALTO.marketSource.z);
+    for (const st of ALTO.stalls) this.stalls.push(new MarketStall(`alto-stall-${st.kind}`, st.kind, st.x, st.z));
+    const cineHall = this.world.alto.hall;
+    const cineSource = new EnergySource('alto-cine-source', cineHall.source.x, cineHall.source.z);
+    this.projector = new Projector('alto-projector', cineHall.projector.x, cineHall.projector.z);
+    const libSource = new EnergySource('alto-lamp-source', ALTO.libSource.x, ALTO.libSource.z);
+    this.libLamp = new ReadingLamp('alto-lamp', ALTO.libLamp.x, ALTO.libLamp.z);
+    this.libLamp.unlocked = this.progress.hasFlag('biblio-open');
     // La casa del Nexus: lo que ya se arregló
     for (const it of HOME_ITEMS) if (this.progress.hasFlag(`casa-${it.id}`)) this.world.home.fix(it.id, false);
     if (this.homeInsideDone) this.world.home.gray.revive(false);
@@ -468,10 +484,13 @@ export class WorldMode {
       [tractorSource, 'Energía'],
       [beltSource, 'Energía'],
       [hallSource, 'Energía'],
+      [marketSource, 'Energía'],
+      [cineSource, 'Energía'],
+      [libSource, 'Energía'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire, ...millSources, ...this.mills, ghSource, this.greenhouse, barnSource, this.incubator, tractorSource, this.tractor, beltSource, ...this.belts, hallSource, this.boiler, this.gear, this.machine]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire, ...millSources, ...this.mills, ghSource, this.greenhouse, barnSource, this.incubator, tractorSource, this.tractor, beltSource, ...this.belts, hallSource, this.boiler, this.gear, this.machine, marketSource, ...this.stalls, cineSource, this.projector, libSource, this.libLamp]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -560,6 +579,19 @@ export class WorldMode {
     this.connections.addRule({ sourceId: hallSource.id, targetId: this.boiler.id, useTunnel: true });
     this.connections.addRule({ sourceId: this.boiler.id, targetId: this.gear.id });
     this.connections.addRule({ sourceId: this.gear.id, targetId: this.machine.id });
+    // Mercado: la energía llega a un puesto y cada puesto prendido le pasa la luz a otro (en cualquier orden)
+    for (const a of this.stalls) {
+      this.connections.addRule({ sourceId: marketSource.id, targetId: a.id, useTunnel: true });
+      for (const b of this.stalls) if (a !== b) this.connections.addRule({ sourceId: a.id, targetId: b.id });
+    }
+    this.connections.addRule({ sourceId: cineSource.id, targetId: this.projector.id, useTunnel: true });
+    this.connections.addRule({
+      sourceId: libSource.id,
+      targetId: this.libLamp.id,
+      useTunnel: true,
+      available: () => this.libLamp.unlocked,
+      blockedMessage: 'El farol de lectura tiene el mecanismo trabado: mirá sus cables con la capucha ⚡',
+    });
     // El faro: motor trabado (circuito Voltio) y solo prende con toda la ciudad viva
     this.connections.addRule({
       sourceId: portSource.id,
@@ -798,6 +830,8 @@ export class WorldMode {
       [this.campfire, 'fogon', true],
       [this.incubator, 'granero', true],
       [this.machine, 'fabrica', true],
+      [this.projector, 'cine', true],
+      [this.libLamp, 'biblioteca', true],
     ];
     for (const [obj, id, ok] of packFor) {
       if (target !== obj || !ok) continue;
@@ -892,6 +926,47 @@ export class WorldMode {
         if (animate) after(0.8, () => this.updateResidentMoods());
       } else {
         say(`¡${name} revivió! Acercate y subite`);
+      }
+    }
+    // Fase 15: el Barrio Alto
+    if (target instanceof MarketStall) {
+      const n = this.stalls.filter((s) => s.isActive).length;
+      this.addLife(target.x, target.z, 5, animate);
+      if (n === 6) {
+        this.progress.setFlag('alto-market');
+        this.world.alto.lightMarquee();
+        this.addLife(119, 18, 22, animate);
+        say('¡El mercado volvió! Y mirá: se prendió el cartel del cine');
+      } else {
+        say(`¡Se prendió el ${target.label.toLowerCase()}! (${n}/6) Pasale la luz a otro puesto`);
+      }
+    }
+    if (target === this.projector) {
+      this.world.alto.hall.gray.revive(animate);
+      this.addLife(ALTO.cine.x, ALTO.cine.z + 8, 12, animate);
+      say('¡Empezó la película!');
+      if (animate) {
+        after(2, () =>
+          this.showStory(
+            'Don Kiosko · ¡Función de cine!',
+            'Esta película la filmamos el día que llegó la Gran Chispa. ¿Ves cómo el Nexus la persigue? ¡Igualito a vos con las Piezas! Dicen que una Pieza cayó en el Barrio Alto… y que se la gana quien ayuda a todo el barrio.',
+          ),
+        );
+        after(0.8, () => this.updateResidentMoods());
+      }
+    }
+    if (target === this.libLamp) {
+      this.world.alto.lightLibrary();
+      this.addLife(ALTO.library.x, ALTO.library.z + 8, 16, animate);
+      say('¡El farol de lectura se prendió y la biblioteca volvió!');
+      if (animate) {
+        after(1.4, () =>
+          this.showStory(
+            'Luli · Un libro que flota',
+            'En la biblioteca hay un libro viejo que cuenta que la Gran Chispa vino de muy lejos, del cielo. Si la ciudad entera brilla, la Chispa se queda para siempre. ¡Por eso hay que ayudar en todos los barrios!',
+          ),
+        );
+        after(0.8, () => this.updateResidentMoods());
       }
     }
     // Fase 14: la fábrica
@@ -1259,6 +1334,15 @@ export class WorldMode {
         story: ['Tu casa', 'Esta casita vieja es tuya, Nexus. Está toda rota… pero con chispitas de la mochila la podés ir arreglando, cosa por cosa.'],
       },
       {
+        id: 'cine',
+        info: this.world.alto.hall,
+        door: { x: ALTO.cine.doorX, z: ALTO.cine.z + ALTO.cine.d / 2 + 0.9 },
+        out: { x: ALTO.cine.doorX, z: ALTO.cine.z + ALTO.cine.d / 2 + 1.7 },
+        open: () => this.progress.hasFlag('alto-market'),
+        story: ['Don Kiosko · El cine', '¡Hace años que no hay función! La sala quedó gris. Llevale energía al proyector, que está atrás de las butacas.'],
+        target: this.projector,
+      },
+      {
         id: 'fabrica',
         info: this.world.factory.hall,
         door: { x: FACTORY.hall.doorX, z: FACTORY.hall.z + FACTORY.hall.d / 2 + 0.9 },
@@ -1413,6 +1497,9 @@ export class WorldMode {
       { name: 'Maizal', x: FARM.mazeCenter.x, z: FARM.mazeCenter.z, alive: this.progress.hasFlag('maze-center') },
       { name: 'Granero', x: FARM.barn.x, z: FARM.barn.z, alive: this.incubator.isActive },
       { name: 'Fábrica', x: FACTORY.hall.x, z: FACTORY.hall.z, alive: this.machine.isActive },
+      { name: 'Mercado', x: 119, z: 19, alive: this.progress.hasFlag('alto-market') },
+      { name: 'Cine', x: ALTO.cine.x, z: ALTO.cine.z, alive: this.projector.isActive },
+      { name: 'Biblioteca', x: ALTO.library.x, z: ALTO.library.z, alive: this.libLamp.isActive },
       { name: 'Cintas', x: 66, z: -63, alive: this.belts[2].isActive },
       { name: 'Faro', x: PORT.lighthouse.x, z: PORT.lighthouse.z - 3, alive: this.lighthouse.isActive },
     ];
@@ -1454,6 +1541,7 @@ export class WorldMode {
         { id: 'train-open', nodes: STATION.nodes, door: { x: STATION.train.x, z: STATION.train.z } },
         { id: 'cave-lit', nodes: CERRO.caveNodes, door: CERRO.caveNodes[1] },
         { id: 'molino-open', nodes: FARM.millNodes, door: FARM.mills[2] },
+        { id: 'biblio-open', nodes: ALTO.libNodes, door: ALTO.libLamp },
         { id: 'fabrica-open', nodes: FACTORY.gateNodes, door: { x: FACTORY.hall.doorX, z: FACTORY.hall.z + 6 } },
         { id: 'faro-open', nodes: PORT.nodes, door: PORT.lighthouse },
       ],
@@ -1480,6 +1568,9 @@ export class WorldMode {
           } else if (id === 'faro-open') {
             this.lighthouse.unlocked = true;
             this.setMessage('¡Circuito cerrado! El motor del faro se destrabó');
+          } else if (id === 'biblio-open') {
+            this.libLamp.unlocked = true;
+            this.setMessage('¡Circuito cerrado! El farol de la biblioteca se destrabó');
           } else if (id === 'fabrica-open') {
             this.world.factory.openGate();
             this.setMessage('¡Circuito cerrado! El portón de la fábrica se abrió');
@@ -1514,7 +1605,7 @@ export class WorldMode {
         cages: [{ id: 'rueditas', ...this.world.skate.chispi }, ...CAGES]
           .filter((c) => !this.progress.hasChispi(c.id))
           .map((c): CageSpot => ({ ...c, color: TYPES[CARD_BY_ID.get(c.id)!.type].color })),
-        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open', 'molino-open', 'fabrica-open'].filter((f) => this.progress.hasFlag(f)),
+        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open', 'molino-open', 'fabrica-open', 'biblio-open'].filter((f) => this.progress.hasFlag(f)),
       },
     );
   }
@@ -1755,7 +1846,7 @@ export class WorldMode {
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
       return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
     }
-    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep() ?? this.farmStep() ?? this.factoryStep();
+    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep() ?? this.farmStep() ?? this.factoryStep() ?? this.altoStep();
     if (park) return park;
     if (this.voltio.active && !this.inSkatepark) {
       const me = this.nexus.position;
@@ -1921,6 +2012,7 @@ export class WorldMode {
     if (np.line === this.world.cerro.zipLine && !this.progress.hasFlag('zip-cerro')) this.progress.setFlag('zip-cerro');
     if (np.line === this.world.forest.zipLine && !this.progress.hasFlag('zip-tree')) this.progress.setFlag('zip-tree');
     if (np.line === this.world.factory.zipLine && !this.progress.hasFlag('zip-factory')) this.progress.setFlag('zip-factory');
+    if (np.line === this.world.alto.zipLine && !this.progress.hasFlag('zip-alto')) this.progress.setFlag('zip-alto');
     this.zip = { a, b, t: 0, dur: Math.hypot(b.x - a.x, b.z - a.z) / ZIP_SPEED, climb: 0, from: this.nexus.position.clone() };
     this.nexus.hanging = true;
     this.nexus.airborne = false;
@@ -2166,6 +2258,8 @@ export class WorldMode {
       ['owl', -98, -60],
       // Fase 14: robots ayudantes de la fábrica
       ...FACTORY.robots.map(([x, z]): [SleeperKind, number, number] => ['robot', x, z]),
+      // Fase 15: gatos del Barrio Alto
+      ...ALTO.cats.map(([x, z]): [SleeperKind, number, number] => ['cat', x, z]),
     ] as [SleeperKind, number, number][]) {
       const [px, pz] = place(x, z);
       make(kind, px, pz, Math.PI / 4);
@@ -2294,6 +2388,9 @@ export class WorldMode {
       [[this.greenhouse], 'garden'],
       [[this.incubator, this.tractor], 'granja'],
       [[this.belts[0], this.boiler], 'fabrica'],
+      [this.stalls, 'mercado'],
+      [[this.projector], 'cine'],
+      [[this.libLamp], 'biblio'],
     ];
     const zone = zones.find(([list]) => list.includes(target))?.[1] ?? 'garden';
     return planTunnel(zone, this.progress.tunnelSkill);
@@ -2419,6 +2516,16 @@ export class WorldMode {
     nora.setHeard(this.progress.hasHeard('nora'));
     this.world.scene.add(nora.root);
     this.residents.push(nora);
+    // Don Kiosko y Luli, del Barrio Alto (Fase 15)
+    for (const [id, name, at] of [
+      ['kiosko', 'Don Kiosko', ALTO.kiosko],
+      ['luli', 'Luli', ALTO.luli],
+    ] as [string, string, { x: number; z: number; faceX: number; faceZ: number }][]) {
+      const r = new Resident3D(id, name, at.x, at.z, Math.atan2(at.faceX - at.x, at.faceZ - at.z));
+      r.setHeard(this.progress.hasHeard(id));
+      this.world.scene.add(r.root);
+      this.residents.push(r);
+    }
     // Ingeniera Tuerca, de la Fábrica de Chispas (Fase 14)
     const fs = FACTORY.tuerca;
     const tuerca = new Resident3D('tuerca', 'Ingeniera Tuerca', fs.x, fs.z, Math.atan2(fs.faceX - fs.x, fs.faceZ - fs.z));
@@ -2476,6 +2583,8 @@ export class WorldMode {
       yuyo: this.campfire.isActive,
       trigo: this.progress.hasFlag('fields-grown'),
       tuerca: this.machine.isActive,
+      kiosko: this.progress.hasFlag('alto-market'),
+      luli: this.libLamp.isActive,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
@@ -2489,6 +2598,8 @@ export class WorldMode {
     if (r.id === 'yuyo') return this.yuyoText();
     if (r.id === 'trigo') return this.trigoText();
     if (r.id === 'tuerca') return this.tuercaText();
+    if (r.id === 'kiosko') return this.kioskoText();
+    if (r.id === 'luli') return this.luliText();
     const info = RESIDENTS.find((i) => i.id === r.id)!;
     // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
     if (r.id === 'bombo' && !this.fountain.isActive) {
@@ -2839,6 +2950,69 @@ export class WorldMode {
   private showMemories(): void {
     const stars = this.fragments.filter((f) => f.isCollected).length;
     this.setMessage(`🏛️ Recuerdos: ★ ${stars} fragmentos · ✦ ${this.awakeCount()} cosas despiertas · 🃏 ${this.progress.uniqueCards} cartas · ⚡ ${this.progress.chispis.length} Chispis`);
+  }
+
+  /* ---------- Fase 15: Barrio Alto y mercado ---------- */
+
+  /** Película del cine (solo se dibuja si el Nexus está adentro) y techos de las terrazas. */
+  private updateAlto(dt: number): void {
+    if (this.projector.isActive && this.inside?.id === 'cine') {
+      this.filmT += dt;
+      this.world.alto.film(this.filmT);
+    }
+    const p = this.nexus.position;
+    if (p.y < 0.9 || this.districtId !== 'alto') return;
+    const roof = ALTO.roofs.find((r) => p.x > r.minX - 0.2 && p.x < r.maxX + 0.2 && p.z > r.minZ - 0.2 && p.z < r.maxZ + 0.2 && Math.abs(p.y - r.h) < 0.3);
+    if (!roof) return;
+    if (this.nexus.riding && !this.progress.hasFlag('roof-board')) {
+      this.progress.setFlag('roof-board');
+      this.toast('🛹 ¡En patineta sobre un techo!', 'ok');
+    }
+    if (roof.h === 5 && !this.progress.hasFlag('alto-top')) {
+      this.progress.setFlag('alto-top');
+      this.toast('🏙 ¡Arriba de todo el Barrio Alto!', 'ok');
+    }
+  }
+
+  private kioskoText(): string {
+    const n = this.stalls.filter((s) => s.isActive).length;
+    if (n === 0) return '¡Buenas! Soy Don Kiosko. Desde el apagón el mercado está cerrado… Llevá la energía a un puesto y después cada puesto le pasa la luz a otro.';
+    if (n < 6) return `¡Van ${n} puestos de 6! Tocá un puesto prendido y pasale el cable a uno apagado.`;
+    if (!this.projector.isActive) return '¡El mercado volvió! Y se prendió el cartel del cine: entrá y prendé el proyector.';
+    return '¡Qué lindo barrio otra vez! ¿Probaste subir a los techos en patineta? Hay una rampita al pie de las terrazas.';
+  }
+
+  private luliText(): string {
+    if (!this.libLamp.isActive) {
+      return this.progress.hasFlag('biblio-open')
+        ? '¡Se destrabó el farol! Llevale energía desde la estrella de al lado.'
+        : 'Hola, soy Luli. El farol de lectura de la biblioteca se trabó. Dicen que sus cables se ven con la capucha ⚡.';
+    }
+    return '¿Leíste el libro que flota? Y desde el techo más alto se ve toda la ciudad… ¡hay notas escondidas arriba!';
+  }
+
+  /** Lo que conviene hacer en el Barrio Alto. */
+  private altoStep(): { text: string; at: { x: number; z: number } | null } | null {
+    if (this.districtId !== 'alto' || this.inside) return null;
+    if (this.voltio.active) {
+      const lit = this.voltio.litNodes('biblio-open');
+      if (!this.progress.hasFlag('biblio-open')) return { text: `Tocá los tres nodos del farol (${lit}/3)`, at: ALTO.libNodes[Math.min(lit, 2)] };
+      if (this.voltio.isCaged('turbochispa')) return { text: '¡Turbochispa está atrapado! Cerrá un círculo con tu estela alrededor de la jaula', at: ALTO.chispi };
+      return null;
+    }
+    const lit = this.stalls.filter((s) => s.isActive);
+    if (lit.length === 0) return { text: 'Mercado: llevá la energía a un puesto', at: ALTO.marketSource };
+    if (lit.length < 6) {
+      const off = this.stalls.find((s) => !s.isActive)!;
+      return { text: `Mercado: pasale la luz de un puesto prendido a otro (${lit.length}/6)`, at: off };
+    }
+    if (!this.projector.isActive) return { text: 'Entrá al cine y prendé el proyector', at: { x: ALTO.cine.doorX, z: ALTO.cine.z + ALTO.cine.d / 2 + 1 } };
+    if (!this.libLamp.isActive) {
+      const hood = this.progress.hasFlag('hood');
+      if (this.libLamp.unlocked) return { text: 'Llevale energía al farol de la biblioteca', at: ALTO.libSource };
+      return { text: hood ? 'El farol de la biblioteca está trabado: ponete la capucha ⚡' : 'El farol de la biblioteca está trabado… Rulo, en el Skatepark, sabe de cables', at: hood ? ALTO.libNodes[0] : null };
+    }
+    return null;
   }
 
   /* ---------- Fase 14: Fábrica de Chispas ---------- */
@@ -3931,6 +4105,7 @@ export class WorldMode {
     this.checkMaze();
     this.updateClock(dt);
     this.updateFactory(dt);
+    this.updateAlto(dt);
     const note = this.voltio.active || this.inside ? null : this.notes.update(dt, this.time, this.nexus.position);
     if (note) this.onNote(note.id);
     this.updateRace(dt);

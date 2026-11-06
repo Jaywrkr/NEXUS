@@ -348,3 +348,6 @@ Ciclo de día y noche con estrellas, faroles que se destacan y linterna del Nexu
 
 ## 3D: Fase 14 (expansión) — Fábrica de Chispas
 Nuevo distrito al noreste: tres cintas transportadoras que se prenden en orden, montacargas al techo del depósito y tirolesa, portón trabado que se abre en el Mundo Voltio, sala de máquinas con caldera → engranaje → Gran Máquina (donde nació la Gran Chispa), cinco robots ayudantes dormidos, la Ingeniera Tuerca, Faroluz como rescate, notas, carrera «Turno rápido» y 9 encargos. Pruebas 3D: 47 escenarios. Decisión 058.
+
+## 3D: Fase 15 (expansión) — Barrio Alto y mercado
+Nuevo distrito al este del Skatepark: mercado de seis puestos que se pasan la luz entre ellos, cine que abre con el mercado y pasa una película, biblioteca con farol de lectura trabado (Mundo Voltio), terrazas de cinco techos para subir saltando o en patineta, tirolesa, gatos dormidos, Don Kiosko y Luli, Turbochispa como rescate, notas, carrera «Por los techos» y 10 encargos. La pared de grafitis del Skatepark tiene ahora un hueco hacia la fábrica. Pruebas 3D: 48 escenarios. Decisión 059.

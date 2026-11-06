@@ -35,6 +35,10 @@ export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
   nora: { body: '#30406a', pants: '#2c2838', skin: '#c98e6b', hair: '#1d1630', accessory: 'conductor' },
   // Yuyo: botánico del Bosque (Fase 11); sombrero de ala ancha verde, pañuelo y binoculares
   yuyo: { body: '#9be37a', pants: '#5a4630', skin: '#c98e6b', hair: '#d8d8d8', accessory: 'ranger' },
+  // Don Kiosko: el del mercado del Barrio Alto (Fase 15); delantal rojo y sombrero
+  kiosko: { body: '#e0453f', pants: '#3d3550', skin: '#d9a77e', hair: '#3a2a22', girth: 1.2, accessory: 'barker' },
+  // Luli: la de la biblioteca (Fase 15); siempre con auriculares y un libro
+  luli: { body: '#c7a0ef', pants: '#30406a', skin: '#f0c39a', hair: '#e0563f', accessory: 'headphones' },
   // Ingeniera Tuerca: jefa de la Fábrica de Chispas (Fase 14); casco amarillo y overol azul
   tuerca: { body: '#30406a', pants: '#30406a', skin: '#b9825f', hair: '#2a1d14', accessory: 'hardhat' },
   // Abuela Trigo: granjera (Fase 12); sombrero de paja, pañuelo y canasta

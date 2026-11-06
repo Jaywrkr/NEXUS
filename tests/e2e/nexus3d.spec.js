@@ -306,8 +306,8 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     return { nests, sleepers: wm.sleepers.map((s) => ({ id: s.id, x: s.x, z: s.z })) };
   });
   expect(info.nests.length).toBe(6);
-  expect(info.sleepers.length).toBe(50);
-  expect(await text(page, 'awake')).toBe('✦ 0/50');
+  expect(info.sleepers.length).toBe(55);
+  expect(await text(page, 'awake')).toBe('✦ 0/55');
   expect(await text(page, 'charge')).toBe('🎒 ○○○○○');
 
   // Con la mochila vacía no se despierta nada
@@ -350,7 +350,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     woken += 1;
     expect(await w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, sl.id), `despierta ${sl.id}`).toBe(true);
     expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
-    expect(await text(page, 'awake')).toBe(`✦ ${woken}/50`);
+    expect(await text(page, 'awake')).toBe(`✦ ${woken}/55`);
     if (woken === 1) {
       await touch(page);
       expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
@@ -372,7 +372,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
-  expect(await text(page, 'awake')).toBe('✦ 50/50');
+  expect(await text(page, 'awake')).toBe('✦ 55/55');
   expect(await text(page, 'charge')).toBe('🎒 ●○○○○');
   expect(await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id?.startsWith('spark-hidden')).length)).toBe(9);
 
@@ -1940,7 +1940,7 @@ test('3D: día y noche — búhos nocturnos, estrellas, siesta que cambia la hor
   expect(await flag('stars-cerro')).toBe(true);
   await tp(page, -60, -60);
   await page.keyboard.press('KeyB');
-  await step(page, 0.3);
+  for (let i = 0; i < 8 && !(await flag('dance-fireflies')); i += 1) await step(page, 0.2);
   expect(await flag('dance-fireflies')).toBe(true);
 
   // La cama de la casa: siesta que pasa la noche hasta la mañana
@@ -2087,4 +2087,139 @@ test('3D: Fábrica de Chispas — cintas en orden, montacargas, techo, tirolesa,
   expect(await active('factory-belt-2')).toBe(true);
   expect(await active('factory-machine')).toBe(true);
   expect(await w(() => window.__nexus3d.world.questBook().some((d) => d.district === 'fabrica'))).toBe(true);
+});
+
+test('3D: Barrio Alto — mercado que se pasa la luz, cine con película, farol en Voltio, terrazas, patineta y gatos', async ({ page }) => {
+  test.setTimeout(360_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const active = (id) => w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, id);
+  const pos = () => w(() => window.__nexus3d.world.nexus.position.toArray());
+  const flag = (f) => w((f) => window.__nexus3d.world.progress.hasFlag(f), f);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Se llega caminando desde el Skatepark, por la reja del este
+  await tp(page, 93, 0);
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  await step(page, 2);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  expect((await pos())[0]).toBeGreaterThan(100);
+  await step(page, 0.6);
+  expect(await text(page, 'districtBanner')).toContain('Barrio Alto');
+
+  // Mercado: la energía llega a un puesto y cada puesto le pasa la luz a otro
+  const stalls = await w(() => window.__nexus3d.world.connections.all.filter((o) => o.id.startsWith('alto-stall-')).map((o) => [o.id, o.x, o.z]));
+  expect(stalls.length).toBe(6);
+  const front = (i) => [stalls[i][1] + 0.8, stalls[i][2] + 1.1];
+  await connect(page, [105.4, 13.9], front(0));
+  expect(await active(stalls[0][0])).toBe(true);
+  for (let i = 1; i < 6; i += 1) await connect(page, front(i - 1), front(i));
+  expect(await flag('alto-market')).toBe(true);
+  await step(page, 3);
+  expect(await w(() => window.__nexus3d.world.lifeAt(119, 18))).toBeGreaterThan(0.9);
+
+  // Cine: abre con el mercado; el proyector pasa la película
+  await tp(page, 114, -13.1);
+  expect(await text(page, 'interact')).toBe('Entrar');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  const hall = await w(() => {
+    const h = window.__nexus3d.world.world.alto.hall;
+    return { s: h.source, p: h.projector };
+  });
+  await connect(page, [hall.s.x - 0.9, hall.s.z + 0.6], [hall.p.x - 0.9, hall.p.z + 0.9]);
+  expect(await active('alto-projector')).toBe(true);
+  await step(page, 2.5);
+  expect(await text(page, 'storyWho')).toContain('cine');
+  await page.evaluate(() => document.getElementById('story').click());
+  await tp(page, 1303.5, 3.7);
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(false);
+
+  // Biblioteca: el farol está trabado hasta cerrar su circuito en el Mundo Voltio
+  await connect(page, [134.3, -8.8], [140.6, -10.2]);
+  expect(await active('alto-lamp')).toBe(false);
+  expect(await text(page, 'toast')).toContain('trabado');
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    p.setFlag('hood');
+    p.setFlag('voltio-seen');
+    document.body.classList.add('has-hood');
+  });
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  const nodes = await w(() => window.__nexus3d.world.voltio.nodes.filter((n) => n.circuit === 'biblio-open').map((n) => [n.x, n.z]));
+  expect(nodes.length).toBe(3);
+  for (const [x, z] of nodes) await tp(page, x, z);
+  await step(page, 0.1);
+  expect(await flag('biblio-open')).toBe(true);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.3);
+  await connect(page, [134.3, -8.8], [140.6, -10.2]);
+  expect(await active('alto-lamp')).toBe(true);
+  await step(page, 2);
+  expect(await text(page, 'storyWho')).toContain('Luli');
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Terrazas: se suben saltando de techo en techo hasta el más alto
+  await tp(page, 132.6, 11);
+  for (let h = 1; h <= 5; h += 1) {
+    await page.keyboard.down('KeyD');
+    await page.keyboard.down('KeyS');
+    await step(page, 0.8); // hasta la pared del techo siguiente
+    await w(() => window.__nexus3d.world.jump());
+    await step(page, 0.7);
+    await page.keyboard.up('KeyD');
+    await page.keyboard.up('KeyS');
+    await step(page, 0.3);
+    expect((await pos())[1], `techo ${h}`).toBeCloseTo(h, 1);
+  }
+  expect(await flag('alto-top')).toBe(true);
+
+  // Tirolesa del techo más alto al mercado
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(157, 5, 11.4);
+    g.focus.set(157, 0, 11.4);
+  });
+  await step(page, 0.1);
+  expect(await text(page, 'interact')).toContain('Tirolesa');
+  await touch(page);
+  for (let i = 0; i < 40 && (await w(() => Boolean(window.__nexus3d.world.zip))); i += 1) await step(page, 0.25);
+  await step(page, 1.5);
+  expect(await flag('zip-alto')).toBe(true);
+  expect((await pos())[1]).toBeLessThan(0.5);
+
+  // En patineta: la rampita sube al primer techo
+  await w(() => window.__nexus3d.world.progress.setFlag('board'));
+  await tp(page, 124, 11);
+  await w(() => window.__nexus3d.world.mount());
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  for (let i = 0; i < 12 && !(await flag('roof-board')); i += 1) await step(page, 0.25);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  expect(await flag('roof-board')).toBe(true);
+  await w(() => window.__nexus3d.world.dismount());
+
+  // Un gato dormido se despierta con la mochila
+  const cat = await w(() => {
+    const s = window.__nexus3d.world.sleepers.find((k) => k.kind === 'cat');
+    return [s.x, s.z];
+  });
+  await w(() => window.__nexus3d.world.setCharge(5));
+  await tp(page, cat[0], cat[1] + 0.9);
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.sleepers.find((k) => k.kind === 'cat').isActive)).toBe(true);
+
+  // Don Kiosko y Luli están contentos; se guarda
+  await step(page, 1);
+  expect(await w(() => ['kiosko', 'luli'].map((id) => window.__nexus3d.world.residents.find((r) => r.id === id).isHappy))).toEqual([true, true]);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await active('alto-projector')).toBe(true);
+  expect(await active('alto-lamp')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.questBook().some((d) => d.district === 'alto'))).toBe(true);
 });

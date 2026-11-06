@@ -30,7 +30,8 @@ export type SleeperKind =
   | 'cow'
   | 'hen'
   | 'owl'
-  | 'robot';
+  | 'robot'
+  | 'cat';
 
 /** Nombre que flota encima y frase al despertarlo. */
 export const SLEEPER_INFO: Record<SleeperKind, { label: string; wake: string }> = {
@@ -48,6 +49,7 @@ export const SLEEPER_INFO: Record<SleeperKind, { label: string; wake: string }> 
   gnome: { label: 'Enano de jardín', wake: '¡Jo, jo! El enano dio una vuelta' },
   pinwheel: { label: 'Molinete', wake: '¡El molinete giró a toda velocidad!' },
   car: { label: 'Auto', wake: '¡BIP BIP! El auto prendió las luces' },
+  cat: { label: 'Gato', wake: '¡Miau! El gato se desperezó y ronronea' },
   robot: { label: 'Robot ayudante', wake: '¡Bip bup! El robot ayudante se reinició y saluda' },
   owl: { label: 'Búho', wake: '¡Uuuh, uuuh! El búho abrió los ojos: de noche es cuando está despierto' },
   cow: { label: 'Vaca', wake: '¡Muuu! La vaca se despertó con ganas de pastar' },
@@ -643,6 +645,43 @@ export class Sleeper extends Connectable {
         this.plugAnchor.position.set(0, 0.4, 0.2);
         return 1.0;
       }
+      case 'cat': {
+        this.collideRadius = 0.3;
+        const cat = new THREE.Group();
+        const fur = toon('#e0a040');
+        const body = rounded(new THREE.SphereGeometry(0.26, 12, 10), fur, 0.012);
+        body.scale.set(1, 0.75, 1.4);
+        body.position.y = 0.22;
+        cat.add(body);
+        const head = new THREE.Group();
+        const skull = rounded(new THREE.SphereGeometry(0.18, 12, 10), fur, 0.01);
+        head.add(skull);
+        for (const sx of [-0.09, 0.09]) {
+          const ear = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.12, 6), fur);
+          ear.position.set(sx, 0.16, 0);
+          head.add(ear);
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.03, 6, 5), toon('#2c2838'));
+          eye.position.set(sx * 0.8, 0.03, 0.16);
+          eye.scale.y = 0.2;
+          head.add(eye);
+          this.bits.push(eye);
+        }
+        head.position.set(0, 0.28, 0.32);
+        head.rotation.x = 0.6;
+        cat.add(head);
+        this.p.head = head;
+        const tail = new THREE.Group();
+        const t = rounded(new THREE.CylinderGeometry(0.04, 0.05, 0.45, 6), fur, 0.004);
+        t.position.y = 0.22;
+        tail.add(t);
+        tail.position.set(0, 0.2, -0.34);
+        tail.rotation.x = -1.3;
+        cat.add(tail);
+        this.p.tail = tail;
+        add(cat, 'cat');
+        this.plugAnchor.position.set(0, 0.4, 0.2);
+        return 0.9;
+      }
       case 'robot': {
         this.collideRadius = 0.45;
         const body = box(0.7, 0.8, 0.5, '#c8cdd6', { outline: 0.015 });
@@ -896,6 +935,11 @@ export class Sleeper extends Connectable {
 
   private awakePose(): void {
     switch (this.kind) {
+      case 'cat':
+        this.p.head.rotation.x = -0.1;
+        this.p.tail.rotation.x = -0.3;
+        for (const e of this.bits) e.scale.y = 1;
+        break;
       case 'robot':
         this.p.head.rotation.x = 0;
         for (const e of this.bits) (e as THREE.Mesh).material = glow('#7dffef');
@@ -996,6 +1040,10 @@ export class Sleeper extends Connectable {
       case 'firefly':
         [1568, 1760, 2093, 2349, 2637].forEach((f, i) => a.tone(f, i * 0.08, 0.1, 'sine', 0.05));
         break;
+      case 'cat':
+        a.tone(740, 0, 0.12, 'sine', 0.06);
+        a.tone(620, 0.1, 0.25, 'sine', 0.06);
+        break;
       case 'robot':
         [880, 660, 990, 1320].forEach((f, i) => a.tone(f, i * 0.09, 0.07, 'square', 0.04));
         break;
@@ -1033,6 +1081,11 @@ export class Sleeper extends Connectable {
     const k = r >= 0 ? r : 99;
 
     switch (this.kind) {
+      case 'cat': {
+        this.p.tail.rotation.z = r >= 0 && k < 1.5 ? Math.sin(k * 12) * 0.6 : Math.sin(T * 1.5) * 0.3;
+        if (r >= 1.6) this.react = -1;
+        break;
+      }
       case 'robot': {
         this.p.head.rotation.y = r >= 0 && k < 1.5 ? Math.sin(k * 10) * 0.5 : Math.sin(T * 0.7) * 0.25;
         if (r >= 1.6) this.react = -1;

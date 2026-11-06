@@ -52,11 +52,12 @@ export const DISTRICT_NAMES: Record<string, string> = {
   bosque: 'Bosque de las luciérnagas',
   granja: 'Granja y molinos',
   fabrica: 'Fábrica de Chispas',
+  alto: 'Barrio Alto y mercado',
   noche: '🌙 De noche',
 };
 
 /** Distritos con libreta (en orden); los de las fases siguientes se suman acá. */
-export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque', 'granja', 'fabrica', 'noche'];
+export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque', 'granja', 'fabrica', 'alto', 'noche'];
 /** Secciones de la libreta que no tienen Pieza (encargos sueltos). */
 export const NO_PIECE = new Set(['noche']);
 
@@ -176,6 +177,17 @@ export const QUESTS: Quest[] = [
   { id: 'f-faroluz', district: 'fabrica', giver: 'tuerca', title: 'Faroluz', text: 'Rescatá a Faroluz en el Mundo Voltio (¡dicen que vio a la Gran Chispa!).', check: (c) => c.chispi('faroluz'), at: { x: 104, z: -52 }, reward: 'pack' },
   { id: 'f-carrera', district: 'fabrica', giver: 'tuerca', title: 'Turno rápido', text: 'Ganá la carrera de aros de la fábrica.', check: (c) => c.flag('race-fabrica'), at: { x: 60, z: -44 } },
   { id: 'f-notas', district: 'fabrica', giver: 'tuerca', title: 'Ruido de máquinas', text: 'Juntá las 6 notas de la fábrica (una está en el techo del depósito).', check: (c) => c.notes('fabrica') },
+  // ---------- Barrio Alto y mercado (Fase 15) ----------
+  { id: 'a-mercado', district: 'alto', giver: 'kiosko', title: 'El mercado prendido', text: 'Llevá la energía a un puesto: cada puesto prendido le pasa la luz a otro. ¡Prendé los 6!', check: (c) => [['frutas', 'pan', 'flores', 'juguetes', 'telas', 'discos'].filter((k) => c.active(`alto-stall-${k}`)).length, 6], at: { x: 104.5, z: 13 } },
+  { id: 'a-cine', district: 'alto', giver: 'kiosko', title: 'Función de cine', text: 'Con el mercado andando abre el cine: prendé el proyector y mirá la película.', check: (c) => c.active('alto-projector'), at: { x: 114, z: -13 }, reward: 'pack' },
+  { id: 'a-biblio', district: 'alto', giver: 'luli', title: 'El farol de lectura', text: 'El farol de la biblioteca está trabado. Cerrá su circuito en el Mundo Voltio y llevale energía.', check: (c) => c.active('alto-lamp'), at: { x: 140, z: -11 } },
+  { id: 'a-techos', district: 'alto', giver: 'luli', title: 'Arriba de todo', text: 'Subí saltando por las terrazas hasta el techo más alto.', check: (c) => c.flag('alto-top'), at: { x: 136.5, z: 11 } },
+  { id: 'a-tirolesa', district: 'alto', giver: 'luli', title: 'Bajada al mercado', text: 'Bajá del techo más alto por la tirolesa.', check: (c) => c.flag('zip-alto') },
+  { id: 'a-patineta', district: 'alto', giver: 'kiosko', title: 'Patineta al techo', text: 'Subí a un techo en patineta usando la rampita.', check: (c) => c.flag('roof-board'), at: { x: 131.6, z: 11 } },
+  { id: 'a-gatos', district: 'alto', giver: 'luli', title: 'Los gatos del barrio', text: 'Despertá con la mochila a los 5 gatos dormidos.', check: (c) => c.awakeKind('cat') },
+  { id: 'a-turbo', district: 'alto', giver: 'kiosko', title: 'Turbochispa', text: 'Rescatá a Turbochispa en el Mundo Voltio, al lado del mercado.', check: (c) => c.chispi('turbochispa'), at: { x: 150, z: 24 }, reward: 'pack' },
+  { id: 'a-carrera', district: 'alto', giver: 'kiosko', title: 'Carrera por los techos', text: 'En patineta: subí por la rampita y pasá los aros de techo en techo.', check: (c) => c.flag('race-alto'), at: { x: 124, z: 7 } },
+  { id: 'a-notas', district: 'alto', giver: 'luli', title: 'Canción del barrio', text: 'Juntá las 6 notas del Barrio Alto (hay notas en los techos).', check: (c) => c.notes('alto') },
   // ---------- De noche (Fase 13) ----------
   { id: 'n-noche', district: 'noche', giver: 'lucio', title: 'Primera noche', text: 'Esperá a que se haga de noche (o dormí una siesta en tu casa).', check: (c) => c.flag('night-seen') },
   { id: 'n-buhos', district: 'noche', giver: 'lucio', title: 'Los búhos', text: 'Despertá con la mochila a los 4 búhos (solo se despiertan de noche).', check: (c) => c.awakeKind('owl'), reward: 'pack' },

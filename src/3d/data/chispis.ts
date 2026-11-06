@@ -85,7 +85,7 @@ export const CARDS: ChispiCard[] = [
   c('ruleman', 'Rulemán', 'ruedas', 'brillante', 'cambio', 'Rulo lo encontró adentro de una patineta vieja.', 'rulo'),
   c('ollin', 'Ollín', 'ruedas', 'comun', 'sobre', 'Salta todo el día, hasta dormido.'),
   c('patinon', 'Patinón', 'ruedas', 'comun', 'sobre', 'Frena con la nariz. No se lo recomienda a nadie.'),
-  c('turbochispa', 'Turbochispa', 'ruedas', 'dorada', 'sobre', 'Una vez fue tan rápido que llegó ayer.'),
+  c('turbochispa', 'Turbochispa', 'ruedas', 'dorada', 'rescate', 'Una vez fue tan rápido que llegó ayer.'),
   // Feria
   c('pochoclin', 'Pochoclín', 'feria', 'brillante', 'rescate', 'Explota de alegría. Literalmente: ¡pop!'),
   c('calesito', 'Calesito', 'feria', 'brillante', 'cambio', 'Da vueltas y vueltas y nunca se marea. Pipa lo armó.', 'pipa'),

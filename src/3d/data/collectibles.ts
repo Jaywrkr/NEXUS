@@ -76,6 +76,14 @@ export const NOTES: NoteSpot[] = [
     [110, 0.9, -96],
     [48, 0.9, -90],
   ]),
+  ...n('alto', [
+    [156.5, 5.9, 11], // en el techo más alto
+    [146.5, 3.9, 9.5], // en el tercer techo
+    [123, 0.9, 20],
+    [114, 0.9, -8],
+    [140, 0.9, -29],
+    [102, 0.9, -28],
+  ]),
   ...n('puerto', [
     [-3.3, 1.8, 90], // arriba de los cajones
     [16.7, 1.8, 74], // otros cajones
@@ -217,6 +225,22 @@ export const RACES: Race[] = [
       [104, 1.2, -70],
       [90, 1.2, -66],
       [76, 1.2, -74],
+    ],
+  },
+  {
+    id: 'race-alto',
+    district: 'alto',
+    name: 'Por los techos',
+    board: true,
+    time: 30,
+    start: { x: 124, z: 7 },
+    rings: [
+      [129, 1.2, 11],
+      [136.5, 2.2, 11],
+      [141.5, 3.2, 11],
+      [146.5, 4.2, 11],
+      [151.5, 5.2, 11],
+      [156.5, 6.2, 11],
     ],
   },
   {

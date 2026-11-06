@@ -201,13 +201,25 @@ export function buildSkatepark(scene: THREE.Scene, rects: Rect[]): SkateparkInfo
   fenceRun(R.minX + 0.5, R.minZ - 0.3, R.minX + 0.5, -half - 0.6);
   fenceRun(R.minX + 0.5, half + 0.6, R.minX + 0.5, R.maxZ + 0.3);
   fenceRun(R.minX + 0.5, R.maxZ + 0.3, R.maxX + 0.3, R.maxZ + 0.3);
-  fenceRun(R.maxX + 0.3, R.minZ - 0.3, R.maxX + 0.3, R.maxZ + 0.3);
+  // Reja del este con abertura (z −3…3) hacia el Barrio Alto (Fase 15)
+  fenceRun(R.maxX + 0.3, R.minZ - 0.3, R.maxX + 0.3, -3);
+  fenceRun(R.maxX + 0.3, 3, R.maxX + 0.3, R.maxZ + 0.3);
 
-  // Pared de grafitis al norte (mira a +Z)
-  const wall = box(R.maxX - R.minX - 1, 2.8, 0.5, '#9a938a', { outline: 0.03 });
-  add(wall, cx, 1.4, R.minZ - 0.4);
-  const graf = new THREE.Mesh(new THREE.PlaneGeometry(R.maxX - R.minX - 1.6, 2.4), withLife(new THREE.MeshBasicMaterial({ map: graffitiTexture() })));
-  add(graf, cx, 1.4, R.minZ - 0.14);
+  // Pared de grafitis al norte (mira a +Z), con un hueco (x 75…81) hacia la Fábrica de Chispas (Fase 14)
+  const graffiti = graffitiTexture();
+  const wallFrom = R.minX + 0.5;
+  const wallTo = R.maxX - 0.5;
+  for (const [a, b] of [
+    [wallFrom, 75],
+    [81, wallTo],
+  ] as [number, number][]) {
+    add(box(b - a, 2.8, 0.5, '#9a938a', { outline: 0.03 }), (a + b) / 2, 1.4, R.minZ - 0.4);
+    const tex = graffiti.clone();
+    tex.repeat.x = (b - a - 0.3) / (wallTo - wallFrom);
+    tex.offset.x = (a - wallFrom) / (wallTo - wallFrom);
+    tex.needsUpdate = true;
+    add(new THREE.Mesh(new THREE.PlaneGeometry(b - a - 0.3, 2.4), withLife(new THREE.MeshBasicMaterial({ map: tex }))), (a + b) / 2, 1.4, R.minZ - 0.14);
+  }
 
   // Rampa grande (el objeto conectable va aparte): su frente mira a +Z
   const ramp = { x: 82, z: -15.2 };
