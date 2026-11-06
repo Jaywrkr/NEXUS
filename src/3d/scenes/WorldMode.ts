@@ -46,6 +46,8 @@ import { BOAT, PORT } from '../world/Port';
 import { CanalBoat, GranChispa, Lighthouse, PiecePedestals } from '../objects/finale';
 import { Campfire, RopeBridgeLever } from '../objects/forest';
 import { GreenhouseSprinkler, Incubator, Tractor, Windmill } from '../objects/farm';
+import { FactoryPart } from '../objects/factory';
+import { FACTORY, liftHeight } from '../world/Factory';
 import { FARM } from '../world/Farm';
 import { FOREST, MUSHROOM_R, MUSHROOM_TOP, TREE } from '../world/Forest';
 import { Notes, Races } from '../systems/Collectibles';
@@ -129,6 +131,7 @@ const CAGES: { id: string; x: number; z: number }[] = [
   { id: 'gaviotin', x: PORT.chispi.x, z: PORT.chispi.z },
   { id: 'pinita', x: FOREST.chispi.x, z: FOREST.chispi.z },
   { id: 'girasolin', x: FARM.chispi.x, z: FARM.chispi.z },
+  { id: 'faroluz', x: FACTORY.chispi.x, z: FACTORY.chispi.z },
 ];
 
 /** Sobres escondidos por el mundo (x, z, altura). */
@@ -235,6 +238,11 @@ export class WorldMode {
   private readonly greenhouse: GreenhouseSprinkler;
   private readonly incubator: Incubator;
   private readonly tractor: Tractor;
+  private readonly belts: FactoryPart[] = [];
+  private readonly boiler: FactoryPart;
+  private readonly gear: FactoryPart;
+  private readonly machine: FactoryPart;
+  private liftT = 0;
   private readonly lighthouse: Lighthouse;
   private readonly granChispa = new GranChispa();
   /** Expansión (Fase 10): notas de la canción, carreras de aros, libreta y Piezas de la Gran Chispa. */
@@ -418,6 +426,15 @@ export class WorldMode {
     this.incubator = new Incubator('farm-incubator', barn.incubator.x, barn.incubator.z);
     const tractorSource = new EnergySource('farm-tractor-source', FARM.tractorDock.x + 0.5, FARM.tractorDock.z - 4);
     this.tractor = new Tractor('farm-tractor', FARM.tractorDock, FARM.tractorRoute);
+    // Fase 14: Fábrica de Chispas
+    const beltSource = new EnergySource('factory-belt-source', FACTORY.beltSource.x, FACTORY.beltSource.z);
+    FACTORY.belts.forEach((b, i) => this.belts.push(new FactoryPart(`factory-belt-${i}`, 'belt', b.x, b.z + 1.4, i + 1)));
+    const hall = this.world.factory.hall;
+    const hallSource = new EnergySource('factory-hall-source', hall.source.x, hall.source.z);
+    this.boiler = new FactoryPart('factory-boiler', 'boiler', hall.boiler.x, hall.boiler.z);
+    this.gear = new FactoryPart('factory-gear', 'gear', hall.gear.x, hall.gear.z);
+    this.machine = new FactoryPart('factory-machine', 'machine', hall.machine.x, hall.machine.z);
+    if (this.progress.hasFlag('fabrica-open')) this.world.factory.openGate();
     // La casa del Nexus: lo que ya se arregló
     for (const it of HOME_ITEMS) if (this.progress.hasFlag(`casa-${it.id}`)) this.world.home.fix(it.id, false);
     if (this.homeInsideDone) this.world.home.gray.revive(false);
@@ -449,10 +466,12 @@ export class WorldMode {
       [ghSource, 'Energía'],
       [barnSource, 'Energía'],
       [tractorSource, 'Energía'],
+      [beltSource, 'Energía'],
+      [hallSource, 'Energía'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire, ...millSources, ...this.mills, ghSource, this.greenhouse, barnSource, this.incubator, tractorSource, this.tractor]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire, ...millSources, ...this.mills, ghSource, this.greenhouse, barnSource, this.incubator, tractorSource, this.tractor, beltSource, ...this.belts, hallSource, this.boiler, this.gear, this.machine]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -534,6 +553,13 @@ export class WorldMode {
     this.connections.addRule({ sourceId: ghSource.id, targetId: this.greenhouse.id, useTunnel: true });
     this.connections.addRule({ sourceId: barnSource.id, targetId: this.incubator.id, useTunnel: true });
     this.connections.addRule({ sourceId: tractorSource.id, targetId: this.tractor.id, useTunnel: true });
+    // Fábrica: todo en orden (cada pieza solo pasa la energía si ya está prendida)
+    this.connections.addRule({ sourceId: beltSource.id, targetId: this.belts[0].id, useTunnel: true });
+    this.connections.addRule({ sourceId: this.belts[0].id, targetId: this.belts[1].id });
+    this.connections.addRule({ sourceId: this.belts[1].id, targetId: this.belts[2].id });
+    this.connections.addRule({ sourceId: hallSource.id, targetId: this.boiler.id, useTunnel: true });
+    this.connections.addRule({ sourceId: this.boiler.id, targetId: this.gear.id });
+    this.connections.addRule({ sourceId: this.gear.id, targetId: this.machine.id });
     // El faro: motor trabado (circuito Voltio) y solo prende con toda la ciudad viva
     this.connections.addRule({
       sourceId: portSource.id,
@@ -570,6 +596,9 @@ export class WorldMode {
       ...this.mills.map((m, i) => ({ s: millSources[i] as Connectable, t: m as Connectable, sName: 'la energía del molino', tName: 'el molino', when: () => m.unlocked })),
       { s: ghSource, t: this.greenhouse, sName: 'la energía del invernadero', tName: 'el regador' },
       { s: tractorSource, t: this.tractor, sName: 'la energía del galpón', tName: 'el tractor' },
+      { s: beltSource, t: this.belts[0], sName: 'la energía de las cintas', tName: 'la cinta 1' },
+      { s: this.belts[0], t: this.belts[1], sName: 'la cinta 1', tName: 'la cinta 2' },
+      { s: this.belts[1], t: this.belts[2], sName: 'la cinta 2', tName: 'la cinta 3' },
       { s: portSource, t: this.lighthouse, sName: 'la energía del puerto', tName: 'el faro', when: () => this.lighthouse.unlocked && this.finalMissing.length === 0 },
     ];
 
@@ -768,6 +797,7 @@ export class WorldMode {
       [this.boat, 'bote', true],
       [this.campfire, 'fogon', true],
       [this.incubator, 'granero', true],
+      [this.machine, 'fabrica', true],
     ];
     for (const [obj, id, ok] of packFor) {
       if (target !== obj || !ok) continue;
@@ -862,6 +892,32 @@ export class WorldMode {
         if (animate) after(0.8, () => this.updateResidentMoods());
       } else {
         say(`¡${name} revivió! Acercate y subite`);
+      }
+    }
+    // Fase 14: la fábrica
+    if (target instanceof FactoryPart && target.kind === 'belt') {
+      const n = this.belts.filter((b) => b.isActive).length;
+      if (n === 3) {
+        this.addLife(80, -66, 30, animate);
+        say('¡Las tres cintas andan! El montacargas también se prendió');
+      } else {
+        say(`¡La cinta ${n} anda! Ahora pasale la energía a la siguiente`);
+      }
+    }
+    if (target === this.boiler) say('¡La caldera calienta! Ahora el engranaje');
+    if (target === this.gear) say('¡El engranaje gira! Falta la Gran Máquina');
+    if (target === this.machine) {
+      this.world.factory.hall.gray.revive(animate);
+      this.addLife(92, -80, 16, animate);
+      say('¡La Gran Máquina despertó!');
+      if (animate) {
+        after(1, () =>
+          this.showStory(
+            'Ingeniera Tuerca · ¡Acá nació la Gran Chispa!',
+            'Esta máquina hizo la Gran Chispa hace muchísimo tiempo. Mirá el plano de la pared: cuando juntes las 12 Piezas, el faro va a poder armarla otra vez. ¡Y esta vez para siempre!',
+          ),
+        );
+        after(0.8, () => this.updateResidentMoods());
       }
     }
     // Fase 12: la granja
@@ -1203,6 +1259,15 @@ export class WorldMode {
         story: ['Tu casa', 'Esta casita vieja es tuya, Nexus. Está toda rota… pero con chispitas de la mochila la podés ir arreglando, cosa por cosa.'],
       },
       {
+        id: 'fabrica',
+        info: this.world.factory.hall,
+        door: { x: FACTORY.hall.doorX, z: FACTORY.hall.z + FACTORY.hall.d / 2 + 0.9 },
+        out: { x: FACTORY.hall.doorX, z: FACTORY.hall.z + FACTORY.hall.d / 2 + 1.7 },
+        open: () => this.progress.hasFlag('fabrica-open'),
+        story: ['Ingeniera Tuerca · La sala de máquinas', 'Acá adentro está la Gran Máquina. Va todo en orden: la energía a la caldera, de la caldera al engranaje y del engranaje a la máquina.'],
+        target: this.machine,
+      },
+      {
         id: 'granero',
         info: this.world.farm.barn,
         door: { x: FARM.barn.doorX, z: FARM.barn.z + FARM.barn.d / 2 + 0.9 },
@@ -1347,6 +1412,8 @@ export class WorldMode {
       { name: 'Molinos', x: -96, z: 59, alive: this.progress.hasFlag('fields-grown') },
       { name: 'Maizal', x: FARM.mazeCenter.x, z: FARM.mazeCenter.z, alive: this.progress.hasFlag('maze-center') },
       { name: 'Granero', x: FARM.barn.x, z: FARM.barn.z, alive: this.incubator.isActive },
+      { name: 'Fábrica', x: FACTORY.hall.x, z: FACTORY.hall.z, alive: this.machine.isActive },
+      { name: 'Cintas', x: 66, z: -63, alive: this.belts[2].isActive },
       { name: 'Faro', x: PORT.lighthouse.x, z: PORT.lighthouse.z - 3, alive: this.lighthouse.isActive },
     ];
     return {
@@ -1387,6 +1454,7 @@ export class WorldMode {
         { id: 'train-open', nodes: STATION.nodes, door: { x: STATION.train.x, z: STATION.train.z } },
         { id: 'cave-lit', nodes: CERRO.caveNodes, door: CERRO.caveNodes[1] },
         { id: 'molino-open', nodes: FARM.millNodes, door: FARM.mills[2] },
+        { id: 'fabrica-open', nodes: FACTORY.gateNodes, door: { x: FACTORY.hall.doorX, z: FACTORY.hall.z + 6 } },
         { id: 'faro-open', nodes: PORT.nodes, door: PORT.lighthouse },
       ],
       {
@@ -1412,6 +1480,9 @@ export class WorldMode {
           } else if (id === 'faro-open') {
             this.lighthouse.unlocked = true;
             this.setMessage('¡Circuito cerrado! El motor del faro se destrabó');
+          } else if (id === 'fabrica-open') {
+            this.world.factory.openGate();
+            this.setMessage('¡Circuito cerrado! El portón de la fábrica se abrió');
           } else if (id === 'molino-open') {
             this.mills[2].unlocked = true;
             this.setMessage('¡Circuito cerrado! El motor del molino se destrabó');
@@ -1443,7 +1514,7 @@ export class WorldMode {
         cages: [{ id: 'rueditas', ...this.world.skate.chispi }, ...CAGES]
           .filter((c) => !this.progress.hasChispi(c.id))
           .map((c): CageSpot => ({ ...c, color: TYPES[CARD_BY_ID.get(c.id)!.type].color })),
-        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open', 'molino-open'].filter((f) => this.progress.hasFlag(f)),
+        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open', 'molino-open', 'fabrica-open'].filter((f) => this.progress.hasFlag(f)),
       },
     );
   }
@@ -1684,7 +1755,7 @@ export class WorldMode {
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
       return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
     }
-    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep() ?? this.farmStep();
+    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep() ?? this.farmStep() ?? this.factoryStep();
     if (park) return park;
     if (this.voltio.active && !this.inSkatepark) {
       const me = this.nexus.position;
@@ -1849,6 +1920,7 @@ export class WorldMode {
     this.progress.addCount('zip');
     if (np.line === this.world.cerro.zipLine && !this.progress.hasFlag('zip-cerro')) this.progress.setFlag('zip-cerro');
     if (np.line === this.world.forest.zipLine && !this.progress.hasFlag('zip-tree')) this.progress.setFlag('zip-tree');
+    if (np.line === this.world.factory.zipLine && !this.progress.hasFlag('zip-factory')) this.progress.setFlag('zip-factory');
     this.zip = { a, b, t: 0, dur: Math.hypot(b.x - a.x, b.z - a.z) / ZIP_SPEED, climb: 0, from: this.nexus.position.clone() };
     this.nexus.hanging = true;
     this.nexus.airborne = false;
@@ -2092,6 +2164,8 @@ export class WorldMode {
       ['owl', 30, -66],
       ['owl', -68, -8],
       ['owl', -98, -60],
+      // Fase 14: robots ayudantes de la fábrica
+      ...FACTORY.robots.map(([x, z]): [SleeperKind, number, number] => ['robot', x, z]),
     ] as [SleeperKind, number, number][]) {
       const [px, pz] = place(x, z);
       make(kind, px, pz, Math.PI / 4);
@@ -2219,6 +2293,7 @@ export class WorldMode {
       [this.mills, 'molino'],
       [[this.greenhouse], 'garden'],
       [[this.incubator, this.tractor], 'granja'],
+      [[this.belts[0], this.boiler], 'fabrica'],
     ];
     const zone = zones.find(([list]) => list.includes(target))?.[1] ?? 'garden';
     return planTunnel(zone, this.progress.tunnelSkill);
@@ -2344,6 +2419,12 @@ export class WorldMode {
     nora.setHeard(this.progress.hasHeard('nora'));
     this.world.scene.add(nora.root);
     this.residents.push(nora);
+    // Ingeniera Tuerca, de la Fábrica de Chispas (Fase 14)
+    const fs = FACTORY.tuerca;
+    const tuerca = new Resident3D('tuerca', 'Ingeniera Tuerca', fs.x, fs.z, Math.atan2(fs.faceX - fs.x, fs.faceZ - fs.z));
+    tuerca.setHeard(this.progress.hasHeard('tuerca'));
+    this.world.scene.add(tuerca.root);
+    this.residents.push(tuerca);
     // Abuela Trigo, la granjera (Fase 12)
     const ts = FARM.trigo;
     const trigo = new Resident3D('trigo', 'Abuela Trigo', ts.x, ts.z, Math.atan2(ts.faceX - ts.x, ts.faceZ - ts.z));
@@ -2394,6 +2475,7 @@ export class WorldMode {
       marina: this.boat.isActive,
       yuyo: this.campfire.isActive,
       trigo: this.progress.hasFlag('fields-grown'),
+      tuerca: this.machine.isActive,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
@@ -2406,6 +2488,7 @@ export class WorldMode {
     if (r.id === 'marina') return this.marinaText();
     if (r.id === 'yuyo') return this.yuyoText();
     if (r.id === 'trigo') return this.trigoText();
+    if (r.id === 'tuerca') return this.tuercaText();
     const info = RESIDENTS.find((i) => i.id === r.id)!;
     // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
     if (r.id === 'bombo' && !this.fountain.isActive) {
@@ -2756,6 +2839,67 @@ export class WorldMode {
   private showMemories(): void {
     const stars = this.fragments.filter((f) => f.isCollected).length;
     this.setMessage(`🏛️ Recuerdos: ★ ${stars} fragmentos · ✦ ${this.awakeCount()} cosas despiertas · 🃏 ${this.progress.uniqueCards} cartas · ⚡ ${this.progress.chispis.length} Chispis`);
+  }
+
+  /* ---------- Fase 14: Fábrica de Chispas ---------- */
+
+  /** Cintas con cajas que avanzan, montacargas que sube y baja (y lleva al Nexus), techo del depósito. */
+  private updateFactory(dt: number): void {
+    const F = this.world.factory;
+    const running = this.belts.map((b) => b.isActive);
+    for (const crate of F.boxes) {
+      const b = crate.userData.belt as { x: number; z: number };
+      const i = FACTORY.belts.indexOf(b as (typeof FACTORY.belts)[number]);
+      if (!running[i]) continue;
+      crate.position.x += dt * 1.2;
+      if (crate.position.x > b.x + 2.8) crate.position.x = b.x - 2.8;
+    }
+    if (!this.belts[2].isActive) return;
+    const p = this.nexus.position;
+    const prev = (F.liftRect.h ?? 0.05) - 0.05;
+    this.liftT += dt;
+    const h = liftHeight(this.liftT);
+    F.liftRect.h = h + 0.05;
+    F.liftMesh.position.y = h;
+    const on = p.x > F.liftRect.minX - 0.1 && p.x < F.liftRect.maxX + 0.1 && p.z > F.liftRect.minZ - 0.1 && p.z < F.liftRect.maxZ + 0.1;
+    // Llevar al Nexus si está parado arriba
+    if (on && !this.zip && Math.abs(p.y - prev) < 0.35 && this.vy <= 0.1) {
+      p.y = h + 0.05;
+      this.vy = 0;
+      this.grounded = true;
+    }
+    const W = FACTORY.warehouse;
+    if (!this.progress.hasFlag('roof-factory') && p.y > W.h - 0.5 && p.x > W.minX && p.x < W.maxX && p.z > W.minZ && p.z < W.maxZ) {
+      this.progress.setFlag('roof-factory');
+      this.toast('🏭 ¡Arriba del depósito!', 'ok');
+    }
+  }
+
+  private tuercaText(): string {
+    if (!this.belts[2].isActive) return 'Soy la Ingeniera Tuerca. En la fábrica todo va en orden: primero la cinta 1, después la 2 y después la 3. ¡Si no, se traba!';
+    if (!this.progress.hasFlag('fabrica-open')) return 'El portón de la sala de máquinas está trabado. Sus cables se ven con la capucha ⚡… ¡andá con cuidado!';
+    if (!this.machine.isActive) return 'Adentro está la Gran Máquina, donde se hizo la Gran Chispa. Caldera, engranaje y máquina: en ese orden.';
+    return '¿Viste el plano? Con las 12 Piezas, el faro puede armar la Gran Chispa para siempre. ¡Contamos con vos!';
+  }
+
+  /** Lo que conviene hacer en la fábrica. */
+  private factoryStep(): { text: string; at: { x: number; z: number } | null } | null {
+    if (this.districtId !== 'fabrica' || this.inside) return null;
+    if (this.voltio.active) {
+      const lit = this.voltio.litNodes('fabrica-open');
+      if (!this.progress.hasFlag('fabrica-open')) return { text: `Tocá los tres nodos del portón (${lit}/3)`, at: FACTORY.gateNodes[Math.min(lit, 2)] };
+      if (this.voltio.isCaged('faroluz')) return { text: '¡Faroluz está atrapado! Cerrá un círculo con tu estela alrededor de la jaula', at: FACTORY.chispi };
+      return null;
+    }
+    const next = this.belts.findIndex((b) => !b.isActive);
+    if (next === 0) return { text: 'Fábrica: llevá la energía a la cinta 1', at: FACTORY.beltSource };
+    if (next > 0) return { text: `Fábrica: de la cinta ${next} a la cinta ${next + 1}`, at: this.belts[next - 1] };
+    if (!this.progress.hasFlag('fabrica-open')) {
+      const hood = this.progress.hasFlag('hood');
+      return { text: hood ? 'El portón está trabado: ponete la capucha ⚡ y mirá sus cables' : 'El portón está trabado… Rulo, en el Skatepark, sabe de cables', at: hood ? FACTORY.gateNodes[0] : null };
+    }
+    if (!this.machine.isActive) return { text: 'Entrá a la sala de máquinas y despertá la Gran Máquina', at: { x: FACTORY.hall.doorX, z: FACTORY.hall.z + 7 } };
+    return null;
   }
 
   /* ---------- Fase 13: Día y noche ---------- */
@@ -3786,6 +3930,7 @@ export class WorldMode {
     this.checkTreeTop();
     this.checkMaze();
     this.updateClock(dt);
+    this.updateFactory(dt);
     const note = this.voltio.active || this.inside ? null : this.notes.update(dt, this.time, this.nexus.position);
     if (note) this.onNote(note.id);
     this.updateRace(dt);

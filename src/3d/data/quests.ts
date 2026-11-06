@@ -51,11 +51,12 @@ export const DISTRICT_NAMES: Record<string, string> = {
   puerto: 'Puerto',
   bosque: 'Bosque de las luciérnagas',
   granja: 'Granja y molinos',
+  fabrica: 'Fábrica de Chispas',
   noche: '🌙 De noche',
 };
 
 /** Distritos con libreta (en orden); los de las fases siguientes se suman acá. */
-export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque', 'granja', 'noche'];
+export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque', 'granja', 'fabrica', 'noche'];
 /** Secciones de la libreta que no tienen Pieza (encargos sueltos). */
 export const NO_PIECE = new Set(['noche']);
 
@@ -165,6 +166,16 @@ export const QUESTS: Quest[] = [
   { id: 'g-girasolin', district: 'granja', giver: 'trigo', title: 'Girasolín', text: 'Rescatá a Girasolín en el Mundo Voltio.', check: (c) => c.chispi('girasolin'), at: { x: -84, z: 58 } },
   { id: 'g-carrera', district: 'granja', giver: 'trigo', title: 'Carrera del maizal', text: 'Ganá la carrera de aros por adentro del laberinto.', check: (c) => c.flag('race-granja'), at: { x: -78, z: 81.5 } },
   { id: 'g-notas', district: 'granja', giver: 'trigo', title: 'Canción de la granja', text: 'Juntá las 6 notas de la granja (una está con el espantapájaros).', check: (c) => c.notes('granja') },
+  // ---------- Fábrica de Chispas (Fase 14) ----------
+  { id: 'f-cintas', district: 'fabrica', giver: 'tuerca', title: 'Cintas en orden', text: 'Prendé las tres cintas transportadoras, una después de la otra.', check: (c) => [['factory-belt-0', 'factory-belt-1', 'factory-belt-2'].filter((id) => c.active(id)).length, 3], at: { x: 52, z: -60 } },
+  { id: 'f-porton', district: 'fabrica', giver: 'tuerca', title: 'El portón trabado', text: 'Abrí el portón de la sala de máquinas cerrando su circuito en el Mundo Voltio.', check: (c) => c.flag('fabrica-open'), at: { x: 92, z: -74 } },
+  { id: 'f-maquina', district: 'fabrica', giver: 'tuerca', title: 'La Gran Máquina', text: 'Adentro: caldera → engranaje → Gran Máquina.', check: (c) => c.active('factory-machine'), at: { x: 92, z: -79 }, reward: 'pack' },
+  { id: 'f-robots', district: 'fabrica', giver: 'tuerca', title: 'Robots ayudantes', text: 'Reiniciá con la mochila a los 5 robots dormidos.', check: (c) => c.awakeKind('robot') },
+  { id: 'f-techo', district: 'fabrica', giver: 'tuerca', title: 'Montacargas', text: 'Subí en el montacargas al techo del depósito (anda cuando las cintas andan).', check: (c) => c.flag('roof-factory'), at: { x: 71.3, z: -90 } },
+  { id: 'f-tirolesa', district: 'fabrica', giver: 'tuerca', title: 'Bajada de la fábrica', text: 'Bajá del techo del depósito por la tirolesa.', check: (c) => c.flag('zip-factory') },
+  { id: 'f-faroluz', district: 'fabrica', giver: 'tuerca', title: 'Faroluz', text: 'Rescatá a Faroluz en el Mundo Voltio (¡dicen que vio a la Gran Chispa!).', check: (c) => c.chispi('faroluz'), at: { x: 104, z: -52 }, reward: 'pack' },
+  { id: 'f-carrera', district: 'fabrica', giver: 'tuerca', title: 'Turno rápido', text: 'Ganá la carrera de aros de la fábrica.', check: (c) => c.flag('race-fabrica'), at: { x: 60, z: -44 } },
+  { id: 'f-notas', district: 'fabrica', giver: 'tuerca', title: 'Ruido de máquinas', text: 'Juntá las 6 notas de la fábrica (una está en el techo del depósito).', check: (c) => c.notes('fabrica') },
   // ---------- De noche (Fase 13) ----------
   { id: 'n-noche', district: 'noche', giver: 'lucio', title: 'Primera noche', text: 'Esperá a que se haga de noche (o dormí una siesta en tu casa).', check: (c) => c.flag('night-seen') },
   { id: 'n-buhos', district: 'noche', giver: 'lucio', title: 'Los búhos', text: 'Despertá con la mochila a los 4 búhos (solo se despiertan de noche).', check: (c) => c.awakeKind('owl'), reward: 'pack' },

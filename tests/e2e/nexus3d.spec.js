@@ -306,8 +306,8 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     return { nests, sleepers: wm.sleepers.map((s) => ({ id: s.id, x: s.x, z: s.z })) };
   });
   expect(info.nests.length).toBe(6);
-  expect(info.sleepers.length).toBe(45);
-  expect(await text(page, 'awake')).toBe('✦ 0/45');
+  expect(info.sleepers.length).toBe(50);
+  expect(await text(page, 'awake')).toBe('✦ 0/50');
   expect(await text(page, 'charge')).toBe('🎒 ○○○○○');
 
   // Con la mochila vacía no se despierta nada
@@ -350,7 +350,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     woken += 1;
     expect(await w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, sl.id), `despierta ${sl.id}`).toBe(true);
     expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
-    expect(await text(page, 'awake')).toBe(`✦ ${woken}/45`);
+    expect(await text(page, 'awake')).toBe(`✦ ${woken}/50`);
     if (woken === 1) {
       await touch(page);
       expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
@@ -372,7 +372,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
-  expect(await text(page, 'awake')).toBe('✦ 45/45');
+  expect(await text(page, 'awake')).toBe('✦ 50/50');
   expect(await text(page, 'charge')).toBe('🎒 ●○○○○');
   expect(await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id?.startsWith('spark-hidden')).length)).toBe(9);
 
@@ -1968,4 +1968,123 @@ test('3D: día y noche — búhos nocturnos, estrellas, siesta que cambia la hor
   const book = await w(() => window.__nexus3d.world.questBook().find((d) => d.district === 'noche'));
   expect(book.hasPiece).toBe(false);
   expect(book.quests.length).toBeGreaterThanOrEqual(8);
+});
+
+test('3D: Fábrica de Chispas — cintas en orden, montacargas, techo, tirolesa, portón Voltio, Gran Máquina y robots', async ({ page }) => {
+  test.setTimeout(360_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const active = (id) => w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, id);
+  const pos = () => w(() => window.__nexus3d.world.nexus.position.toArray());
+  const flag = (f) => w((f) => window.__nexus3d.world.progress.hasFlag(f), f);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Se llega caminando desde el Parque, por el este
+  await tp(page, 40, -75);
+  await page.keyboard.down('KeyD');
+  await step(page, 2);
+  await page.keyboard.up('KeyD');
+  expect((await pos())[0]).toBeGreaterThan(46);
+  await step(page, 0.6);
+  expect(await text(page, 'districtBanner')).toContain('Fábrica');
+
+  // Las cintas van en orden: la 2 no arranca si la 1 está apagada
+  await tp(page, 58.9, -63.7);
+  await touch(page);
+  expect(await text(page, 'msg')).toMatch(/energía/i);
+  await connect(page, [52.9, -59.1], [58.9, -63.7]);
+  expect(await active('factory-belt-0')).toBe(true);
+  await connect(page, [58.9, -63.7], [66.9, -57.7]);
+  await connect(page, [66.9, -57.7], [74.9, -63.7]);
+  expect([await active('factory-belt-1'), await active('factory-belt-2')]).toEqual([true, true]);
+  const crateX = await w(() => window.__nexus3d.world.world.factory.boxes[0].position.x);
+  await step(page, 0.5);
+  expect(await w(() => window.__nexus3d.world.world.factory.boxes[0].position.x)).not.toBe(crateX);
+
+  // Montacargas: lleva al Nexus al techo del depósito
+  await tp(page, 71.6, -90);
+  for (let i = 0; i < 30 && (await pos())[1] < 5.5; i += 1) await step(page, 0.25);
+  expect((await pos())[1]).toBeGreaterThan(5.5);
+  await page.keyboard.down('KeyA');
+  await step(page, 0.8);
+  await page.keyboard.up('KeyA');
+  await step(page, 0.2);
+  expect(await flag('roof-factory')).toBe(true);
+  expect((await pos())[1]).toBeGreaterThan(5.5);
+
+  // Tirolesa del techo hasta la entrada
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(56.6, 6.05, -86.4);
+    g.focus.set(56.6, 0, -86.4);
+  });
+  await step(page, 0.1);
+  expect(await text(page, 'interact')).toContain('Tirolesa');
+  await touch(page);
+  for (let i = 0; i < 40 && (await w(() => Boolean(window.__nexus3d.world.zip))); i += 1) await step(page, 0.25);
+  expect(await flag('zip-factory')).toBe(true);
+  await step(page, 1.5);
+  expect((await pos())[1]).toBeLessThan(0.5);
+
+  // El portón está trabado: se abre con el circuito del Mundo Voltio
+  await tp(page, 92, -78.6);
+  expect((await pos())[2]).toBeGreaterThan(-79.5);
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    p.setFlag('hood');
+    p.setFlag('voltio-seen');
+    document.body.classList.add('has-hood');
+  });
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  const nodes = await w(() => window.__nexus3d.world.voltio.nodes.filter((n) => n.circuit === 'fabrica-open').map((n) => [n.x, n.z]));
+  expect(nodes.length).toBe(3);
+  for (const [x, z] of nodes) await tp(page, x, z);
+  await step(page, 0.1);
+  expect(await flag('fabrica-open')).toBe(true);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.3);
+
+  // Sala de máquinas: caldera → engranaje → Gran Máquina
+  await tp(page, 92, -79.1);
+  expect(await text(page, 'interact')).toBe('Entrar');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  const hall = await w(() => {
+    const h = window.__nexus3d.world.world.factory.hall;
+    return { s: h.source, b: h.boiler, g: h.gear, m: h.machine };
+  });
+  await tp(page, hall.g.x + 1.2, hall.g.z + 0.6);
+  await touch(page);
+  expect(await active('factory-gear')).toBe(false);
+  await connect(page, [hall.s.x + 0.9, hall.s.z + 0.9], [hall.b.x + 0.4, hall.b.z + 1.4]);
+  expect(await active('factory-boiler')).toBe(true);
+  await connect(page, [hall.b.x + 0.4, hall.b.z + 1.4], [hall.g.x + 1.2, hall.g.z + 0.6]);
+  await connect(page, [hall.g.x + 1.2, hall.g.z + 0.6], [hall.m.x + 0.6, hall.m.z + 2]);
+  expect(await active('factory-machine')).toBe(true);
+  await step(page, 1.5);
+  expect(await text(page, 'storyWho')).toContain('Gran Chispa');
+  await page.evaluate(() => document.getElementById('story').click());
+  await tp(page, 1203.5, 3.7);
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(false);
+
+  // Un robot ayudante dormido se reinicia con la mochila
+  const robot = await w(() => {
+    const s = window.__nexus3d.world.sleepers.find((k) => k.kind === 'robot');
+    return [s.x, s.z];
+  });
+  await w(() => window.__nexus3d.world.setCharge(5));
+  await tp(page, robot[0], robot[1] + 1.2);
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.sleepers.find((k) => k.kind === 'robot').isActive)).toBe(true);
+
+  // La Ingeniera Tuerca está contenta; la parada de tren existe; se guarda
+  await step(page, 1);
+  expect(await w(() => window.__nexus3d.world.residents.find((r) => r.id === 'tuerca').isHappy)).toBe(true);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await active('factory-belt-2')).toBe(true);
+  expect(await active('factory-machine')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.questBook().some((d) => d.district === 'fabrica'))).toBe(true);
 });

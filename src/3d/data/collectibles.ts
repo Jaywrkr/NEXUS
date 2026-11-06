@@ -68,6 +68,14 @@ export const NOTES: NoteSpot[] = [
     [-84, 0.9, 62],
     [-70, 0.9, 96],
   ]),
+  ...n('fabrica', [
+    [62, 6.9, -90], // en el techo del depósito
+    [66, 1.8, -60], // arriba de una cinta
+    [50.6, 1.9, -47.1], // arriba de los barriles
+    [100, 0.9, -50],
+    [110, 0.9, -96],
+    [48, 0.9, -90],
+  ]),
   ...n('puerto', [
     [-3.3, 1.8, 90], // arriba de los cajones
     [16.7, 1.8, 74], // otros cajones
@@ -194,6 +202,21 @@ export const RACES: Race[] = [
       [-86, 1.2, 96],
       [-86, 1.2, 86],
       [-90, 1.2, 86],
+    ],
+  },
+  {
+    id: 'race-fabrica',
+    district: 'fabrica',
+    name: 'Turno rápido',
+    time: 30,
+    start: { x: 60, z: -44 },
+    rings: [
+      [72, 1.2, -44],
+      [86, 1.2, -46],
+      [100, 1.2, -56],
+      [104, 1.2, -70],
+      [90, 1.2, -66],
+      [76, 1.2, -74],
     ],
   },
   {

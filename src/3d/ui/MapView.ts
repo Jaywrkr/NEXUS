@@ -5,6 +5,7 @@ import { STATION_CORRIDOR, STATION_REGION } from '../world/Station';
 import { CERRO, CERRO_CORRIDOR, CERRO_REGION } from '../world/Cerro';
 import { CREEK, FOREST_FROM_CERRO, FOREST_FROM_PARK, FOREST_REGION, TREE } from '../world/Forest';
 import { FARM, FARM_FROM_CENTRO, FARM_FROM_PORT, FARM_REGION } from '../world/Farm';
+import { FACTORY, FACTORY_FROM_PARK, FACTORY_FROM_SKATE, FACTORY_REGION } from '../world/Factory';
 import { PIERS, PORT_CORRIDOR, PORT_REGION, SEA_Z } from '../world/Port';
 
 /*
@@ -79,6 +80,9 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
     [FARM_REGION, [190, 170, 100]],
     [FARM_FROM_CENTRO, [190, 170, 100]],
     [FARM_FROM_PORT, [190, 170, 100]],
+    [FACTORY_REGION, [170, 160, 150]],
+    [FACTORY_FROM_PARK, [170, 160, 150]],
+    [FACTORY_FROM_SKATE, [170, 160, 150]],
     [PORT_REGION, [150, 160, 190]],
     [PORT_CORRIDOR, [150, 160, 190]],
   ] as [{ minX: number; maxX: number; minZ: number; maxZ: number }, number[]][]) {
@@ -103,6 +107,12 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
   ctx.fillRect(px(-76), pz(SEA_Z), 176 * sx, 30 * sz);
   ctx.fillStyle = '#a97a52';
   for (const p of PIERS) ctx.fillRect(px(p.minX), pz(p.minZ), (p.maxX - p.minX) * sx, (p.maxZ - p.minZ) * sz);
+  // Sala de máquinas y depósito de la fábrica
+  ctx.fillStyle = '#4a4656';
+  const fh = FACTORY.hall;
+  ctx.fillRect(px(fh.x - fh.w / 2), pz(fh.z - fh.d / 2), fh.w * sx, fh.d * sz);
+  const fw = FACTORY.warehouse;
+  ctx.fillRect(px(fw.minX), pz(fw.minZ), (fw.maxX - fw.minX) * sx, (fw.maxZ - fw.minZ) * sz);
   // Campos y maizal de la granja
   ctx.fillStyle = '#7a5a3a';
   ctx.fillRect(px(FARM.fields.minX), pz(FARM.fields.minZ), (FARM.fields.maxX - FARM.fields.minX) * sx, (FARM.fields.maxZ - FARM.fields.minZ) * sz);

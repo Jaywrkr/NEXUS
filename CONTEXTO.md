@@ -300,6 +300,13 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - Render: `Renderer.night` (uniform `night` del post-proceso: oscurece y azula conservando lo brillante), `World.night` (sol/ambiente, niebla y fondo azul noche, `skyNight` del cielo con estrellas). Linterna `PointLight` en el Nexus.
 - Búhos: `SleeperKind` `owl` (4), `wakeWithBackpack` no los despierta de día. Flags nocturnos en `updateClock`: `night-seen`, `stars-cerro`, `tree-night`, `wheel-night`, `faro-night`, `dance-fireflies`; `race-night` al ganar una carrera; `napped` en la cama. Libreta: sección `noche` sin Pieza (`NO_PIECE`, `hasPiece` en `questBook`).
 
+### Fábrica de Chispas (Decisión 058, Fase 14)
+
+- **Región** `FACTORY_REGION` (x 45…112, z −100…−38) + `FACTORY_FROM_PARK` (x 35…46, z −78…−72) + `FACTORY_FROM_SKATE` (x 75…81, z −39…−19). Distrito `fabrica`, parada de tren (50, −52). Archivos: `world/Factory.ts` (`FACTORY`, `liftHeight`, `buildFactory`), `objects/factory.ts` (`FactoryPart`: `belt`/`boiler`/`gear`/`machine`; `canInitiate` = prendida y no es la máquina).
+- **Cintas** `factory-belt-0..2` (motores en `FACTORY.belts` con z + 1,4): `factory-belt-source` → cinta 0 (tema `fabrica`) → 1 → 2. `updateFactory` mueve `World.factory.boxes` y, con la cinta 3, el **montacargas** (`liftRect.h` / `liftMesh`, ciclo de 10 s hasta `warehouse.h` = 6; lleva al Nexus si está parado arriba). Techo del depósito → flag `roof-factory`; tirolesa `World.factory.zipLine` → flag `zip-factory`.
+- **Portón**: circuito Voltio `fabrica-open` (`FACTORY.gateNodes`) → `World.factory.openGate()` (saca la barrera). Puerta (92, −79,1). **Sala** x = 1200: `factory-hall-source` → `factory-boiler` (tema `fabrica`) → `factory-gear` → `factory-machine` (revive la sala, relato de Tuerca).
+- Cosa dormida `robot` (5, `FACTORY.robots`, al final de la lista). Tuerca (`FACTORY.tuerca`), `tuercaText()`, `factoryStep()`. Faroluz (104, −52) es rescate. Encargos `f-*` (9), notas `note-fabrica-*`, `race-fabrica`.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -344,7 +351,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–057).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fases 11–13 hechas (Decisiones 055–057). Sigue la Fase 14: Fábrica de Chispas.**
+> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fases 11–14 hechas (Decisiones 055–058). Sigue la Fase 15: Barrio Alto y mercado.**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 

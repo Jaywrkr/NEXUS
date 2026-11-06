@@ -62,6 +62,7 @@ export const TUNNEL_THEMES: Record<string, TunnelTheme> = {
   fogon: { name: 'Cable del fogón', base: '#1a0a04', near: '#ff9f43', pulse: '#fff3a8', spark: '#ffd23a', bg: '#100604', deco: 'hojas' },
   molino: { name: 'Cable de viento', base: '#0a1210', near: '#cfeefa', pulse: '#fff3dc', spark: '#7be07a', bg: '#060c0a', deco: 'hojas' },
   granja: { name: 'Cable de la granja', base: '#160e04', near: '#ffd23a', pulse: '#ff9f43', spark: '#fff3dc', bg: '#0e0802', deco: 'petalos' },
+  fabrica: { name: 'Cable de la fábrica', base: '#141008', near: '#ffc23a', pulse: '#7dffef', spark: '#ff9f43', bg: '#0c0904', deco: 'ondas' },
   via: { name: 'Cable de vías', base: '#120c06', near: '#c7a17a', pulse: '#fff3a8', spark: '#ffb84a', bg: '#0b0703', deco: 'ondas' },
   skate: { name: 'Cable grafiti', base: '#140a04', near: '#ff9f43', pulse: '#d8ff6a', spark: '#7dff8a', bg: '#0d0703', deco: 'estrellas' },
   garden: { name: 'Cable de flores', base: '#1a0712', near: '#ff8fc8', pulse: '#fff0a8', spark: '#ffb3da', bg: '#12040c', deco: 'petalos' },

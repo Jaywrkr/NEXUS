@@ -345,3 +345,6 @@ Nuevo distrito al suroeste: tres molinos (uno con motor trabado en el Mundo Volt
 
 ## 3D: Fase 13 (expansión) — Día y noche
 Ciclo de día y noche con estrellas, faroles que se destacan y linterna del Nexus; búhos que solo despiertan de noche; la cama pasa la noche; 9 encargos «De noche» en la libreta. Pruebas 3D: 46 escenarios. Decisión 057.
+
+## 3D: Fase 14 (expansión) — Fábrica de Chispas
+Nuevo distrito al noreste: tres cintas transportadoras que se prenden en orden, montacargas al techo del depósito y tirolesa, portón trabado que se abre en el Mundo Voltio, sala de máquinas con caldera → engranaje → Gran Máquina (donde nació la Gran Chispa), cinco robots ayudantes dormidos, la Ingeniera Tuerca, Faroluz como rescate, notas, carrera «Turno rápido» y 9 encargos. Pruebas 3D: 47 escenarios. Decisión 058.

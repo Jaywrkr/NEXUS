@@ -62,7 +62,7 @@ export const CARDS: ChispiCard[] = [
   c('foquito', 'Foquito', 'luz', 'comun', 'sobre', 'Cuando tiene una idea, se le prende la cabeza.'),
   c('linternin', 'Linternín', 'luz', 'brillante', 'cambio', 'Le tiene miedo a la oscuridad, por eso brilla. Lucio lo cuida.', 'lucio'),
   c('tuerquin', 'Tuerquín', 'luz', 'brillante', 'cambio', 'Ayuda a Miga a arreglar todo… y a desarmarlo.', 'miga'),
-  c('faroluz', 'Faroluz', 'luz', 'dorada', 'sobre', 'Dicen que vio a la Gran Chispa antes de romperse.'),
+  c('faroluz', 'Faroluz', 'luz', 'dorada', 'rescate', 'Dicen que vio a la Gran Chispa antes de romperse.'),
   // Agua
   c('gotita', 'Gotita', 'agua', 'brillante', 'rescate', 'Salta de charco en charco sin mojarse nunca.'),
   c('charquin', 'Charquín', 'agua', 'comun', 'sobre', 'Se esconde en los charcos y salpica a las palomas.'),

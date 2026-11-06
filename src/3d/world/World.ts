@@ -12,6 +12,7 @@ import { PIERS, PORT_CORRIDOR, PORT_REGION, buildPort } from './Port';
 import { buildNexusHome, type NexusHome } from './NexusHome';
 import { FOREST_FROM_CERRO, FOREST_FROM_PARK, FOREST_REGION, buildForest, type ForestInfo } from './Forest';
 import { FARM_FROM_CENTRO, FARM_FROM_PORT, FARM_REGION, buildFarm, type FarmInfo } from './Farm';
+import { FACTORY_FROM_PARK, FACTORY_FROM_SKATE, FACTORY_REGION, buildFactory, type FactoryInfo } from './Factory';
 import { SKATE_REGION, buildSkatepark, type SkateparkInfo } from './Skatepark';
 
 export interface Rect {
@@ -70,6 +71,10 @@ const REGIONS: Rect[] = [
   FARM_FROM_CENTRO,
   FARM_FROM_PORT,
   FARM_REGION,
+  // Fase 14: la Fábrica de Chispas (desde el Parque y desde el Skatepark)
+  FACTORY_FROM_PARK,
+  FACTORY_FROM_SKATE,
+  FACTORY_REGION,
 ];
 /** Jardín municipal (zona 5): borde de cercos, entradas al norte y al este. */
 export const GARDEN = { minX: -26, maxX: 4, minZ: 47, maxZ: 61.5 };
@@ -177,6 +182,8 @@ export class World {
   readonly forest: ForestInfo;
   /** Fase 12: la granja (campos, invernadero y granero en x = 1100). */
   readonly farm: FarmInfo;
+  /** Fase 14: la fábrica (cintas, montacargas, portón y sala de máquinas en x = 1200). */
+  readonly factory: FactoryInfo;
 
   constructor() {
     const s = this.scene;
@@ -233,9 +240,11 @@ export class World {
     this.forest = buildForest(s, this.rects, this.circles);
     this.zipLines.push(this.forest.zipLine);
     this.farm = buildFarm(s, this.rects, this.circles);
+    this.factory = buildFactory(s, this.rects, this.circles);
+    this.zipLines.push(this.factory.zipLine);
     this.zipLines.push(this.cerro.zipLine);
     this.espejos = buildMirrorRoom(s, this.rects);
-    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller, this.espejos, this.cerro.cave, this.home.info, this.farm.barn);
+    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller, this.espejos, this.cerro.cave, this.home.info, this.farm.barn, this.factory.hall);
     this.buildOutsideFx();
 
     // Rendimiento: toda la escenografía quieta se junta en pocas mallas.
