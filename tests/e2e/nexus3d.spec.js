@@ -2214,6 +2214,17 @@ test('3D: Barrio Alto — mercado que se pasa la luz, cine con película, farol 
   await touch(page);
   expect(await w(() => window.__nexus3d.world.sleepers.find((k) => k.kind === 'cat').isActive)).toBe(true);
 
+  // Con el mundo grande hay muchas manchas de color: una nueva nunca se pierde (se juntan las más cercanas)
+  await w(() => {
+    const g = window.__nexus3d.world;
+    for (let i = 0; i < 40; i += 1) g.addLife(-80 + i * 4, -60 + (i % 3) * 5, 3, false);
+    g.addLife(152, -29, 4, false);
+  });
+  await step(page, 0.2);
+  expect(await w(() => window.__nexus3d.world.lifeSpots.length)).toBeLessThanOrEqual(32);
+  expect(await w(() => window.__nexus3d.world.lifeAt(152, -29))).toBeGreaterThan(0.9);
+  expect(await w(() => window.__nexus3d.world.lifeAt(119, 18))).toBeGreaterThan(0.9);
+
   // Don Kiosko y Luli están contentos; se guarda
   await step(page, 1);
   expect(await w(() => ['kiosko', 'luli'].map((id) => window.__nexus3d.world.residents.find((r) => r.id === id).isHappy))).toEqual([true, true]);

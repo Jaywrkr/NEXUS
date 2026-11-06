@@ -451,6 +451,7 @@ export class WorldMode {
     const libSource = new EnergySource('alto-lamp-source', ALTO.libSource.x, ALTO.libSource.z);
     this.libLamp = new ReadingLamp('alto-lamp', ALTO.libLamp.x, ALTO.libLamp.z);
     this.libLamp.unlocked = this.progress.hasFlag('biblio-open');
+    if (this.progress.hasFlag('alto-top')) this.addLife(146.5, 11, 15, false);
     // La casa del Nexus: lo que ya se arregló
     for (const it of HOME_ITEMS) if (this.progress.hasFlag(`casa-${it.id}`)) this.world.home.fix(it.id, false);
     if (this.homeInsideDone) this.world.home.gray.revive(false);
@@ -751,13 +752,45 @@ export class WorldMode {
   private readonly lifeSpots: { x: number; z: number; current: number; target: number }[] = [];
 
   private addLife(x: number, z: number, radius: number, animate: boolean): void {
-    if (this.lifeSpots.length >= LIFE_SPOTS) {
-      // Sin lugar: agrandar el más cercano en vez de perder la vida nueva
-      const near = this.lifeSpots.reduce((a, b) => (Math.hypot(a.x - x, a.z - z) < Math.hypot(b.x - x, b.z - z) ? a : b));
-      near.target = Math.max(near.target, radius);
-      return;
-    }
+    // Si ya cae dentro de una mancha de color, no hace falta otra
+    if (this.lifeSpots.some((s) => Math.hypot(s.x - x, s.z - z) + radius <= s.target + 0.05)) return;
+    // Sin lugar (el shader tiene LIFE_SPOTS): se juntan en una las dos manchas que menos agrandan al unirse
+    if (this.lifeSpots.length >= LIFE_SPOTS) this.mergeLifeSpots();
     this.lifeSpots.push({ x, z, current: animate ? 0.5 : radius, target: radius });
+  }
+
+  /** Une las dos manchas de vida más «baratas» de juntar en un círculo que las envuelve. */
+  private mergeLifeSpots(): void {
+    const L = this.lifeSpots;
+    let bi = 0;
+    let bj = 1;
+    let best = Infinity;
+    let merged = { x: 0, z: 0, r: 0 };
+    for (let i = 0; i < L.length; i += 1) {
+      for (let j = i + 1; j < L.length; j += 1) {
+        const a = L[i];
+        const b = L[j];
+        const d = Math.hypot(b.x - a.x, b.z - a.z);
+        let c: { x: number; z: number; r: number };
+        if (d + b.target <= a.target) c = { x: a.x, z: a.z, r: a.target };
+        else if (d + a.target <= b.target) c = { x: b.x, z: b.z, r: b.target };
+        else {
+          const r = (d + a.target + b.target) / 2;
+          const k = (r - a.target) / d;
+          c = { x: a.x + (b.x - a.x) * k, z: a.z + (b.z - a.z) * k, r };
+        }
+        const cost = c.r * c.r - a.target * a.target - b.target * b.target;
+        if (cost < best) {
+          best = cost;
+          bi = i;
+          bj = j;
+          merged = c;
+        }
+      }
+    }
+    const done = L[bi].current >= L[bi].target - 0.05 && L[bj].current >= L[bj].target - 0.05;
+    L[bi] = { x: merged.x, z: merged.z, current: done ? merged.r : Math.max(L[bi].current, L[bj].current), target: merged.r };
+    L.splice(bj, 1);
   }
 
   private updateLife(dt: number): void {
@@ -766,6 +799,7 @@ export class WorldMode {
       spot.current += (spot.target - spot.current) * Math.min(1, dt * 1.6);
       LIFE.spots[i].set(spot.x, spot.z, spot.current, 0);
     });
+    for (let i = this.lifeSpots.length; i < LIFE_SPOTS; i += 1) LIFE.spots[i].set(0, 0, 0, 0);
     this.world.mood = this.zonesDone() / ZONE_COUNT;
   }
 
@@ -1500,6 +1534,7 @@ export class WorldMode {
       { name: 'Mercado', x: 119, z: 19, alive: this.progress.hasFlag('alto-market') },
       { name: 'Cine', x: ALTO.cine.x, z: ALTO.cine.z, alive: this.projector.isActive },
       { name: 'Biblioteca', x: ALTO.library.x, z: ALTO.library.z, alive: this.libLamp.isActive },
+      { name: 'Terrazas', x: 146.5, z: 11, alive: this.progress.hasFlag('alto-top') },
       { name: 'Cintas', x: 66, z: -63, alive: this.belts[2].isActive },
       { name: 'Faro', x: PORT.lighthouse.x, z: PORT.lighthouse.z - 3, alive: this.lighthouse.isActive },
     ];
@@ -2970,7 +3005,8 @@ export class WorldMode {
     }
     if (roof.h === 5 && !this.progress.hasFlag('alto-top')) {
       this.progress.setFlag('alto-top');
-      this.toast('🏙 ¡Arriba de todo el Barrio Alto!', 'ok');
+      this.addLife(146.5, 11, 15, true);
+      this.toast('🏙 ¡Arriba de todo! Las terrazas recuperaron el color', 'ok');
     }
   }
 

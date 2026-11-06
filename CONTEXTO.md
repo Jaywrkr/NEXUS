@@ -313,6 +313,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Mercado**: `alto-market-source` → cualquier `alto-stall-<kind>` (tema `mercado`); cada puesto prendido → cualquier otro (`MarketStall.canInitiate` = prendido; 30 reglas). Con los 6: flag `alto-market`, `World.alto.lightMarquee()`.
 - **Cine** puerta (114, −13,1), abre con `alto-market`; sala x = 1300: `alto-cine-source` → `alto-projector` (tema `cine`); `World.alto.film(t)` dibuja la película en un canvas (solo con el Nexus adentro). **Biblioteca**: `alto-lamp-source` → `alto-lamp` (tema `biblio`, `available` = flag `biblio-open`, circuito Voltio `ALTO.libNodes`), `lightLibrary()`.
 - **Terrazas** `ALTO.roofs` (rects con `h` 1…5, x 134…159, z 8…14), rampita `ALTO.kicker` agregada a `World.skate.kickers`; flags `alto-top` (techo de 5 m), `roof-board` (techo en patineta), tirolesa `World.alto.zipLine` → `zip-alto`. `updateAlto`, `altoStep`, `kioskoText`, `luliText`.
+- Llegar al techo de 5 m devuelve el color a las terrazas (`addLife`). **Manchas de vida**: el shader tiene `LIFE_SPOTS` = 32; si ya están todas, `mergeLifeSpots()` junta las dos que menos agrandan en un círculo que las envuelve (antes la vida nueva se perdía en la mancha más cercana), y una mancha que ya queda adentro de otra no se agrega.
 - Cosa dormida `cat` (5, `ALTO.cats`). Turbochispa (150, 24) es rescate. Encargos `a-*` (10), notas `note-alto-*`, `race-alto` (`board: true`).
 
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
