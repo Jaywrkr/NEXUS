@@ -8,6 +8,7 @@ import { FARM, FARM_FROM_CENTRO, FARM_FROM_PORT, FARM_REGION } from '../world/Fa
 import { FACTORY, FACTORY_FROM_PARK, FACTORY_FROM_SKATE, FACTORY_REGION } from '../world/Factory';
 import { ALTO, ALTO_FROM_SKATE, ALTO_REGION } from '../world/BarrioAlto';
 import { JETTY, PLAYA_FROM_PORT, PLAYA_FROM_STATION, PLAYA_REGION } from '../world/Playa';
+import { ISLA, ISLA_PIER, ISLA_REGION, VOLCANO } from '../world/Isla';
 import { PIERS, PORT_CORRIDOR, PORT_REGION, SEA_Z } from '../world/Port';
 
 /*
@@ -91,6 +92,8 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
     [PLAYA_FROM_PORT, [242, 220, 160]],
     [PLAYA_FROM_STATION, [242, 220, 160]],
     [JETTY, [150, 144, 130]],
+    [ISLA_REGION, [150, 190, 110]],
+    [ISLA_PIER, [169, 122, 82]],
     [PORT_REGION, [150, 160, 190]],
     [PORT_CORRIDOR, [150, 160, 190]],
   ] as [{ minX: number; maxX: number; minZ: number; maxZ: number }, number[]][]) {
@@ -115,6 +118,14 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
   ctx.fillRect(px(-76), pz(SEA_Z), 176 * sx, 30 * sz);
   ctx.fillStyle = '#a97a52';
   for (const p of PIERS) ctx.fillRect(px(p.minX), pz(p.minZ), (p.maxX - p.minX) * sx, (p.maxZ - p.minZ) * sz);
+  // Templo y volcán de la isla
+  ctx.fillStyle = '#9a9484';
+  const it = ISLA.temple;
+  ctx.fillRect(px(it.x - it.w / 2), pz(it.z - it.d / 2), it.w * sx, it.d * sz);
+  ctx.fillStyle = '#6e5a50';
+  ctx.beginPath();
+  ctx.arc(px(VOLCANO.x), pz(VOLCANO.z), VOLCANO.r * sx, 0, Math.PI * 2);
+  ctx.fill();
   // Cine, biblioteca y terrazas del Barrio Alto
   for (const [b, col] of [
     [ALTO.cine, '#a0565e'],

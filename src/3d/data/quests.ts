@@ -54,11 +54,12 @@ export const DISTRICT_NAMES: Record<string, string> = {
   fabrica: 'Fábrica de Chispas',
   alto: 'Barrio Alto y mercado',
   playa: 'Playa',
+  isla: 'Isla misteriosa',
   noche: '🌙 De noche',
 };
 
 /** Distritos con libreta (en orden); los de las fases siguientes se suman acá. */
-export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque', 'granja', 'fabrica', 'alto', 'playa', 'noche'];
+export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque', 'granja', 'fabrica', 'alto', 'playa', 'isla', 'noche'];
 /** Secciones de la libreta que no tienen Pieza (encargos sueltos). */
 export const NO_PIECE = new Set(['noche']);
 
@@ -201,6 +202,18 @@ export const QUESTS: Quest[] = [
   { id: 'p-olita', district: 'playa', giver: 'coral', title: 'Olita', text: 'Rescatá a Olita en el Mundo Voltio, cerca del kiosco.', check: (c) => c.chispi('olita'), at: { x: 96, z: 68 }, reward: 'pack' },
   { id: 'p-carrera', district: 'playa', giver: 'coral', title: 'Carrera de surf', text: 'En patineta: pasá los aros sobre el mar (uno se alcanza saltando una ola).', check: (c) => c.flag('race-playa'), at: { x: 54, z: 92 } },
   { id: 'p-notas', district: 'playa', giver: 'coral', title: 'Canción del mar', text: 'Juntá las 6 notas de la playa (una en la torre y otra en la punta de la escollera).', check: (c) => c.notes('playa') },
+  // ---------- Isla misteriosa (Fase 17) ----------
+  { id: 'i-lancha', district: 'isla', giver: 'pip', title: 'Al otro lado del mar', text: 'Prendé la lancha de Marina (punta del muelle oeste) y cruzá a la isla. Necesita el faro chiquito de la playa.', check: (c) => c.flag('isla-visit'), at: { x: -19.5, z: 110.5 } },
+  { id: 'i-eco', district: 'isla', giver: 'pip', title: 'La cueva del eco', text: 'Entrá a la cueva de rocas y escuchá el eco.', check: (c) => c.flag('cueva-eco'), at: { x: -18, z: 164 } },
+  { id: 'i-portal', district: 'isla', giver: 'pip', title: 'La puerta del templo', text: 'La puerta de piedra del templo se abre cerrando su circuito en el Mundo Voltio.', check: (c) => c.flag('templo-open'), at: { x: -6, z: 186 } },
+  { id: 'i-templo', district: 'isla', giver: 'pip', title: 'La chispa antigua', text: 'Adentro, prendé las piedras en el orden del mural y después el altar.', check: (c) => c.active('isla-altar'), at: { x: -6, z: 184 }, reward: 'pack' },
+  { id: 'i-cima', district: 'isla', giver: 'pip', title: 'La cima del volcán', text: 'Subí al volcán por las rocas en espiral.', check: (c) => c.flag('volcan-top'), at: { x: 37.7, z: 183 } },
+  { id: 'i-volcan', district: 'isla', giver: 'pip', title: 'El volcán dormido', text: 'Arriba, en el cráter, llevale energía al corazón del volcán.', check: (c) => c.active('isla-heart'), at: { x: 30, z: 182 }, reward: 'pack' },
+  { id: 'i-vertiente', district: 'isla', giver: 'pip', title: 'Agua tibia', text: 'Con el volcán despierto, mojate los pies en la vertiente tibia.', check: (c) => c.flag('vertiente'), at: { x: 22, z: 192 } },
+  { id: 'i-tortugas', district: 'isla', giver: 'pip', title: 'Las tortugas', text: 'Despertá con la mochila a las 5 tortugas de la isla (¡despacito!).', check: (c) => c.awakeKind('turtle') },
+  { id: 'i-caracolin', district: 'isla', giver: 'pip', title: 'Caracolín', text: 'Rescatá a Caracolín en el Mundo Voltio, en la selva.', check: (c) => c.chispi('caracolin'), at: { x: -12, z: 170 } },
+  { id: 'i-carrera', district: 'isla', giver: 'pip', title: 'Carrera de la selva', text: 'Pasá los aros entre los árboles de la selva.', check: (c) => c.flag('race-isla'), at: { x: 14, z: 153 } },
+  { id: 'i-notas', district: 'isla', giver: 'pip', title: 'Canción de la isla', text: 'Juntá las 6 notas de la isla (una está en la cima del volcán).', check: (c) => c.notes('isla') },
   // ---------- De noche (Fase 13) ----------
   { id: 'n-noche', district: 'noche', giver: 'lucio', title: 'Primera noche', text: 'Esperá a que se haga de noche (o dormí una siesta en tu casa).', check: (c) => c.flag('night-seen') },
   { id: 'n-buhos', district: 'noche', giver: 'lucio', title: 'Los búhos', text: 'Despertá con la mochila a los 4 búhos (solo se despiertan de noche).', check: (c) => c.awakeKind('owl'), reward: 'pack' },

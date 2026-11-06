@@ -35,6 +35,8 @@ export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
   nora: { body: '#30406a', pants: '#2c2838', skin: '#c98e6b', hair: '#1d1630', accessory: 'conductor' },
   // Yuyo: botánico del Bosque (Fase 11); sombrero de ala ancha verde, pañuelo y binoculares
   yuyo: { body: '#9be37a', pants: '#5a4630', skin: '#c98e6b', hair: '#d8d8d8', accessory: 'ranger' },
+  // Pip: el ermitaño de la Isla misteriosa (Fase 17); sombrero de paja y pelo blanco
+  pip: { body: '#c9a26a', pants: '#6a5a40', skin: '#c98e6b', hair: '#f2f2f2', accessory: 'farmer' },
   // Coral: la salvavidas de la Playa (Fase 16); remera roja, visera y silbato
   coral: { body: '#e0453f', pants: '#ffd23a', skin: '#b9825f', hair: '#1d1630', accessory: 'lifeguard' },
   // Don Kiosko: el del mercado del Barrio Alto (Fase 15); delantal rojo y sombrero

@@ -306,8 +306,8 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     return { nests, sleepers: wm.sleepers.map((s) => ({ id: s.id, x: s.x, z: s.z })) };
   });
   expect(info.nests.length).toBe(6);
-  expect(info.sleepers.length).toBe(61);
-  expect(await text(page, 'awake')).toBe('✦ 0/61');
+  expect(info.sleepers.length).toBe(66);
+  expect(await text(page, 'awake')).toBe('✦ 0/66');
   expect(await text(page, 'charge')).toBe('🎒 ○○○○○');
 
   // Con la mochila vacía no se despierta nada
@@ -350,7 +350,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     woken += 1;
     expect(await w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, sl.id), `despierta ${sl.id}`).toBe(true);
     expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
-    expect(await text(page, 'awake')).toBe(`✦ ${woken}/61`);
+    expect(await text(page, 'awake')).toBe(`✦ ${woken}/66`);
     if (woken === 1) {
       await touch(page);
       expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
@@ -372,7 +372,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
-  expect(await text(page, 'awake')).toBe('✦ 61/61');
+  expect(await text(page, 'awake')).toBe('✦ 66/66');
   expect(await text(page, 'charge')).toBe('🎒 ●○○○○');
   expect(await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id?.startsWith('spark-hidden')).length)).toBe(9);
 
@@ -2358,4 +2358,158 @@ test('3D: Playa — kiosco, castillo, torre de Coral, escollera Voltio, faro chi
   expect(await active('playa-farito')).toBe(true);
   expect(await active('playa-castle')).toBe(true);
   expect(await w(() => window.__nexus3d.world.questBook().some((d) => d.district === 'playa'))).toBe(true);
+});
+
+test('3D: Isla misteriosa — lancha de ida y vuelta, cueva del eco, templo en orden, volcán y tortugas', async ({ page }) => {
+  test.setTimeout(420_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const active = (id) => w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, id);
+  const pos = () => w(() => window.__nexus3d.world.nexus.position.toArray());
+  const flag = (f) => w((f) => window.__nexus3d.world.progress.hasFlag(f), f);
+  const tpUp = (x, y, z) =>
+    w(([x, y, z]) => {
+      const g = window.__nexus3d.world;
+      g.nexus.position.set(x, y, z);
+      g.focus.set(x, 0, z);
+    }, [x, y, z]).then(() => step(page, 0.05));
+  const rideAcross = async () => {
+    await touch(page);
+    expect(await w(() => window.__nexus3d.world.onRide)).toBe('lancha');
+    for (let i = 0; i < 40 && (await w(() => window.__nexus3d.world.onRide)); i += 1) await step(page, 0.5);
+  };
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Sin el faro chiquito, Marina no sale al mar
+  await connect(page, [-20.4, 106.8], [-19.5, 110.2]);
+  expect(await active('lancha')).toBe(false);
+  expect(await text(page, 'toast')).toContain('faro chiquito');
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    p.saveConnection('playa-panel', 'playa-farito');
+    p.saveConnection('playa-wind', 'playa-farito');
+  });
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  await page.evaluate(() => (document.getElementById('continue').hidden ? document.getElementById('play') : document.getElementById('continue')).click());
+  await expect.poll(() => mode(page)).toContain('mode-world');
+  expect(await active('playa-farito')).toBe(true);
+
+  // Con el faro, la lancha arranca y cruza a la isla
+  await connect(page, [-20.4, 106.8], [-19.5, 110.2]);
+  expect(await active('lancha')).toBe(true);
+  await tp(page, -19.5, 110.4);
+  expect(await text(page, 'interact')).toBe('🚤 A la isla');
+  await rideAcross();
+  const there = await pos();
+  expect(Math.hypot(there[0] - 10, there[2] - 140.5)).toBeLessThan(0.5);
+  await step(page, 0.6);
+  expect(await flag('isla-visit')).toBe(true);
+  expect(await text(page, 'districtBanner')).toContain('Isla');
+
+  // Cueva del eco
+  await tp(page, -18, 164.4);
+  await step(page, 0.2);
+  expect(await flag('cueva-eco')).toBe(true);
+
+  // Templo: puerta con circuito Voltio
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    p.setFlag('hood');
+    p.setFlag('voltio-seen');
+    document.body.classList.add('has-hood');
+  });
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  const nodes = await w(() => window.__nexus3d.world.voltio.nodes.filter((n) => n.circuit === 'templo-open').map((n) => [n.x, n.z]));
+  expect(nodes.length).toBe(3);
+  for (const [x, z] of nodes) await tp(page, x, z);
+  await step(page, 0.1);
+  expect(await flag('templo-open')).toBe(true);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.3);
+  await tp(page, -6, 183.9);
+  expect(await text(page, 'interact')).toBe('Entrar');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  const hall = await w(() => {
+    const h = window.__nexus3d.world.world.isla.hall;
+    return { s: h.source, st: h.stones, a: h.altar };
+  });
+  const near = (o, dx = 0.6, dz = 1.2) => [o.x + dx, o.z + dz];
+  // Orden equivocado: el mural avisa
+  await connect(page, near(hall.s, 0.8, -0.6), near(hall.st[1]));
+  expect(await active('isla-rune-sol')).toBe(false);
+  expect(await text(page, 'toast')).toContain('mural');
+  await touch(page); // suelta la selección
+  // Orden del mural: luna → sol → estrella → altar
+  await connect(page, near(hall.s, 0.8, -0.6), near(hall.st[0]));
+  await connect(page, near(hall.st[0]), near(hall.st[1]));
+  await connect(page, near(hall.st[1]), near(hall.st[2]));
+  await connect(page, near(hall.st[2]), near(hall.a, 1.2, 0.6));
+  expect(await active('isla-altar')).toBe(true);
+  await step(page, 2);
+  expect(await text(page, 'storyWho')).toContain('Pip');
+  await page.evaluate(() => document.getElementById('story').click());
+  await tp(page, 1403.5, 3.7);
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(false);
+
+  // Volcán: se salta a la primera roca, se llega a la cima y se despierta el corazón
+  await tp(page, 39.9, 183.2);
+  await page.keyboard.down('KeyA');
+  await page.keyboard.down('KeyW');
+  await step(page, 0.2);
+  await w(() => window.__nexus3d.world.jump());
+  await step(page, 0.6);
+  await page.keyboard.up('KeyA');
+  await page.keyboard.up('KeyW');
+  await step(page, 0.2);
+  expect((await pos())[1]).toBeCloseTo(0.9, 1);
+  await tpUp(27.55, 6.3, 189.4);
+  await page.keyboard.down('KeyW');
+  await page.keyboard.down('KeyD');
+  await step(page, 0.8);
+  await page.keyboard.up('KeyW');
+  await page.keyboard.up('KeyD');
+  await step(page, 0.2);
+  expect((await pos())[1]).toBeCloseTo(6.3, 1);
+  expect(await flag('volcan-top')).toBe(true);
+  await tpUp(28.4, 6.3, 185.2);
+  await touch(page);
+  await tpUp(30.9, 6.3, 182.9);
+  await touch(page);
+  if (await w(() => window.__nexus3d.world.tunnelPending)) await rideTunnel(page, true);
+  expect(await active('isla-heart')).toBe(true);
+  await tp(page, 22, 194.3);
+  await step(page, 0.2);
+  expect(await flag('vertiente')).toBe(true);
+
+  // Una tortuga dormida se despierta con la mochila
+  const turtle = await w(() => {
+    const s = window.__nexus3d.world.sleepers.find((k) => k.kind === 'turtle');
+    return [s.x, s.z];
+  });
+  await w(() => window.__nexus3d.world.setCharge(5));
+  await tp(page, turtle[0], turtle[1] + 1.1);
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.sleepers.find((k) => k.kind === 'turtle').isActive)).toBe(true);
+  await step(page, 1);
+  expect(await w(() => window.__nexus3d.world.residents.find((r) => r.id === 'pip').isHappy)).toBe(true);
+
+  // Se guarda de qué lado quedó la lancha; se vuelve al Puerto
+  await tp(page, 10, 141);
+  await step(page, 0.6);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  await page.evaluate(() => (document.getElementById('continue').hidden ? document.getElementById('play') : document.getElementById('continue')).click());
+  await expect.poll(() => mode(page)).toContain('mode-world');
+  expect(await w(() => window.__nexus3d.world.lancha.side)).toBe(1);
+  expect(await active('isla-altar')).toBe(true);
+  await tp(page, 10, 140.8);
+  expect(await text(page, 'interact')).toBe('🚤 Volver');
+  await rideAcross();
+  const back = await pos();
+  expect(Math.hypot(back[0] + 19.5, back[2] - 110.5)).toBeLessThan(0.5);
+  expect(await w(() => window.__nexus3d.world.questBook().some((d) => d.district === 'isla'))).toBe(true);
 });

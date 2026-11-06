@@ -51,6 +51,8 @@ import { MarketStall, Projector, ReadingLamp } from '../objects/alto';
 import { ALTO } from '../world/BarrioAlto';
 import { BeachFridge, SandCastle, SmallLighthouse } from '../objects/playa';
 import { PLAYA, SURF_REGION } from '../world/Playa';
+import { RuneStone, SeaBoat, TempleAltar, VolcanoHeart, lift } from '../objects/isla';
+import { ISLA, LANCHA, VOLCANO } from '../world/Isla';
 import { FACTORY, liftHeight } from '../world/Factory';
 import { FARM } from '../world/Farm';
 import { FOREST, MUSHROOM_R, MUSHROOM_TOP, TREE } from '../world/Forest';
@@ -138,6 +140,7 @@ const CAGES: { id: string; x: number; z: number }[] = [
   { id: 'faroluz', x: FACTORY.chispi.x, z: FACTORY.chispi.z },
   { id: 'turbochispa', x: ALTO.chispi.x, z: ALTO.chispi.z },
   { id: 'olita', x: PLAYA.chispi.x, z: PLAYA.chispi.z },
+  { id: 'caracolin', x: ISLA.chispi.x, z: ISLA.chispi.z },
 ];
 
 /** Sobres escondidos por el mundo (x, z, altura). */
@@ -256,6 +259,10 @@ export class WorldMode {
   private readonly fridge: BeachFridge;
   private readonly castle: SandCastle;
   private readonly farito: SmallLighthouse;
+  private readonly lancha: SeaBoat;
+  private readonly runes: RuneStone[] = [];
+  private readonly altar: TempleAltar;
+  private readonly heart: VolcanoHeart;
   private readonly lighthouse: Lighthouse;
   private readonly granChispa = new GranChispa();
   /** Expansión (Fase 10): notas de la canción, carreras de aros, libreta y Piezas de la Gran Chispa. */
@@ -467,6 +474,17 @@ export class WorldMode {
     const windSource = new EnergySource('playa-wind', PLAYA.wind.x, PLAYA.wind.z);
     this.farito = new SmallLighthouse('playa-farito', PLAYA.farito.x, PLAYA.farito.z);
     if (this.progress.hasFlag('muelle-open')) this.world.playa.openGate();
+    // Fase 17: la Isla misteriosa
+    const lanchaSource = new EnergySource('lancha-source', LANCHA.source.x, LANCHA.source.z);
+    this.lancha = new SeaBoat('lancha', LANCHA.portDock, LANCHA.islandDock, LANCHA.route);
+    if (this.progress.count('lancha-side') === 1) this.lancha.setSide(1);
+    const temple = this.world.isla.hall;
+    const templeSource = new EnergySource('isla-temple-source', temple.source.x, temple.source.z);
+    (['luna', 'sol', 'estrella'] as const).forEach((k, i) => this.runes.push(new RuneStone(`isla-rune-${k}`, k, temple.stones[i].x, temple.stones[i].z)));
+    this.altar = new TempleAltar('isla-altar', temple.altar.x, temple.altar.z);
+    const heartSource = lift(new EnergySource('isla-heart-source', ISLA.heartSource.x, ISLA.heartSource.z), VOLCANO.h);
+    this.heart = new VolcanoHeart('isla-heart', ISLA.heart.x, ISLA.heart.z, VOLCANO.h);
+    if (this.progress.hasFlag('templo-open')) this.world.isla.openTemple();
     // La casa del Nexus: lo que ya se arregló
     for (const it of HOME_ITEMS) if (this.progress.hasFlag(`casa-${it.id}`)) this.world.home.fix(it.id, false);
     if (this.homeInsideDone) this.world.home.gray.revive(false);
@@ -507,10 +525,13 @@ export class WorldMode {
       [castleSource, 'Balde de chispas'],
       [panelSource, 'Panel solar'],
       [windSource, 'Molinito'],
+      [lanchaSource, 'Energía'],
+      [templeSource, 'Energía'],
+      [heartSource, 'Piedra caliente'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire, ...millSources, ...this.mills, ghSource, this.greenhouse, barnSource, this.incubator, tractorSource, this.tractor, beltSource, ...this.belts, hallSource, this.boiler, this.gear, this.machine, marketSource, ...this.stalls, cineSource, this.projector, libSource, this.libLamp, fridgeSource, this.fridge, castleSource, this.castle, panelSource, windSource, this.farito]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire, ...millSources, ...this.mills, ghSource, this.greenhouse, barnSource, this.incubator, tractorSource, this.tractor, beltSource, ...this.belts, hallSource, this.boiler, this.gear, this.machine, marketSource, ...this.stalls, cineSource, this.projector, libSource, this.libLamp, fridgeSource, this.fridge, castleSource, this.castle, panelSource, windSource, this.farito, lanchaSource, this.lancha, templeSource, ...this.runes, this.altar, heartSource, this.heart]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -617,6 +638,32 @@ export class WorldMode {
     this.connections.addRule({ sourceId: castleSource.id, targetId: this.castle.id, useTunnel: true });
     this.connections.addRule({ sourceId: panelSource.id, targetId: this.farito.id, useTunnel: true });
     this.connections.addRule({ sourceId: windSource.id, targetId: this.farito.id, useTunnel: true });
+    // Isla: la lancha sale al mar solo con el faro chiquito prendido
+    this.connections.addRule({
+      sourceId: lanchaSource.id,
+      targetId: this.lancha.id,
+      useTunnel: true,
+      available: () => this.farito.isActive,
+      blockedMessage: 'Marina no sale al mar sin el faro chiquito de la Playa prendido',
+    });
+    // Templo: luna → sol → estrella → altar (el orden del mural); los otros órdenes avisan
+    const [luna, sol, estrella] = this.runes;
+    const muralMsg = 'El mural muestra otro orden: primero la luna, después el sol y al final la estrella';
+    this.connections.addRule({ sourceId: templeSource.id, targetId: luna.id, useTunnel: true });
+    this.connections.addRule({ sourceId: luna.id, targetId: sol.id });
+    this.connections.addRule({ sourceId: sol.id, targetId: estrella.id });
+    this.connections.addRule({ sourceId: estrella.id, targetId: this.altar.id });
+    for (const [s, t] of [
+      [templeSource, sol],
+      [templeSource, estrella],
+      [templeSource, this.altar],
+      [luna, estrella],
+      [luna, this.altar],
+      [sol, this.altar],
+    ] as [Connectable, Connectable][]) {
+      this.connections.addRule({ sourceId: s.id, targetId: t.id, available: () => false, blockedMessage: muralMsg });
+    }
+    this.connections.addRule({ sourceId: heartSource.id, targetId: this.heart.id, useTunnel: true });
     // El faro: motor trabado (circuito Voltio) y solo prende con toda la ciudad viva
     this.connections.addRule({
       sourceId: portSource.id,
@@ -892,6 +939,8 @@ export class WorldMode {
       [this.libLamp, 'biblioteca', true],
       [this.castle, 'castillo', true],
       [this.farito, 'farito', this.farito.isActive],
+      [this.altar, 'templo', true],
+      [this.heart, 'volcan', true],
     ];
     for (const [obj, id, ok] of packFor) {
       if (target !== obj || !ok) continue;
@@ -987,6 +1036,33 @@ export class WorldMode {
       } else {
         say(`¡${name} revivió! Acercate y subite`);
       }
+    }
+    // Fase 17: la Isla misteriosa
+    if (target === this.lancha) say('¡La lancha de Marina arrancó! Subite en el muelle para cruzar a la isla');
+    if (target instanceof RuneStone) {
+      const next = { luna: 'Ahora la piedra del sol', sol: 'Falta la piedra de la estrella', estrella: '¡Las tres piedras brillan! Ahora el altar' }[target.kind];
+      say(`¡Se prendió la ${target.label.toLowerCase()}! ${next}`);
+    }
+    if (target === this.altar) {
+      this.world.isla.hall.gray.revive(animate);
+      this.addLife(ISLA.temple.x, ISLA.temple.z + 6, 16, animate);
+      say('¡El altar de la chispa antigua brilla!');
+      if (animate) {
+        after(1.6, () =>
+          this.showStory(
+            'Pip · La chispa antigua',
+            'Hace muchísimo tiempo cayó del cielo una chispa chiquita, acá en la isla. La gente la cuidó, la llevó a la ciudad y en la Fábrica la hicieron grande: ¡la Gran Chispa! Por eso brilla cuando todos se ayudan. Juntá las 12 Piezas, Nexus.',
+          ),
+        );
+        after(0.8, () => this.updateResidentMoods());
+      }
+    }
+    if (target === this.heart) {
+      this.world.isla.wakeVolcano();
+      this.addLife(VOLCANO.x, VOLCANO.z, 22, animate);
+      this.addLife(8, 170, 24, animate);
+      say('¡El volcán se despertó tranquilo: humito y agua tibia!');
+      if (animate) after(0.8, () => this.updateResidentMoods());
     }
     // Fase 16: la Playa
     if (target === this.fridge) {
@@ -1421,6 +1497,15 @@ export class WorldMode {
         story: ['Tu casa', 'Esta casita vieja es tuya, Nexus. Está toda rota… pero con chispitas de la mochila la podés ir arreglando, cosa por cosa.'],
       },
       {
+        id: 'templo',
+        info: this.world.isla.hall,
+        door: { x: ISLA.temple.x, z: ISLA.temple.z + ISLA.temple.d / 2 + 0.9 },
+        out: { x: ISLA.temple.x, z: ISLA.temple.z + ISLA.temple.d / 2 + 1.7 },
+        open: () => this.progress.hasFlag('templo-open'),
+        story: ['Pip · El templo', 'Mirá el mural de la pared: muestra en qué orden se prenden las piedras. La energía va primero a una, y cada piedra prendida le pasa la luz a la siguiente.'],
+        target: this.altar,
+      },
+      {
         id: 'cine',
         info: this.world.alto.hall,
         door: { x: ALTO.cine.doorX, z: ALTO.cine.z + ALTO.cine.d / 2 + 0.9 },
@@ -1591,6 +1676,8 @@ export class WorldMode {
       { name: 'Kiosco', x: PLAYA.kiosco.x, z: PLAYA.kiosco.z, alive: this.fridge.isActive },
       { name: 'Castillo de arena', x: PLAYA.castle.x, z: PLAYA.castle.z, alive: this.castle.isActive },
       { name: 'Faro chiquito', x: PLAYA.farito.x, z: PLAYA.farito.z, alive: this.farito.isActive },
+      { name: 'Templo', x: ISLA.temple.x, z: ISLA.temple.z, alive: this.altar.isActive },
+      { name: 'Volcán', x: VOLCANO.x, z: VOLCANO.z, alive: this.heart.isActive },
       { name: 'Cintas', x: 66, z: -63, alive: this.belts[2].isActive },
       { name: 'Faro', x: PORT.lighthouse.x, z: PORT.lighthouse.z - 3, alive: this.lighthouse.isActive },
     ];
@@ -1634,6 +1721,7 @@ export class WorldMode {
         { id: 'molino-open', nodes: FARM.millNodes, door: FARM.mills[2] },
         { id: 'biblio-open', nodes: ALTO.libNodes, door: ALTO.libLamp },
         { id: 'muelle-open', nodes: PLAYA.nodes, door: { x: 122, z: PLAYA.gateZ } },
+        { id: 'templo-open', nodes: ISLA.templeNodes, door: { x: ISLA.temple.x, z: ISLA.temple.z + ISLA.temple.d / 2 } },
         { id: 'fabrica-open', nodes: FACTORY.gateNodes, door: { x: FACTORY.hall.doorX, z: FACTORY.hall.z + 6 } },
         { id: 'faro-open', nodes: PORT.nodes, door: PORT.lighthouse },
       ],
@@ -1660,6 +1748,9 @@ export class WorldMode {
           } else if (id === 'faro-open') {
             this.lighthouse.unlocked = true;
             this.setMessage('¡Circuito cerrado! El motor del faro se destrabó');
+          } else if (id === 'templo-open') {
+            this.world.isla.openTemple();
+            this.setMessage('¡Circuito cerrado! La puerta de piedra del templo se abrió');
           } else if (id === 'muelle-open') {
             this.world.playa.openGate();
             this.setMessage('¡Circuito cerrado! Se abrió el portón de la escollera');
@@ -1700,7 +1791,7 @@ export class WorldMode {
         cages: [{ id: 'rueditas', ...this.world.skate.chispi }, ...CAGES]
           .filter((c) => !this.progress.hasChispi(c.id))
           .map((c): CageSpot => ({ ...c, color: TYPES[CARD_BY_ID.get(c.id)!.type].color })),
-        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open', 'molino-open', 'fabrica-open', 'biblio-open', 'muelle-open'].filter((f) => this.progress.hasFlag(f)),
+        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open', 'molino-open', 'fabrica-open', 'biblio-open', 'muelle-open', 'templo-open'].filter((f) => this.progress.hasFlag(f)),
       },
     );
   }
@@ -1943,7 +2034,7 @@ export class WorldMode {
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
       return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
     }
-    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep() ?? this.farmStep() ?? this.factoryStep() ?? this.altoStep() ?? this.playaStep();
+    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep() ?? this.farmStep() ?? this.factoryStep() ?? this.altoStep() ?? this.playaStep() ?? this.islaStep();
     if (park) return park;
     if (this.voltio.active && !this.inSkatepark) {
       const me = this.nexus.position;
@@ -2359,6 +2450,8 @@ export class WorldMode {
       ...ALTO.cats.map(([x, z]): [SleeperKind, number, number] => ['cat', x, z]),
       // Fase 16: cangrejos de la orilla
       ...PLAYA.crabs.map(([x, z]): [SleeperKind, number, number] => ['crab', x, z]),
+      // Fase 17: tortugas de la isla
+      ...ISLA.turtles.map(([x, z]): [SleeperKind, number, number] => ['turtle', x, z]),
     ] as [SleeperKind, number, number][]) {
       const [px, pz] = place(x, z);
       make(kind, px, pz, Math.PI / 4);
@@ -2490,6 +2583,9 @@ export class WorldMode {
       [this.stalls, 'mercado'],
       [[this.fridge, this.castle], 'playa'],
       [[this.farito], 'farito'],
+      [[this.lancha], 'lancha'],
+      [[this.runes[0]], 'templo'],
+      [[this.heart], 'volcan'],
       [[this.projector], 'cine'],
       [[this.libLamp], 'biblio'],
     ];
@@ -2622,6 +2718,7 @@ export class WorldMode {
       ['kiosko', 'Don Kiosko', ALTO.kiosko],
       ['luli', 'Luli', ALTO.luli],
       ['coral', 'Coral', PLAYA.coral],
+      ['pip', 'Pip', ISLA.pip],
     ] as [string, string, { x: number; z: number; faceX: number; faceZ: number }][]) {
       const r = new Resident3D(id, name, at.x, at.z, Math.atan2(at.faceX - at.x, at.faceZ - at.z));
       r.setHeard(this.progress.hasHeard(id));
@@ -2688,6 +2785,7 @@ export class WorldMode {
       kiosko: this.progress.hasFlag('alto-market'),
       luli: this.libLamp.isActive,
       coral: this.farito.isActive,
+      pip: this.altar.isActive && this.heart.isActive,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
@@ -2704,6 +2802,7 @@ export class WorldMode {
     if (r.id === 'kiosko') return this.kioskoText();
     if (r.id === 'luli') return this.luliText();
     if (r.id === 'coral') return this.coralText();
+    if (r.id === 'pip') return this.pipText();
     const info = RESIDENTS.find((i) => i.id === r.id)!;
     // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
     if (r.id === 'bombo' && !this.fountain.isActive) {
@@ -2777,7 +2876,7 @@ export class WorldMode {
   private findRideSpot(): (Ride & Connectable) | null {
     if (this.rideOn || this.busy || this.zip || this.inside || this.voltio.active || this.connections.hasSelection() || this.nexus.riding) return null;
     const p = this.nexus.position;
-    for (const r of [this.carousel, this.wheel, this.coaster, this.boat, this.tractor] as (Ride & Connectable)[]) {
+    for (const r of [this.carousel, this.wheel, this.coaster, this.boat, this.tractor, this.lancha] as (Ride & Connectable)[]) {
       if (!r.isActive) continue;
       if (Math.hypot(p.x - r.boardAt.x, p.z - r.boardAt.z) < 1.9) return r;
     }
@@ -3054,6 +3153,73 @@ export class WorldMode {
   private showMemories(): void {
     const stars = this.fragments.filter((f) => f.isCollected).length;
     this.setMessage(`🏛️ Recuerdos: ★ ${stars} fragmentos · ✦ ${this.awakeCount()} cosas despiertas · 🃏 ${this.progress.uniqueCards} cartas · ⚡ ${this.progress.chispis.length} Chispis`);
+  }
+
+  /* ---------- Fase 17: Isla misteriosa ---------- */
+
+  private echoT = 0;
+
+  /** La lancha recuerda de qué lado quedó; Marina la trae si la llamás del otro muelle; cueva del eco, cima y vertiente. */
+  private updateIsla(dt: number): void {
+    this.world.isla.update(this.time);
+    if (!this.rideOn && this.progress.count('lancha-side') !== this.lancha.side) this.progress.setCount('lancha-side', this.lancha.side);
+    const p = this.nexus.position;
+    if (this.lancha.isActive && !this.rideOn) {
+      const o = this.lancha.otherDock;
+      if (Math.hypot(p.x - o.x, p.z - o.z) < 1.6) {
+        this.lancha.setSide(this.lancha.side === 0 ? 1 : 0);
+        this.setMessage('¡Marina te vio y trajo la lancha!');
+      }
+    }
+    if (this.districtId !== 'isla') return;
+    if (!this.progress.hasFlag('isla-visit')) {
+      this.progress.setFlag('isla-visit');
+      this.toast('🏝 ¡Llegaste a la Isla misteriosa!', 'ok');
+    }
+    const C = ISLA.cave;
+    this.echoT -= dt;
+    if (Math.hypot(p.x - C.x, p.z - C.z) < C.r - 0.6 && this.echoT <= 0) {
+      this.echoT = 4;
+      [523, 523, 523].forEach((f, i) => this.audio.tone(f, i * 0.35, 0.2, 'sine', 0.07 / (i + 1)));
+      this.setMessage('¡Hola… hola… hola…! (eco)');
+      if (!this.progress.hasFlag('cueva-eco')) this.progress.setFlag('cueva-eco');
+    }
+    if (!this.progress.hasFlag('volcan-top') && p.y > VOLCANO.h - 0.3 && Math.hypot(p.x - VOLCANO.x, p.z - VOLCANO.z) < VOLCANO.r) {
+      this.progress.setFlag('volcan-top');
+      this.toast('🌋 ¡En la cima del volcán!', 'ok');
+    }
+    if (this.heart.isActive && !this.progress.hasFlag('vertiente') && Math.hypot(p.x - ISLA.spring.x, p.z - ISLA.spring.z) < 2.6) {
+      this.progress.setFlag('vertiente');
+      this.toast('♨️ ¡Qué agüita tibia!', 'ok');
+    }
+  }
+
+  private pipText(): string {
+    if (!this.progress.hasFlag('templo-open')) return 'Soy Pip. Vivo acá hace mucho… La puerta del templo está cerrada con cables que solo se ven con la capucha ⚡.';
+    if (!this.altar.isActive) return 'Adentro del templo hay un mural. ¡Seguí su orden! Luna, sol, estrella… y el altar.';
+    if (!this.heart.isActive) return 'El volcán duerme hace siglos. Si subís por las rocas, en el cráter está su corazón. No te preocupes: es un volcán bueno.';
+    return 'La isla brilla otra vez. La chispa antigua estaría orgullosa de vos.';
+  }
+
+  /** Lo que conviene hacer en la isla. */
+  private islaStep(): { text: string; at: { x: number; z: number } | null } | null {
+    if (this.districtId !== 'isla' || this.inside) return null;
+    if (this.voltio.active) {
+      const lit = this.voltio.litNodes('templo-open');
+      if (!this.progress.hasFlag('templo-open')) return { text: `Tocá los tres nodos del templo (${lit}/3)`, at: ISLA.templeNodes[Math.min(lit, 2)] };
+      if (this.voltio.isCaged('caracolin')) return { text: '¡Caracolín está atrapado! Cerrá un círculo con tu estela alrededor de la jaula', at: ISLA.chispi };
+      return null;
+    }
+    if (!this.progress.hasFlag('templo-open')) {
+      const hood = this.progress.hasFlag('hood');
+      return { text: hood ? 'La puerta del templo está cerrada: ponete la capucha ⚡' : 'La puerta del templo tiene cables escondidos… Rulo sabe verlos', at: hood ? ISLA.templeNodes[0] : null };
+    }
+    if (!this.altar.isActive) return { text: 'Entrá al templo: piedras en el orden del mural y el altar', at: { x: ISLA.temple.x, z: ISLA.temple.z + ISLA.temple.d / 2 + 1 } };
+    if (!this.heart.isActive) {
+      if (this.nexus.position.y < VOLCANO.h - 0.5) return { text: 'Subí al volcán saltando por las rocas en espiral', at: { x: 37.7, z: 183.2 } };
+      return { text: 'Llevá la energía de la piedra caliente al corazón del volcán', at: ISLA.heartSource };
+    }
+    return null;
   }
 
   /* ---------- Fase 16: Playa ---------- */
@@ -4247,6 +4413,10 @@ export class WorldMode {
         : this.rideSpot
           ? this.rideSpot === this.boat
             ? '⛵ Subir'
+            : this.rideSpot === this.lancha
+            ? this.lancha.side === 0
+              ? '🚤 A la isla'
+              : '🚤 Volver'
             : this.rideSpot === this.tractor
             ? '🚜 Subir'
             : '🎠 Subir'
@@ -4276,6 +4446,7 @@ export class WorldMode {
     this.updateFactory(dt);
     this.updateAlto(dt);
     this.updatePlaya(dt);
+    this.updateIsla(dt);
     const note = this.voltio.active || this.inside ? null : this.notes.update(dt, this.time, this.nexus.position);
     if (note) this.onNote(note.id);
     this.updateRace(dt);

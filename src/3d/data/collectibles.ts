@@ -92,6 +92,14 @@ export const NOTES: NoteSpot[] = [
     [130, 0.9, 70],
     [80, 0.9, 108], // sobre el mar: se llega surfeando
   ]),
+  ...n('isla', [
+    [30, 7.2, 179.5], // en la cima del volcán
+    [-18, 0.9, 164], // en la cueva del eco
+    [-6, 0.9, 189],
+    [40, 0.9, 160],
+    [2, 0.9, 194],
+    [10, 0.9, 146], // en el muelle de la isla
+  ]),
   ...n('puerto', [
     [-3.3, 1.8, 90], // arriba de los cajones
     [16.7, 1.8, 74], // otros cajones
@@ -265,6 +273,21 @@ export const RACES: Race[] = [
       [92, 1.2, 104],
       [108, 1.2, 100],
       [114, 1.2, 93],
+    ],
+  },
+  {
+    id: 'race-isla',
+    district: 'isla',
+    name: 'Carrera de la selva',
+    time: 32,
+    start: { x: 14, z: 153 },
+    rings: [
+      [4, 1.2, 160],
+      [-10, 1.2, 162],
+      [-16, 1.2, 176],
+      [2, 1.2, 190],
+      [18, 1.2, 176],
+      [16, 1.2, 160],
     ],
   },
   {

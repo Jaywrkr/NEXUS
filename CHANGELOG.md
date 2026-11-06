@@ -354,3 +354,6 @@ Nuevo distrito al este del Skatepark: mercado de seis puestos que se pasan la lu
 
 ## 3D: Fase 16 (expansión) — Playa
 Nuevo distrito al este del Puerto: kiosco con heladera y sombrillas, castillo de arena que crece, torre de Coral, cangrejos dormidos, escollera con portón trabado (Mundo Voltio) y faro chiquito que necesita dos cables a la vez, y surf: en patineta se anda sobre el mar y las olas hacen volar. Coral, Olita como rescate, notas, carrera «Surf de Coral» y 11 encargos. Arreglo: las 32 manchas de color se juntan en vez de perderse. Pruebas 3D: 49 escenarios. Decisión 060.
+
+## 3D: Fase 17 (expansión) — Isla misteriosa
+La lancha de Marina cruza el mar (con el faro chiquito prendido) hasta una isla con selva, cueva del eco, tortugas dormidas, un templo con puerta Voltio y piedras que se prenden en el orden del mural, y un volcán dormido que se sube por rocas en espiral para despertar su corazón y la vertiente tibia. Pip el ermitaño, Caracolín como rescate, notas, carrera de la selva y 11 encargos. Pruebas 3D: 50 escenarios. Decisión 061.

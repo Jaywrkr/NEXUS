@@ -28,6 +28,7 @@ export const DISTRICTS: District[] = [
   { id: 'granja', name: 'Granja y molinos', minX: -110, maxX: -45, minZ: 40, maxZ: 110, open: true, color: '#e0a080' },
   { id: 'fabrica', name: 'Fábrica de Chispas', minX: 40, maxX: 120, minZ: -110, maxZ: -30, open: true, color: '#ffc23a' },
   { id: 'cerro', name: 'Cerro y cascada', minX: -110, maxX: -45, minZ: -40, maxZ: 40, open: true, color: '#7ed6df' },
+  { id: 'isla', name: 'Isla misteriosa', minX: -40, maxX: 60, minZ: 130, maxZ: 215, open: true, color: '#6fae4a' },
   { id: 'playa', name: 'Playa', minX: 46, maxX: 140, minZ: 63, maxZ: 130, open: true, color: '#5fd0e8' },
   { id: 'estacion', name: 'Estación de tren', minX: 46, maxX: 110, minZ: 30, maxZ: 70, open: true, color: '#c7a17a' },
   { id: 'puerto', name: 'Puerto y faro', minX: -45, maxX: 46, minZ: 63, maxZ: 120, open: true, color: '#4a90e2' },

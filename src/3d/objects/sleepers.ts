@@ -32,7 +32,8 @@ export type SleeperKind =
   | 'owl'
   | 'robot'
   | 'cat'
-  | 'crab';
+  | 'crab'
+  | 'turtle';
 
 /** Nombre que flota encima y frase al despertarlo. */
 export const SLEEPER_INFO: Record<SleeperKind, { label: string; wake: string }> = {
@@ -50,6 +51,7 @@ export const SLEEPER_INFO: Record<SleeperKind, { label: string; wake: string }> 
   gnome: { label: 'Enano de jardín', wake: '¡Jo, jo! El enano dio una vuelta' },
   pinwheel: { label: 'Molinete', wake: '¡El molinete giró a toda velocidad!' },
   car: { label: 'Auto', wake: '¡BIP BIP! El auto prendió las luces' },
+  turtle: { label: 'Tortuga', wake: '¡La tortuga sacó la cabeza y sonrió despacito!' },
   crab: { label: 'Cangrejo', wake: '¡Clac clac! El cangrejo saludó con las dos pinzas' },
   cat: { label: 'Gato', wake: '¡Miau! El gato se desperezó y ronronea' },
   robot: { label: 'Robot ayudante', wake: '¡Bip bup! El robot ayudante se reinició y saluda' },
@@ -647,6 +649,31 @@ export class Sleeper extends Connectable {
         this.plugAnchor.position.set(0, 0.4, 0.2);
         return 1.0;
       }
+      case 'turtle': {
+        this.collideRadius = 0.45;
+        const turtle = new THREE.Group();
+        const shell = rounded(new THREE.SphereGeometry(0.42, 12, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon('#4f8a3e'), 0.015);
+        shell.scale.y = 0.8;
+        shell.position.y = 0.08;
+        turtle.add(shell);
+        const rim = rounded(new THREE.CylinderGeometry(0.44, 0.44, 0.08, 14), toon('#d8c890'), 0.006);
+        rim.position.y = 0.08;
+        turtle.add(rim);
+        const head = rounded(new THREE.SphereGeometry(0.13, 10, 8), toon('#9ac46a'), 0.006);
+        head.position.set(0, 0.12, 0.3);
+        turtle.add(head);
+        this.p.head = head;
+        for (const sx of [-0.05, 0.05]) {
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 5), toon('#2c2838'));
+          eye.position.set(sx, 0.05, 0.1);
+          eye.scale.y = 0.2;
+          head.add(eye);
+          this.bits.push(eye);
+        }
+        add(turtle, 'turtle');
+        this.plugAnchor.position.set(0, 0.3, 0.3);
+        return 0.8;
+      }
       case 'crab': {
         this.collideRadius = 0.3;
         const crab = new THREE.Group();
@@ -977,6 +1004,10 @@ export class Sleeper extends Connectable {
       case 'crab':
         for (const e of this.bits) e.scale.y = 1;
         break;
+      case 'turtle':
+        this.p.head.position.z = 0.5;
+        for (const e of this.bits) e.scale.y = 1;
+        break;
       case 'cat':
         this.p.head.rotation.x = -0.1;
         this.p.tail.rotation.x = -0.3;
@@ -1082,6 +1113,10 @@ export class Sleeper extends Connectable {
       case 'firefly':
         [1568, 1760, 2093, 2349, 2637].forEach((f, i) => a.tone(f, i * 0.08, 0.1, 'sine', 0.05));
         break;
+      case 'turtle':
+        a.tone(220, 0, 0.3, 'sine', 0.07);
+        a.tone(294, 0.25, 0.4, 'sine', 0.06);
+        break;
       case 'crab':
         [1200, 1500, 1200, 1500].forEach((f, i) => a.tone(f, i * 0.08, 0.04, 'square', 0.03));
         break;
@@ -1126,6 +1161,11 @@ export class Sleeper extends Connectable {
     const k = r >= 0 ? r : 99;
 
     switch (this.kind) {
+      case 'turtle': {
+        this.p.turtle.rotation.y = r >= 0 && k < 2 ? Math.sin(k * 3) * 0.4 : Math.sin(T * 0.3) * 0.15;
+        if (r >= 2.1) this.react = -1;
+        break;
+      }
       case 'crab': {
         this.p.crab.position.x = r >= 0 && k < 1.5 ? Math.sin(k * 14) * 0.15 : Math.sin(T * 0.8) * 0.08;
         if (r >= 1.6) this.react = -1;

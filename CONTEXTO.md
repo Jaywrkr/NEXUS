@@ -324,6 +324,14 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Surf**: `World.setSurf(on)` agrega/quita `SURF_REGION` de `REGIONS` (se llama al subir/bajar de la patineta y en cada cuadro desde `updatePlaya`); sin tabla, `keepInRegions` devuelve al Nexus a la orilla. Olas = `PLAYA.waves`, agregadas a `World.skate.kickers` (mallas en `World.playa.waveMeshes`). Flags `surf`, `surf-air`.
 - Cosa dormida `crab` (6, `PLAYA.crabs`). Coral (`PLAYA.coral`, accesorio `lifeguard`), `coralText()`, `playaStep()`. Olita (96, 68) es rescate. Encargos `p-*` (11), notas `note-playa-*`, `race-playa` (`board: true`).
 
+### Isla misteriosa (Decisión 061, Fase 17)
+
+- **Región** `ISLA_REGION` (x −24…44, z 150…196) + `ISLA_PIER` (x 8…12, z 139…151). Distrito `isla` (antes que `playa`). Sin parada de tren: se llega en la lancha. Archivos: `world/Isla.ts` (`LANCHA`, `VOLCANO`, `VOLCANO_STEPS`, `ISLA`, `buildIsla`), `objects/isla.ts` (`SeaBoat`, `RuneStone`, `TempleAltar`, `VolcanoHeart`, `lift`).
+- **Lancha** `lancha` (`SeaBoat`, es un `Ride`): `lancha-source` (−21,2, 106) → lancha (tema `lancha`, `available` = faro chiquito prendido). `boardAt` = muelle del lado donde está (`side` 0 Puerto (−19,5, 110,5), 1 isla (10, 140,5)); al llegar cambia de lado y `leaveRide` deja al Nexus en el muelle de llegada. El lado se guarda en `progress.count('lancha-side')`; acercarse al otro muelle trae la lancha (`setSide`). Etiqueta «🚤 A la isla» / «🚤 Volver».
+- **Templo** puerta (−6, 183,9) con circuito Voltio `templo-open` (`ISLA.templeNodes`, `World.isla.openTemple()`); sala x = 1400: `isla-temple-source` → `isla-rune-luna` (tema `templo`) → `isla-rune-sol` → `isla-rune-estrella` → `isla-altar` (`RuneStone.canInitiate` = prendida); los órdenes equivocados son reglas con `available: () => false` y el mensaje del mural.
+- **Volcán** `VOLCANO` (círculo con `h` 6,3, r 6,2) + `VOLCANO_STEPS` (7 rocas, h 0,9…6,3); flag `volcan-top`. `isla-heart-source` («Piedra caliente», a 6,3 m con `lift`) → `isla-heart` (`VolcanoHeart`, tema `volcan`) → `World.isla.wakeVolcano()`; vertiente (22, 192) → flag `vertiente`. Cueva del eco `ISLA.cave` → flag `cueva-eco`; `isla-visit` al pisar la isla.
+- Cosa dormida `turtle` (5, `ISLA.turtles`). Pip (`ISLA.pip`), `pipText()`, `islaStep()`, `updateIsla()`. Caracolín (−12, 170) es rescate. Encargos `i-*` (11), notas `note-isla-*`, `race-isla`.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -368,7 +376,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–057).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fases 11–16 hechas (Decisiones 055–060). Sigue la Fase 17: Isla misteriosa.**
+> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fases 11–17 hechas (Decisiones 055–061). Sigue la Fase 18: Montaña nevada y observatorio.**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 
