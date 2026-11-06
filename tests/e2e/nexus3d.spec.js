@@ -2780,3 +2780,57 @@ test('3D: aspecto — brillo y maqueta, luz de borde, sombra de contacto, agua q
   expect(detail.n).toBeGreaterThan(800);
   expect(detail.meshes).toBeLessThan(detail.n / 10);
 });
+
+test('3D: pulido — ambiente de cada lugar (nieve, hojas, mar, luciérnagas), nubes, ola de color y cámara al conectar', async ({ page }) => {
+  test.setTimeout(240_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+  const kindAt = async (x, z, clock) => {
+    await w(([x, z, c]) => {
+      const g = window.__nexus3d.world;
+      g.setClock(c);
+      g.nexus.position.set(x, 0, z);
+      g.focus.set(x, 0, z);
+    }, [x, z, clock]);
+    await step(page, 1);
+    return w(() => window.__nexus3d.world.ambienceKind());
+  };
+  expect(await kindAt(0, -118, 0.3)).toBe('snow');
+  expect(await kindAt(-60, -62, 0.3)).toBe('leaves');
+  expect(await kindAt(-60, -62, 0.78)).toBe('fireflies');
+  expect(await kindAt(80, 92, 0.3)).toBe('glints');
+  expect(await kindAt(-16, -14, 0.3)).toBe('none');
+  // Las partículas son un solo dibujo que se ve mientras dura el ambiente
+  await kindAt(0, -118, 0.3);
+  await step(page, 2);
+  expect(await w(() => {
+    let vis = 0;
+    window.__nexus3d.world.world.scene.traverse((o) => o.isPoints && o.visible && vis++);
+    return vis;
+  })).toBeGreaterThanOrEqual(1);
+
+  // Al conectar en vivo: la cámara se acerca un poquito y una ola de luz se expande por el piso
+  await kindAt(-16, -14, 0.3);
+  const rings = () => w(() => {
+    let n = 0;
+    window.__nexus3d.world.world.scene.traverse((o) => o.userData.lifeWave && n++);
+    return n;
+  });
+  const before = await rings();
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.finishTunnel(g.connections.all.find((o) => o.id === 'energy-source'), g.connections.all.find((o) => o.id === 'lamp'), true, 0);
+  });
+  await step(page, 1);
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.finishTunnel(g.connections.all.find((o) => o.id === 'lamp'), g.connections.all.find((o) => o.id === 'door'), true, 0);
+  });
+  await step(page, 0.3);
+  expect(await w(() => window.__nexus3d.world.isoCam.zoom)).toBeGreaterThan(1.01);
+  expect(await rings()).toBeGreaterThan(before);
+  await step(page, 2);
+  expect(await w(() => window.__nexus3d.world.isoCam.zoom)).toBe(1);
+  expect(await rings()).toBe(before);
+});

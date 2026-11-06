@@ -13,6 +13,8 @@ import { Connections } from '../systems/Connections';
 import type { FeedbackKind } from '../systems/Connections';
 import { World } from '../world/World';
 import { mergeParts, referencedParts } from '../core/batch';
+import { Ambience, type AmbienceKind } from '../systems/Ambience';
+import { SEA_Z } from '../world/Port';
 import { SECRET_FRAGMENT, ZONE_FRAGMENTS } from './MuseumMode';
 import { RESIDENTS, connectionSurprise, residentLine } from '../../data/chapter';
 import { Resident3D } from '../entities/Resident3D';
@@ -842,7 +844,33 @@ export class WorldMode {
   /** Círculos de color que crecen en el mundo (ver LIFE en core/render.ts). */
   private readonly lifeSpots: { x: number; z: number; current: number; target: number }[] = [];
 
+  private cameraBumping = false;
+
+  /** Etapa C: una ola de luz que se expande por el piso cuando un lugar revive. */
+  private lifeWave(x: number, z: number, radius: number): void {
+    if (!this.world || document.body.classList.contains('calm')) return;
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.86, 1, 48),
+      new THREE.MeshBasicMaterial({ color: '#fff3c0', transparent: true, opacity: 0.8, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide }),
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.12, z);
+    ring.renderOrder = 3;
+    ring.userData.lifeWave = true;
+    this.world.scene.add(ring);
+    tween(1.6, (k) => {
+      const e = 1 - (1 - k) * (1 - k);
+      ring.scale.setScalar(0.5 + e * radius);
+      (ring.material as THREE.MeshBasicMaterial).opacity = 0.8 * (1 - k);
+    }, { done: () => {
+      ring.removeFromParent();
+      ring.geometry.dispose();
+      (ring.material as THREE.Material).dispose();
+    } });
+  }
+
   private addLife(x: number, z: number, radius: number, animate: boolean): void {
+    if (animate && radius >= 8) this.lifeWave(x, z, radius);
     // Si ya cae dentro de una mancha de color, no hace falta otra
     if (this.lifeSpots.some((s) => Math.hypot(s.x - x, s.z - z) + radius <= s.target + 0.05)) return;
     // Sin lugar (el shader tiene LIFE_SPOTS): se juntan en una las dos manchas que menos agrandan al unirse
@@ -916,6 +944,16 @@ export class WorldMode {
    * sin animar = restaurando una partida guardada.
    */
   private applyConnection(target: Connectable, animate: boolean): void {
+    // Etapa C: un pequeño acercamiento de cámara al conectar en vivo
+    if (animate && this.iso && !this.cameraBumping) {
+      this.cameraBumping = true;
+      tween(0.7, (k) => {
+        this.isoCam.zoom = 1 + Math.sin(k * Math.PI) * 0.06;
+      }, { done: () => {
+        this.isoCam.zoom = 1;
+        this.cameraBumping = false;
+      } });
+    }
     const reveal = (id: string) => {
       if (!this.progress.hasFragment(id)) this.fragmentById.get(id)!.reveal(animate);
     };
@@ -4593,6 +4631,7 @@ export class WorldMode {
     this.updateClock(dt);
     this.updateFactory(dt);
     this.world.updateWater(this.time);
+    this.updateAmbience(dt);
     {
       // Etapa B: la sombra de contacto del Nexus queda en el piso (en paseos y tirolesas no se muestra)
       const p = this.nexus.position;
@@ -4664,6 +4703,67 @@ export class WorldMode {
     const back = 6;
     this.chaseCam.position.set(p.x - Math.sin(this.camYaw) * back, 3.3 + p.y, p.z - Math.cos(this.camYaw) * back);
     this.chaseCam.lookAt(p.x + Math.sin(this.camYaw) * 2, 1.0 + p.y, p.z + Math.cos(this.camYaw) * 2);
+  }
+
+  /* ---------- Etapa C: ambiente (partículas, sombras de nubes y sonidos del lugar) ---------- */
+
+  private ambience: Ambience | null = null;
+  private pxRatio = 1;
+  private ambientT = 3;
+
+  /** Qué ambiente tiene el lugar donde está el Nexus (y si es de noche). */
+  ambienceKind(): AmbienceKind {
+    if (this.inside || this.voltio.active) return 'none';
+    const night = this.isNight;
+    switch (this.districtId) {
+      case 'nieve':
+        return 'snow';
+      case 'bosque':
+        return night ? 'fireflies' : 'leaves';
+      case 'parque':
+        return night ? 'none' : 'leaves';
+      case 'granja':
+      case 'cerro':
+        return night ? 'fireflies' : 'pollen';
+      case 'isla':
+        return night ? 'fireflies' : 'glints';
+      case 'playa':
+      case 'puerto':
+        return night ? 'none' : 'glints';
+      default:
+        return 'none';
+    }
+  }
+
+  private updateAmbience(dt: number): void {
+    if (!this.ambience) {
+      this.ambience = new Ambience(this.world.scene);
+      this.ambience.seaZ = SEA_Z + 0.4;
+    }
+    const center = this.iso ? this.focus : this.nexus.position;
+    const kind = this.ambienceKind();
+    this.ambience.update(dt, this.time, center, kind, 1 - this.night, this.pxRatio, !this.inside && !this.voltio.active);
+    // Sonidos del lugar, despacito y de vez en cuando
+    this.ambientT -= dt;
+    if (this.ambientT > 0) return;
+    this.ambientT = 4 + Math.random() * 5;
+    if (this.inside || this.voltio.active) return;
+    const a = this.audio;
+    const d = this.districtId;
+    if (this.isNight && ['bosque', 'granja', 'cerro', 'centro', 'isla', 'parque'].includes(d)) {
+      // Grillos
+      for (let i = 0; i < 6; i += 1) a.tone(4200 + (i % 2) * 300, i * 0.09, 0.03, 'square', 0.006);
+    } else if (['playa', 'puerto', 'isla'].includes(d)) {
+      // Olas
+      a.noise(0, 2.6, 0.02, 520);
+    } else if (d === 'nieve') {
+      // Viento
+      a.noise(0, 3.2, 0.014, 340);
+    } else if (['bosque', 'granja', 'cerro', 'centro', 'parque'].includes(d) && !this.isNight) {
+      // Pajaritos
+      const f = 2400 + Math.random() * 900;
+      [0, 0.11, 0.2].forEach((t, i) => a.tone(f + i * 260, t, 0.07, 'sine', 0.012));
+    }
   }
 
   /* ---------- Rendimiento: lo lejano se aparta de la escena (Etapa A) ---------- */
@@ -4832,6 +4932,7 @@ export class WorldMode {
     this.world.sky.visible = !this.iso;
     renderer.voltio = this.voltio.amount;
     renderer.night = this.world.night;
+    this.pxRatio = renderer.dpr;
     // Etapa B: brillo (más de noche y en el Mundo Voltio) y efecto maqueta solo afuera, en la isométrica
     renderer.bloom = 0.55 + this.world.night * 1.1 + this.voltio.amount * 0.6;
     renderer.tilt = this.iso && !this.inside ? 0.75 : 0;
