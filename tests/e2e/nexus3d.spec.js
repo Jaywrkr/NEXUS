@@ -306,8 +306,8 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     return { nests, sleepers: wm.sleepers.map((s) => ({ id: s.id, x: s.x, z: s.z })) };
   });
   expect(info.nests.length).toBe(6);
-  expect(info.sleepers.length).toBe(66);
-  expect(await text(page, 'awake')).toBe('✦ 0/66');
+  expect(info.sleepers.length).toBe(71);
+  expect(await text(page, 'awake')).toBe('✦ 0/71');
   expect(await text(page, 'charge')).toBe('🎒 ○○○○○');
 
   // Con la mochila vacía no se despierta nada
@@ -350,7 +350,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     woken += 1;
     expect(await w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, sl.id), `despierta ${sl.id}`).toBe(true);
     expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
-    expect(await text(page, 'awake')).toBe(`✦ ${woken}/66`);
+    expect(await text(page, 'awake')).toBe(`✦ ${woken}/71`);
     if (woken === 1) {
       await touch(page);
       expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
@@ -372,7 +372,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
-  expect(await text(page, 'awake')).toBe('✦ 66/66');
+  expect(await text(page, 'awake')).toBe('✦ 71/71');
   expect(await text(page, 'charge')).toBe('🎒 ●○○○○');
   expect(await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id?.startsWith('spark-hidden')).length)).toBe(9);
 
@@ -2512,4 +2512,161 @@ test('3D: Isla misteriosa — lancha de ida y vuelta, cueva del eco, templo en o
   const back = await pos();
   expect(Math.hypot(back[0] + 19.5, back[2] - 110.5)).toBeLessThan(0.5);
   expect(await w(() => window.__nexus3d.world.questBook().some((d) => d.district === 'isla'))).toBe(true);
+});
+
+test('3D: Montaña nevada — telesilla, observatorio en la cima, telescopio y mapa, tirolesas en cadena, escalera, trineo y muñecos', async ({ page }) => {
+  test.setTimeout(420_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const active = (id) => w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, id);
+  const pos = () => w(() => window.__nexus3d.world.nexus.position.toArray());
+  const flag = (f) => w((f) => window.__nexus3d.world.progress.hasFlag(f), f);
+  const tpUp = (x, y, z) =>
+    w(([x, y, z]) => {
+      const g = window.__nexus3d.world;
+      g.nexus.position.set(x, y, z);
+      g.focus.set(x, 0, z);
+    }, [x, y, z]).then(() => step(page, 0.05));
+  const zipDown = async () => {
+    await touch(page);
+    for (let i = 0; i < 40 && (await w(() => Boolean(window.__nexus3d.world.zip))); i += 1) await step(page, 0.25);
+    await step(page, 1);
+  };
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Se llega caminando desde el Parque, por el norte
+  await tp(page, 0, -90);
+  await page.keyboard.down('KeyW');
+  await page.keyboard.down('KeyD');
+  await step(page, 2.2);
+  await page.keyboard.up('KeyW');
+  await page.keyboard.up('KeyD');
+  expect((await pos())[2]).toBeLessThan(-99);
+  await step(page, 0.6);
+  expect(await text(page, 'districtBanner')).toContain('Montaña');
+
+  // Telesilla y la línea del observatorio (Mundo Voltio, al pie)
+  await connect(page, [28.2, -105.4], [24, -108.9]);
+  expect(await active('telesilla')).toBe(true);
+  await w(() => {
+    const p = window.__nexus3d.world.progress;
+    p.setFlag('hood');
+    p.setFlag('voltio-seen');
+    document.body.classList.add('has-hood');
+  });
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.1);
+  const nodes = await w(() => window.__nexus3d.world.voltio.nodes.filter((n) => n.circuit === 'domo-open').map((n) => [n.x, n.z]));
+  expect(nodes.length).toBe(3);
+  for (const [x, z] of nodes) await tp(page, x, z);
+  await step(page, 0.1);
+  expect(await flag('domo-open')).toBe(true);
+  await page.keyboard.press('KeyQ');
+  await step(page, 0.3);
+
+  // Sube en la telesilla y baja en la cima (a 9 m)
+  await tp(page, 24, -108.7);
+  expect(await text(page, 'interact')).toBe('🚡 Subir');
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.onRide)).toBe('telesilla');
+  for (let i = 0; i < 40 && (await w(() => window.__nexus3d.world.onRide)); i += 1) await step(page, 0.5);
+  await step(page, 0.3);
+  const top = await pos();
+  expect(top[1]).toBeCloseTo(9, 1);
+  expect(await flag('nieve-top')).toBe(true);
+
+  // Observatorio: la puerta está en la cima; el telescopio marca las Piezas en el mapa
+  await tpUp(2, 9, -141.5);
+  expect(await text(page, 'interact')).toBe('Entrar');
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(true);
+  const hall = await w(() => {
+    const h = window.__nexus3d.world.world.nieve.hall;
+    return { s: h.source, t: h.telescope };
+  });
+  await connect(page, [hall.s.x + 0.9, hall.s.z - 0.6], [hall.t.x + 1.2, hall.t.z + 0.9]);
+  expect(await active('nieve-telescope')).toBe(true);
+  await step(page, 2);
+  expect(await text(page, 'storyWho')).toContain('Lupa');
+  await page.evaluate(() => document.getElementById('story').click());
+  expect(await w(() => window.__nexus3d.world.mapData().pieces.length)).toBe(12);
+  await tp(page, 1503, 3.7);
+  await touch(page);
+  await expect.poll(() => w(() => window.__nexus3d.world.isInside)).toBe(false);
+  await step(page, 0.3);
+  expect((await pos())[1]).toBeCloseTo(9, 1); // sale arriba, en la cima
+
+  // El mapa: tocándolo se ve toda la ciudad
+  await page.keyboard.press('KeyM');
+  await expect.poll(() => w(() => !document.getElementById('mapCanvas').closest('[hidden]'))).toBe(true);
+  expect(await text(page, 'mapZoomHint')).toContain('toda la ciudad');
+  await page.click('#mapCanvas');
+  expect(await text(page, 'mapZoomHint')).toContain('de cerca');
+  await page.screenshot({ path: test.info().outputPath('mapa-ciudad.png') });
+  await page.click('#mapBack');
+  await step(page, 0.2);
+
+  // Tirolesas en cadena: cima → saliente → campo
+  await tpUp(-7.4, 9, -136.2);
+  expect(await text(page, 'interact')).toContain('Tirolesa');
+  await zipDown();
+  expect(await flag('zip-nieve')).toBe(true);
+  expect((await pos())[1]).toBeCloseTo(4.5, 1);
+  await tpUp(-21.4, 4.5, -117.6);
+  expect(await text(page, 'interact')).toContain('Tirolesa');
+  await zipDown();
+  expect(await flag('zip-nieve-2')).toBe(true);
+  expect((await pos())[1]).toBeLessThan(0.5);
+
+  // La escalera larga: diez escalones saltando hacia el norte
+  await tp(page, 15.3, -131.5);
+  for (let h = 1; h <= 10; h += 1) {
+    await page.keyboard.down('KeyW');
+    await page.keyboard.down('KeyD');
+    await step(page, 0.4);
+    await w(() => window.__nexus3d.world.jump());
+    await step(page, 0.6);
+    await page.keyboard.up('KeyW');
+    await page.keyboard.up('KeyD');
+    await step(page, 0.2);
+    expect((await pos())[1], `escalón ${h}`).toBeCloseTo(Math.round(0.9 * h * 10) / 10, 1);
+  }
+  expect(await flag('nieve-steps')).toBe(true);
+
+  // La telesilla quedó arriba: desde abajo se la llama y viene
+  await tp(page, 24, -108.7);
+  await step(page, 0.1);
+  expect(await w(() => window.__nexus3d.world.chairlift.side)).toBe(0);
+
+  // Trineo: en patineta, una rampa de nieve hace volar
+  await w(() => window.__nexus3d.world.progress.setFlag('board'));
+  await tp(page, -22, -112);
+  await w(() => window.__nexus3d.world.mount());
+  await page.keyboard.down('KeyD');
+  await page.keyboard.down('KeyS');
+  for (let i = 0; i < 12 && !(await flag('snow-air')); i += 1) await step(page, 0.25);
+  await page.keyboard.up('KeyD');
+  await page.keyboard.up('KeyS');
+  expect(await flag('snow-air')).toBe(true);
+  await w(() => window.__nexus3d.world.dismount());
+
+  // Un muñeco de nieve se despierta con la mochila
+  const sm = await w(() => {
+    const s = window.__nexus3d.world.sleepers.find((k) => k.kind === 'snowman');
+    return [s.x, s.z];
+  });
+  await w(() => window.__nexus3d.world.setCharge(5));
+  await tp(page, sm[0], sm[1] + 1.2);
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.sleepers.find((k) => k.kind === 'snowman').isActive)).toBe(true);
+
+  // Lupa está contenta; la Montaña no tiene Pieza (su premio es el telescopio); se guarda
+  await step(page, 1);
+  expect(await w(() => window.__nexus3d.world.residents.find((r) => r.id === 'lupa').isHappy)).toBe(true);
+  const book = await w(() => window.__nexus3d.world.questBook().find((d) => d.district === 'nieve'));
+  expect(book.hasPiece).toBe(false);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await active('nieve-telescope')).toBe(true);
+  expect(await active('telesilla')).toBe(true);
 });

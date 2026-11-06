@@ -600,6 +600,12 @@ body:not(.touch) .touch-only {
   background: var(--ink);
   box-shadow: 3px 3px 0 var(--ink);
 }
+.map-zoom {
+  margin: 6px 0 0;
+  font-size: 13px;
+  opacity: 0.85;
+  text-align: center;
+}
 .map-legend {
   display: flex;
   flex-wrap: wrap;

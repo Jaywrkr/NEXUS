@@ -73,7 +73,7 @@ export const CARDS: ChispiCard[] = [
   c('antenita', 'Antenita', 'radio', 'brillante', 'rescate', 'Agarra radios de otros planetas (o eso dice).'),
   c('ondita', 'Ondita', 'radio', 'comun', 'sobre', 'Repite todo lo que escucha, pero más agudo.'),
   c('parlantin', 'Parlantín', 'radio', 'brillante', 'cambio', 'Trabaja en CUAC FM anunciando el clima.', 'vera'),
-  c('frecuencio', 'Frecuencio', 'radio', 'dorada', 'sobre', 'Cuando canta, todas las radios del barrio se prenden.'),
+  c('frecuencio', 'Frecuencio', 'radio', 'dorada', 'rescate', 'Cuando canta, todas las radios del barrio se prenden.'),
   // Flor
   c('brotecito', 'Brotecito', 'flor', 'brillante', 'rescate', 'Crece un centímetro cada vez que alguien sonríe.'),
   c('petalo', 'Pétalo', 'flor', 'comun', 'sobre', 'Se pone colorado cuando le dicen que es lindo.'),

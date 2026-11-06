@@ -9,6 +9,7 @@ import { FACTORY, FACTORY_FROM_PARK, FACTORY_FROM_SKATE, FACTORY_REGION } from '
 import { ALTO, ALTO_FROM_SKATE, ALTO_REGION } from '../world/BarrioAlto';
 import { JETTY, PLAYA_FROM_PORT, PLAYA_FROM_STATION, PLAYA_REGION } from '../world/Playa';
 import { ISLA, ISLA_PIER, ISLA_REGION, VOLCANO } from '../world/Isla';
+import { LEDGE, NIEVE_FROM_PARK, NIEVE_REGION, SUMMIT } from '../world/Nieve';
 import { PIERS, PORT_CORRIDOR, PORT_REGION, SEA_Z } from '../world/Port';
 
 /*
@@ -25,16 +26,35 @@ export interface MapData {
   things: { x: number; z: number; awake: boolean }[];
   nests: { x: number; z: number; ready: boolean }[];
   nexus: { x: number; z: number; heading: number };
+  /** Piezas que faltan (las marca el telescopio del observatorio). */
+  pieces?: { x: number; z: number; name: string }[];
 }
 
-// Ventana del mapa: el Centro con un borde para asomar los distritos que vienen
-const VIEW = { minX: -76, maxX: 100, minZ: -100, maxZ: 76 };
+export type MapZoom = 'near' | 'all';
 
-export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number): void {
+// Todo el mundo (con los distritos de la expansión) y la ventana «cerca» (176 m, centrada en el Nexus)
+const WORLD_BOUNDS = { minX: -112, maxX: 168, minZ: -168, maxZ: 202 };
+const NEAR = 176;
+
+function viewFor(zoom: MapZoom, nexus: { x: number; z: number }): { minX: number; maxX: number; minZ: number; maxZ: number } {
+  const B = WORLD_BOUNDS;
+  if (zoom === 'all') {
+    const size = Math.max(B.maxX - B.minX, B.maxZ - B.minZ);
+    const cx = (B.minX + B.maxX) / 2;
+    const cz = (B.minZ + B.maxZ) / 2;
+    return { minX: cx - size / 2, maxX: cx + size / 2, minZ: cz - size / 2, maxZ: cz + size / 2 };
+  }
+  const cx = Math.min(Math.max(nexus.x, B.minX + NEAR / 2), B.maxX - NEAR / 2);
+  const cz = Math.min(Math.max(nexus.z, B.minZ + NEAR / 2), B.maxZ - NEAR / 2);
+  return { minX: cx - NEAR / 2, maxX: cx + NEAR / 2, minZ: cz - NEAR / 2, maxZ: cz + NEAR / 2 };
+}
+
+export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number, zoom: MapZoom = 'near'): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   const W = canvas.width;
   const H = canvas.height;
+  const VIEW = viewFor(zoom, data.nexus);
   const sx = W / (VIEW.maxX - VIEW.minX);
   const sz = H / (VIEW.maxZ - VIEW.minZ);
   const px = (x: number) => (x - VIEW.minX) * sx;
@@ -94,6 +114,8 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
     [JETTY, [150, 144, 130]],
     [ISLA_REGION, [150, 190, 110]],
     [ISLA_PIER, [169, 122, 82]],
+    [NIEVE_REGION, [225, 235, 245]],
+    [NIEVE_FROM_PARK, [225, 235, 245]],
     [PORT_REGION, [150, 160, 190]],
     [PORT_CORRIDOR, [150, 160, 190]],
   ] as [{ minX: number; maxX: number; minZ: number; maxZ: number }, number[]][]) {
@@ -118,6 +140,9 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
   ctx.fillRect(px(-76), pz(SEA_Z), 176 * sx, 30 * sz);
   ctx.fillStyle = '#a97a52';
   for (const p of PIERS) ctx.fillRect(px(p.minX), pz(p.minZ), (p.maxX - p.minX) * sx, (p.maxZ - p.minZ) * sz);
+  // La cima y el saliente de la Montaña
+  ctx.fillStyle = '#8a8e9a';
+  for (const r of [SUMMIT, LEDGE]) ctx.fillRect(px(r.minX), pz(r.minZ), (r.maxX - r.minX) * sx, (r.maxZ - r.minZ) * sz);
   // Templo y volcán de la isla
   ctx.fillStyle = '#9a9484';
   const it = ISLA.temple;
@@ -194,6 +219,36 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
   // Lugares grandes
   ctx.font = 'bold 13px "Nunito", sans-serif';
   ctx.textAlign = 'center';
+  // Las Piezas que faltan (las marca el telescopio): rombos violetas que laten
+  for (const pc of data.pieces ?? []) {
+    const x = px(pc.x);
+    const z = pz(pc.z);
+    const k = 1 + Math.sin(time * 4) * 0.2;
+    ctx.save();
+    ctx.translate(x, z);
+    ctx.rotate(Math.PI / 4);
+    ctx.fillStyle = '#c7a0ef';
+    ctx.strokeStyle = '#fff3dc';
+    ctx.lineWidth = 2;
+    ctx.fillRect(-9 * k, -9 * k, 18 * k, 18 * k);
+    ctx.strokeRect(-9 * k, -9 * k, 18 * k, 18 * k);
+    ctx.restore();
+  }
+  // En «toda la ciudad» los nombres de los lugares no entran: van los de los distritos
+  if (zoom === 'all') {
+    ctx.font = 'bold 12px "Nunito", sans-serif';
+    for (const d of DISTRICTS) {
+      if (!d.open || d.id === 'camino-skate') continue;
+      const x = px((d.minX + d.maxX) / 2);
+      const z = pz((d.minZ + d.maxZ) / 2);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#1d1630';
+      ctx.strokeText(d.name, x, z);
+      ctx.fillStyle = '#fff3dc';
+      ctx.fillText(d.name, x, z);
+    }
+    ctx.font = 'bold 13px "Nunito", sans-serif';
+  }
   for (const p of data.places) {
     const x = px(p.x);
     const z = pz(p.z);
@@ -206,6 +261,7 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
     ctx.fillRect(-6, -6, 12, 12);
     ctx.strokeRect(-6, -6, 12, 12);
     ctx.restore();
+    if (zoom === 'all') continue;
     ctx.lineWidth = 4;
     ctx.strokeStyle = '#1d1630';
     ctx.strokeText(p.name, x, z - 12);

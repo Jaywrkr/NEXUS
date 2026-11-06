@@ -55,13 +55,14 @@ export const DISTRICT_NAMES: Record<string, string> = {
   alto: 'Barrio Alto y mercado',
   playa: 'Playa',
   isla: 'Isla misteriosa',
+  nieve: 'Montaña nevada',
   noche: '🌙 De noche',
 };
 
 /** Distritos con libreta (en orden); los de las fases siguientes se suman acá. */
-export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque', 'granja', 'fabrica', 'alto', 'playa', 'isla', 'noche'];
+export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque', 'granja', 'fabrica', 'alto', 'playa', 'isla', 'nieve', 'noche'];
 /** Secciones de la libreta que no tienen Pieza (encargos sueltos). */
-export const NO_PIECE = new Set(['noche']);
+export const NO_PIECE = new Set(['noche', 'nieve']);
 
 /** Cuántas Piezas de la Gran Chispa hay en total (una por gran tarea; las demás llegan con los distritos nuevos). */
 export const PIECES_TOTAL = 12;
@@ -214,6 +215,17 @@ export const QUESTS: Quest[] = [
   { id: 'i-caracolin', district: 'isla', giver: 'pip', title: 'Caracolín', text: 'Rescatá a Caracolín en el Mundo Voltio, en la selva.', check: (c) => c.chispi('caracolin'), at: { x: -12, z: 170 } },
   { id: 'i-carrera', district: 'isla', giver: 'pip', title: 'Carrera de la selva', text: 'Pasá los aros entre los árboles de la selva.', check: (c) => c.flag('race-isla'), at: { x: 14, z: 153 } },
   { id: 'i-notas', district: 'isla', giver: 'pip', title: 'Canción de la isla', text: 'Juntá las 6 notas de la isla (una está en la cima del volcán).', check: (c) => c.notes('isla') },
+  // ---------- Montaña nevada y observatorio (Fase 18; sin Pieza: su premio es el telescopio) ----------
+  { id: 'm-telesilla', district: 'nieve', giver: 'lupa', title: 'La telesilla', text: 'Llevale energía a la telesilla y subí a la cima.', check: (c) => c.flag('ride-telesilla'), at: { x: 27.5, z: -106 } },
+  { id: 'm-escalera', district: 'nieve', giver: 'lupa', title: 'Subir a pie', text: 'Subí a la cima por la escalera larga de piedras (cara este de la montaña).', check: (c) => c.flag('nieve-steps'), at: { x: 15.3, z: -132 } },
+  { id: 'm-tirolesas', district: 'nieve', giver: 'lupa', title: 'Tirolesas en cadena', text: 'Bajá de la cima por las dos tirolesas: hasta el saliente y de ahí al campo.', check: (c) => c.flag('zip-nieve-2') },
+  { id: 'm-domo', district: 'nieve', giver: 'lupa', title: 'La puerta del observatorio', text: 'La línea de energía del observatorio está cortada: cerrá su circuito en el Mundo Voltio (al pie de la montaña).', check: (c) => c.flag('domo-open'), at: { x: 4, z: -103 } },
+  { id: 'm-telescopio', district: 'nieve', giver: 'lupa', title: 'El telescopio', text: 'Adentro del observatorio, prendé el telescopio: ¡marca en el mapa las Piezas que faltan!', check: (c) => c.active('nieve-telescope'), at: { x: 2, z: -141 }, reward: 'pack' },
+  { id: 'm-trineo', district: 'nieve', giver: 'lupa', title: 'Trineo', text: 'En patineta, saltá una rampa de nieve.', check: (c) => c.flag('snow-air'), at: { x: -16, z: -112 } },
+  { id: 'm-munecos', district: 'nieve', giver: 'lupa', title: 'Muñecos de nieve', text: 'Despertá con la mochila a los 5 muñecos de nieve.', check: (c) => c.awakeKind('snowman') },
+  { id: 'm-frecuencio', district: 'nieve', giver: 'lupa', title: 'Frecuencio', text: 'Rescatá a Frecuencio en el Mundo Voltio, en el campo de nieve.', check: (c) => c.chispi('frecuencio'), at: { x: 28, z: -128 }, reward: 'pack' },
+  { id: 'm-carrera', district: 'nieve', giver: 'lupa', title: 'Bajada en trineo', text: 'En patineta: pasá los aros del campo de nieve (uno, saltando una rampa).', check: (c) => c.flag('race-nieve'), at: { x: -24, z: -101 } },
+  { id: 'm-notas', district: 'nieve', giver: 'lupa', title: 'Canción de la nieve', text: 'Juntá las 6 notas de la montaña (una en la cima y otra en el saliente).', check: (c) => c.notes('nieve') },
   // ---------- De noche (Fase 13) ----------
   { id: 'n-noche', district: 'noche', giver: 'lucio', title: 'Primera noche', text: 'Esperá a que se haga de noche (o dormí una siesta en tu casa).', check: (c) => c.flag('night-seen') },
   { id: 'n-buhos', district: 'noche', giver: 'lucio', title: 'Los búhos', text: 'Despertá con la mochila a los 4 búhos (solo se despiertan de noche).', check: (c) => c.awakeKind('owl'), reward: 'pack' },
@@ -223,6 +235,7 @@ export const QUESTS: Quest[] = [
   { id: 'n-luciernagas', district: 'noche', giver: 'yuyo', title: 'Baile de luciérnagas', text: 'Bailá en el bosque de noche.', check: (c) => c.flag('dance-fireflies') },
   { id: 'n-faro', district: 'noche', giver: 'marina', title: 'El faro en la noche', text: 'Visitá el faro prendido de noche.', check: (c) => c.flag('faro-night') },
   { id: 'n-carrera', district: 'noche', giver: 'don-paso', title: 'Carrera a la luz de la luna', text: 'Ganá cualquier carrera de aros de noche.', check: (c) => c.flag('race-night'), reward: 'pack' },
+  { id: 'n-telescopio', district: 'noche', giver: 'lupa', title: 'Las estrellas de cerca', text: 'De noche, mirá por el telescopio del observatorio.', check: (c) => c.flag('telescopio-noche') },
   { id: 'n-dormir', district: 'noche', giver: 'pipa', title: 'Dulces sueños', text: 'Dormí una siesta en la cama de tu casa.', check: (c) => c.flag('napped') },
   { id: 'pu-cartas', district: 'puerto', giver: 'marina', title: 'Coleccionista', text: 'Juntá 25 cartas distintas de Chispis.', check: (c) => [Math.min(25, c.cards()), 25] },
 ];

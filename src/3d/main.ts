@@ -34,6 +34,8 @@ class Game {
   /** Menú o mapa abiertos: el mundo queda quieto. */
   private paused = false;
   private mapOpen = false;
+  /** Zoom del mapa: cerca del Nexus o toda la ciudad (se cambia tocando el mapa). */
+  private mapZoom: 'near' | 'all' = 'near';
 
   constructor() {
     Settings.apply();
@@ -206,6 +208,10 @@ class Game {
     $('mSong').addEventListener('click', () => {
       this.closeMenu();
       this.world.playSong();
+    });
+    $('mapCanvas').addEventListener('click', () => {
+      this.mapZoom = this.mapZoom === 'near' ? 'all' : 'near';
+      $('mapZoomHint').textContent = this.mapZoom === 'near' ? '🔍 Tocá el mapa para ver toda la ciudad' : '🔍 Tocá el mapa para verlo de cerca';
     });
     $('mapTravel').addEventListener('click', () => {
       $('mapPanel').hidden = true;
@@ -652,7 +658,7 @@ class Game {
         if (this.mode === 'world' && !this.paused) this.world.update(dt);
         else this.world.idle(dt);
         this.world.render(this.renderer, time);
-        if (this.mapOpen) drawMap($('mapCanvas') as HTMLCanvasElement, this.world.mapData(), time);
+        if (this.mapOpen) drawMap($('mapCanvas') as HTMLCanvasElement, this.world.mapData(), time, this.mapZoom);
         break;
       case 'tunnel':
         this.tunnel.update(dt);

@@ -62,6 +62,8 @@ export const TUNNEL_THEMES: Record<string, TunnelTheme> = {
   fogon: { name: 'Cable del fogón', base: '#1a0a04', near: '#ff9f43', pulse: '#fff3a8', spark: '#ffd23a', bg: '#100604', deco: 'hojas' },
   molino: { name: 'Cable de viento', base: '#0a1210', near: '#cfeefa', pulse: '#fff3dc', spark: '#7be07a', bg: '#060c0a', deco: 'hojas' },
   granja: { name: 'Cable de la granja', base: '#160e04', near: '#ffd23a', pulse: '#ff9f43', spark: '#fff3dc', bg: '#0e0802', deco: 'petalos' },
+  nieve: { name: 'Cable de la telesilla', base: '#0c1420', near: '#cfe4f5', pulse: '#ffffff', spark: '#7dffef', bg: '#060a12', deco: 'estrellas' },
+  estrellas: { name: 'Cable del telescopio', base: '#08061a', near: '#c7a0ef', pulse: '#fff6c0', spark: '#ffd23a', bg: '#03020c', deco: 'estrellas' },
   lancha: { name: 'Cable de la lancha', base: '#06142a', near: '#4fa8e0', pulse: '#fff3dc', spark: '#e0453f', bg: '#030a16', deco: 'ondas' },
   templo: { name: 'Cable del templo', base: '#14100a', near: '#c8c0aa', pulse: '#ffd23a', spark: '#7dffef', bg: '#0a0806', deco: 'estrellas' },
   volcan: { name: 'Cable del volcán', base: '#1a0804', near: '#ff7a2a', pulse: '#ffd23a', spark: '#ff4a2a', bg: '#100402', deco: 'ondas' },

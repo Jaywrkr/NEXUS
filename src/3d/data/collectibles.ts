@@ -100,6 +100,14 @@ export const NOTES: NoteSpot[] = [
     [2, 0.9, 194],
     [10, 0.9, 146], // en el muelle de la isla
   ]),
+  ...n('nieve', [
+    [6, 9.9, -150], // en la cima
+    [-22, 5.4, -118], // en el saliente
+    [15.3, 6.3, -145], // en la escalera
+    [-26, 0.9, -140],
+    [34, 0.9, -104],
+    [-12, 0.9, -128],
+  ]),
   ...n('puerto', [
     [-3.3, 1.8, 90], // arriba de los cajones
     [16.7, 1.8, 74], // otros cajones
@@ -288,6 +296,22 @@ export const RACES: Race[] = [
       [2, 1.2, 190],
       [18, 1.2, 176],
       [16, 1.2, 160],
+    ],
+  },
+  {
+    id: 'race-nieve',
+    district: 'nieve',
+    name: 'Bajada en trineo',
+    board: true,
+    time: 34,
+    start: { x: -24, z: -101 },
+    rings: [
+      [-18, 1.2, -112],
+      [-9.5, 2.4, -112],
+      [0, 1.2, -122],
+      [-4, 1.2, -130],
+      [-22, 1.2, -132],
+      [-26, 1.2, -146],
     ],
   },
   {

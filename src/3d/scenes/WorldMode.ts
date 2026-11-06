@@ -53,6 +53,8 @@ import { BeachFridge, SandCastle, SmallLighthouse } from '../objects/playa';
 import { PLAYA, SURF_REGION } from '../world/Playa';
 import { RuneStone, SeaBoat, TempleAltar, VolcanoHeart, lift } from '../objects/isla';
 import { ISLA, LANCHA, VOLCANO } from '../world/Isla';
+import { Chairlift, Telescope } from '../objects/nieve';
+import { LEDGE, NIEVE, SUMMIT, SUMMIT_STEPS } from '../world/Nieve';
 import { FACTORY, liftHeight } from '../world/Factory';
 import { FARM } from '../world/Farm';
 import { FOREST, MUSHROOM_R, MUSHROOM_TOP, TREE } from '../world/Forest';
@@ -113,8 +115,8 @@ export interface WorldCallbacks {
 interface Interior {
   id: string;
   info: InteriorInfo;
-  door: { x: number; z: number };
-  out: { x: number; z: number };
+  door: { x: number; z: number; y?: number };
+  out: { x: number; z: number; y?: number };
   open: () => boolean;
   story: [string, string];
   /** Lo que se revive adentro (si tiene). */
@@ -141,6 +143,7 @@ const CAGES: { id: string; x: number; z: number }[] = [
   { id: 'turbochispa', x: ALTO.chispi.x, z: ALTO.chispi.z },
   { id: 'olita', x: PLAYA.chispi.x, z: PLAYA.chispi.z },
   { id: 'caracolin', x: ISLA.chispi.x, z: ISLA.chispi.z },
+  { id: 'frecuencio', x: NIEVE.chispi.x, z: NIEVE.chispi.z },
 ];
 
 /** Sobres escondidos por el mundo (x, z, altura). */
@@ -263,6 +266,8 @@ export class WorldMode {
   private readonly runes: RuneStone[] = [];
   private readonly altar: TempleAltar;
   private readonly heart: VolcanoHeart;
+  private readonly chairlift: Chairlift;
+  private readonly telescope: Telescope;
   private readonly lighthouse: Lighthouse;
   private readonly granChispa = new GranChispa();
   /** Expansión (Fase 10): notas de la canción, carreras de aros, libreta y Piezas de la Gran Chispa. */
@@ -485,6 +490,13 @@ export class WorldMode {
     const heartSource = lift(new EnergySource('isla-heart-source', ISLA.heartSource.x, ISLA.heartSource.z), VOLCANO.h);
     this.heart = new VolcanoHeart('isla-heart', ISLA.heart.x, ISLA.heart.z, VOLCANO.h);
     if (this.progress.hasFlag('templo-open')) this.world.isla.openTemple();
+    // Fase 18: Montaña nevada y observatorio
+    const liftSource = new EnergySource('telesilla-source', NIEVE.liftSource.x, NIEVE.liftSource.z);
+    this.chairlift = new Chairlift('telesilla', NIEVE.liftBase, NIEVE.liftTop, NIEVE.liftRoute);
+    if (this.progress.count('telesilla-side') === 1) this.chairlift.setSide(1);
+    const obs = this.world.nieve.hall;
+    const obsSource = new EnergySource('nieve-obs-source', obs.source.x, obs.source.z);
+    this.telescope = new Telescope('nieve-telescope', obs.telescope.x, obs.telescope.z);
     // La casa del Nexus: lo que ya se arregló
     for (const it of HOME_ITEMS) if (this.progress.hasFlag(`casa-${it.id}`)) this.world.home.fix(it.id, false);
     if (this.homeInsideDone) this.world.home.gray.revive(false);
@@ -528,10 +540,12 @@ export class WorldMode {
       [lanchaSource, 'Energía'],
       [templeSource, 'Energía'],
       [heartSource, 'Piedra caliente'],
+      [liftSource, 'Energía'],
+      [obsSource, 'Energía'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire, ...millSources, ...this.mills, ghSource, this.greenhouse, barnSource, this.incubator, tractorSource, this.tractor, beltSource, ...this.belts, hallSource, this.boiler, this.gear, this.machine, marketSource, ...this.stalls, cineSource, this.projector, libSource, this.libLamp, fridgeSource, this.fridge, castleSource, this.castle, panelSource, windSource, this.farito, lanchaSource, this.lancha, templeSource, ...this.runes, this.altar, heartSource, this.heart]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire, ...millSources, ...this.mills, ghSource, this.greenhouse, barnSource, this.incubator, tractorSource, this.tractor, beltSource, ...this.belts, hallSource, this.boiler, this.gear, this.machine, marketSource, ...this.stalls, cineSource, this.projector, libSource, this.libLamp, fridgeSource, this.fridge, castleSource, this.castle, panelSource, windSource, this.farito, lanchaSource, this.lancha, templeSource, ...this.runes, this.altar, heartSource, this.heart, liftSource, this.chairlift, obsSource, this.telescope]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -664,6 +678,9 @@ export class WorldMode {
       this.connections.addRule({ sourceId: s.id, targetId: t.id, available: () => false, blockedMessage: muralMsg });
     }
     this.connections.addRule({ sourceId: heartSource.id, targetId: this.heart.id, useTunnel: true });
+    // Montaña: la telesilla y el telescopio
+    this.connections.addRule({ sourceId: liftSource.id, targetId: this.chairlift.id, useTunnel: true });
+    this.connections.addRule({ sourceId: obsSource.id, targetId: this.telescope.id, useTunnel: true });
     // El faro: motor trabado (circuito Voltio) y solo prende con toda la ciudad viva
     this.connections.addRule({
       sourceId: portSource.id,
@@ -941,6 +958,7 @@ export class WorldMode {
       [this.farito, 'farito', this.farito.isActive],
       [this.altar, 'templo', true],
       [this.heart, 'volcan', true],
+      [this.telescope, 'observatorio', true],
     ];
     for (const [obj, id, ok] of packFor) {
       if (target !== obj || !ok) continue;
@@ -1035,6 +1053,25 @@ export class WorldMode {
         if (animate) after(0.8, () => this.updateResidentMoods());
       } else {
         say(`¡${name} revivió! Acercate y subite`);
+      }
+    }
+    // Fase 18: la Montaña nevada
+    if (target === this.chairlift) say('¡La telesilla arrancó! Subite en la estación para ir a la cima');
+    if (target === this.telescope) {
+      this.world.nieve.hall.gray.revive(animate);
+      this.world.nieve.openDome();
+      this.progress.setFlag('telescopio');
+      this.addLife(SUMMIT.minX + 12, SUMMIT.minZ + 10, 20, animate);
+      this.addLife(4, -120, 26, animate);
+      say('¡El telescopio funciona! Mirá el mapa: marca las Piezas que faltan');
+      if (animate) {
+        after(1.6, () =>
+          this.showStory(
+            'Profesora Lupa · ¡Las Piezas!',
+            'Con el telescopio se ve toda la ciudad: cada Pieza de la Gran Chispa brilla un poquito. Las marqué en tu mapa (M) con rombos violetas. Tocá el mapa para verlo entero. ¡Y de noche las estrellas se ven hermosas!',
+          ),
+        );
+        after(0.8, () => this.updateResidentMoods());
       }
     }
     // Fase 17: la Isla misteriosa
@@ -1497,6 +1534,15 @@ export class WorldMode {
         story: ['Tu casa', 'Esta casita vieja es tuya, Nexus. Está toda rota… pero con chispitas de la mochila la podés ir arreglando, cosa por cosa.'],
       },
       {
+        id: 'observatorio',
+        info: this.world.nieve.hall,
+        door: { x: NIEVE.observatory.x, z: NIEVE.observatory.z + NIEVE.observatory.r + 0.9, y: SUMMIT.h },
+        out: { x: NIEVE.observatory.x, z: NIEVE.observatory.z + NIEVE.observatory.r + 1.7, y: SUMMIT.h },
+        open: () => this.progress.hasFlag('domo-open'),
+        story: ['Profesora Lupa · El observatorio', '¡Llegaste a la cima! El telescopio está dormido. Llevale energía y vas a ver toda la ciudad… y algo más.'],
+        target: this.telescope,
+      },
+      {
         id: 'templo',
         info: this.world.isla.hall,
         door: { x: ISLA.temple.x, z: ISLA.temple.z + ISLA.temple.d / 2 + 0.9 },
@@ -1564,6 +1610,7 @@ export class WorldMode {
     }
     for (const room of this.interiors) {
       if (!room.open()) continue;
+      if (Math.abs(p.y - (room.door.y ?? 0)) > 1.2) continue;
       const d = Math.hypot(p.x - room.door.x, p.z - room.door.z);
       if (d < 1.7 && d <= objD + 0.6) return { kind: 'enter', room };
     }
@@ -1616,7 +1663,7 @@ export class WorldMode {
     this.crossDoor(() => {
       this.inside = null;
       this.iso = this.isoOutside;
-      this.nexus.position.set(room.out.x, 0, room.out.z);
+      this.nexus.position.set(room.out.x, room.out.y ?? 0, room.out.z);
       this.nexus.velocity.set(0, 0, 0);
       this.nexus.heading = 0;
       this.camYaw = 0;
@@ -1678,6 +1725,8 @@ export class WorldMode {
       { name: 'Faro chiquito', x: PLAYA.farito.x, z: PLAYA.farito.z, alive: this.farito.isActive },
       { name: 'Templo', x: ISLA.temple.x, z: ISLA.temple.z, alive: this.altar.isActive },
       { name: 'Volcán', x: VOLCANO.x, z: VOLCANO.z, alive: this.heart.isActive },
+      { name: 'Observatorio', x: NIEVE.observatory.x, z: NIEVE.observatory.z, alive: this.telescope.isActive },
+      { name: 'Telesilla', x: NIEVE.liftBase.x, z: NIEVE.liftBase.z, alive: this.chairlift.isActive },
       { name: 'Cintas', x: 66, z: -63, alive: this.belts[2].isActive },
       { name: 'Faro', x: PORT.lighthouse.x, z: PORT.lighthouse.z - 3, alive: this.lighthouse.isActive },
     ];
@@ -1689,6 +1738,7 @@ export class WorldMode {
       things: this.sleepers.map((s) => ({ x: s.x, z: s.z, awake: s.isActive })),
       nests: this.sparks.map((s) => ({ x: s.x, z: s.z, ready: s.ready })),
       nexus: { x: n.x, z: n.z, heading: this.inside ? 0 : this.nexus.heading },
+      pieces: this.missingPieces(),
     };
   }
 
@@ -1721,6 +1771,7 @@ export class WorldMode {
         { id: 'molino-open', nodes: FARM.millNodes, door: FARM.mills[2] },
         { id: 'biblio-open', nodes: ALTO.libNodes, door: ALTO.libLamp },
         { id: 'muelle-open', nodes: PLAYA.nodes, door: { x: 122, z: PLAYA.gateZ } },
+        { id: 'domo-open', nodes: NIEVE.domeNodes, door: { x: 4, z: -103 } },
         { id: 'templo-open', nodes: ISLA.templeNodes, door: { x: ISLA.temple.x, z: ISLA.temple.z + ISLA.temple.d / 2 } },
         { id: 'fabrica-open', nodes: FACTORY.gateNodes, door: { x: FACTORY.hall.doorX, z: FACTORY.hall.z + 6 } },
         { id: 'faro-open', nodes: PORT.nodes, door: PORT.lighthouse },
@@ -1748,6 +1799,8 @@ export class WorldMode {
           } else if (id === 'faro-open') {
             this.lighthouse.unlocked = true;
             this.setMessage('¡Circuito cerrado! El motor del faro se destrabó');
+          } else if (id === 'domo-open') {
+            this.setMessage('¡Circuito cerrado! Volvió la energía al observatorio de la cima');
           } else if (id === 'templo-open') {
             this.world.isla.openTemple();
             this.setMessage('¡Circuito cerrado! La puerta de piedra del templo se abrió');
@@ -1791,7 +1844,7 @@ export class WorldMode {
         cages: [{ id: 'rueditas', ...this.world.skate.chispi }, ...CAGES]
           .filter((c) => !this.progress.hasChispi(c.id))
           .map((c): CageSpot => ({ ...c, color: TYPES[CARD_BY_ID.get(c.id)!.type].color })),
-        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open', 'molino-open', 'fabrica-open', 'biblio-open', 'muelle-open', 'templo-open'].filter((f) => this.progress.hasFlag(f)),
+        circuits: ['sala-open', 'cartas-open', 'wheel-open', 'coaster-open', 'train-open', 'cave-lit', 'faro-open', 'molino-open', 'fabrica-open', 'biblio-open', 'muelle-open', 'templo-open', 'domo-open'].filter((f) => this.progress.hasFlag(f)),
       },
     );
   }
@@ -2034,7 +2087,7 @@ export class WorldMode {
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
       return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
     }
-    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep() ?? this.farmStep() ?? this.factoryStep() ?? this.altoStep() ?? this.playaStep() ?? this.islaStep();
+    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep() ?? this.farmStep() ?? this.factoryStep() ?? this.altoStep() ?? this.playaStep() ?? this.islaStep() ?? this.nieveStep();
     if (park) return park;
     if (this.voltio.active && !this.inSkatepark) {
       const me = this.nexus.position;
@@ -2201,6 +2254,7 @@ export class WorldMode {
     if (np.line === this.world.forest.zipLine && !this.progress.hasFlag('zip-tree')) this.progress.setFlag('zip-tree');
     if (np.line === this.world.factory.zipLine && !this.progress.hasFlag('zip-factory')) this.progress.setFlag('zip-factory');
     if (np.line === this.world.alto.zipLine && !this.progress.hasFlag('zip-alto')) this.progress.setFlag('zip-alto');
+    if (np.line === this.world.nieve.zipLine) this.progress.setFlag(np.i === 1 ? 'zip-nieve-2' : 'zip-nieve');
     this.zip = { a, b, t: 0, dur: Math.hypot(b.x - a.x, b.z - a.z) / ZIP_SPEED, climb: 0, from: this.nexus.position.clone() };
     this.nexus.hanging = true;
     this.nexus.airborne = false;
@@ -2452,6 +2506,8 @@ export class WorldMode {
       ...PLAYA.crabs.map(([x, z]): [SleeperKind, number, number] => ['crab', x, z]),
       // Fase 17: tortugas de la isla
       ...ISLA.turtles.map(([x, z]): [SleeperKind, number, number] => ['turtle', x, z]),
+      // Fase 18: muñecos de nieve
+      ...NIEVE.snowmen.map(([x, z]): [SleeperKind, number, number] => ['snowman', x, z]),
     ] as [SleeperKind, number, number][]) {
       const [px, pz] = place(x, z);
       make(kind, px, pz, Math.PI / 4);
@@ -2586,6 +2642,8 @@ export class WorldMode {
       [[this.lancha], 'lancha'],
       [[this.runes[0]], 'templo'],
       [[this.heart], 'volcan'],
+      [[this.chairlift], 'nieve'],
+      [[this.telescope], 'estrellas'],
       [[this.projector], 'cine'],
       [[this.libLamp], 'biblio'],
     ];
@@ -2719,6 +2777,7 @@ export class WorldMode {
       ['luli', 'Luli', ALTO.luli],
       ['coral', 'Coral', PLAYA.coral],
       ['pip', 'Pip', ISLA.pip],
+      ['lupa', 'Profesora Lupa', NIEVE.lupa],
     ] as [string, string, { x: number; z: number; faceX: number; faceZ: number }][]) {
       const r = new Resident3D(id, name, at.x, at.z, Math.atan2(at.faceX - at.x, at.faceZ - at.z));
       r.setHeard(this.progress.hasHeard(id));
@@ -2786,6 +2845,7 @@ export class WorldMode {
       luli: this.libLamp.isActive,
       coral: this.farito.isActive,
       pip: this.altar.isActive && this.heart.isActive,
+      lupa: this.telescope.isActive,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
@@ -2803,6 +2863,7 @@ export class WorldMode {
     if (r.id === 'luli') return this.luliText();
     if (r.id === 'coral') return this.coralText();
     if (r.id === 'pip') return this.pipText();
+    if (r.id === 'lupa') return this.lupaText();
     const info = RESIDENTS.find((i) => i.id === r.id)!;
     // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
     if (r.id === 'bombo' && !this.fountain.isActive) {
@@ -2876,8 +2937,9 @@ export class WorldMode {
   private findRideSpot(): (Ride & Connectable) | null {
     if (this.rideOn || this.busy || this.zip || this.inside || this.voltio.active || this.connections.hasSelection() || this.nexus.riding) return null;
     const p = this.nexus.position;
-    for (const r of [this.carousel, this.wheel, this.coaster, this.boat, this.tractor, this.lancha] as (Ride & Connectable)[]) {
+    for (const r of [this.carousel, this.wheel, this.coaster, this.boat, this.tractor, this.lancha, this.chairlift] as (Ride & Connectable)[]) {
       if (!r.isActive) continue;
+      if (Math.abs(p.y - ((r.boardAt as { y?: number }).y ?? 0)) > 1.2) continue;
       if (Math.hypot(p.x - r.boardAt.x, p.z - r.boardAt.z) < 1.9) return r;
     }
     return null;
@@ -2903,7 +2965,7 @@ export class WorldMode {
     if (!r) return;
     this.rideOn = null;
     (r as unknown as { stopRide?: () => void }).stopRide?.();
-    this.nexus.position.set(r.boardAt.x, 0, r.boardAt.z);
+    this.nexus.position.set(r.boardAt.x, (r.boardAt as { y?: number }).y ?? 0, r.boardAt.z);
     this.nexus.airborne = false;
     this.grounded = true;
     this.vy = 0;
@@ -3153,6 +3215,83 @@ export class WorldMode {
   private showMemories(): void {
     const stars = this.fragments.filter((f) => f.isCollected).length;
     this.setMessage(`🏛️ Recuerdos: ★ ${stars} fragmentos · ✦ ${this.awakeCount()} cosas despiertas · 🃏 ${this.progress.uniqueCards} cartas · ⚡ ${this.progress.chispis.length} Chispis`);
+  }
+
+  /* ---------- Fase 18: Montaña nevada y observatorio ---------- */
+
+  /** Telesilla de dos estaciones (como la lancha), cima, escalera, trineo y el telescopio de noche. */
+  private updateNieve(): void {
+    if (!this.rideOn && this.progress.count('telesilla-side') !== this.chairlift.side) this.progress.setCount('telesilla-side', this.chairlift.side);
+    const p = this.nexus.position;
+    if (this.chairlift.isActive && !this.rideOn) {
+      const o = this.chairlift.otherDock;
+      if (Math.hypot(p.x - o.x, p.z - o.z) < 1.6 && Math.abs(p.y - o.y) < 1.2) {
+        this.chairlift.setSide(this.chairlift.side === 0 ? 1 : 0);
+        this.setMessage('¡La telesilla vino a buscarte!');
+      }
+    }
+    if (this.inside?.id === 'observatorio' && this.telescope.isActive && this.isNight && !this.progress.hasFlag('telescopio-noche')) {
+      this.progress.setFlag('telescopio-noche');
+      this.toast('🔭 ¡Qué estrellas! Encargo de noche', 'ok');
+    }
+    if (this.districtId !== 'nieve' || this.inside) return;
+    const S = SUMMIT;
+    const onSummit = p.y > S.h - 0.3 && p.x > S.minX && p.x < S.maxX && p.z > S.minZ && p.z < S.maxZ;
+    if (onSummit && !this.progress.hasFlag('nieve-top')) {
+      this.progress.setFlag('nieve-top');
+      this.addLife(2, -144, 14, true);
+      this.toast('🏔 ¡En la cima de la Montaña!', 'ok');
+    }
+    const top = SUMMIT_STEPS[SUMMIT_STEPS.length - 1];
+    if (!this.progress.hasFlag('nieve-steps') && !this.rideOn && Math.abs(p.y - top.h) < 0.2 && p.x > top.minX && p.x < top.maxX && p.z > top.minZ && p.z < top.maxZ) {
+      this.progress.setFlag('nieve-steps');
+      this.toast('🪨 ¡Subiste toda la escalera!', 'ok');
+    }
+    if (this.nexus.riding && !this.grounded && p.y > 1 && !this.progress.hasFlag('snow-air')) {
+      this.progress.setFlag('snow-air');
+      this.toast('🛷 ¡Volaste en la nieve!', 'ok');
+    }
+    void LEDGE;
+  }
+
+  private lupaText(): string {
+    if (!this.chairlift.isActive) return 'Soy la Profesora Lupa. Mi observatorio está allá arriba… ¿le llevás energía a la telesilla? (O subí por la escalera de piedras, ¡es larga!)';
+    if (!this.progress.hasFlag('domo-open')) return 'La línea de energía del observatorio se cortó acá abajo. Con la capucha ⚡ se ven sus nodos.';
+    if (!this.telescope.isActive) return 'Ya hay energía arriba: entrá al observatorio y prendé el telescopio.';
+    return 'Con el telescopio marqué las Piezas en tu mapa. ¡Tocá el mapa para ver toda la ciudad!';
+  }
+
+  /** Lo que conviene hacer en la Montaña. */
+  private nieveStep(): { text: string; at: { x: number; z: number } | null } | null {
+    if (this.districtId !== 'nieve' || this.inside) return null;
+    if (this.voltio.active) {
+      const lit = this.voltio.litNodes('domo-open');
+      if (!this.progress.hasFlag('domo-open')) return { text: `Tocá los tres nodos de la línea del observatorio (${lit}/3)`, at: NIEVE.domeNodes[Math.min(lit, 2)] };
+      if (this.voltio.isCaged('frecuencio')) return { text: '¡Frecuencio está atrapado! Cerrá un círculo con tu estela alrededor de la jaula', at: NIEVE.chispi };
+      return null;
+    }
+    if (!this.chairlift.isActive) return { text: 'Montaña: llevale energía a la telesilla', at: NIEVE.liftSource };
+    if (!this.progress.hasFlag('domo-open')) {
+      const hood = this.progress.hasFlag('hood');
+      return { text: hood ? 'La línea del observatorio está cortada: ponete la capucha ⚡' : 'La línea del observatorio está cortada… Rulo sabe ver cables', at: hood ? NIEVE.domeNodes[0] : null };
+    }
+    if (!this.telescope.isActive) {
+      if (this.nexus.position.y < SUMMIT.h - 0.5) return { text: 'Subí a la cima (telesilla o escalera) y entrá al observatorio', at: NIEVE.liftBase };
+      return { text: 'Entrá al observatorio y prendé el telescopio', at: { x: NIEVE.observatory.x, z: NIEVE.observatory.z + NIEVE.observatory.r + 1 } };
+    }
+    return null;
+  }
+
+  /** Piezas que faltan, para el mapa (solo con el telescopio prendido). */
+  private missingPieces(): { x: number; z: number; name: string }[] {
+    if (!this.progress.hasFlag('telescopio')) return [];
+    const out: { x: number; z: number; name: string }[] = [];
+    for (const id of QUEST_DISTRICTS) {
+      if (NO_PIECE.has(id) || this.progress.hasFlag(`pieza-${id}`)) continue;
+      const d = DISTRICTS.find((k) => k.id === id);
+      if (d) out.push({ x: (d.minX + d.maxX) / 2, z: (d.minZ + d.maxZ) / 2, name: d.name });
+    }
+    return out;
   }
 
   /* ---------- Fase 17: Isla misteriosa ---------- */
@@ -4413,6 +4552,10 @@ export class WorldMode {
         : this.rideSpot
           ? this.rideSpot === this.boat
             ? '⛵ Subir'
+            : this.rideSpot === this.chairlift
+            ? this.chairlift.side === 0
+              ? '🚡 Subir'
+              : '🚡 Bajar'
             : this.rideSpot === this.lancha
             ? this.lancha.side === 0
               ? '🚤 A la isla'
@@ -4447,6 +4590,7 @@ export class WorldMode {
     this.updateAlto(dt);
     this.updatePlaya(dt);
     this.updateIsla(dt);
+    this.updateNieve();
     const note = this.voltio.active || this.inside ? null : this.notes.update(dt, this.time, this.nexus.position);
     if (note) this.onNote(note.id);
     this.updateRace(dt);

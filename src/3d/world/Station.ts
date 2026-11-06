@@ -33,6 +33,7 @@ export const TRAIN_STOPS: { id: string; name: string; x: number; z: number; need
   { id: 'estacion', name: 'Estación', x: 72, z: 44.5 },
   { id: 'bosque', name: 'Bosque', x: -50, z: -55, need: 'district-bosque' },
   { id: 'granja', name: 'Granja', x: -50.5, z: 50, need: 'district-granja' },
+  { id: 'nieve', name: 'Montaña', x: -8, z: -103, need: 'district-nieve' },
   { id: 'playa', name: 'Playa', x: 58, z: 67.5, need: 'district-playa' },
   { id: 'alto', name: 'Barrio Alto', x: 103, z: 7, need: 'district-alto' },
   { id: 'fabrica', name: 'Fábrica', x: 50, z: -52, need: 'district-fabrica' },

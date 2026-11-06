@@ -87,7 +87,7 @@ Ciclo suave de día y noche (unos 8 minutos de juego). De noche se prenden farol
 | **15. Barrio Alto y mercado** ✅ (hecha, Decisión 059) | Distrito, mercado, cine, techos, carrera de patineta, vecinos, Pieza | Ídem |
 | **16. Playa** ✅ (hecha, Decisión 060) | Distrito, surf, castillos, Coral, Pieza; el bote navega el mar | Ídem |
 | **17. Isla misteriosa** ✅ (hecha, Decisión 061) | Viaje en bote, templo con circuitos, volcán, Pip, Pieza | Ídem |
-| **18. Montaña nevada y observatorio** | Subida, trineo, telescopio que muestra Piezas, Lupa, Pieza | Ídem |
+| **18. Montaña nevada y observatorio** ✅ (hecha, Decisión 062; sin Pieza propia: su premio es el telescopio) | Subida, trineo, telescopio que muestra Piezas, Lupa, Pieza | Ídem |
 | **19. El final de verdad** | Las 12 Piezas en el faro, fiesta con todos, canción de 12 instrumentos, créditos nuevos, epílogos de todos los vecinos | Se puede terminar el juego con todo el mundo nuevo |
 
 En cada fase: build, pruebas (escritorio y celular), capturas, documentación (decisión nueva), commit, push y deploy, igual que hasta ahora.

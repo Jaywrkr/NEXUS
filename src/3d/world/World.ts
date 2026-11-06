@@ -16,6 +16,7 @@ import { FACTORY_FROM_PARK, FACTORY_FROM_SKATE, FACTORY_REGION, buildFactory, ty
 import { ALTO, ALTO_FROM_SKATE, ALTO_REGION, buildAlto, type AltoInfo } from './BarrioAlto';
 import { JETTY, PLAYA, PLAYA_FROM_PORT, PLAYA_FROM_STATION, PLAYA_REGION, SURF_REGION, buildPlaya, type PlayaInfo } from './Playa';
 import { ISLA_PIER, ISLA_REGION, buildIsla, type IslaInfo } from './Isla';
+import { NIEVE, NIEVE_FROM_PARK, NIEVE_REGION, buildNieve, type NieveInfo } from './Nieve';
 import { SKATE_REGION, buildSkatepark, type SkateparkInfo } from './Skatepark';
 
 export interface Rect {
@@ -89,6 +90,9 @@ const REGIONS: Rect[] = [
   // Fase 17: la Isla misteriosa (se llega en la lancha)
   ISLA_PIER,
   ISLA_REGION,
+  // Fase 18: Montaña nevada (por el norte del Parque)
+  NIEVE_FROM_PARK,
+  NIEVE_REGION,
 ];
 /** Jardín municipal (zona 5): borde de cercos, entradas al norte y al este. */
 export const GARDEN = { minX: -26, maxX: 4, minZ: 47, maxZ: 61.5 };
@@ -204,6 +208,8 @@ export class World {
   readonly playa: PlayaInfo;
   /** Fase 17: la Isla misteriosa (templo en x = 1400, volcán). */
   readonly isla: IslaInfo;
+  /** Fase 18: Montaña nevada y observatorio (x = 1500). */
+  readonly nieve: NieveInfo;
 
   constructor() {
     const s = this.scene;
@@ -268,9 +274,12 @@ export class World {
     this.playa = buildPlaya(s, this.rects, this.circles);
     this.skate.kickers.push(...PLAYA.waves);
     this.isla = buildIsla(s, this.rects, this.circles);
+    this.nieve = buildNieve(s, this.rects, this.circles);
+    this.zipLines.push(this.nieve.zipLine);
+    this.skate.kickers.push(...NIEVE.ramps);
     this.zipLines.push(this.cerro.zipLine);
     this.espejos = buildMirrorRoom(s, this.rects);
-    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller, this.espejos, this.cerro.cave, this.home.info, this.farm.barn, this.factory.hall, this.alto.hall, this.isla.hall);
+    this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller, this.espejos, this.cerro.cave, this.home.info, this.farm.barn, this.factory.hall, this.alto.hall, this.isla.hall, this.nieve.hall);
     this.buildOutsideFx();
 
     // Rendimiento: toda la escenografía quieta se junta en pocas mallas.

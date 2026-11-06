@@ -33,7 +33,8 @@ export type SleeperKind =
   | 'robot'
   | 'cat'
   | 'crab'
-  | 'turtle';
+  | 'turtle'
+  | 'snowman';
 
 /** Nombre que flota encima y frase al despertarlo. */
 export const SLEEPER_INFO: Record<SleeperKind, { label: string; wake: string }> = {
@@ -51,6 +52,7 @@ export const SLEEPER_INFO: Record<SleeperKind, { label: string; wake: string }> 
   gnome: { label: 'Enano de jardín', wake: '¡Jo, jo! El enano dio una vuelta' },
   pinwheel: { label: 'Molinete', wake: '¡El molinete giró a toda velocidad!' },
   car: { label: 'Auto', wake: '¡BIP BIP! El auto prendió las luces' },
+  snowman: { label: 'Muñeco de nieve', wake: '¡El muñeco de nieve abrió los ojos y saludó con la escoba!' },
   turtle: { label: 'Tortuga', wake: '¡La tortuga sacó la cabeza y sonrió despacito!' },
   crab: { label: 'Cangrejo', wake: '¡Clac clac! El cangrejo saludó con las dos pinzas' },
   cat: { label: 'Gato', wake: '¡Miau! El gato se desperezó y ronronea' },
@@ -649,6 +651,45 @@ export class Sleeper extends Connectable {
         this.plugAnchor.position.set(0, 0.4, 0.2);
         return 1.0;
       }
+      case 'snowman': {
+        this.collideRadius = 0.55;
+        const snow = toon('#f6f9fc');
+        const b1 = rounded(new THREE.SphereGeometry(0.55, 14, 10), snow, 0.015);
+        b1.position.y = 0.5;
+        add(b1);
+        const b2 = rounded(new THREE.SphereGeometry(0.4, 14, 10), snow, 0.012);
+        b2.position.y = 1.25;
+        add(b2);
+        const head = new THREE.Group();
+        const skull = rounded(new THREE.SphereGeometry(0.3, 12, 10), snow, 0.01);
+        head.add(skull);
+        const nose = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.3, 8), toon('#ff9f43'));
+        nose.rotation.x = Math.PI / 2;
+        nose.position.z = 0.38;
+        head.add(nose);
+        for (const sx of [-0.1, 0.1]) {
+          const eye = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 5), toon('#2c2838'));
+          eye.position.set(sx, 0.08, 0.27);
+          eye.scale.y = 0.2;
+          head.add(eye);
+          this.bits.push(eye);
+        }
+        const hat = rounded(new THREE.CylinderGeometry(0.2, 0.2, 0.3, 12), toon('#2c2838'), 0.006);
+        hat.position.y = 0.32;
+        head.add(hat);
+        head.position.y = 1.85;
+        head.rotation.x = 0.4;
+        add(head, 'head');
+        const arm = new THREE.Group();
+        const stick = box(0.05, 0.8, 0.05, '#6a4a32', { outline: false });
+        stick.position.y = 0.4;
+        arm.add(stick);
+        arm.position.set(0.38, 1.3, 0);
+        arm.rotation.z = -1.2;
+        add(arm, 'arm');
+        this.plugAnchor.position.set(0, 0.8, 0.5);
+        return 2.3;
+      }
       case 'turtle': {
         this.collideRadius = 0.45;
         const turtle = new THREE.Group();
@@ -1004,6 +1045,10 @@ export class Sleeper extends Connectable {
       case 'crab':
         for (const e of this.bits) e.scale.y = 1;
         break;
+      case 'snowman':
+        this.p.head.rotation.x = 0;
+        for (const e of this.bits) e.scale.y = 1;
+        break;
       case 'turtle':
         this.p.head.position.z = 0.5;
         for (const e of this.bits) e.scale.y = 1;
@@ -1113,6 +1158,9 @@ export class Sleeper extends Connectable {
       case 'firefly':
         [1568, 1760, 2093, 2349, 2637].forEach((f, i) => a.tone(f, i * 0.08, 0.1, 'sine', 0.05));
         break;
+      case 'snowman':
+        [784, 988, 1175].forEach((f, i) => a.tone(f, i * 0.12, 0.15, 'triangle', 0.05));
+        break;
       case 'turtle':
         a.tone(220, 0, 0.3, 'sine', 0.07);
         a.tone(294, 0.25, 0.4, 'sine', 0.06);
@@ -1161,6 +1209,11 @@ export class Sleeper extends Connectable {
     const k = r >= 0 ? r : 99;
 
     switch (this.kind) {
+      case 'snowman': {
+        this.p.arm.rotation.z = r >= 0 && k < 1.5 ? -1.2 - Math.abs(Math.sin(k * 8)) * 0.8 : -1.2 + Math.sin(T * 0.6) * 0.1;
+        if (r >= 1.6) this.react = -1;
+        break;
+      }
       case 'turtle': {
         this.p.turtle.rotation.y = r >= 0 && k < 2 ? Math.sin(k * 3) * 0.4 : Math.sin(T * 0.3) * 0.15;
         if (r >= 2.1) this.react = -1;

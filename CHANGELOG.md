@@ -357,3 +357,6 @@ Nuevo distrito al este del Puerto: kiosco con heladera y sombrillas, castillo de
 
 ## 3D: Fase 17 (expansión) — Isla misteriosa
 La lancha de Marina cruza el mar (con el faro chiquito prendido) hasta una isla con selva, cueva del eco, tortugas dormidas, un templo con puerta Voltio y piedras que se prenden en el orden del mural, y un volcán dormido que se sube por rocas en espiral para despertar su corazón y la vertiente tibia. Pip el ermitaño, Caracolín como rescate, notas, carrera de la selva y 11 encargos. Pruebas 3D: 50 escenarios. Decisión 061.
+
+## 3D: Fase 18 (expansión) — Montaña nevada y observatorio
+Nuevo distrito al norte del Parque: campo de nieve con muñecos dormidos y rampas para el trineo-patineta, montaña que se sube por una escalera larga o con la telesilla, dos tirolesas en cadena para bajar, y el observatorio de la cima (línea de energía en el Mundo Voltio) con un telescopio que marca en el mapa las Piezas que faltan. Profesora Lupa, Frecuencio como rescate, notas, carrera «Bajada en trineo», 10 encargos y uno de noche. El mapa ahora tiene dos zooms: cerca del Nexus y toda la ciudad. Pruebas 3D: 51 escenarios. Decisión 062.

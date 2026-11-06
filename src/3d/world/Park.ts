@@ -99,7 +99,7 @@ export function buildPark(scene: THREE.Scene, rects: Rect[]): void {
   const post = (x: number, z: number, i: number) => add(box(0.14, 1.3, 0.14, cols[i % 4], { outline: 0.01 }), x, 0.65, z);
   let k = 0;
   for (let x = R.minX; x <= R.maxX; x += 2) {
-    post(x, R.minZ - 0.3, k++);
+    if (Math.abs(x) > 3.5) post(x, R.minZ - 0.3, k++);
     if (Math.abs(x) > 5) post(x, R.maxZ + 0.3, k++);
   }
   for (let z = R.minZ; z <= R.maxZ; z += 2) {

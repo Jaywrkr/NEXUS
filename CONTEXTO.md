@@ -332,6 +332,15 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Volcán** `VOLCANO` (círculo con `h` 6,3, r 6,2) + `VOLCANO_STEPS` (7 rocas, h 0,9…6,3); flag `volcan-top`. `isla-heart-source` («Piedra caliente», a 6,3 m con `lift`) → `isla-heart` (`VolcanoHeart`, tema `volcan`) → `World.isla.wakeVolcano()`; vertiente (22, 192) → flag `vertiente`. Cueva del eco `ISLA.cave` → flag `cueva-eco`; `isla-visit` al pisar la isla.
 - Cosa dormida `turtle` (5, `ISLA.turtles`). Pip (`ISLA.pip`), `pipText()`, `islaStep()`, `updateIsla()`. Caracolín (−12, 170) es rescate. Encargos `i-*` (11), notas `note-isla-*`, `race-isla`.
 
+### Montaña nevada y observatorio (Decisión 062, Fase 18)
+
+- **Región** `NIEVE_REGION` (x −30…40, z −156…−98) + `NIEVE_FROM_PARK` (x −3…3, z −99…−93,5; hueco en el cerco norte del Parque). Distrito `nieve` (antes que `parque`), parada de tren (−8, −103). Archivos: `world/Nieve.ts` (`SUMMIT` h 9, `SUMMIT_STEPS` ×10, `LEDGE` h 4,5, `NIEVE`, `buildNieve`), `objects/nieve.ts` (`Chairlift`, `Telescope`).
+- **Telesilla** `telesilla` (`Chairlift`, `Ride` de dos estaciones con `boardAt.y`: base (24, −108,5, 0), cima (11,2, −136,5, 9); recorrido 3D `NIEVE.liftRoute`; lado en `count('telesilla-side')`; «🚡 Subir/Bajar»). Tirolesa de 3 postes `World.nieve.zipLine` (cima → saliente → campo): flags `zip-nieve` (desde la cima) y `zip-nieve-2` (desde el saliente). Flags `nieve-top`, `nieve-steps` (último escalón), `snow-air` (patineta en el aire en la nieve; rampas `NIEVE.ramps` en `World.skate.kickers`).
+- **Observatorio**: puerta en la cima (2, −141,5, y 9) con `door.y`/`out.y`; abre con el circuito Voltio `domo-open` (nodos al pie, `NIEVE.domeNodes`). Sala x = 1500: `nieve-obs-source` → `nieve-telescope` (tema `estrellas`) → revive, `openDome()`, flag `telescopio`. `missingPieces()` → `MapData.pieces` (centro de cada distrito con Pieza que falta). De noche adentro → flag `telescopio-noche` (encargo `n-telescopio`).
+- **Mapa** (`ui/MapView.ts`): `drawMap(…, zoom)`; `'near'` = ventana de 176 m centrada en el Nexus dentro de `WORLD_BOUNDS`; `'all'` = cuadrado con todo el mundo y los nombres de los distritos. `main.ts` cambia el zoom al tocar `#mapCanvas` (`#mapZoomHint`).
+- **En altura**: `Interior.door.y`/`out.y` (y `findDoorway` compara la altura), `leaveRide` usa `boardAt.y`, `findRideSpot` compara la altura.
+- Cosa dormida `snowman` (5, `NIEVE.snowmen`). Lupa (`NIEVE.lupa`), `lupaText()`, `nieveStep()`, `updateNieve()`. Frecuencio (28, −128) es rescate. `NO_PIECE` incluye `nieve`. Encargos `m-*` (10), notas `note-nieve-*`, `race-nieve` (`board: true`).
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -376,7 +385,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–057).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fases 11–17 hechas (Decisiones 055–061). Sigue la Fase 18: Montaña nevada y observatorio.**
+> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fases 11–18 hechas (Decisiones 055–062): los 7 distritos nuevos. Sigue la Fase 19: el final de verdad.**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 
