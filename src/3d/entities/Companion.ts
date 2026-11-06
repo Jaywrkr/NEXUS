@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeParts } from '../core/batch';
 import { damp, dampAngle } from '../core/util';
 import { CARD_BY_ID, TYPES, type ChispiType } from '../data/chispis';
 
@@ -135,6 +136,7 @@ export class Companion {
     const card = CARD_BY_ID.get(id)!;
     this.type = card.type;
     this.model = makeBuddy(card.type);
+    mergeParts(this.model);
     this.model.scale.setScalar(0.85);
     this.root.add(this.model);
   }

@@ -360,3 +360,6 @@ La lancha de Marina cruza el mar (con el faro chiquito prendido) hasta una isla 
 
 ## 3D: Fase 18 (expansión) — Montaña nevada y observatorio
 Nuevo distrito al norte del Parque: campo de nieve con muñecos dormidos y rampas para el trineo-patineta, montaña que se sube por una escalera larga o con la telesilla, dos tirolesas en cadena para bajar, y el observatorio de la cima (línea de energía en el Mundo Voltio) con un telescopio que marca en el mapa las Piezas que faltan. Profesora Lupa, Frecuencio como rescate, notas, carrera «Bajada en trineo», 10 encargos y uno de noche. El mapa ahora tiene dos zooms: cerca del Nexus y toda la ciudad. Pruebas 3D: 51 escenarios. Decisión 062.
+
+## 3D: Rendimiento, Etapa A — más rápido sin cambiar cómo se ve
+Piezas unidas en personajes y objetos, sombras más livianas, lo lejano apartado de la escena, silueta del Nexus solo cuando algo lo tapa y medidor de rendimiento en Opciones. La escena pasa de 9.370 a ~1.900 mallas recorridas por cuadro y la plaza de 703 a ~350 dibujos. Pruebas 3D: 52 escenarios. Decisión 063.

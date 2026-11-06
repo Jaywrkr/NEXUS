@@ -341,6 +341,14 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **En altura**: `Interior.door.y`/`out.y` (y `findDoorway` compara la altura), `leaveRide` usa `boardAt.y`, `findRideSpot` compara la altura.
 - Cosa dormida `snowman` (5, `NIEVE.snowmen`). Lupa (`NIEVE.lupa`), `lupaText()`, `nieveStep()`, `updateNieve()`. Frecuencio (28, −128) es rescate. `NO_PIECE` incluye `nieve`. Encargos `m-*` (10), notas `note-nieve-*`, `race-nieve` (`board: true`).
 
+### Rendimiento, Etapa A (Decisión 063)
+
+- `core/batch.ts`: `batchStatic` (escenografía quieta, como antes), **`mergeParts(root, protect)`** (une mallas hermanas con el mismo material dentro de cada grupo, hornea sus contornos en una malla con `sharedOutline`; respeta `protect`, transparentes y mallas con `userData` propio salvo `look`), **`referencedParts(obj, skip)`** (todo lo que un objeto guarda en sus campos, hasta 3 niveles, más los hijos directos de los grupos guardados) y **`trimShadows`** (contornos y piezas de radio < 0,12 no tiran sombra). Se llama en `Nexus3D`, `Companion`, `Resident3D`, `Playground` (palomas) y en `WorldMode` al registrar cada conectable y cada cosa dormida (antes de `keepVivid`).
+- **Objetos nuevos**: si el código anima, oculta o cambia el material de una malla suelta, guardala en un campo (así `referencedParts` la protege). Si recorrés los hijos de un grupo por posición, guardá el grupo en un campo.
+- `WorldMode.cull` (se arma en el primer dibujo con `setupCulling`): cada hijo de la escena con radio < 70 se aparta a `this.parked` (un `Group` fuera de la escena) cuando su borde queda a más de `R` del foco (isométrica: `halfW + halfH/0,6 + 14`; vista detrás: 230 m). Si el juego lo quita de la escena, deja de manejarse. `parkedCount` para las pruebas. Para que algo nunca se aparte: `userData.noCull = true` o agregarlo a `keep`.
+- Silueta: `checkOccluded` (rayo desde el Nexus hacia la cámara a 0,4 y 1,3 m, cada 0,2 s) → `silhouetteOn`.
+- Medidor: `Settings.perf` (`los-nexus-3d-perf`, clase `show-perf`), `#perfPill`; `main.ts` cuenta cuadros y lee `renderer.gl.info.render.calls` (con `autoReset = false`), `Renderer.dprLabel`.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).

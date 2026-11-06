@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeParts, referencedParts } from '../core/batch';
 import type { AudioSystem } from '../../systems/AudioSystem';
 import { box, rounded, toon, withLife } from '../core/render';
 import type { Circle, World } from '../world/World';
@@ -118,6 +119,8 @@ export class Playground {
       this.scene.add(g);
       const away = new THREE.Vector3(Math.cos(a), 0, Math.sin(a));
       const pg: Pigeon = { g, wingL: wings[0], wingR: wings[1], head, home, away, t: -1, p: Math.random() * 10 };
+      // Rendimiento: el cuerpo de la paloma en pocas piezas (alas y cabeza se mueven aparte)
+      mergeParts(g, referencedParts(pg, new Set([g])));
       birds.push(pg);
       this.pigeons.push(pg);
     }

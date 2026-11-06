@@ -2670,3 +2670,53 @@ test('3D: Montaña nevada — telesilla, observatorio en la cima, telescopio y m
   expect(await active('nieve-telescope')).toBe(true);
   expect(await active('telesilla')).toBe(true);
 });
+
+test('3D: rendimiento — piezas unidas, lo lejano apartado, silueta solo si algo tapa y medidor en Opciones', async ({ page }) => {
+  test.setTimeout(240_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+  await page.waitForTimeout(1500); // un cuadro dibujado: arma la lista de lo que se aparta
+
+  // El Nexus quedó en pocas piezas y sigue con todas sus partes (ojos, lente, cable)
+  const nexus = await w(() => {
+    let n = 0;
+    window.__nexus3d.world.nexus.root.traverse((o) => o.isMesh && n++);
+    return n;
+  });
+  expect(nexus).toBeLessThan(110);
+  expect(await w(() => Boolean(window.__nexus3d.world.nexus.plugPoint()))).toBe(true);
+
+  // Lo lejano no está en la escena; al ir hasta allá vuelve
+  expect(await w(() => window.__nexus3d.world.parkedCount)).toBeGreaterThan(200);
+  const inScene = (x, z) =>
+    w(([x, z]) => {
+      const g = window.__nexus3d.world;
+      const s = g.sleepers.reduce((a, b) => (Math.hypot(a.x - x, a.z - z) < Math.hypot(b.x - x, b.z - z) ? a : b));
+      return s.group.parent === g.world.scene;
+    }, [x, z]);
+  expect(await inScene(10, 170)).toBe(false); // una tortuga de la isla
+  await tp(page, 10, 168);
+  await page.waitForTimeout(1500);
+  expect(await inScene(10, 170)).toBe(true);
+  await tp(page, -14, -12);
+  await page.waitForTimeout(1500);
+
+  // La silueta se dibuja solo cuando una casa tapa al Nexus
+  await step(page, 0.3);
+  expect(await w(() => window.__nexus3d.world.silhouetteOn)).toBe(false);
+  await tp(page, -20, -36.5); // detrás de la casa de Miga (la cámara mira desde +X+Z)
+  await step(page, 0.3);
+  expect(await w(() => window.__nexus3d.world.silhouetteOn)).toBe(true);
+
+  // Medidor de rendimiento en Opciones
+  expect(await w(() => getComputedStyle(document.getElementById('perfPill')).display)).toBe('none');
+  await page.evaluate(() => {
+    const box = document.getElementById('optPerf');
+    box.checked = true;
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.waitForTimeout(1500);
+  expect(await w(() => getComputedStyle(document.getElementById('perfPill')).display)).not.toBe('none');
+  expect(await text(page, 'perfPill')).toMatch(/fps/);
+});

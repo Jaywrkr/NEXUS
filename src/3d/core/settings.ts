@@ -10,6 +10,7 @@ const KEYS = {
   calm: 'los-nexus-reduced-effects',
   big: 'los-nexus-big-buttons',
   view: 'los-nexus-3d-view',
+  perf: 'los-nexus-3d-perf',
 };
 
 function read(key: string): string | null {
@@ -62,6 +63,15 @@ export const Settings = {
     document.body.classList.toggle('big-buttons', on);
   },
 
+  /** Medidor de rendimiento (cuadros por segundo y dibujos por cuadro) en la pantalla. */
+  get perf(): boolean {
+    return read(KEYS.perf) === 'true';
+  },
+  set perf(on: boolean) {
+    write(KEYS.perf, String(on));
+    document.body.classList.toggle('show-perf', on);
+  },
+
   /** Cámara detrás del Nexus (si no, isométrica). */
   get chase(): boolean {
     return read(KEYS.view) === 'chase';
@@ -71,6 +81,7 @@ export const Settings = {
   apply(): void {
     document.body.classList.toggle('calm', this.calm);
     document.body.classList.toggle('big-buttons', this.bigButtons);
+    document.body.classList.toggle('show-perf', this.perf);
   },
 };
 

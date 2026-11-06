@@ -246,6 +246,7 @@ class Game {
     toggle('optCalm', () => Settings.calm, (v) => (Settings.calm = v));
     toggle('optChase', () => Settings.chase, (v) => this.world.setView(!v));
     toggle('optBig', () => Settings.bigButtons, (v) => (Settings.bigButtons = v));
+    toggle('optPerf', () => Settings.perf, (v) => (Settings.perf = v));
     $('optReset').addEventListener('click', () => this.resetGame(true));
   }
 
@@ -642,9 +643,28 @@ class Game {
     }
   }
 
+  /** Medidor de rendimiento (Opciones → Mostrar rendimiento). */
+  private perfFrames = 0;
+  private perfTime = 0;
+
   private frame(now: number): void {
     requestAnimationFrame((t) => this.frame(t));
     const raw = (now - this.last) / 1000;
+    const info = this.renderer.gl.info;
+    info.autoReset = false;
+    if (raw < 0.5) {
+      this.perfFrames += 1;
+      this.perfTime += raw;
+      if (this.perfTime >= 0.5) {
+        if (document.body.classList.contains('show-perf')) {
+          const pill = document.getElementById('perfPill');
+          if (pill) pill.textContent = `${Math.round(this.perfFrames / this.perfTime)} fps · ${info.render.calls} dib. · ${this.renderer.dprLabel}`;
+        }
+        this.perfFrames = 0;
+        this.perfTime = 0;
+      }
+    }
+    info.reset();
     const dt = Math.min(raw, 0.05);
     if (raw < 0.5) this.renderer.adapt(raw);
     this.last = now;

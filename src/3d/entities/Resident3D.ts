@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeParts, referencedParts } from '../core/batch';
 import { box, glow, rounded, toon } from '../core/render';
 import { damp, dampAngle } from '../core/util';
 
@@ -195,6 +196,8 @@ export class Resident3D {
     this.root.traverse((o) => {
       if ((o as THREE.Mesh).isMesh) o.castShadow = true;
     });
+    // Rendimiento: une las piezas quietas (piernas, torso, cara…); cejas y boca se cambian aparte
+    mergeParts(this.root, referencedParts(this, new Set<THREE.Object3D>([this.root, this.body, this.head, this.armL, this.armR])));
   }
 
   private addAccessory(kind: ResidentLook['accessory']): void {

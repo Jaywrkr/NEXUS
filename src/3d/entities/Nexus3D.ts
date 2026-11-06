@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeParts, referencedParts } from '../core/batch';
 import { makeBoard } from '../objects/skate';
 import { box, glow, rounded, toon } from '../core/render';
 import { clamp, damp, dampAngle } from '../core/util';
@@ -349,6 +350,9 @@ export class Nexus3D {
       const role = roles.find(([, mat]) => mat === m.material);
       if (role) m.userData.look = role[0];
     });
+    // Rendimiento: une las piezas quietas de cada parte (cuerpo, brazos, cabeza…); lo que se anima aparte queda igual
+    const parts = new Set<THREE.Object3D>([this.root, this.body, this.legL, this.legR, this.armL, this.armR, this.head, this.earL, this.earR, this.hat, this.hoodUp]);
+    mergeParts(this.root, referencedParts(this, parts));
   }
 
   /** Ajuste que se aplica a cada material nuevo del Nexus (la silueta usa el stencil). */
