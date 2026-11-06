@@ -29,6 +29,7 @@ Este archivo existe para que una sesión nueva de Claude Code entienda el proyec
 - Nitidez: resolución real hasta 2× con ajuste automático según fps (`Renderer.adapt`), pincel fino + detalle nítido mezclado, sombras ajustadas a la vista.
 - Look: toon de 3 bandas + contorno por casco invertido + textura de pincel + post-proceso Kuwahara con grading (`src/3d/core/render.ts`). Todo con primitivas, sin modelos ni imágenes (Decisiones 033–035).
 - Arquitectura, cómo agregar conexiones, coordenadas del barrio: `CONTEXTO.md`.
+- **Expansión propuesta: `PLAN_EXPANSION.md`** (la Gran Chispa se parte en 12 Piezas, 7 distritos nuevos, libreta de encargos, día y noche; fases 10–19). Esperando el visto bueno de Jay.
 - **Rumbo de todo lo que viene: `PLAN_MAESTRO.md`** (Mundo Voltio, distritos, interiores, patineta, cartas de Chispis, interfaz, fases 0–9). Leelo antes de agregar algo nuevo.
 
 ### Probar el 3D
