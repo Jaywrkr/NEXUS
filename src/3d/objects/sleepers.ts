@@ -25,7 +25,8 @@ export type SleeperKind =
   | 'gnome'
   | 'pinwheel'
   | 'car'
-  | 'drain';
+  | 'drain'
+  | 'firefly';
 
 /** Nombre que flota encima y frase al despertarlo. */
 export const SLEEPER_INFO: Record<SleeperKind, { label: string; wake: string }> = {
@@ -43,6 +44,7 @@ export const SLEEPER_INFO: Record<SleeperKind, { label: string; wake: string }> 
   gnome: { label: 'Enano de jardín', wake: '¡Jo, jo! El enano dio una vuelta' },
   pinwheel: { label: 'Molinete', wake: '¡El molinete giró a toda velocidad!' },
   car: { label: 'Auto', wake: '¡BIP BIP! El auto prendió las luces' },
+  firefly: { label: 'Frasco de luciérnagas', wake: '¡Las luciérnagas se prendieron y salieron a bailar!' },
   drain: { label: 'Desagüe', wake: '¡Glu glu! El caño echó agua al canal' },
 };
 
@@ -633,6 +635,28 @@ export class Sleeper extends Connectable {
         this.plugAnchor.position.set(0, 0.4, 0.2);
         return 1.0;
       }
+      case 'firefly': {
+        this.collideRadius = 0.2;
+        const post = box(0.08, 1.1, 0.08, '#6a4a32', { outline: 0.006 });
+        post.position.y = 0.55;
+        add(post);
+        const jarMat = new THREE.MeshBasicMaterial({ color: '#5a5868', transparent: true, opacity: 0.85 });
+        const jar = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.34, 12), jarMat);
+        jar.position.y = 1.3;
+        add(jar, 'jar');
+        const lid = rounded(new THREE.CylinderGeometry(0.2, 0.2, 0.06, 12), toon('#c8a24a'), 0.006);
+        lid.position.y = 1.5;
+        add(lid);
+        for (let i = 0; i < 6; i += 1) {
+          const bug = new THREE.Mesh(new THREE.SphereGeometry(0.045, 6, 5), glow('#e8ff7a'));
+          bug.visible = false;
+          bug.position.set(0, 1.3, 0);
+          g.add(bug);
+          this.bits.push(bug);
+        }
+        this.plugAnchor.position.set(0, 1.2, 0.2);
+        return 1.6;
+      }
       case 'pinwheel': {
         this.collideRadius = 0.15;
         const stick = box(0.04, 1.2, 0.04, '#f4efe6', { outline: 0.006 });
@@ -733,6 +757,10 @@ export class Sleeper extends Connectable {
 
   private awakePose(): void {
     switch (this.kind) {
+      case 'firefly':
+        ((this.p.jar as THREE.Mesh).material as THREE.MeshBasicMaterial).color.set('#f4ffb0');
+        for (const b of this.bits) b.visible = true;
+        break;
       case 'mailbox':
         this.p.flag.rotation.x = 0;
         break;
@@ -810,6 +838,9 @@ export class Sleeper extends Connectable {
       case 'pinwheel':
         a.noise(0, 1.0, 0.05, 2500);
         break;
+      case 'firefly':
+        [1568, 1760, 2093, 2349, 2637].forEach((f, i) => a.tone(f, i * 0.08, 0.1, 'sine', 0.05));
+        break;
       case 'car':
         for (const t of [0, 0.42]) {
           a.tone(330, t, 0.3, 'square', 0.05);
@@ -833,6 +864,15 @@ export class Sleeper extends Connectable {
     const k = r >= 0 ? r : 99;
 
     switch (this.kind) {
+      case 'firefly': {
+        const spread = r >= 0 ? 0.35 + Math.min(1, k) * 1.2 : 0.55;
+        this.bits.forEach((b, i) => {
+          const a = T * (1.2 + i * 0.15) + i * 1.3;
+          b.position.set(Math.cos(a) * spread, 1.35 + Math.sin(T * 2 + i) * 0.35 + (r >= 0 ? Math.min(1, k) * 0.4 : 0), Math.sin(a) * spread);
+        });
+        if (r >= 2.5) this.react = -1;
+        break;
+      }
       case 'mailbox':
         this.bits.forEach((l, i) => {
           const t = (k - i * 0.12) / 1.3;

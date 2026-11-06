@@ -47,10 +47,11 @@ export const DISTRICT_NAMES: Record<string, string> = {
   estacion: 'Estación',
   cerro: 'Cerro',
   puerto: 'Puerto',
+  bosque: 'Bosque de las luciérnagas',
 };
 
 /** Distritos con libreta (en orden); los de las fases siguientes se suman acá. */
-export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto'];
+export const QUEST_DISTRICTS = ['centro', 'skatepark', 'parque', 'estacion', 'cerro', 'puerto', 'bosque'];
 
 /** Cuántas Piezas de la Gran Chispa hay en total (una por gran tarea; las demás llegan con los distritos nuevos). */
 export const PIECES_TOTAL = 12;
@@ -128,6 +129,16 @@ export const QUESTS: Quest[] = [
   { id: 'pu-gaviotin', district: 'puerto', giver: 'marina', title: 'Gaviotín', text: 'Rescatá a Gaviotín en el Mundo Voltio.', check: (c) => c.chispi('gaviotin') },
   { id: 'pu-carrera', district: 'puerto', giver: 'marina', title: 'Muelle a toda velocidad', text: 'Ganá la carrera de aros por los muelles.', check: (c) => c.flag('race-puerto'), at: { x: -35, z: 85 } },
   { id: 'pu-notas', district: 'puerto', giver: 'marina', title: 'Canción del mar', text: 'Juntá las 5 notas del puerto (¡arriba de los cajones también!).', check: (c) => c.notes('puerto') },
+  // ---------- Bosque de las luciérnagas (Fase 11) ----------
+  { id: 'b-puente', district: 'bosque', giver: 'yuyo', title: 'El puente colgante', text: 'Llevá energía a la palanca y armá el puente del arroyo.', check: (c) => c.active('forest-bridge'), at: { x: -71, z: -81.5 } },
+  { id: 'b-fogon', district: 'bosque', giver: 'yuyo', title: 'Fogón del claro', text: 'Prendé el fogón con un cable.', check: (c) => c.active('forest-fire'), at: { x: -56, z: -64 }, reward: 'pack' },
+  { id: 'b-luciernagas', district: 'bosque', giver: 'yuyo', title: 'Frascos de luz', text: 'Despertá con la mochila los 8 frascos de luciérnagas.', check: (c) => c.awake('bosque') },
+  { id: 'b-arbol', district: 'bosque', giver: 'yuyo', title: 'La casa del árbol', text: 'Subí por las plataformas del árbol gigante hasta la casita de arriba.', check: (c) => c.flag('tree-top'), at: { x: -92, z: -74 } },
+  { id: 'b-tirolesa', district: 'bosque', giver: 'yuyo', title: 'Desde la copa', text: 'Bajá del árbol gigante por la tirolesa.', check: (c) => c.flag('zip-tree') },
+  { id: 'b-hongos', district: 'bosque', giver: 'yuyo', title: '¡Boing!', text: 'Rebotá 15 veces en los hongos colorados.', check: (c) => [Math.min(15, c.count('bounce')), 15], at: { x: -60, z: -88 } },
+  { id: 'b-pinita', district: 'bosque', giver: 'yuyo', title: 'Piñita', text: 'Rescatá a Piñita en el Mundo Voltio, del otro lado del arroyo.', check: (c) => c.chispi('pinita'), at: { x: -96, z: -96 } },
+  { id: 'b-carrera', district: 'bosque', giver: 'yuyo', title: 'Carrera de los hongos', text: 'Ganá la carrera de aros saltando en los hongos.', check: (c) => c.flag('race-bosque'), at: { x: -52, z: -84 } },
+  { id: 'b-notas', district: 'bosque', giver: 'yuyo', title: 'Canto del bosque', text: 'Juntá las 6 notas del bosque (una está en la casa del árbol).', check: (c) => c.notes('bosque') },
   { id: 'pu-cartas', district: 'puerto', giver: 'marina', title: 'Coleccionista', text: 'Juntá 25 cartas distintas de Chispis.', check: (c) => [Math.min(25, c.cards()), 25] },
 ];
 

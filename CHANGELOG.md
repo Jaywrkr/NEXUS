@@ -336,3 +336,6 @@ El Nexus tiene casa propia, vieja y rota, al lado del jardín municipal. Con chi
 
 ## 3D: Fase 10 (expansión) — la Gran Chispa rota, libreta, notas y carreras
 El faro ya no es el final: la Gran Chispa vuelve y se parte en 12 Piezas que salen volando. Libreta de encargos 📒 con 47 encargos de los vecinos en los 6 distritos; terminar todos los de un lugar devuelve su Pieza al faro (pedestales ◆). 31 notas de la canción escondidas 🎵 y 6 carreras de aros contra el reloj 🏁 (una en patineta). Pruebas 3D: 40 escenarios. Decisión 054.
+
+## 3D: Fase 11 (expansión) — Bosque de las luciérnagas
+Nuevo distrito al noroeste: arroyo con puente colgante que se arma con cable, árbol gigante con plataformas en espiral, casa del árbol y tirolesa, hongos que hacen rebotar, fogón que devuelve el color, ocho frascos de luciérnagas dormidos, Yuyo el botánico, Piñita, notas, carrera de los hongos y 9 encargos (Pieza del bosque). Los premios de la libreta ahora se cobran con 🎁. Pruebas 3D: 42 escenarios. Decisión 055.

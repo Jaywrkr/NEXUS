@@ -44,6 +44,8 @@ import { Cascade } from '../objects/cascade';
 import { CERRO, TOP_H } from '../world/Cerro';
 import { BOAT, PORT } from '../world/Port';
 import { CanalBoat, GranChispa, Lighthouse, PiecePedestals } from '../objects/finale';
+import { Campfire, RopeBridgeLever } from '../objects/forest';
+import { FOREST, MUSHROOM_R, MUSHROOM_TOP, TREE } from '../world/Forest';
 import { Notes, Races } from '../systems/Collectibles';
 import { NOTES, type Race } from '../data/collectibles';
 import { DISTRICT_NAMES, PIECES_TOTAL, QUESTS, QUEST_DISTRICTS, questDone, type Quest, type QuestCtx } from '../data/quests';
@@ -123,6 +125,7 @@ const CAGES: { id: string; x: number; z: number }[] = [
   { id: 'ventarron', x: CERRO.chispi.x, z: CERRO.chispi.z },
   { id: 'musguito', x: CERRO.caveChispi.x, z: CERRO.caveChispi.z },
   { id: 'gaviotin', x: PORT.chispi.x, z: PORT.chispi.z },
+  { id: 'pinita', x: FOREST.chispi.x, z: FOREST.chispi.z },
 ];
 
 /** Sobres escondidos por el mundo (x, z, altura). */
@@ -223,6 +226,8 @@ export class WorldMode {
   private readonly train: Train;
   private readonly cascade: Cascade;
   private readonly boat: CanalBoat;
+  private readonly forestLever: RopeBridgeLever;
+  private readonly campfire: Campfire;
   private readonly lighthouse: Lighthouse;
   private readonly granChispa = new GranChispa();
   /** Expansión (Fase 10): notas de la canción, carreras de aros, libreta y Piezas de la Gran Chispa. */
@@ -390,6 +395,11 @@ export class WorldMode {
     keepVivid(this.pedestals.group);
     scene.add(this.pedestals.group);
     this.song = new CitySong(this.audio);
+    // Fase 11: Bosque de las luciérnagas
+    const forestBridgeSource = new EnergySource('forest-bridge-source', FOREST.bridgeSource.x, FOREST.bridgeSource.z);
+    this.forestLever = new RopeBridgeLever('forest-bridge', FOREST.bridge.x, FOREST.bridge.z);
+    const fireSource = new EnergySource('forest-fire-source', FOREST.fireSource.x, FOREST.fireSource.z);
+    this.campfire = new Campfire('forest-fire', FOREST.fire.x, FOREST.fire.z);
     // La casa del Nexus: lo que ya se arregló
     for (const it of HOME_ITEMS) if (this.progress.hasFlag(`casa-${it.id}`)) this.world.home.fix(it.id, false);
     if (this.homeInsideDone) this.world.home.gray.revive(false);
@@ -414,10 +424,12 @@ export class WorldMode {
       [cascadeSource, 'Energía'],
       [boatSource, 'Energía'],
       [portSource, 'Energía'],
+      [forestBridgeSource, 'Energía'],
+      [fireSource, 'Energía'],
     ];
     for (const [obj, label] of labels) obj.label = label;
 
-    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse]) {
+    for (const obj of [source, this.lamp, this.door, fountainSource, this.fountain, beaconA, beaconB, decoy, this.beacon, bridgeSource, this.bridge, gardenSource, this.sprinkler, this.flowerBed, skateSource, this.ramp, casaSource, this.fuse, heladosSource, this.iceMachine, cartasSource, this.cardDisplay, tallerSource, this.motor, this.duck, this.bell, this.parade, lanternSource, ...Object.values(this.lanterns), this.stage, this.confetti, carouselSource, this.carousel, wheelSource, this.wheel, coasterSource, this.coaster, espejosSource, this.mirrorBall, stationSource, this.train, cascadeSource, this.cascade, boatSource, this.boat, portSource, this.lighthouse, forestBridgeSource, this.forestLever, fireSource, this.campfire]) {
       // Los objetos conectables no se apagan con el pueblo: se ven como "lo que se puede tocar"
       keepVivid(obj.group);
       scene.add(obj.group);
@@ -485,6 +497,8 @@ export class WorldMode {
     });
     this.connections.addRule({ sourceId: cascadeSource.id, targetId: this.cascade.id, useTunnel: true });
     this.connections.addRule({ sourceId: boatSource.id, targetId: this.boat.id, useTunnel: true });
+    this.connections.addRule({ sourceId: forestBridgeSource.id, targetId: this.forestLever.id, useTunnel: true });
+    this.connections.addRule({ sourceId: fireSource.id, targetId: this.campfire.id, useTunnel: true });
     // El faro: motor trabado (circuito Voltio) y solo prende con toda la ciudad viva
     this.connections.addRule({
       sourceId: portSource.id,
@@ -516,6 +530,8 @@ export class WorldMode {
       { s: stationSource, t: this.train, sName: 'la energía de la estación', tName: 'el tren', when: () => this.train.unlocked },
       { s: cascadeSource, t: this.cascade, sName: 'la energía del cerro', tName: 'la cascada congelada' },
       { s: boatSource, t: this.boat, sName: 'la energía del embarcadero', tName: 'el bote de Marina' },
+      { s: forestBridgeSource, t: this.forestLever, sName: 'la energía junto al arroyo', tName: 'la palanca del puente colgante' },
+      { s: fireSource, t: this.campfire, sName: 'la energía del claro', tName: 'el fogón' },
       { s: portSource, t: this.lighthouse, sName: 'la energía del puerto', tName: 'el faro', when: () => this.lighthouse.unlocked && this.finalMissing.length === 0 },
     ];
 
@@ -712,6 +728,7 @@ export class WorldMode {
       [this.train, 'estacion', true],
       [this.cascade, 'cascada', true],
       [this.boat, 'bote', true],
+      [this.campfire, 'fogon', true],
     ];
     for (const [obj, id, ok] of packFor) {
       if (target !== obj || !ok) continue;
@@ -807,6 +824,17 @@ export class WorldMode {
       } else {
         say(`¡${name} revivió! Acercate y subite`);
       }
+    }
+    // Fase 11: el bosque
+    if (target === this.forestLever) {
+      this.world.forest.openBridge();
+      this.addLife(-78, -75, 12, animate);
+      say('¡El puente colgante se armó! Ya podés cruzar el arroyo hasta el árbol gigante');
+    }
+    if (target === this.campfire) {
+      this.addLife(-75, -75, 34, animate);
+      say('¡El fogón se prendió y el bosque recupera el color!');
+      if (animate) after(0.8, () => this.updateResidentMoods());
     }
     // Fase 9: el bote de Marina y el faro (final)
     if (target === this.boat) {
@@ -1240,6 +1268,8 @@ export class WorldMode {
       { name: 'Mirador', x: CERRO.mirador.x, z: CERRO.mirador.z + 4, alive: this.progress.hasFlag('cerro-top') },
       { name: 'Cueva', x: CERRO.cave.doorX, z: CERRO.cave.z + 1, alive: this.progress.hasFlag('cave-lit') },
       { name: 'Bote', x: BOAT.dock.x, z: BOAT.dock.z, alive: this.boat.isActive },
+      { name: 'Árbol gigante', x: TREE.x, z: TREE.z, alive: this.progress.hasFlag('tree-top') },
+      { name: 'Fogón', x: FOREST.fire.x, z: FOREST.fire.z, alive: this.campfire.isActive },
       { name: 'Faro', x: PORT.lighthouse.x, z: PORT.lighthouse.z - 3, alive: this.lighthouse.isActive },
     ];
     return {
@@ -1573,7 +1603,7 @@ export class WorldMode {
       if (t && !t.isActive) return { text: `Llevá la energía de la habitación hasta ${t === this.fuse ? 'el' : 'la'} ${t.label.toLowerCase()}`, at: this.connections.hasSelection() ? t : (this.inside.info as ReviveRoom).source };
       return { text: `${this.inside.story[0].split(' · ').pop()}: hay una chispita escondida por acá`, at: null };
     }
-    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep();
+    const park = this.parkStep() ?? this.stationStep() ?? this.cerroStep() ?? this.portStep() ?? this.forestStep();
     if (park) return park;
     if (this.voltio.active && !this.inSkatepark) {
       const me = this.nexus.position;
@@ -1667,6 +1697,14 @@ export class WorldMode {
       p.y = ground;
       this.vy = 0;
       this.grounded = true;
+      // Hongo del bosque: rebota muy alto
+      if (Math.abs(ground - MUSHROOM_TOP) < 0.01 && FOREST.mushrooms.some(([mx, mz]) => Math.hypot(p.x - mx, p.z - mz) < MUSHROOM_R)) {
+        this.vy = 12.5;
+        this.grounded = false;
+        this.progress.addCount('bounce');
+        this.audio.tone(330, 0, 0.1, 'sine', 0.08);
+        this.audio.tone(660, 0.06, 0.18, 'sine', 0.08);
+      }
     } else {
       this.grounded = false;
     }
@@ -1729,6 +1767,7 @@ export class WorldMode {
     }
     this.progress.addCount('zip');
     if (np.line === this.world.cerro.zipLine && !this.progress.hasFlag('zip-cerro')) this.progress.setFlag('zip-cerro');
+    if (np.line === this.world.forest.zipLine && !this.progress.hasFlag('zip-tree')) this.progress.setFlag('zip-tree');
     this.zip = { a, b, t: 0, dur: Math.hypot(b.x - a.x, b.z - a.z) / ZIP_SPEED, climb: 0, from: this.nexus.position.clone() };
     this.nexus.hanging = true;
     this.nexus.airborne = false;
@@ -1963,6 +2002,8 @@ export class WorldMode {
       ['balloons', 9, -56],
       ['icecream', -25, -60],
       ['pinwheel', 29, -80],
+      // Fase 11: frascos de luciérnagas en el bosque
+      ...FOREST.fireflies.map(([x, z]): [SleeperKind, number, number] => ['firefly', x, z]),
     ] as [SleeperKind, number, number][]) {
       const [px, pz] = place(x, z);
       make(kind, px, pz, Math.PI / 4);
@@ -2081,6 +2122,8 @@ export class WorldMode {
       [[this.cascade], 'hielo'],
       [[this.boat], 'mar'],
       [[this.lighthouse], 'faro'],
+      [[this.forestLever], 'bridge'],
+      [[this.campfire], 'fogon'],
     ];
     const zone = zones.find(([list]) => list.includes(target))?.[1] ?? 'garden';
     return planTunnel(zone, this.progress.tunnelSkill);
@@ -2206,6 +2249,12 @@ export class WorldMode {
     nora.setHeard(this.progress.hasHeard('nora'));
     this.world.scene.add(nora.root);
     this.residents.push(nora);
+    // Yuyo, el botánico del Bosque (Fase 11)
+    const ys = FOREST.yuyo;
+    const yuyo = new Resident3D('yuyo', 'Yuyo', ys.x, ys.z, Math.atan2(ys.faceX - ys.x, ys.faceZ - ys.z));
+    yuyo.setHeard(this.progress.hasHeard('yuyo'));
+    this.world.scene.add(yuyo.root);
+    this.residents.push(yuyo);
     // Marina, la capitana del Puerto (Fase 9)
     const ms = PORT.marina;
     const marina = new Resident3D('marina', 'Marina', ms.x, ms.z, Math.atan2(ms.faceX - ms.x, ms.faceZ - ms.z));
@@ -2242,6 +2291,7 @@ export class WorldMode {
       nora: this.train.isActive,
       lalo: this.cerroDone,
       marina: this.boat.isActive,
+      yuyo: this.campfire.isActive,
     };
     for (const r of this.residents) r.setHappy(restored[r.id] ?? false, instant);
   }
@@ -2252,6 +2302,7 @@ export class WorldMode {
     if (r.id === 'nora') return this.noraText();
     if (r.id === 'lalo') return this.laloText();
     if (r.id === 'marina') return this.marinaText();
+    if (r.id === 'yuyo') return this.yuyoText();
     const info = RESIDENTS.find((i) => i.id === r.id)!;
     // En 3D la fuente todavía no tiene bomba ni válvulas (eso es de la 2D): Bombo pide otra cosa
     if (r.id === 'bombo' && !this.fountain.isActive) {
@@ -2598,6 +2649,39 @@ export class WorldMode {
   private showMemories(): void {
     const stars = this.fragments.filter((f) => f.isCollected).length;
     this.setMessage(`🏛️ Recuerdos: ★ ${stars} fragmentos · ✦ ${this.awakeCount()} cosas despiertas · 🃏 ${this.progress.uniqueCards} cartas · ⚡ ${this.progress.chispis.length} Chispis`);
+  }
+
+  /* ---------- Fase 11: Bosque de las luciérnagas ---------- */
+
+  private checkTreeTop(): void {
+    if (this.progress.hasFlag('tree-top') || this.inside) return;
+    const p = this.nexus.position;
+    if (p.y < TREE.top - 0.3 || Math.hypot(p.x - TREE.x, p.z - TREE.z) > TREE.r + 0.8) return;
+    this.progress.setFlag('tree-top');
+    this.audio.playSuccess();
+    this.addLife(TREE.x, TREE.z, 10, true);
+    this.showStory('Yuyo · La casa del árbol', '¡Llegaste a la copa! Desde acá se ve el bosque entero. Para bajar, tirate por la tirolesa: te deja al lado del puente.');
+    this.refreshObjectiveSoon();
+  }
+
+  private yuyoText(): string {
+    if (!this.forestLever.isActive) return 'Soy Yuyo, el botánico. El arroyo partió el bosque y el puente colgante se desarmó. ¿Le llevás energía a la palanca?';
+    if (!this.campfire.isActive) return 'Con el apagón se apagó el fogón del claro y el bosque se quedó gris. Un cable desde la estrella lo prende.';
+    if (!this.progress.hasFlag('tree-top')) return 'El árbol gigante tiene una casita arriba. Las plataformas suben en espiral: ¡saltá de una a otra!';
+    return '¿Viste los hongos colorados? Si saltás encima, ¡boing! Te mandan bien alto.';
+  }
+
+  /** Lo que conviene hacer en el bosque. */
+  private forestStep(): { text: string; at: { x: number; z: number } | null } | null {
+    if (this.districtId !== 'bosque' || this.inside) return null;
+    if (this.voltio.active) {
+      if (this.voltio.isCaged('pinita')) return { text: '¡Piñita está atrapada! Cerrá un círculo con tu estela alrededor de la jaula', at: FOREST.chispi };
+      return null;
+    }
+    if (!this.forestLever.isActive) return { text: 'Bosque: conectá la energía con la palanca del puente colgante', at: FOREST.bridgeSource };
+    if (!this.campfire.isActive) return { text: 'Bosque: prendé el fogón del claro con un cable', at: FOREST.fireSource };
+    if (!this.progress.hasFlag('tree-top')) return { text: 'Subí por las plataformas del árbol gigante hasta la casita', at: { x: TREE.x + 3.5, z: TREE.z + 1 } };
+    return null;
   }
 
   /* ---------- Fase 9: Puerto y faro (final) ---------- */
@@ -3480,6 +3564,7 @@ export class WorldMode {
     }
     this.checkFragments();
     this.checkSummit();
+    this.checkTreeTop();
     const note = this.voltio.active || this.inside ? null : this.notes.update(dt, this.time, this.nexus.position);
     if (note) this.onNote(note.id);
     this.updateRace(dt);

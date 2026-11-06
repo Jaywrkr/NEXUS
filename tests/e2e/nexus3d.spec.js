@@ -304,8 +304,8 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     return { nests, sleepers: wm.sleepers.map((s) => ({ id: s.id, x: s.x, z: s.z })) };
   });
   expect(info.nests.length).toBe(6);
-  expect(info.sleepers.length).toBe(27);
-  expect(await text(page, 'awake')).toBe('✦ 0/27');
+  expect(info.sleepers.length).toBe(35);
+  expect(await text(page, 'awake')).toBe('✦ 0/35');
   expect(await text(page, 'charge')).toBe('🎒 ○○○○○');
 
   // Con la mochila vacía no se despierta nada
@@ -348,7 +348,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
     woken += 1;
     expect(await w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, sl.id), `despierta ${sl.id}`).toBe(true);
     expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
-    expect(await text(page, 'awake')).toBe(`✦ ${woken}/27`);
+    expect(await text(page, 'awake')).toBe(`✦ ${woken}/35`);
     if (woken === 1) {
       await touch(page);
       expect(await w(() => window.__nexus3d.world.charge)).toBe(before - 1);
@@ -370,7 +370,7 @@ test('3D: la mochila Atrapachispas: nidos, chispitas y cosas dormidas que se des
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   await page.evaluate(() => document.getElementById('continue').click());
   await expect.poll(() => mode(page)).toContain('mode-world');
-  expect(await text(page, 'awake')).toBe('✦ 27/27');
+  expect(await text(page, 'awake')).toBe('✦ 35/35');
   expect(await text(page, 'charge')).toBe('🎒 ●○○○○');
   expect(await w(() => window.__nexus3d.world.pickups.items.filter((p) => p.id?.startsWith('spark-hidden')).length)).toBe(9);
 
@@ -1689,4 +1689,104 @@ test('3D: libreta de encargos, notas de la canción, carreras de aros y Piezas d
   await page.waitForFunction(() => Boolean(window.__nexus3d));
   expect(await w(() => window.__nexus3d.world.pieces)).toBe(1);
   expect(await w(() => window.__nexus3d.world.progress.hasFlag('note-centro-0'))).toBe(true);
+});
+
+test('3D: Bosque de las luciérnagas — puente colgante, fogón, árbol gigante, tirolesa, hongos y luciérnagas', async ({ page }) => {
+  test.setTimeout(300_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const active = (id) => w((id) => window.__nexus3d.world.connections.all.find((o) => o.id === id).isActive, id);
+  const pos = () => w(() => window.__nexus3d.world.nexus.position.toArray());
+  const flag = (f) => w((f) => window.__nexus3d.world.progress.hasFlag(f), f);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Se llega caminando desde el Cerro, por el costado del acantilado
+  await tp(page, -53.5, -34);
+  await page.keyboard.down('KeyW');
+  await page.keyboard.down('KeyD');
+  await step(page, 3);
+  await page.keyboard.up('KeyW');
+  await page.keyboard.up('KeyD');
+  expect((await pos())[2]).toBeLessThan(-46);
+  await step(page, 0.6);
+  expect(await text(page, 'districtBanner')).toContain('Bosque');
+  expect(await text(page, 'msg')).toContain('puente');
+
+  // El arroyo no se puede cruzar sin el puente
+  await tp(page, -74.5, -90);
+  await page.keyboard.down('KeyA');
+  await page.keyboard.down('KeyW');
+  await step(page, 1.5);
+  await page.keyboard.up('KeyA');
+  await page.keyboard.up('KeyW');
+  expect((await pos())[0]).toBeGreaterThan(-76.5);
+
+  // Puente colgante con cable (carrera de luz) y se cruza
+  await connect(page, [-70.1, -80.6], [-73.5, -78.3]);
+  expect(await active('forest-bridge')).toBe(true);
+  await tp(page, -74, -75);
+  await page.keyboard.down('KeyA');
+  await page.keyboard.down('KeyW');
+  await step(page, 1.5);
+  await page.keyboard.up('KeyA');
+  await page.keyboard.up('KeyW');
+  expect((await pos())[0]).toBeLessThan(-80);
+
+  // El fogón devuelve el color al bosque y alegra a Yuyo
+  await connect(page, [-55.1, -63.1], [-61, -58.8]);
+  expect(await active('forest-fire')).toBe(true);
+  await step(page, 3);
+  expect(await w(() => window.__nexus3d.world.lifeAt(-75, -75))).toBeGreaterThan(0.9);
+  expect(await w(() => window.__nexus3d.world.residents.find((r) => r.id === 'yuyo').isHappy)).toBe(true);
+
+  // Arriba del árbol gigante y abajo por la tirolesa
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(-91, 8.1, -76.4);
+    g.focus.set(-91, 0, -76.4);
+  });
+  await step(page, 0.3);
+  expect(await flag('tree-top')).toBe(true);
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(-90.9, 8.1, -76.2);
+    g.nexus.heading = Math.atan2(-70 + 91.4, -66 + 76.8);
+  });
+  await step(page, 0.1);
+  expect(await text(page, 'interact')).toBe('Tirolesa');
+  await touch(page);
+  for (let i = 0; i < 40 && (await w(() => Boolean(window.__nexus3d.world.zip))); i += 1) await step(page, 0.5);
+  await step(page, 1);
+  const end = await pos();
+  expect(Math.hypot(end[0] + 70, end[2] + 66)).toBeLessThan(3);
+  expect(await flag('zip-tree')).toBe(true);
+
+  // Los hongos hacen rebotar bien alto
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(-60, 1.6, -88);
+    g.focus.set(-60, 0, -88);
+  });
+  let top = 0;
+  for (let i = 0; i < 12; i += 1) {
+    await step(page, 0.1);
+    top = Math.max(top, (await pos())[1]);
+  }
+  expect(top).toBeGreaterThan(3.5);
+  expect(await w(() => window.__nexus3d.world.progress.count('bounce'))).toBeGreaterThanOrEqual(1);
+
+  // Frascos de luciérnagas: se despiertan con la mochila
+  const ff = await w(() => window.__nexus3d.world.sleepers.filter((s) => s.kind === 'firefly').map((s) => [s.x, s.z]));
+  expect(ff.length).toBe(8);
+  await w(() => window.__nexus3d.world.setCharge(5));
+  await tp(page, ff[0][0], ff[0][1] + 0.9);
+  await touch(page);
+  expect(await w(() => window.__nexus3d.world.sleepers.find((s) => s.kind === 'firefly').isActive)).toBe(true);
+
+  // La libreta suma el bosque; se guarda
+  expect(await w(() => window.__nexus3d.world.questBook().some((d) => d.district === 'bosque'))).toBe(true);
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await active('forest-bridge')).toBe(true);
+  expect(await w(() => window.__nexus3d.world.world.isWalkable(-78, -75, 0.3))).toBe(true);
 });

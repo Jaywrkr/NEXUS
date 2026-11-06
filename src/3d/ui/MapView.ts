@@ -3,6 +3,7 @@ import { SKATE_REGION } from '../world/Skatepark';
 import { PARK_REGION } from '../world/Park';
 import { STATION_CORRIDOR, STATION_REGION } from '../world/Station';
 import { CERRO, CERRO_CORRIDOR, CERRO_REGION } from '../world/Cerro';
+import { CREEK, FOREST_FROM_CERRO, FOREST_FROM_PARK, FOREST_REGION, TREE } from '../world/Forest';
 import { PIERS, PORT_CORRIDOR, PORT_REGION, SEA_Z } from '../world/Port';
 
 /*
@@ -71,6 +72,9 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
     [STATION_CORRIDOR, [190, 160, 120]],
     [CERRO_REGION, [110, 170, 120]],
     [CERRO_CORRIDOR, [110, 170, 120]],
+    [FOREST_REGION, [80, 150, 90]],
+    [FOREST_FROM_CERRO, [80, 150, 90]],
+    [FOREST_FROM_PARK, [80, 150, 90]],
     [PORT_REGION, [150, 160, 190]],
     [PORT_CORRIDOR, [150, 160, 190]],
   ] as [{ minX: number; maxX: number; minZ: number; maxZ: number }, number[]][]) {
@@ -95,6 +99,13 @@ export function drawMap(canvas: HTMLCanvasElement, data: MapData, time: number):
   ctx.fillRect(px(-76), pz(SEA_Z), 176 * sx, 30 * sz);
   ctx.fillStyle = '#a97a52';
   for (const p of PIERS) ctx.fillRect(px(p.minX), pz(p.minZ), (p.maxX - p.minX) * sx, (p.maxZ - p.minZ) * sz);
+  // Arroyo y árbol gigante del bosque
+  ctx.fillStyle = '#3f86c8';
+  ctx.fillRect(px(CREEK.minX), pz(FOREST_REGION.minZ), (CREEK.maxX - CREEK.minX) * sx, (FOREST_REGION.maxZ - FOREST_REGION.minZ) * sz);
+  ctx.fillStyle = '#2f6a32';
+  ctx.beginPath();
+  ctx.arc(px(TREE.x), pz(TREE.z), 5 * sx, 0, Math.PI * 2);
+  ctx.fill();
   // Meseta del cerro y acantilado
   ctx.fillStyle = 'rgba(120,108,98,0.85)';
   ctx.fillRect(px(CERRO.top.minX), pz(CERRO.top.minZ), (CERRO.top.maxX - CERRO.top.minX) * sx, (CERRO.top.maxZ - CERRO.top.minZ) * sz);

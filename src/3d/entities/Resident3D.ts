@@ -33,6 +33,8 @@ export const RESIDENT_LOOKS: Record<string, ResidentLook> = {
   tita: { body: '#ff5a6e', pants: '#3d3550', skin: '#e3a986', hair: '#2a1d14', accessory: 'barker' },
   // Nora: jefa de estación (Fase 7); gorra de visera con galón, saco azul y silbato
   nora: { body: '#30406a', pants: '#2c2838', skin: '#c98e6b', hair: '#1d1630', accessory: 'conductor' },
+  // Yuyo: botánico del Bosque (Fase 11); sombrero de ala ancha verde, pañuelo y binoculares
+  yuyo: { body: '#9be37a', pants: '#5a4630', skin: '#c98e6b', hair: '#d8d8d8', accessory: 'ranger' },
   // Lalo: guardaparque del Cerro (Fase 8); sombrero de ala ancha, pañuelo y binoculares
   lalo: { body: '#6f8f3a', pants: '#5a4630', skin: '#e3a986', hair: '#7a4a2e', accessory: 'ranger' },
   // Marina: capitana del Puerto (Fase 9); gorra de capitán, rayas y catalejo

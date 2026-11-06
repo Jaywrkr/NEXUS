@@ -16,6 +16,7 @@ const NOTE_COLORS: Record<string, string> = {
   estacion: '#c7a17a',
   cerro: '#7be07a',
   puerto: '#5ec8ff',
+  bosque: '#9be37a',
 };
 
 function makeNote(color: string): THREE.Group {

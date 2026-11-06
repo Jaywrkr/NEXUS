@@ -278,6 +278,15 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - **Notas** (`NOTES`, 31, id `note-<distrito>-<n>`, flag al juntarlas; se juntan a < 1 m y con la altura del Nexus cerca de la de la nota). **Carreras** (`RACES`, una por distrito; `start`, `rings` [x, y, z], `time`, `board`): cartel 🏁 → botón «🏁 Carrera» → `Races.start`; flag `race-<id>` al ganar, récord en `best-race-<id>`, contador `races-won`; perder solo avisa.
 - Contadores del guardado: `zip`, `trips`, `trick-ollie|air|grind`, `races-won`, `best-*`.
 
+### Bosque de las luciérnagas (Decisión 055, Fase 11)
+
+- **Región** `FOREST_REGION` (x −104…−46, z −104…−47) + `FOREST_FROM_CERRO` (x −55,5…−51,5, z −48…−31) + `FOREST_FROM_PARK` (x −47…−35, z −76…−70). Distrito `bosque`.
+- **Arroyo** x −80…−76 (rects); hueco del puente z −77…−73 que `openBridge()` saca de `World.rects` y muestra las tablas. Palanca `forest-bridge` (−74,4, −79,2), fuente `forest-bridge-source` (−71, −81,5), tema `bridge`.
+- **Árbol gigante** `TREE` (−92, −78), tronco = círculo con `h` 8,1 (se pisa arriba); `TREE_STEPS`: 8 plataformas (rects con `h` 0,9·n). `checkTreeTop()` marca `tree-top`. Tirolesa `World.forest.zipLine` (arriba → (−70, −66)), flag `zip-tree`.
+- **Hongos** `FOREST.mushrooms` (círculos con `h` = `MUSHROOM_TOP` 0,95): al aterrizar en uno, `updateVertical` da `vy` 12,5 y suma `bounce`.
+- **Fogón** `forest-fire` (−62, −60), fuente (−56, −64), tema `fogon`; vida en todo el bosque. **Frascos de luciérnagas**: `SleeperKind` `firefly`, 8 en `FOREST.fireflies` (agregados al final de la lista para no cambiar ids).
+- Yuyo (`FOREST.yuyo`, look `ranger` verde), `yuyoText()`, `forestStep()`. Piñita (−96, −96). Encargos `b-*` (9). Notas `note-bosque-*` (6) y `race-bosque` (aros a 3,8 m sobre los hongos).
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).
@@ -296,7 +305,7 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 5. Pensar siempre en celular (vertical incluido) y en un niño de 9 años con TDAH: poco texto, feedback inmediato, nada frustrante.
 6. No usar nada de *Regreso al Futuro* (regla heredada de Calle 85).
 
-Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–054).
+Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–055).
 
 ### 6. Trampas técnicas ya conocidas (no repetirlas)
 
@@ -322,7 +331,7 @@ Registro completo de decisiones: `DECISIONS.md` (las del 3D son 033–054).
 
 ### Qué sigue en el 3D
 
-> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Sigue la Fase 11: Bosque de las luciérnagas.**
+> **Fases 0 a 9 hechas (Decisiones 043–052) y expansión en curso (`PLAN_EXPANSION.md`): Fase 10 hecha (Decisión 054). El faro ahora parte la Gran Chispa en 12 Piezas; el final de verdad llega en la Fase 19. Fase 11 hecha (Decisión 055). Sigue la Fase 12: Granja y molinos.**
 > **El rumbo completo está en `PLAN_MAESTRO.md`** (aprobado el 2026-11-05): historia de la Gran Chispa, Mundo Voltio, distritos nuevos, edificios con interior, patineta, cartas de Chispis, sistema de interfaz y fases 0–9. Lo de abajo queda como referencia histórica.
 
 

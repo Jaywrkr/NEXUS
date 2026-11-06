@@ -80,7 +80,7 @@ Ciclo suave de día y noche (unos 8 minutos de juego). De noche se prenden farol
 | Fase | Qué | Terminada cuando… |
 |---|---|---|
 | **10. La Gran Chispa rota + libreta** ✅ (hecha, Decisión 054) | Escena nueva del faro (la Chispa se parte en 12 Piezas), contador ◆, pedestales en el faro, libreta de encargos con los primeros ~40 encargos en los distritos actuales, créditos movidos al final de verdad | El faro ya no termina el juego; hay 6 Piezas posibles en lo que ya existe y la libreta guía los encargos |
-| **11. Bosque de las luciérnagas** | Distrito, árbol gigante, hongos que rebotan, puente colgante, Yuyo, encargos, Pieza | Se juega de punta a punta y da su Pieza |
+| **11. Bosque de las luciérnagas** ✅ (hecha, Decisión 055) | Distrito, árbol gigante, hongos que rebotan, puente colgante, Yuyo, encargos, Pieza | Se juega de punta a punta y da su Pieza |
 | **12. Granja y molinos** | Distrito, molinos, granero, tractor, animales, Abuela Trigo, encargos, Pieza | Ídem |
 | **13. Día y noche** | Ciclo, faroles y ventanas, encargos nocturnos, cama que cambia la hora | Hay al menos 8 encargos nocturnos |
 | **14. Fábrica de Chispas** | Distrito, cintas (cables en orden), robots, sala de máquinas, Tuerca, Pieza | Ídem |

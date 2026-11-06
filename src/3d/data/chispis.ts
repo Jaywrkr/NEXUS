@@ -92,9 +92,9 @@ export const CARDS: ChispiCard[] = [
   c('globin', 'Globín', 'feria', 'brillante', 'rescate', 'Si lo soltás, se va volando a saludar a las nubes.'),
   c('monito', 'Moñito', 'feria', 'brillante', 'cambio', 'Don Paso le enseñó a saludar como una estrella.', 'don-paso'),
   // Bosque
-  c('hojin', 'Hojín', 'bosque', 'comun', 'sobre', 'En otoño se pone naranja y se hace el importante.'),
+  c('hojin', 'Hojín', 'bosque', 'brillante', 'sobre', 'En otoño se pone naranja y se hace el importante.'),
   c('ventarron', 'Ventarrón', 'bosque', 'brillante', 'rescate', 'Sopla tan fuerte que despeina a las palomas.'),
-  c('pinita', 'Piñita', 'bosque', 'comun', 'sobre', 'Rueda cerro abajo cuando se aburre.'),
+  c('pinita', 'Piñita', 'bosque', 'brillante', 'rescate', 'Rueda cerro abajo cuando se aburre.'),
   c('musguito', 'Musguito', 'bosque', 'brillante', 'rescate', 'Es suave como una almohada y igual de dormilón.'),
   // Vía
   c('vagoncito', 'Vagoncito', 'via', 'comun', 'sobre', 'Lleva chispitas de un lado al otro, sin boleto.'),

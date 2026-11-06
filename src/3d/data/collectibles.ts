@@ -52,6 +52,14 @@ export const NOTES: NoteSpot[] = [
     [-95, 0.9, -26],
     [-75, 0.9, 6],
   ]),
+  ...n('bosque', [
+    [-92.4, 9.0, -78.6], // en la casa del árbol
+    [-60, 4.5, -88], // arriba de un hongo (hay que rebotar)
+    [-50, 0.9, -95],
+    [-66, 0.9, -58],
+    [-100, 0.9, -60],
+    [-92, 0.9, -100],
+  ]),
   ...n('puerto', [
     [-3.3, 1.8, 90], // arriba de los cajones
     [16.7, 1.8, 74], // otros cajones
@@ -150,6 +158,20 @@ export const RACES: Race[] = [
       [-79, 6.5, 20],
       [-86, 8.3, 20],
       [-94, 8.3, 16],
+    ],
+  },
+  {
+    id: 'race-bosque',
+    district: 'bosque',
+    name: 'Carrera de los hongos',
+    time: 28,
+    start: { x: -52, z: -84 },
+    rings: [
+      [-56, 3.8, -80],
+      [-60, 3.8, -88],
+      [-66, 3.8, -92],
+      [-72, 3.8, -96],
+      [-62, 1.2, -100],
     ],
   },
   {

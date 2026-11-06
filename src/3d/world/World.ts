@@ -10,6 +10,7 @@ import { STATION_CORRIDOR, STATION_REGION, buildStation } from './Station';
 import { CERRO_CORRIDOR, CERRO_REGION, buildCerro, type CerroInfo } from './Cerro';
 import { PIERS, PORT_CORRIDOR, PORT_REGION, buildPort } from './Port';
 import { buildNexusHome, type NexusHome } from './NexusHome';
+import { FOREST_FROM_CERRO, FOREST_FROM_PARK, FOREST_REGION, buildForest, type ForestInfo } from './Forest';
 import { SKATE_REGION, buildSkatepark, type SkateparkInfo } from './Skatepark';
 
 export interface Rect {
@@ -60,6 +61,10 @@ const REGIONS: Rect[] = [
   PORT_CORRIDOR,
   PORT_REGION,
   ...PIERS,
+  // Fase 11: el Bosque de las luciérnagas (desde el Cerro y desde el Parque)
+  FOREST_FROM_CERRO,
+  FOREST_FROM_PARK,
+  FOREST_REGION,
 ];
 /** Jardín municipal (zona 5): borde de cercos, entradas al norte y al este. */
 export const GARDEN = { minX: -26, maxX: 4, minZ: 47, maxZ: 61.5 };
@@ -160,6 +165,8 @@ export class World {
   readonly cerro: CerroInfo;
   /** La casa del Nexus (interior en x = 1000) que se va arreglando. */
   readonly home: NexusHome;
+  /** Fase 11: el bosque (puente del arroyo y tirolesa del árbol). */
+  readonly forest: ForestInfo;
 
   constructor() {
     const s = this.scene;
@@ -213,6 +220,8 @@ export class World {
     this.cerro = buildCerro(s, this.rects, this.circles);
     buildPort(s, this.rects, this.circles);
     this.home = buildNexusHome(s, this.rects);
+    this.forest = buildForest(s, this.rects, this.circles);
+    this.zipLines.push(this.forest.zipLine);
     this.zipLines.push(this.cerro.zipLine);
     this.espejos = buildMirrorRoom(s, this.rects);
     this.rooms.push(this.interior, this.skate.room, this.heladeria, this.tienda, this.taller, this.espejos, this.cerro.cave, this.home.info);

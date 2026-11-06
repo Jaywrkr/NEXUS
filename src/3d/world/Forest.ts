@@ -27,8 +27,8 @@ export const TREE_STEPS: { x: number; z: number; h: number }[] = Array.from({ le
 });
 
 export const FOREST = {
-  bridgeSource: { x: -72, z: -78.5 },
-  bridge: { x: -74.6, z: -75 },
+  bridgeSource: { x: -71, z: -81.5 },
+  bridge: { x: -74.4, z: -79.2 },
   fireSource: { x: -56, z: -64 },
   fire: { x: -62, z: -60 },
   yuyo: { x: -54, z: -54, faceX: -50, faceZ: -50 },
@@ -56,7 +56,9 @@ export const FOREST = {
   ] as [number, number][],
 };
 
-export const MUSHROOM_H = 0.75;
+export const MUSHROOM_H = 0.5;
+/** Altura de arriba del sombrero (donde se rebota). */
+export const MUSHROOM_TOP = 0.95;
 export const MUSHROOM_R = 1.1;
 
 export interface ForestInfo {
@@ -179,13 +181,13 @@ export function buildForest(scene: THREE.Scene, rects: Rect[], circles: { x: num
   for (const [x, z] of FOREST.mushrooms) {
     add(rounded(new THREE.CylinderGeometry(0.35, 0.45, MUSHROOM_H, 10), toon('#f4ecdc'), 0.01), x, MUSHROOM_H / 2, z);
     const cap = rounded(new THREE.SphereGeometry(MUSHROOM_R, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), toon('#e0453f'), 0.02);
-    cap.scale.y = 0.55;
+    cap.scale.y = 0.45;
     add(cap, x, MUSHROOM_H - 0.05, z);
     for (let i = 0; i < 5; i += 1) {
       const a = (i / 5) * Math.PI * 2;
-      add(new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), toon('#fff3dc')), x + Math.cos(a) * 0.6, MUSHROOM_H + 0.22, z + Math.sin(a) * 0.6);
+      add(new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), toon('#fff3dc')), x + Math.cos(a) * 0.6, MUSHROOM_H - 0.05 + 0.42, z + Math.sin(a) * 0.6);
     }
-    circles.push({ x, z, r: MUSHROOM_R * 0.85, h: MUSHROOM_H });
+    circles.push({ x, z, r: MUSHROOM_R * 0.85, h: MUSHROOM_TOP });
   }
 
   // Árboles del bosque (con colisión), troncos caídos y piedras con musgo
