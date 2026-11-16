@@ -4367,10 +4367,27 @@ export class WorldMode {
   }
 
   /** Multiplicador de velocidad al caminar: Voltio, Vía y el impulso de los charcos (Agua). */
-  private walkScale(dt: number): number {
+  /**
+   * Correr: con la dirección a fondo (palanca hasta el borde o tecla apretada) durante medio segundo,
+   * el Nexus pasa solo de caminar a correr; Shift o el gatillo RT corren enseguida. Al soltar o
+   * aflojar, vuelve a caminar. En el Mundo Voltio no se corre (ya va rápido y está medido así).
+   */
+  private walkScale(dt: number, push: number): number {
     this.boostT = Math.max(0, this.boostT - dt);
-    return (this.voltio.active ? 1.5 : 1) * (this.helps('via') ? 1.15 : 1) * (this.boostT > 0 ? 1.55 : 1);
+    const shift = this.input.has('ShiftLeft') || this.input.has('ShiftRight');
+    if (push > 0.9 || (shift && push > 0.3)) this.fullPush += dt;
+    else this.fullPush = 0;
+    const wantRun = !this.voltio.active && (shift ? push > 0.3 : this.fullPush > WorldMode.RUN_AFTER);
+    this.runK = damp(this.runK, wantRun ? 1 : 0, wantRun ? 4 : 8, dt);
+    return (this.voltio.active ? 1.5 : 1) * (this.helps('via') ? 1.15 : 1) * (this.boostT > 0 ? 1.55 : 1) * (1 + (WorldMode.RUN_SCALE - 1) * this.runK);
   }
+
+  /** Correr: cuánto más rápido y tras cuánto tiempo a fondo. */
+  static RUN_SCALE = 1.45;
+  static RUN_AFTER = 0.5;
+  private fullPush = 0;
+  /** 0 caminando … 1 corriendo. */
+  runK = 0;
 
   /* ---------- Sobres de cartas (Fase 3) ---------- */
 
@@ -4739,7 +4756,7 @@ export class WorldMode {
           if (Math.hypot(this.nexus.position.x - wantX, this.nexus.position.z - wantZ) > 0.03) this.skate.bonk();
         }
       } else {
-        this.nexus.speedScale = this.walkScale(dt);
+        this.nexus.speedScale = this.walkScale(dt, still ? 0 : Math.hypot(mv.x, mv.y));
         this.nexus.move(still ? 0 : dirX, still ? 0 : dirZ, dt);
         this.world.resolve(this.nexus.position, NEXUS_RADIUS, blockers, this.nexus.position.y);
       }

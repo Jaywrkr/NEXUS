@@ -26,3 +26,4 @@ dist-ssr
 # Playwright artifacts
 playwright-report/
 test-results/
+playwright.wt.config.js

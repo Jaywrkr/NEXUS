@@ -50,6 +50,7 @@ Este archivo existe para que una sesión nueva de Claude Code entienda el proyec
 - **Siguiente nivel, Fase 4** (Decisión 069): joystick de consola en `core/gamepad.ts` (`GamepadInput`: zona muerta circular, botones → teclas sintéticas, navega el foco si hay un `.sheet` o el título; clase `pad` muestra Ⓐ/Ⓧ), `Input.padMove`; texto de juego ≥ 13 px.
 - **Siguiente nivel, Fase 5** (Decisión 070): agua con shader (`waterMaterial`, `World.waters`: ondas, Fresnel, destellos, espuma en la orilla), atardecer (`World.dusk`, `sunDir`, `skyDusk` en el cielo), luz hemisférica por hora. El pasto del sur termina en `SEA_Z`: **nada en y = 0 sobre el mar** (lo tapa).
 - **Siguiente nivel, Fase 6** (Decisión 071), **plan completo**: pistas escalonadas (`giveHint`, `hintLevel`: columna de luz → caminito de luz → paso a paso), aviso 💡 (`nudge`, `STUCK_AFTER`), globitos de vecinos (`data/chatter.ts`, `updateChatter`).
+- **Correr** (Decisión 072): camina a 5,3 m/s y corre solo (×1,45) con la dirección a fondo medio segundo, o con Shift/RT (`walkScale`, `runK`, `RUN_SCALE`, `RUN_AFTER`); no en Voltio.
 - **Rumbo de todo lo que viene: `PLAN_MAESTRO.md`** (Mundo Voltio, distritos, interiores, patineta, cartas de Chispis, interfaz, fases 0–9). Leelo antes de agregar algo nuevo.
 
 ### Probar el 3D

@@ -5,7 +5,7 @@
  * - Jugando: la palanca izquierda (o la cruceta) mueve al Nexus, con zona muerta CIRCULAR (no por eje: así
  *   las diagonales no se recortan). Los botones simulan las teclas que el juego ya entiende, así título,
  *   museo, menús y atajos funcionan sin código aparte: A = saltar (Espacio), X = tocar (E), B = bailar (B),
- *   Y = Mundo Voltio (Q), RB/LB = vista (V), Start = menú (Esc), Select = mapa (M).
+ *   Y = Mundo Voltio (Q), RB/LB = vista (V), RT = correr, Start = menú (Esc), Select = mapa (M).
  * - Con un menú o ventana abierta: palanca o cruceta mueven el foco entre los botones visibles, A elige y
  *   B vuelve (Esc). Siempre queda un botón enfocado.
  * - El cuerpo de la página lleva la clase `pad` mientras se usa el joystick (los botones muestran ⒶⓍ).
@@ -22,6 +22,7 @@ const BUTTON_KEYS: Record<number, string> = {
   5: 'KeyV', // RB
   9: 'Escape', // Start
   8: 'KeyM', // Select / Back
+  7: 'ShiftLeft', // RT: correr
 };
 
 const UP = 12;

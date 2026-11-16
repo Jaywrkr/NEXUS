@@ -3156,3 +3156,36 @@ test('3D: el mundo se lee solo — pistas escalonadas con caminito y columna de 
   await page.screenshot({ path: test.info().outputPath('globito.png') });
   expect(page.__errors).toEqual([]);
 });
+
+test('3D: correr — más rápido al caminar, corre solo con la dirección a fondo, Shift corre enseguida', async ({ page }) => {
+  test.setTimeout(120_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+  const speed = () => w(() => window.__nexus3d.world.nexus.speed);
+  await tp(page, 0, 4);
+  // Un toque corto: camina (5,3 m/s)
+  await page.keyboard.down('KeyD');
+  await step(page, 0.3);
+  const walk = await speed();
+  expect(walk).toBeGreaterThan(4.5);
+  expect(walk).toBeLessThan(5.6);
+  // Manteniendo la dirección, se pone a correr solo
+  await step(page, 1.2);
+  const run = await speed();
+  expect(run).toBeGreaterThan(walk * 1.3);
+  expect(await w(() => window.__nexus3d.world.runK)).toBeGreaterThan(0.9);
+  await page.keyboard.up('KeyD');
+  await step(page, 0.8);
+  expect(await w(() => window.__nexus3d.world.runK)).toBeLessThan(0.1);
+  // Con Shift corre enseguida
+  await tp(page, 0, 4);
+  await page.keyboard.down('ShiftLeft');
+  await page.keyboard.down('KeyA');
+  await step(page, 0.6);
+  expect(await speed()).toBeGreaterThan(6.8);
+  await page.keyboard.up('KeyA');
+  await page.keyboard.up('ShiftLeft');
+  await step(page, 0.1);
+  expect(page.__errors).toEqual([]);
+});
