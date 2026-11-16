@@ -2764,7 +2764,7 @@ test('3D: aspecto — brillo y maqueta, luz de borde, sombra de contacto, agua q
   expect(blob.visible).toBe(true);
 
   // El agua se mueve
-  const off = () => w(() => window.__nexus3d.world.world.ripples[0].offset.toArray());
+  const off = () => w(() => window.__nexus3d.world.world.waters[0].uniforms.time.value);
   const a = await off();
   await step(page, 1);
   expect(await off()).not.toEqual(a);
@@ -3038,4 +3038,57 @@ test('3D: controles para todos — joystick de consola en el título, en el jueg
   expect(await w(() => document.activeElement?.id)).not.toBe(first);
   await press(1);
   await expect.poll(() => w(() => document.getElementById('menuMain').closest('[hidden]') !== null || document.getElementById('menuMain').getBoundingClientRect().width === 0)).toBe(true);
+});
+
+test('3D: agua y luz — agua con ondas y espuma, atardecer con sol bajo y naranja, luz de cielo que cambia', async ({ page }) => {
+  test.setTimeout(180_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+  await w(() => window.__nexus3d.world.reviveWholeTown(false));
+  await tp(page, 12, 26);
+  const light = () =>
+    w(() => {
+      const g = window.__nexus3d.world.world;
+      return { dusk: g.dusk, sunY: g.sunDir.y, sunR: g.sun.color.r, sunB: g.sun.color.b, hemiB: g.hemi.color.b, sky: g.sky.material.uniforms.skyDusk.value };
+    });
+
+  // De día: sol alto, sin atardecer; el agua tiene su capa con shader en el mar y el canal
+  await w(() => window.__nexus3d.world.setClock(0.3));
+  await step(page, 2);
+  const day = await light();
+  expect(day.dusk).toBeLessThan(0.01);
+  expect(await w(() => window.__nexus3d.world.world.waters.length)).toBe(2);
+  const t0 = await w(() => window.__nexus3d.world.world.waters[1].uniforms.time.value);
+  await step(page, 0.5);
+  expect(await w(() => window.__nexus3d.world.world.waters[1].uniforms.time.value)).toBeGreaterThan(t0);
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: test.info().outputPath('agua-dia.png') });
+  await tp(page, -19.5, 106);
+  await step(page, 0.5);
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: test.info().outputPath('mar-dia.png') });
+  await tp(page, 12, 26);
+
+  // Atardecer: el sol baja y se pone naranja, el cielo se tiñe
+  await w(() => window.__nexus3d.world.setClock(0.59));
+  await step(page, 0.2);
+  const dusk = await light();
+  expect(dusk.dusk).toBeGreaterThan(0.9);
+  expect(dusk.sky).toBeGreaterThan(0.9);
+  expect(dusk.sunY).toBeLessThan(day.sunY - 0.1);
+  expect(dusk.sunB / dusk.sunR).toBeLessThan(day.sunB / day.sunR);
+  expect(await w(() => window.__nexus3d.world.world.waters[0].uniforms.dusk.value)).toBeGreaterThan(0.9);
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: test.info().outputPath('atardecer.png') });
+
+  // Noche: sin atardecer, la luz de cielo se vuelve azul
+  await w(() => window.__nexus3d.world.setClock(0.75));
+  await step(page, 0.2);
+  const night = await light();
+  expect(night.dusk).toBeLessThan(0.01);
+  expect(night.hemiB).toBeGreaterThan(0.3);
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: test.info().outputPath('agua-noche.png') });
+  expect(page.__errors).toEqual([]);
 });

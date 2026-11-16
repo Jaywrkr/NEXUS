@@ -382,3 +382,6 @@ Mezcla con buses (efectos, música, ambiente, interfaz) y compresor en la salida
 
 ## 3D: Siguiente nivel, Fase 4 — controles para todos
 Joystick de consola (zona muerta circular, mismos atajos que el teclado), menús que se recorren con el joystick, botones que muestran Ⓐ/Ⓧ mientras se usa y textos de juego de 13 px como mínimo (Decisión 069).
+
+## 3D: Siguiente nivel, Fase 5 — agua y luz
+Agua con shader propio (ondas, reflejo del cielo, destellos y espuma en la orilla), atardecer y amanecer con sol bajo y naranja y cielo teñido, luz de cielo y piso que cambia con la hora. Además, el mar se ve de verdad: el pasto ya no lo tapa (Decisión 070).
