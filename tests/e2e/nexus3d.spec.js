@@ -3092,3 +3092,67 @@ test('3D: agua y luz — agua con ondas y espuma, atardecer con sol bajo y naran
   await page.screenshot({ path: test.info().outputPath('agua-noche.png') });
   expect(page.__errors).toEqual([]);
 });
+
+test('3D: el mundo se lee solo — pistas escalonadas con caminito y columna de luz, aviso 💡 y globitos de los vecinos', async ({ page }) => {
+  test.setTimeout(180_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+  const hint = async () => {
+    await page.evaluate(() => document.getElementById('msg').click());
+    await step(page, 0.3);
+    return w(() => {
+      const g = window.__nexus3d.world;
+      return { text: document.getElementById('storyText').textContent, pillar: g.hintPillar.visible, trail: g.trail.count, other: g.hintFromRing.visible };
+    });
+  };
+  await tp(page, -4, -4);
+  // Pista 1: qué hacer, con flecha y columna de luz (sin caminito)
+  const h1 = await hint();
+  expect(h1.text).toContain('Tocá');
+  expect(h1.pillar).toBe(true);
+  expect(h1.trail).toBe(0);
+  // Pista 2 (otra vez lo mismo): caminito de luz en el piso
+  const h2 = await hint();
+  expect(h2.text).toContain('caminito');
+  expect(h2.trail).toBeGreaterThan(3);
+  // Pista 3: paso a paso y un aro en la otra punta del cable
+  const h3 = await hint();
+  expect(h3.text).toContain('1)');
+  expect(h3.other).toBe(true);
+  await page.evaluate(() => document.getElementById('story').click());
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: test.info().outputPath('pista-caminito.png') });
+
+  // Aviso suave: si pasa un rato sin avanzar, el objetivo ofrece la pista
+  await w(() => (window.__nexus3d.world.constructor.STUCK_AFTER = 3));
+  await step(page, 4.5);
+  expect(await w(() => document.getElementById('msg').classList.contains('nudge'))).toBe(true);
+  await page.evaluate(() => document.getElementById('msg').click());
+  await step(page, 0.1);
+  expect(await w(() => document.getElementById('msg').classList.contains('nudge'))).toBe(false);
+  await w(() => (window.__nexus3d.world.constructor.STUCK_AFTER = 50));
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Globitos: un vecino conocido dice algo corto al pasar, según lo que pasa (de noche, de noche)
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.progress.markHeard('miga');
+    g.setClock(0.75);
+  });
+  await step(page, 0.2);
+  await page.evaluate(() => document.getElementById('story').click());
+  await w(() => (window.__nexus3d.world.storyTimer = 0));
+  await tp(page, -18.5, -11.5);
+  await step(page, 0.3);
+  const bubble = await w(() => {
+    const el = document.querySelector('.chat-bubble');
+    return el ? { text: el.textContent, op: Number(el.style.opacity) } : null;
+  });
+  expect(bubble).not.toBeNull();
+  expect(bubble.op).toBeGreaterThan(0.5);
+  expect(['¡Qué linda noche! 🌙', 'Mirá cuántas estrellas.', 'Shh… los búhos ya se despertaron.', 'De noche todo brilla distinto.']).toContain(bubble.text);
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: test.info().outputPath('globito.png') });
+  expect(page.__errors).toEqual([]);
+});

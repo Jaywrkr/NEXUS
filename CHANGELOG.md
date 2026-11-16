@@ -385,3 +385,6 @@ Joystick de consola (zona muerta circular, mismos atajos que el teclado), menús
 
 ## 3D: Siguiente nivel, Fase 5 — agua y luz
 Agua con shader propio (ondas, reflejo del cielo, destellos y espuma en la orilla), atardecer y amanecer con sol bajo y naranja y cielo teñido, luz de cielo y piso que cambia con la hora. Además, el mar se ve de verdad: el pasto ya no lo tapa (Decisión 070).
+
+## 3D: Siguiente nivel, Fase 6 — el mundo se lee solo
+Pistas escalonadas (columna de luz, caminito de luz y paso a paso), aviso 💡 si pasa un rato sin avanzar y globitos de los vecinos según la hora y lo que hace el Nexus (Decisión 071). Con esto se completa el plan «siguiente nivel».

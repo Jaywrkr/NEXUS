@@ -27,7 +27,7 @@ para Luca (9 años, TDAH) en celular, y cada fase con pruebas, capturas, documen
 | **3. Sonido de verdad** | `audio-design` | Volúmenes por categoría (música, efectos, ambiente) en Opciones, compresor en la salida para que nada sature, variación de tono en los sonidos repetidos y música que baja cuando hablan los vecinos. | ✅ (Decisión 068) |
 | **4. Controles para todos** | `input-systems`, `game-ui-ux` | Joystick de consola (zona muerta circular, botones que cambian de ícono según el control), menús que se recorren con el joystick, márgenes seguros del celular, tamaño mínimo de texto y contraste. | ✅ (Decisión 069) |
 | **5. Agua y luz** | `shader-programming`, `threejs-materials-lighting` | Shader de agua de verdad (olas, espuma en la orilla, reflejo del cielo), luz de cielo/piso suave y atardecer más lindo. | ✅ (Decisión 070) |
-| **6. El mundo se lee solo** | `level-design`, `puzzle`, `dialogue-systems` | Caminos y señales que guían sin texto (luces que marcan la ruta, hitos visibles de lejos), pistas escalonadas en todos los acertijos y diálogos de los vecinos con más vida. | Pendiente |
+| **6. El mundo se lee solo** | `level-design`, `puzzle`, `dialogue-systems` | Caminos y señales que guían sin texto (luces que marcan la ruta, hitos visibles de lejos), pistas escalonadas en todos los acertijos y diálogos de los vecinos con más vida. | ✅ (Decisión 071) |
 
 ## Lo que se decidió no hacer (y por qué)
 

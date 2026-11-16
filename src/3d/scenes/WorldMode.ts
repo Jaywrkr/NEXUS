@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { chatterMood, pickChatter } from '../../data/chatter';
 import { AudioSystem } from '../../systems/AudioSystem';
 import type { Input } from '../core/input';
 import { Progress3D } from '../core/progress';
@@ -199,6 +200,22 @@ export class WorldMode {
   private hintRing: THREE.Mesh | null = null;
   private hintTimer = 0;
   private hintTarget = new THREE.Vector3();
+  /** Fase 6: pistas escalonadas (pedir otra pista para lo mismo da más ayuda). */
+  private hintLevel = 0;
+  private hintKey = '';
+  private hintAgo = 999;
+  private hintFrom: { x: number; z: number } | null = null;
+  private hintFromRing: THREE.Mesh | null = null;
+  private hintPillar: THREE.Mesh | null = null;
+  private trail: THREE.InstancedMesh | null = null;
+  private trailOn = 0;
+  /** Aviso suave si pasa un rato largo sin avanzar. */
+  private stuckTime = 0;
+  private stuckCheck = 0;
+  private lastAdvances = -1;
+  /** Globitos de los vecinos. */
+  private readonly chat = new Map<string, { el: HTMLElement; turn: number; last: string; cool: number; show: number }>();
+  private chatGap = 0;
   /** Habitación en la que está el Nexus (null = afuera). */
   private inside: Interior | null = null;
   private interiors: Interior[] = [];
@@ -1468,11 +1485,14 @@ export class WorldMode {
       (b) => !this.progress.hasConnection(b.s.id, b.t.id) && b.s.canInitiate() && reachable(at(b)) && (b.when?.() ?? true) && !b.t.isActive,
     );
     const forSel = sel ? pending.find((b) => b.s === sel) : undefined;
+    let big: (typeof pending)[number] | undefined;
     if (forSel) {
+      big = forSel;
       text = `Tenés el cable de ${forSel.sName}: llevalo hasta ${forSel.tName}.`;
       where = forSel.t;
     } else if (pending.length) {
       const b = pending.reduce((a, c) => (dist(at(a)) < dist(at(c)) ? a : c));
+      big = b;
       text = b.door
         ? `Entrá al taller de Pipa: adentro, tocá ${b.sName} y después ${b.tName}.`
         : `Tocá ${b.sName} y después ${b.tName}. ¡Ahí empieza la carrera de luz!`;
@@ -1495,8 +1515,32 @@ export class WorldMode {
         if (qa) where = qa;
       }
     }
-    this.showStory('Pista', text);
-    if (where) this.pointTo(where.x, where.z);
+    // Paso a paso para la tercera pista (si es un cable entre dos cosas)
+    // La columna marca adónde ir primero; un aro celeste, adónde llevar el cable después
+    const steps = big && !big.door && big !== forSel ? { other: big.t, steps: `1) Andá hasta ${big.sName} (donde está la columna de luz) y tocalo. 2) Con el cable en la mano, llevalo hasta ${big.tName} (el aro celeste) y tocalo.` } : undefined;
+    this.giveHint(text, where, steps);
+  }
+
+  /**
+   * Pistas escalonadas (guías `puzzle` y `level-design`): la primera dice qué hacer y marca hacia dónde
+   * con una flecha y una columna de luz que se ve de lejos; si se pide otra pista para lo mismo, aparece
+   * un caminito de luz en el piso hasta el destino; la tercera explica paso a paso y marca las dos puntas.
+   */
+  private giveHint(text: string, where: { x: number; z: number } | null, detail?: { other: { x: number; z: number }; steps: string }): void {
+    this.stuckTime = 0;
+    this.el.msg?.classList.remove('nudge');
+    const key = where ? `${Math.round(where.x)},${Math.round(where.z)}` : text;
+    this.hintLevel = key === this.hintKey && this.hintAgo < 90 ? Math.min(3, this.hintLevel + 1) : 1;
+    this.hintKey = key;
+    this.hintAgo = 0;
+    let shown = text;
+    if (where && this.hintLevel === 2) shown = `Seguí el caminito de luz ✨ ${text}`;
+    if (where && this.hintLevel === 3) shown = detail ? `Seguí el caminito de luz ✨ ${detail.steps}` : `Seguí el caminito de luz ✨ hasta la columna de luz. ${text}`;
+    this.showStory('Pista', shown);
+    if (!where) return;
+    this.pointTo(where.x, where.z);
+    if (this.hintLevel >= 2) this.trailOn = 45;
+    this.hintFrom = this.hintLevel >= 3 && detail ? detail.other : null;
   }
 
   /** Flecha en el piso alrededor del Nexus y aro en el destino, por unos segundos. */
@@ -1520,8 +1564,39 @@ export class WorldMode {
       this.hintRing.rotation.x = -Math.PI / 2;
       scene.add(this.hintArrow, this.hintRing);
     }
+    if (!this.hintPillar) {
+      // Columna de luz: se ve de lejos, como un faro que dice «es por acá»
+      const g = new THREE.CylinderGeometry(0.75, 0.75, 26, 20, 1, true);
+      g.translate(0, 13, 0);
+      const mat = new THREE.ShaderMaterial({
+        transparent: true,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
+        uniforms: { op: { value: 0 }, time: { value: 0 } },
+        vertexShader: `varying float vY; varying vec3 vN; varying vec3 vV; void main(){ vY = position.y / 26.0; vec4 w = modelMatrix * vec4(position, 1.0); vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - w.xyz); gl_Position = projectionMatrix * viewMatrix * w; }`,
+        fragmentShader: `varying float vY; varying vec3 vN; varying vec3 vV; uniform float op; uniform float time;
+          void main(){ float edge = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 1.5);
+            float a = (1.0 - vY * 0.8) * (0.55 + 0.65 * (1.0 - edge)) * op * (0.85 + 0.15 * sin(time * 3.0 - vY * 12.0));
+            gl_FragColor = vec4(pow(vec3(1.0, 0.85, 0.42), vec3(2.2)) * a, a); }`,
+      });
+      this.hintPillar = new THREE.Mesh(g, mat);
+      this.hintPillar.frustumCulled = false;
+      this.hintPillar.renderOrder = 5;
+      this.hintFromRing = new THREE.Mesh(
+        new THREE.RingGeometry(0.7, 0.9, 32),
+        new THREE.MeshBasicMaterial({ color: '#7ee0ff', transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide }),
+      );
+      this.hintFromRing.rotation.x = -Math.PI / 2;
+      const dot = new THREE.CircleGeometry(0.24, 14);
+      dot.rotateX(-Math.PI / 2);
+      this.trail = new THREE.InstancedMesh(dot, new THREE.MeshBasicMaterial({ color: '#ffe27a', transparent: true, depthWrite: false, fog: false }), 26);
+      this.trail.frustumCulled = false;
+      this.trail.count = 0;
+      scene.add(this.hintPillar, this.hintFromRing, this.trail);
+    }
     this.hintTarget.set(x, 0, z);
-    this.hintTimer = 8;
+    this.hintTimer = 10;
   }
 
   private updateHint(dt: number): void {
@@ -1541,6 +1616,7 @@ export class WorldMode {
     (this.hintRing.material as THREE.MeshBasicMaterial).opacity = 0.85 * k;
     // Al llegar, la pista se apaga sola
     if (Math.hypot(this.hintTarget.x - p.x, this.hintTarget.z - p.z) < 2) this.hintTimer = Math.min(this.hintTimer, 0.5);
+    this.updateGuide(dt);
   }
 
   /* ---------- Interiores: la casa de Miga ---------- */
@@ -4425,7 +4501,122 @@ export class WorldMode {
     return best;
   }
 
+  /** Columna de luz, caminito de luz y la segunda punta del cable (pistas 2 y 3). */
+  private updateGuide(dt: number): void {
+    this.hintAgo += dt;
+    if (!this.hintPillar || !this.trail || !this.hintFromRing) return;
+    const p = this.nexus.position;
+    const t = this.hintTarget;
+    const far = Math.hypot(t.x - p.x, t.z - p.z);
+    const calm = document.body.classList.contains('calm');
+    // La columna se apaga al llegar (y de cerca no tapa nada)
+    const pillarOn = (this.hintTimer > 0 || this.trailOn > 0) && !this.inside;
+    const u = (this.hintPillar.material as THREE.ShaderMaterial).uniforms;
+    u.op.value += ((pillarOn ? Math.min(1, Math.max(0, (far - 2) / 6)) : 0) - u.op.value) * Math.min(1, dt * 4);
+    u.time.value = calm ? 0 : this.time;
+    this.hintPillar.visible = u.op.value > 0.01;
+    this.hintPillar.position.set(t.x, 0, t.z);
+    // Caminito: puntos cada 1,4 m desde el Nexus hacia el destino; una onda de luz los recorre
+    this.trailOn -= dt;
+    if (far < 2.5) this.trailOn = Math.min(this.trailOn, 0);
+    const on = this.trailOn > 0 && !this.inside && !this.busy;
+    const n = on ? Math.min(26, Math.floor((far - 1.2) / 1.4)) : 0;
+    this.trail.count = Math.max(0, n);
+    if (n > 0) {
+      const m = new THREE.Matrix4();
+      const dx = (t.x - p.x) / far;
+      const dz = (t.z - p.z) / far;
+      for (let i = 0; i < n; i += 1) {
+        const d = 1.6 + i * 1.4;
+        const x = p.x + dx * d;
+        const z = p.z + dz * d;
+        const y = this.world.groundAt(x, z, p.y + 0.5) + 0.07;
+        const k = calm ? 1 : 0.75 + 0.45 * Math.max(0, Math.sin(this.time * 5 - i * 0.6));
+        m.makeScale(k, 1, k).setPosition(x, y, z);
+        this.trail.setMatrixAt(i, m);
+      }
+      this.trail.instanceMatrix.needsUpdate = true;
+      (this.trail.material as THREE.MeshBasicMaterial).opacity = Math.min(1, this.trailOn) * 0.9;
+    }
+    // Pista 3: la otra punta del cable (adónde llevarlo) tiene su aro celeste
+    const from = this.hintFrom;
+    const fromOn = Boolean(from) && (this.hintTimer > 0 || this.trailOn > 0) && !this.inside;
+    this.hintFromRing.visible = fromOn;
+    if (fromOn && from) {
+      this.hintFromRing.position.set(from.x, 0.15, from.z);
+      this.hintFromRing.scale.setScalar(calm ? 1 : 1 + Math.sin(this.time * 5 + 1.5) * 0.12);
+    }
+  }
+
+  /**
+   * Si pasa un rato largo sin lograr nada, el objetivo ofrece una pista (💡) sin abrir nada solo:
+   * la ayuda está a un toque, pero no interrumpe al que está explorando a propósito.
+   */
+  private updateStuck(dt: number): void {
+    this.stuckCheck -= dt;
+    if (this.stuckCheck > 0) return;
+    this.stuckCheck = 1;
+    const a = this.progress.advances;
+    if (a !== this.lastAdvances) {
+      this.lastAdvances = a;
+      this.stuckTime = 0;
+      this.el.msg?.classList.remove('nudge');
+      return;
+    }
+    if (this.busy || this.inside || this.voltio.active) return;
+    this.stuckTime += 1;
+    if (this.stuckTime >= WorldMode.STUCK_AFTER) this.el.msg?.classList.add('nudge');
+  }
+
+  /** Segundos sin avanzar antes de ofrecer la pista. */
+  static STUCK_AFTER = 50;
+
+  /** Globitos: un vecino conocido dice algo corto al pasar cerca (uno por vez, sin repetir enseguida). */
+  private updateChatter(dt: number): void {
+    const layer = document.getElementById('labels');
+    if (!layer) return;
+    const p = this.nexus.position;
+    const storyOpen = this.storyTimer > 0 || !document.getElementById('story')?.hidden;
+    this.chatGap -= dt;
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const v = new THREE.Vector3();
+    for (const r of this.residents) {
+      let c = this.chat.get(r.id);
+      const near = Math.hypot(r.x - p.x, r.z - p.z) < 4.2;
+      if (!c) {
+        if (!near) continue;
+        const el = document.createElement('div');
+        el.className = 'chat-bubble';
+        layer.appendChild(el);
+        c = { el, turn: Math.floor(Math.random() * 4), last: '', cool: 0, show: 0 };
+        this.chat.set(r.id, c);
+      }
+      c.cool -= dt;
+      if (c.show > 0) {
+        c.show -= dt;
+        if (!near && c.show > 0.6) c.show = 0.6;
+      } else if (near && c.cool <= 0 && this.chatGap <= 0 && !storyOpen && !this.busy && this.progress.hasHeard(r.id)) {
+        const mood = chatterMood({ dancing: this.nexus.dancing, riding: this.nexus.riding, night: this.world.night, dusk: this.world.dusk, happy: r.isHappy });
+        c.last = pickChatter(r.id, mood, c.turn, c.last);
+        c.turn += 1;
+        c.el.textContent = c.last;
+        c.show = 3.4;
+        c.cool = 28;
+        this.chatGap = 5;
+        r.talk();
+      }
+      const op = Math.min(1, c.show * 3);
+      v.set(r.x, 2.55, r.z).project(this.camera);
+      const visible = op > 0.01 && v.z < 1;
+      c.el.style.opacity = visible ? op.toFixed(2) : '0';
+      if (visible) c.el.style.transform = `translate(${((v.x + 1) / 2) * w}px, ${((1 - v.y) / 2) * h}px) translate(-50%, -100%)`;
+    }
+  }
+
   private updateResidents(dt: number): void {
+    this.updateChatter(dt);
+    this.updateStuck(dt);
     for (const r of this.residents) r.update(dt, this.nexus.position);
     // La primera vez que el Nexus se acerca, el vecino habla solo
     const p = this.nexus.position;

@@ -217,6 +217,50 @@ body.paused #labels {
 .objective.event::before {
   content: '✨';
 }
+/* Fase 6: si pasa un rato sin avanzar, el objetivo ofrece la pista (💡 que late suave) */
+.objective.nudge:not(.event)::before {
+  content: '💡';
+  animation: nudge-bulb 1.6s ease-in-out infinite;
+}
+.objective.nudge:not(.event) {
+  box-shadow: 0 0 0 2px rgba(255, 214, 102, 0.75);
+}
+@keyframes nudge-bulb {
+  0%, 100% { transform: translateY(-50%) scale(1); }
+  50% { transform: translateY(-50%) scale(1.25); }
+}
+body.calm .objective.nudge::before {
+  animation: none;
+}
+
+/* Fase 6: globitos de los vecinos (frases cortas que no frenan el juego) */
+.chat-bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: 200px;
+  padding: 6px 12px 7px;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.chat-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  margin-left: -7px;
+  border: 7px solid transparent;
+  border-bottom: 0;
+  border-top-color: #fff;
+}
 
 /* Aviso breve (abajo al centro) */
 #toast {

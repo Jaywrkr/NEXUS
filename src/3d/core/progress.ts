@@ -321,6 +321,11 @@ export class Progress3D {
     return true;
   }
 
+  /** Cuántas cosas se lograron en total (para saber si el jugador avanza o está trabado). */
+  get advances(): number {
+    return this.state.connections.length + this.state.flags.length + this.state.fragmentsCollected.length + this.state.chispis.length;
+  }
+
   hasFlag(id: string): boolean {
     return this.state.flags.includes(id);
   }
