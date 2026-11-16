@@ -373,3 +373,6 @@ Partículas de ambiente por lugar (nieve, hojas, polen, brillitos en el mar, luc
 ## 3D: Siguiente nivel, Fase 1 — se siente mejor
 Guías de gamedev instaladas en `.claude/skills/` y plan en `PLAN_SIGUIENTE_NIVEL.md`. Salto con tiempo de coyote y salto anticipado, flotadita al mantener, botón táctil que salta al apretar, sacudida de cámara en tres tamaños con pausa mínima en lo grande, estiramiento al despegar y contadores que saltan. Pruebas 3D: 55 escenarios. Decisión 066.
 
+## 3D: Siguiente nivel, Fase 2 — el guardado no se pierde
+Versión en el guardado, copia de respaldo y recuperación automática si se rompe, «Borrar partida» que se puede deshacer y código de partida para pasar el progreso a otro equipo (Opciones → «💾 Mi partida»). Pruebas 3D: 56 escenarios. Decisión 067.
+

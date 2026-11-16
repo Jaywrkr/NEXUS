@@ -778,6 +778,8 @@ export class WorldMode {
 
     this.el.interact?.addEventListener('click', () => this.input.queueInteract());
     this.el.msg?.addEventListener('click', () => this.showHint());
+    // Guía «save-systems»: si el guardado se había roto, se avisa que se recuperó el respaldo
+    if (this.progress.loadedFrom === 'backup') after(1.5, () => this.toast('💾 Tu partida se recuperó de la copia de respaldo', 'ok'));
     // Los contadores del HUD dan un saltito cuando cambian (guía «game-feel»: la interfaz también responde)
     for (const id of ['stars', 'awake', 'notesCount', 'piecesCount', 'cardsCount', 'charge']) {
       const el = document.getElementById(id);

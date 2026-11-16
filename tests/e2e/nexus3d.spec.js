@@ -2904,3 +2904,51 @@ test('3D: se siente mejor — salto con coyote, salto anticipado, flotadita arri
   await page.waitForTimeout(100);
   expect(await w(() => document.getElementById('charge').classList.contains('bump'))).toBe(true);
 });
+
+test('3D: el guardado no se pierde — respaldo si se rompe, deshacer «Borrar partida» y código de partida', async ({ page }) => {
+  test.setTimeout(240_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const KEY = 'los-nexus-3d-progress';
+  const reloadWorld = async () => {
+    await page.reload();
+    await page.waitForFunction(() => Boolean(window.__nexus3d));
+    await page.evaluate(() => (document.getElementById('continue').hidden ? document.getElementById('play') : document.getElementById('continue')).click());
+    await expect.poll(() => mode(page)).toContain('mode-world');
+  };
+  const flag = () => w(() => window.__nexus3d.world.progress.hasFlag('prueba-guardado'));
+  await step(page, 0.1);
+  await w(() => window.__nexus3d.world.progress.setFlag('prueba-guardado'));
+  expect(JSON.parse(await w((k) => localStorage.getItem(k), KEY)).v).toBe(2);
+
+  // Al abrir, la partida buena pasa al respaldo; si el guardado se rompe, se recupera (y se avisa)
+  await reloadWorld();
+  await w((k) => localStorage.setItem(k, '{roto'), KEY);
+  await reloadWorld();
+  expect(await w(() => window.__nexus3d.world.progress.loadedFrom)).toBe('backup');
+  expect(await flag()).toBe(true);
+  await step(page, 2);
+  expect(await text(page, 'toast')).toContain('respaldo');
+
+  // Código de partida: sale, se borra la partida, se puede deshacer, y el código la trae de vuelta
+  const code = await w(() => window.__nexus3d.world.progress.exportCode());
+  expect(code.startsWith('NEXUS1:')).toBe(true);
+  await w(() => window.__nexus3d.world.progress.resetProgress());
+  await reloadWorld();
+  expect(await flag()).toBe(false);
+  expect(await w(() => window.__nexus3d.world.progress.restoreErased())).toBe(true);
+  expect(await flag()).toBe(true);
+  await w(() => window.__nexus3d.world.progress.resetProgress());
+  await reloadWorld();
+  expect(await w((c) => window.__nexus3d.world.progress.importCode('basura'), code)).toBe(false);
+  expect(await w((c) => window.__nexus3d.world.progress.importCode(c), code)).toBe(true);
+  expect(await flag()).toBe(true);
+
+  // En Opciones: «Mi partida» muestra el código y avisa si lo pegado no sirve
+  await page.click('#menuBtn');
+  await page.click('#mOptions');
+  await page.click('#optSave');
+  expect(await w(() => document.getElementById('saveCode').value)).toMatch(/^NEXUS1:/);
+  await page.fill('#saveCode', 'hola');
+  await page.click('#saveLoad');
+  expect(await text(page, 'saveMsg')).toContain('no es una partida');
+});

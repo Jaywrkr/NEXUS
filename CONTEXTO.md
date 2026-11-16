@@ -367,6 +367,8 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - Salto (`updateVertical`): `jumpBuffer` 0,14 s, `coyote` 0,11 s, `jumpHeld` (flotadita: gravedad ×0,6 cerca del vértice mientras se mantiene), caída ×1,12, tope −20 m/s. Sin corte al soltar (los toques rápidos llegan a 1 m). `Input.consumeJumpRelease` (keyup de Espacio, `pointerup` del botón).
 - `WorldMode.feedback(tier)`: chico (trauma 0,12: chispitas, notas, caídas grandes), mediano (0,32: cada conexión en vivo), grande (0,6 + `hitStop` 0,07 s: `addLife` en vivo con radio ≥ 14). La sacudida se suma en `updateCameras` (después del seguimiento) y no corre con la clase `calm`.
 
+- Guardado (Decisión 067): `core/progress.ts` escribe `{...estado, v: SAVE_VERSION}`; `parse()` limpia y devuelve `null` si está roto (no una partida vacía); el constructor recupera de `-bak` si hace falta. Código de partida `NEXUS1:` (base64 de `{app, v, state, extra}`). Si cambia el formato: subir `SAVE_VERSION` y agregar el paso en `migrate()`.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).

@@ -2,6 +2,7 @@ import './style.css';
 import { Input } from './core/input';
 import { Renderer } from './core/render';
 import { Settings, flashScreen, vibrate } from './core/settings';
+import { Progress3D } from './core/progress';
 import { LOOK_PARTS, loadLook, saveLook } from './data/wardrobe';
 import { CARDS, CARD_BY_ID, RARITY_NAMES, TOTAL_CARDS, TYPES, TYPE_ORDER } from './data/chispis';
 import { drawCard, drawChispi } from './ui/cardArt';
@@ -14,7 +15,7 @@ import { drawMap } from './ui/MapView';
 import { AudioSystem } from '../systems/AudioSystem';
 
 type Mode = 'title' | 'world' | 'tunnel' | 'museum';
-type Sheet = 'menuMain' | 'menuOptions' | 'menuHelp';
+type Sheet = 'menuMain' | 'menuOptions' | 'menuHelp' | 'menuSave';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -253,10 +254,43 @@ class Game {
       this.renderer.fancy = v;
     });
     $('optReset').addEventListener('click', () => this.resetGame(true));
+    // Guía «save-systems»: código de partida para pasarla a otro equipo y deshacer «Borrar partida»
+    $('optSave').addEventListener('click', () => this.showSheet('menuSave'));
+    $('saveBack').addEventListener('click', () => this.showSheet('menuOptions'));
+    $('saveCopy').addEventListener('click', () => {
+      const box = $('saveCode') as HTMLTextAreaElement;
+      box.value = this.world.progress.exportCode();
+      box.select();
+      const done = (ok: boolean) => ($('saveMsg').textContent = ok ? '✅ Código copiado' : 'Mantené apretado el código para copiarlo');
+      const fallback = () => done(document.execCommand('copy'));
+      if (navigator.clipboard) navigator.clipboard.writeText(box.value).then(() => done(true), fallback);
+      else fallback();
+    });
+    $('saveLoad').addEventListener('click', () => {
+      const code = ($('saveCode') as HTMLTextAreaElement).value;
+      if (code.trim() === this.world.progress.exportCode()) {
+        $('saveMsg').textContent = 'Pegá acá el código de otra partida';
+        return;
+      }
+      if (!this.world.progress.importCode(code)) {
+        $('saveMsg').textContent = '❌ Ese código no es una partida de Los Nexus';
+        return;
+      }
+      $('saveMsg').textContent = '✅ ¡Partida cargada!';
+      window.setTimeout(() => window.location.reload(), 600);
+    });
+    $('saveRestore').addEventListener('click', () => {
+      if (this.world.progress.restoreErased()) window.location.reload();
+    });
   }
 
   private showSheet(sheet: Sheet): void {
-    for (const id of ['menuMain', 'menuOptions', 'menuHelp'] as Sheet[]) $(id).hidden = id !== sheet;
+    for (const id of ['menuMain', 'menuOptions', 'menuHelp', 'menuSave'] as Sheet[]) $(id).hidden = id !== sheet;
+    if (sheet === 'menuSave') {
+      ($('saveCode') as HTMLTextAreaElement).value = this.world.progress.exportCode();
+      $('saveMsg').textContent = '';
+      $('saveRestore').hidden = !Progress3D.hasErased;
+    }
     if (sheet === 'menuOptions') {
       // la cámara puede haber cambiado con V
       ($('optChase') as HTMLInputElement).checked = !this.world.isIso;

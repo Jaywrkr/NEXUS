@@ -1,6 +1,30 @@
 import type { GameState, SavedConnection } from '../../data/gameState';
 
 const KEY = 'los-nexus-3d-progress';
+/** Guía «save-systems»: copia de respaldo (la última buena) y la partida borrada (para deshacer). */
+const BAK = `${KEY}-bak`;
+const ERASED = `${KEY}-borrada`;
+/** Versión del formato del guardado. Subirla junto con una migración en `migrate()`. */
+export const SAVE_VERSION = 2;
+/** Otras claves que viajan en el código de partida (ropa del Nexus). */
+const EXTRA_KEYS = ['los-nexus-3d-look'];
+
+function readKey(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeKey(key: string, value: string): boolean {
+  try {
+    localStorage.setItem(key, value);
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 interface State3D {
   fragmentsCollected: string[];
@@ -39,15 +63,44 @@ const empty = (): State3D => ({ fragmentsCollected: [], seenCompletion: false, c
  */
 export class Progress3D {
   private state: State3D;
+  /** De dónde salió la partida al abrir el juego (para avisar si se recuperó del respaldo). */
+  readonly loadedFrom: 'main' | 'backup' | 'new';
+  private lastBackup = 0;
 
   constructor() {
-    this.state = Progress3D.load();
+    const main = Progress3D.parse(readKey(KEY));
+    if (main) {
+      this.state = main;
+      this.loadedFrom = 'main';
+      // Al abrir, la partida buena pasa a ser el respaldo
+      writeKey(BAK, JSON.stringify({ ...main, v: SAVE_VERSION }));
+      this.lastBackup = Date.now();
+    } else {
+      // El guardado no está o se rompió: se recupera el respaldo (y NO se pisa con una partida vacía)
+      const bak = Progress3D.parse(readKey(BAK));
+      this.state = bak ?? empty();
+      this.loadedFrom = bak ? 'backup' : 'new';
+    }
   }
 
   private static load(): State3D {
+    return Progress3D.parse(readKey(KEY)) ?? empty();
+  }
+
+  /** Lleva un guardado viejo al formato actual (por ahora, la v1 sin número se lee igual). */
+  private static migrate(raw: Record<string, unknown>): Record<string, unknown> {
+    const v = typeof raw.v === 'number' ? Math.floor(raw.v) : 1;
+    if (v > SAVE_VERSION) return raw; // de una versión más nueva: se lee lo que se entienda
+    return raw;
+  }
+
+  /** Lee un guardado (texto JSON) y lo limpia; `null` si no hay o está roto. Solo datos: nunca ejecuta nada. */
+  static parse(text: string | null): State3D | null {
+    if (!text) return null;
     try {
-      const parsed = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Partial<State3D> | null;
-      if (!parsed) return empty();
+      const raw = JSON.parse(text) as unknown;
+      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+      const parsed = Progress3D.migrate(raw as Record<string, unknown>) as Partial<State3D>;
       const strings = (v: unknown): string[] => (Array.isArray(v) ? v.filter((s): s is string => typeof s === 'string') : []);
       const connections = Array.isArray(parsed.connections)
         ? parsed.connections.filter((c): c is SavedConnection => typeof c?.sourceId === 'string' && typeof c?.targetId === 'string')
@@ -67,7 +120,7 @@ export class Progress3D {
         counts: Progress3D.cleanCounts(parsed.counts),
       };
     } catch {
-      return empty();
+      return null;
     }
   }
 
@@ -92,11 +145,70 @@ export class Progress3D {
   }
 
   private save(): void {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(this.state));
-    } catch {
-      // sin almacenamiento (modo privado): el juego sigue, solo no se guarda
+    // Sin almacenamiento (modo privado): el juego sigue, solo no se guarda
+    const text = JSON.stringify({ ...this.state, v: SAVE_VERSION });
+    // Cada dos minutos, la última partida buena pasa al respaldo antes de escribir la nueva
+    if (Date.now() - this.lastBackup > 120_000) {
+      const prev = readKey(KEY);
+      if (prev && Progress3D.parse(prev)) writeKey(BAK, prev);
+      this.lastBackup = Date.now();
     }
+    writeKey(KEY, text);
+  }
+
+  /** Código de partida: todo el progreso (y la ropa del Nexus) en un texto para copiar a otro equipo. */
+  exportCode(): string {
+    const extra: Record<string, string> = {};
+    for (const k of EXTRA_KEYS) {
+      const v = readKey(k);
+      if (v !== null) extra[k] = v;
+    }
+    const json = JSON.stringify({ app: 'los-nexus-3d', v: SAVE_VERSION, state: this.state, extra });
+    return `NEXUS1:${btoa(unescape(encodeURIComponent(json)))}`;
+  }
+
+  /** Carga un código de partida. Devuelve false si no es válido (y no toca nada). */
+  importCode(code: string): boolean {
+    const m = /NEXUS1:([A-Za-z0-9+/=]+)/.exec(code.replace(/\s+/g, ''));
+    if (!m) return false;
+    try {
+      const data = JSON.parse(decodeURIComponent(escape(atob(m[1])))) as { app?: string; state?: unknown; extra?: Record<string, unknown> };
+      if (data.app !== 'los-nexus-3d') return false;
+      const state = Progress3D.parse(JSON.stringify(data.state ?? null));
+      if (!state) return false;
+      // La partida de ahora queda como respaldo, por si el código no era el que se quería
+      const prev = readKey(KEY);
+      if (prev) writeKey(BAK, prev);
+      this.state = state;
+      this.save();
+      for (const k of EXTRA_KEYS) {
+        const v = data.extra?.[k];
+        if (typeof v === 'string') writeKey(k, v);
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** ¿Hay una partida borrada que se pueda recuperar? */
+  static get hasErased(): boolean {
+    return Progress3D.parse(readKey(ERASED)) !== null;
+  }
+
+  /** Deshace «Borrar partida». */
+  restoreErased(): boolean {
+    const text = readKey(ERASED);
+    const st = Progress3D.parse(text);
+    if (!st || !text) return false;
+    this.state = st;
+    this.save();
+    try {
+      localStorage.removeItem(ERASED);
+    } catch {
+      // nada
+    }
+    return true;
   }
 
   hasFragment(id: string): boolean {
@@ -289,7 +401,15 @@ export class Progress3D {
   }
 
   resetProgress(): void {
-    localStorage.removeItem(KEY);
+    // Lo borrado se guarda aparte: se puede recuperar desde Opciones
+    const prev = readKey(KEY);
+    if (prev && Progress3D.parse(prev)) writeKey(ERASED, prev);
+    try {
+      localStorage.removeItem(KEY);
+      localStorage.removeItem(BAK);
+    } catch {
+      // nada
+    }
     this.state = Progress3D.load();
   }
 }
