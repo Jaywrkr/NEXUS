@@ -508,6 +508,10 @@ body.mode-tunnel #stickBase {
   text-align: center;
   font-size: 16px;
 }
+.opt.vol input[type='range'] {
+  width: 46%;
+  accent-color: var(--accent, #2bb3a8);
+}
 .save-help {
   margin: 0 0 8px;
   font-size: 14px;

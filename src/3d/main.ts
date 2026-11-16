@@ -12,7 +12,7 @@ import { MuseumMode } from './scenes/MuseumMode';
 import { TunnelMode } from './scenes/TunnelMode';
 import { WorldMode } from './scenes/WorldMode';
 import { drawMap } from './ui/MapView';
-import { AudioSystem } from '../systems/AudioSystem';
+import { AudioSystem, type AudioChannel } from '../systems/AudioSystem';
 
 type Mode = 'title' | 'world' | 'tunnel' | 'museum';
 type Sheet = 'menuMain' | 'menuOptions' | 'menuHelp' | 'menuSave';
@@ -249,6 +249,17 @@ class Game {
     toggle('optChase', () => Settings.chase, (v) => this.world.setView(!v));
     toggle('optBig', () => Settings.bigButtons, (v) => (Settings.bigButtons = v));
     toggle('optPerf', () => Settings.perf, (v) => (Settings.perf = v));
+    // Volumen por categoría (guía «audio-design»); al mover el de efectos suena una muestra
+    for (const [id, ch] of [
+      ['volMusic', 'music'],
+      ['volSfx', 'sfx'],
+      ['volAmbience', 'ambience'],
+    ] as [string, AudioChannel][]) {
+      const range = $(id) as HTMLInputElement;
+      range.value = String(Math.round(AudioSystem.volume(ch) * 100));
+      range.addEventListener('input', () => AudioSystem.setVolume(ch, Number(range.value) / 100));
+      if (ch === 'sfx') range.addEventListener('change', () => this.uiAudio.tone(880, 0, 0.12, 'sine', 0.1));
+    }
     toggle('optFx', () => Settings.fx, (v) => {
       Settings.fx = v;
       this.renderer.fancy = v;
@@ -330,7 +341,7 @@ class Game {
   }
 
   /** Clic suave en todos los botones de la interfaz. */
-  private readonly uiAudio = new AudioSystem();
+  private readonly uiAudio = Object.assign(new AudioSystem(), { channel: 'ui' as const });
 
   private setupUiSounds(): void {
     const audio = this.uiAudio;

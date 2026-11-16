@@ -2952,3 +2952,35 @@ test('3D: el guardado no se pierde — respaldo si se rompe, deshacer «Borrar p
   await page.click('#saveLoad');
   expect(await text(page, 'saveMsg')).toContain('no es una partida');
 });
+
+test('3D: sonido de verdad — volumen por categoría en Opciones y la música baja cuando habla un vecino', async ({ page }) => {
+  test.setTimeout(180_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  // Con un diálogo abierto, la música y el ambiente se agachan; al cerrarlo vuelven
+  await step(page, 0.2);
+  expect(await w(() => !document.getElementById('story').hidden)).toBe(true);
+  expect(await w(() => window.__nexus3d.world.storyDucked)).toBe(true);
+  await page.evaluate(() => document.getElementById('story').click());
+  await step(page, 0.2);
+  expect(await w(() => window.__nexus3d.world.storyDucked)).toBe(false);
+
+  // Volumen de música, efectos y ambiente: se guardan y se recuerdan al volver a abrir
+  await page.click('#menuBtn');
+  await page.click('#mOptions');
+  for (const [id, key, v] of [
+    ['volMusic', 'los-nexus-vol-music', '30'],
+    ['volAmbience', 'los-nexus-vol-ambience', '0'],
+  ]) {
+    await page.evaluate(([id, v]) => {
+      const r = document.getElementById(id);
+      r.value = v;
+      r.dispatchEvent(new Event('input', { bubbles: true }));
+    }, [id, v]);
+    expect(await w((k) => localStorage.getItem(k), key)).toBe(String(Number(v) / 100));
+  }
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await w(() => document.getElementById('volMusic').value)).toBe('30');
+  expect(await w(() => document.getElementById('volAmbience').value)).toBe('0');
+  expect(await w(() => document.getElementById('volSfx').value)).toBe('100');
+});

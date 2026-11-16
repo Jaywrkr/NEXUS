@@ -376,3 +376,6 @@ Guías de gamedev instaladas en `.claude/skills/` y plan en `PLAN_SIGUIENTE_NIVE
 ## 3D: Siguiente nivel, Fase 2 — el guardado no se pierde
 Versión en el guardado, copia de respaldo y recuperación automática si se rompe, «Borrar partida» que se puede deshacer y código de partida para pasar el progreso a otro equipo (Opciones → «💾 Mi partida»). Pruebas 3D: 56 escenarios. Decisión 067.
 
+## 3D: Siguiente nivel, Fase 3 — sonido de verdad
+Mezcla con buses (efectos, música, ambiente, interfaz) y compresor en la salida, volumen por categoría en Opciones, música y ambiente que bajan cuando habla un vecino, y variación chica en los efectos repetidos. Pruebas 3D: 57 escenarios. Decisión 068.
+

@@ -172,6 +172,10 @@ export class WorldMode {
   readonly nexus = new Nexus3D();
   readonly progress = new Progress3D();
   private readonly audio = new AudioSystem();
+  /** Guía «audio-design»: el ambiente y la música van a su propia categoría (cada una con su volumen). */
+  private readonly ambientAudio = Object.assign(new AudioSystem(), { channel: 'ambience' as const });
+  private readonly musicAudio = Object.assign(new AudioSystem(), { channel: 'music' as const });
+  private storyDucked = false;
   private readonly input: Input;
   private readonly cb: WorldCallbacks;
   private readonly connections: Connections;
@@ -445,7 +449,7 @@ export class WorldMode {
     this.pedestals = new PiecePedestals(PORT.lighthouse.x, PORT.lighthouse.z, 4.6, PIECES_TOTAL, this.world.circles);
     keepVivid(this.pedestals.group);
     scene.add(this.pedestals.group);
-    this.song = new CitySong(this.audio);
+    this.song = new CitySong(this.musicAudio);
     // Fase 11: Bosque de las luciérnagas
     const forestBridgeSource = new EnergySource('forest-bridge-source', FOREST.bridgeSource.x, FOREST.bridgeSource.z);
     this.forestLever = new RopeBridgeLever('forest-bridge', FOREST.bridge.x, FOREST.bridge.z);
@@ -4689,6 +4693,12 @@ export class WorldMode {
     this.updateClock(dt);
     this.updateFactory(dt);
     this.world.updateWater(this.time);
+    // Mientras habla un vecino, la música y el ambiente bajan (sin tocar el volumen elegido)
+    const talking = !(document.getElementById('story')?.hidden ?? true);
+    if (talking !== this.storyDucked) {
+      this.storyDucked = talking;
+      AudioSystem.duck(talking);
+    }
     this.updateAmbience(dt);
     {
       // Etapa B: la sombra de contacto del Nexus queda en el piso (en paseos y tirolesas no se muestra)
@@ -4836,7 +4846,7 @@ export class WorldMode {
     if (this.ambientT > 0) return;
     this.ambientT = 4 + Math.random() * 5;
     if (this.inside || this.voltio.active) return;
-    const a = this.audio;
+    const a = this.ambientAudio;
     const d = this.districtId;
     if (this.isNight && ['bosque', 'granja', 'cerro', 'centro', 'isla', 'parque'].includes(d)) {
       // Grillos
