@@ -530,6 +530,8 @@ test('3D: la casa de Miga se visita y la calle del este llega al skatepark', asy
   const spark = await w(() => window.__nexus3d.world.world.interior.spark);
   const charge0 = await w(() => window.__nexus3d.world.charge);
   await tp(page, spark.x, spark.z + 1.2);
+  // Desde quieto (el teletransporte no frena el envión de la caminata anterior)
+  await w(() => window.__nexus3d.world.nexus.velocity.set(0, 0, 0));
   await page.keyboard.down('KeyW');
   await w(() => window.__nexus3d.world.jump());
   await step(page, 0.5);

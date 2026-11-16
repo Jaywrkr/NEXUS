@@ -4375,16 +4375,25 @@ export class WorldMode {
   private walkScale(dt: number, push: number): number {
     this.boostT = Math.max(0, this.boostT - dt);
     const shift = this.input.has('ShiftLeft') || this.input.has('ShiftRight');
-    if (push > 0.9 || (shift && push > 0.3)) this.fullPush += dt;
-    else this.fullPush = 0;
-    const wantRun = !this.voltio.active && (shift ? push > 0.3 : this.fullPush > WorldMode.RUN_AFTER);
-    this.runK = damp(this.runK, wantRun ? 1 : 0, wantRun ? 4 : 8, dt);
-    return (this.voltio.active ? 1.5 : 1) * (this.helps('via') ? 1.15 : 1) * (this.boostT > 0 ? 1.55 : 1) * (1 + (WorldMode.RUN_SCALE - 1) * this.runK);
+    // La carrera se decide con los pies en el piso: en el aire se conserva la de antes de saltar
+    if (this.grounded) {
+      if (push > 0.9 || (shift && push > 0.3)) this.fullPush += dt;
+      else this.fullPush = 0;
+      const wantRun = !this.voltio.active && (shift ? push > 0.3 : this.fullPush > WorldMode.RUN_AFTER);
+      this.runK = damp(this.runK, wantRun ? 1 : 0, wantRun ? 4 : 8, dt);
+      // Soltar la dirección frena la carrera en el acto (si solo se afloja, baja de a poco)
+      if (push < 0.3) this.runK = 0;
+    }
+    // Saltando sin correr, avanza como antes (4,6 m/s): los saltos a escalones y bancos siguen fáciles
+    const air = !this.grounded && this.runK < 0.5 ? WorldMode.AIR_WALK : 1;
+    return air * (this.voltio.active ? 1.5 : 1) * (this.helps('via') ? 1.15 : 1) * (this.boostT > 0 ? 1.55 : 1) * (1 + (WorldMode.RUN_SCALE - 1) * this.runK);
   }
 
   /** Correr: cuánto más rápido y tras cuánto tiempo a fondo. */
   static RUN_SCALE = 1.45;
   static RUN_AFTER = 0.5;
+  /** En el aire sin correr: la velocidad de caminar de antes (4,6 de 5,3 m/s). */
+  static AIR_WALK = 4.6 / 5.3;
   private fullPush = 0;
   /** 0 caminando … 1 corriendo. */
   runK = 0;
