@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { batchStatic } from '../core/batch';
 import { buildDetail } from './Detail';
-import { FOG_COLOR, FOG_FAR, FOG_NEAR, LIFE, box, flat, gradientMap, makeSky, outline, outlineScaled, rounded, sharedOutline, toon, toonUnique, withLife, rippleTexture } from '../core/render';
+import { FOG_COLOR, FOG_FAR, FOG_NEAR, LIFE, box, flat, gradientMap, makeSky, outline, outlineScaled, rounded, sharedOutline, toon, toonUnique, withLife, waterMaterial } from '../core/render';
 import { clamp, pick, rnd } from '../core/util';
 import { buildMigaHouse, type InteriorInfo, type ReviveRoom } from './MigaHouse';
 import { buildCardRoom, buildIceCreamRoom } from './ShopRooms';
@@ -171,6 +171,20 @@ export class World {
   readonly sky: THREE.Mesh;
   /** 0 = día, 1 = noche (lo maneja el reloj de WorldMode). */
   night = 0;
+  /** Atardecer o amanecer (0..1): máximo a mitad del paso entre el día y la noche. */
+  dusk = 0;
+  /** Hacia dónde está el sol (sale de la posición de la luz relativa al foco). */
+  readonly sunDir = new THREE.Vector3(26, 40, 12).normalize();
+  private static readonly SUN_DAY = new THREE.Color('#ffd9a0');
+  private static readonly SUN_DUSK = new THREE.Color('#ff8a50');
+  private static readonly SUN_NIGHT = new THREE.Color('#9fb4ff');
+  private static readonly HEMI_SKY_DAY = new THREE.Color('#a8c0f0');
+  private static readonly HEMI_SKY_DUSK = new THREE.Color('#f0a8a0');
+  private static readonly HEMI_SKY_NIGHT = new THREE.Color('#5868b0');
+  private static readonly HEMI_GROUND_DAY = new THREE.Color('#a07a52');
+  private static readonly HEMI_GROUND_DUSK = new THREE.Color('#8a5a58');
+  private static readonly HEMI_GROUND_NIGHT = new THREE.Color('#2e2a44');
+  private static readonly FOG_DUSK = new THREE.Color('#e7a083');
   private readonly hemi: THREE.HemisphereLight;
   /** Ánimo del barrio (0 = triste y gris, 1 = todo restaurado): cielo, niebla y luz. Lo fija WorldMode. */
   mood = 0;
@@ -465,7 +479,16 @@ export class World {
     const grass = toon('#6f9e3e', 50);
     // Norte del canal y sur del canal (el canal queda hundido entre ambos)
     this.plane(0, (CANAL_MIN_Z - 400) / 2, 800, 400 + CANAL_MIN_Z, grass, 0);
-    this.plane(0, (CANAL_MAX_Z + 400) / 2, 800, 400 - CANAL_MAX_Z, grass, 0);
+    // Sur del canal hasta la costa. Antes este pasto seguía hasta z = 400 y tapaba el mar del Puerto,
+    // la Playa y la Isla (el mar está más abajo, en y = −0,6): se veía pasto alrededor del faro.
+    this.plane(0, (CANAL_MAX_Z + SEA_Z) / 2, 800, SEA_Z - CANAL_MAX_Z, grass, 0);
+    // Al oeste de la costa sigue la tierra (la Granja llega a z = 100), al este y al fondo también
+    const W = -46;
+    const E = 200;
+    const S = SEA_Z + 120;
+    this.plane((-400 + W) / 2, (SEA_Z + 400) / 2, W + 400, 400 - SEA_Z, grass, 0);
+    this.plane((E + 400) / 2, (SEA_Z + 400) / 2, 400 - E, 400 - SEA_Z, grass, 0);
+    this.plane((W + E) / 2, (S + 400) / 2, E - W, 400 - S, grass, 0);
   }
 
   private buildStreets(): void {
@@ -515,33 +538,39 @@ export class World {
     }
   }
 
-  /** Etapa B: ondas que se mueven sobre el mar y el canal (dos capas que se cruzan despacio). */
-  private readonly ripples: THREE.Texture[] = [];
+  /**
+   * Agua de verdad (Fase 5 del «siguiente nivel»): una capa con shader sobre el mar y el canal
+   * (ondas, reflejo del cielo, destellos y espuma en la orilla). Reemplaza las ondas de la Etapa B.
+   */
+  private readonly waters: THREE.ShaderMaterial[] = [];
 
   private buildWaterFx(): void {
-    for (const [cx, cz, w, d, y, rx, rz] of [
-      [0, SEA_Z + 60, 400, 120, -0.56, 50, 15],
-      [0, (CANAL_MIN_Z + CANAL_MAX_Z) / 2, 800, CANAL_MAX_Z - CANAL_MIN_Z - 0.4, -0.86, 100, 0.8],
-    ] as [number, number, number, number, number, number, number][]) {
-      for (let k = 0; k < 2; k += 1) {
-        const t = rippleTexture();
-        t.repeat.set(rx * (k ? 0.7 : 1), rz * (k ? 0.7 : 1));
-        this.ripples.push(t);
-        const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ map: t, transparent: true, depthWrite: false, opacity: k ? 0.5 : 0.8 }));
-        m.rotation.x = -Math.PI / 2;
-        m.position.set(cx, y + k * 0.01, cz);
-        m.userData.dynamic = true;
-        this.scene.add(m);
-      }
+    for (const [cx, cz, w, d, y, sn, ss, foam] of [
+      [0, SEA_Z + 60, 400, 120, -0.56, SEA_Z, NaN, 1],
+      [0, (CANAL_MIN_Z + CANAL_MAX_Z) / 2, 800, CANAL_MAX_Z - CANAL_MIN_Z, -0.86, CANAL_MIN_Z + 0.15, CANAL_MAX_Z - 0.15, 0.45],
+    ] as [number, number, number, number, number, number, number, number][]) {
+      const mat = waterMaterial(sn, ss, foam);
+      this.waters.push(mat);
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(w, d), mat);
+      m.rotation.x = -Math.PI / 2;
+      m.position.set(cx, y, cz);
+      m.renderOrder = 1;
+      m.userData.dynamic = true;
+      this.scene.add(m);
     }
   }
 
-  /** Mueve las ondas del agua. */
+  /** Mueve el agua y le pasa la hora y el sol. */
   updateWater(t: number): void {
-    this.ripples.forEach((r, i) => {
-      const s = i % 2 ? -1 : 1;
-      r.offset.set(t * 0.012 * s, t * 0.02 * (i % 2 ? 0.6 : 1));
-    });
+    const sun = this.sunDir;
+    for (const w of this.waters) {
+      const u = w.uniforms;
+      u.time.value = t;
+      u.sunDir.value.copy(sun);
+      u.night.value = this.night;
+      u.dusk.value = this.dusk;
+      u.life.value = this.moodShown;
+    }
   }
 
   private buildCanal(): void {
@@ -1793,7 +1822,20 @@ export class World {
 
   /** Ambiente: el sol y el cielo siguen al foco, nubes, viento en árboles, mariposas. */
   update(dt: number, time: number, focus: THREE.Vector3, camPos: THREE.Vector3): void {
-    this.sun.position.set(focus.x + 26, 40, focus.z + 12);
+    // Atardecer (Fase 5 del «siguiente nivel»): el sol baja, se entibia, y la luz de cielo y piso cambia de color
+    const dusk = (this.dusk = 4 * this.night * (1 - this.night));
+    const sx = 26 + 10 * dusk;
+    const sy = 40 - 24 * dusk;
+    this.sunDir.set(sx, sy, 12).normalize();
+    // La luz de la luna entra recién en la segunda mitad del paso (si no, apaga el naranja)
+    const moon = Math.max(0, 2 * this.night - 1) ** 2;
+    this.sun.position.set(focus.x + sx, sy, focus.z + 12);
+    this.sun.color.copy(World.SUN_DAY).lerp(World.SUN_DUSK, dusk).lerp(World.SUN_NIGHT, moon);
+    this.hemi.color.copy(World.HEMI_SKY_DAY).lerp(World.HEMI_SKY_DUSK, dusk * 0.8).lerp(World.HEMI_SKY_NIGHT, moon);
+    this.hemi.groundColor.copy(World.HEMI_GROUND_DAY).lerp(World.HEMI_GROUND_DUSK, dusk * 0.7).lerp(World.HEMI_GROUND_NIGHT, moon);
+    const skyU = (this.sky.material as THREE.ShaderMaterial).uniforms;
+    skyU.skyDusk.value = dusk;
+    skyU.sunDir.value.copy(this.sunDir);
     this.sun.target.position.set(focus.x, 0, focus.z);
     this.sky.position.set(camPos.x, 0, camPos.z);
     this.moodShown += (this.mood - this.moodShown) * Math.min(1, dt * 1.2);
@@ -1805,6 +1847,10 @@ export class World {
     (this.scene.background as THREE.Color).copy(World.BG_GLOOM).lerp(World.BG_ALIVE, m);
     this.hemi.intensity = (1.35 + 0.35 * m) * (1 - 0.45 * this.night);
     this.sun.intensity = (1.9 + 0.5 * m) * (1 - 0.7 * this.night);
+    if (dusk > 0.01) {
+      (this.scene.fog as THREE.Fog).color.lerp(World.FOG_DUSK, dusk * 0.45);
+      (this.scene.background as THREE.Color).lerp(World.FOG_DUSK, dusk * 0.45);
+    }
     if (this.night > 0.01) {
       (this.scene.fog as THREE.Fog).color.lerp(World.FOG_NIGHT, this.night);
       (this.scene.background as THREE.Color).lerp(World.FOG_NIGHT, this.night);

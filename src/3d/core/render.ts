@@ -185,29 +185,6 @@ export function withRim<T extends THREE.Material>(mat: T, color = '#fff2d0', str
   return mat;
 }
 
-/** Etapa B: textura de ondas (líneas claras curvas) para el agua animada; se repite y se desplaza. */
-export function rippleTexture(): THREE.CanvasTexture {
-  const cv = document.createElement('canvas');
-  cv.width = cv.height = 256;
-  const g = cv.getContext('2d')!;
-  g.clearRect(0, 0, 256, 256);
-  g.lineCap = 'round';
-  for (let i = 0; i < 26; i += 1) {
-    const x = (i * 97) % 256;
-    const y = (i * 61) % 256;
-    const w = 18 + ((i * 13) % 30);
-    g.strokeStyle = `rgba(235, 250, 255, ${0.22 + ((i * 7) % 5) * 0.06})`;
-    g.lineWidth = 2 + (i % 3);
-    g.beginPath();
-    g.moveTo(x - w / 2, y);
-    g.quadraticCurveTo(x, y - 5, x + w / 2, y);
-    g.stroke();
-  }
-  const t = new THREE.CanvasTexture(cv);
-  t.wrapS = t.wrapT = THREE.RepeatWrapping;
-  return t;
-}
-
 let blobTex: THREE.Texture | null = null;
 /** Sombra de contacto: un círculo oscuro y difuso en el piso, debajo de un personaje. */
 export function contactShadow(radius: number): THREE.Mesh {
@@ -637,8 +614,8 @@ export function makeSky(): THREE.Mesh {
       fog: false,
       depthWrite: false,
       vertexShader: `varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-      uniforms: { skyLife: { value: 0 }, skyNight: { value: 0 } },
-      fragmentShader: `varying vec3 vP; uniform float skyLife; uniform float skyNight;
+      uniforms: { skyLife: { value: 0 }, skyNight: { value: 0 }, skyDusk: { value: 0 }, sunDir: { value: new THREE.Vector3(26, 40, 12).normalize() } },
+      fragmentShader: `varying vec3 vP; uniform float skyLife; uniform float skyNight; uniform float skyDusk; uniform vec3 sunDir;
         float sh(vec3 p){ return fract(sin(dot(p, vec3(127.1, 311.7, 74.7))) * 43758.5453); }
         vec3 toLinear(vec3 c){ return pow(c, vec3(2.2)); }
         void main(){ float h = vP.y; vec3 top = vec3(0.08, 0.20, 0.58); vec3 mid = vec3(0.16, 0.36, 0.78); vec3 hor = vec3(0.58, 0.70, 0.90);
@@ -646,6 +623,12 @@ export function makeSky(): THREE.Mesh {
           c = mix(c, vec3(0.62, 0.72, 0.86), smoothstep(0.0, -0.2, h));
           float g = dot(c, vec3(0.299, 0.587, 0.114));
           c = mix(vec3(g) * vec3(0.92, 0.95, 1.0), c, 0.25 + 0.75 * skyLife);
+          // Atardecer: horizonte naranja, franja rosada arriba y un resplandor alrededor del sol
+          vec3 duskC = mix(vec3(1.0, 0.58, 0.32), vec3(0.78, 0.46, 0.66), smoothstep(0.0, 0.25, h));
+          duskC = mix(duskC, vec3(0.22, 0.24, 0.55), smoothstep(0.25, 0.75, h));
+          float sunGlow = pow(max(dot(vP, normalize(sunDir)), 0.0), 6.0);
+          duskC += vec3(1.0, 0.7, 0.4) * sunGlow * 0.6 + vec3(1.0, 0.85, 0.6) * pow(max(dot(vP, normalize(sunDir)), 0.0), 220.0);
+          c = mix(c, duskC, skyDusk * (0.55 + 0.45 * skyLife));
           // Noche: azul profundo con estrellas
           vec3 nightSky = mix(vec3(0.05, 0.07, 0.2), vec3(0.01, 0.02, 0.08), smoothstep(0.0, 0.6, h));
           float star = step(0.9965, sh(floor(vP * 260.0))) * smoothstep(0.05, 0.3, h);
@@ -654,4 +637,82 @@ export function makeSky(): THREE.Mesh {
           gl_FragColor = vec4(toLinear(c), 1.0); }`,
     }),
   );
+}
+
+/**
+ * Fase 5 del «siguiente nivel» (guía `shader-programming`): capa de agua encima del mar y el canal.
+ * Ondas que se cruzan (suma de senos en el mundo, así las aguas vecinas empalman), reflejo del cielo
+ * más fuerte al mirar de costado (Fresnel), destellos donde rebota el sol y espuma en la orilla.
+ * El color de abajo (gris o vivo según `withLife`) lo pone el agua de siempre; esta capa solo suma luz.
+ * Devuelve color lineal, como todo lo que dibuja la escena, y se desvanece con la niebla.
+ * `shore`: z de las orillas (norte, sur); NaN = sin orilla de ese lado.
+ */
+export function waterMaterial(shoreN: number, shoreS: number, foam = 1): THREE.ShaderMaterial {
+  return new THREE.ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    fog: true,
+    uniforms: THREE.UniformsUtils.merge([
+      THREE.UniformsLib.fog,
+      {
+        time: { value: 0 },
+        sunDir: { value: new THREE.Vector3(0.5, 0.8, 0.25).normalize() },
+        night: { value: 0 },
+        dusk: { value: 0 },
+        life: { value: 0 },
+        shore: { value: new THREE.Vector2(shoreN, shoreS) },
+        foamK: { value: foam },
+      },
+    ]),
+    vertexShader: `varying vec3 vW; varying float vFogDepth;
+      void main(){ vec4 w = modelMatrix * vec4(position, 1.0); vW = w.xyz; vec4 mv = viewMatrix * w; vFogDepth = -mv.z; gl_Position = projectionMatrix * mv; }`,
+    fragmentShader: `varying vec3 vW; varying float vFogDepth;
+      uniform float time; uniform vec3 sunDir; uniform float night; uniform float dusk; uniform float life; uniform vec2 shore; uniform float foamK;
+      uniform vec3 fogColor; uniform float fogNear; uniform float fogFar;
+      float hash(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+      float noise(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f * f * (3.0 - 2.0 * f);
+        return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), f.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), f.x), f.y); }
+      // Pendiente de las ondas (derivada analítica de cuatro senos con direcciones distintas)
+      vec2 slope(vec2 p){
+        vec2 g = vec2(0.0);
+        vec4 dx = vec4(0.8, -0.45, 0.25, -0.9); vec4 dz = vec4(0.6, 0.9, -0.97, -0.3);
+        vec4 fr = vec4(0.55, 0.8, 1.35, 2.1); vec4 sp = vec4(0.9, 1.15, 1.6, 2.2); vec4 am = vec4(0.32, 0.22, 0.14, 0.08);
+        for (int i = 0; i < 4; i++) {
+          float ph = (p.x * dx[i] + p.y * dz[i]) * fr[i] + time * sp[i];
+          g += vec2(dx[i], dz[i]) * fr[i] * am[i] * cos(ph);
+        }
+        return g;
+      }
+      void main(){
+        vec2 p = vW.xz;
+        vec2 g = slope(p) + (vec2(noise(p * 1.7 + time * 0.3), noise(p * 1.7 - time * 0.25)) - 0.5) * 0.35;
+        vec3 n = normalize(vec3(-g.x, 1.0, -g.y));
+        vec3 v = normalize(cameraPosition - vW);
+        float fres = pow(1.0 - max(dot(n, v), 0.0), 3.0);
+        // Cielo reflejado: celeste de día, naranja rosado al atardecer, azul oscuro de noche
+        vec3 sky = mix(vec3(0.70, 0.84, 1.0), vec3(1.0, 0.62, 0.45), dusk);
+        sky = mix(sky, vec3(0.10, 0.14, 0.32), night);
+        // Destellos del sol (o de la luna, más tenues)
+        vec3 r = reflect(-sunDir, n);
+        float spec = pow(max(dot(r, v), 0.0), 90.0) * (1.0 - 0.75 * night);
+        float glint = step(0.82, noise(p * 6.0 + time * 0.8)) * spec * 3.0;
+        vec3 sunC = mix(vec3(1.0, 0.96, 0.85), vec3(1.0, 0.6, 0.3), dusk);
+        sunC = mix(sunC, vec3(0.7, 0.8, 1.0), night);
+        // Espuma: bandas que van y vienen junto a la orilla, recortadas con ruido
+        float d = 1e3;
+        if (shore.x == shore.x) d = min(d, abs(vW.z - shore.x));
+        if (shore.y == shore.y) d = min(d, abs(vW.z - shore.y));
+        float edge = 1.0 - smoothstep(0.0, 1.6 * foamK + 0.3, d + noise(p * 0.9 + time * 0.2) * 0.9);
+        float bands = smoothstep(0.55, 0.85, sin(d * 5.0 - time * 1.8 + noise(p * 0.6) * 4.0) * 0.5 + 0.5) * (1.0 - smoothstep(0.0, 2.6 * foamK, d));
+        float foam = clamp(edge * 0.85 + bands * 0.5 * step(0.35, noise(p * 2.3 + time * 0.15)), 0.0, 1.0) * foamK;
+        vec3 c = sky * fres * 0.9 + sunC * (spec * 0.9 + glint);
+        float a = clamp(fres * 0.45 + spec * 0.8 + glint, 0.0, 0.85);
+        vec3 foamC = vec3(0.95, 0.97, 1.0) * mix(0.55, 1.0, life) * (1.0 - 0.55 * night);
+        c = mix(c / max(a, 0.001), foamC, foam);
+        a = max(a, foam * 0.9);
+        float fogK = smoothstep(fogNear, fogFar, vFogDepth);
+        a *= 1.0 - fogK;
+        gl_FragColor = vec4(pow(c, vec3(2.2)), a);
+      }`,
+  });
 }

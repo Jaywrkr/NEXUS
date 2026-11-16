@@ -369,3 +369,22 @@ Halo suave en lo que brilla (más de noche), efecto maqueta en la isométrica, l
 
 ## 3D: Pulido, Etapa C — el mundo se siente vivo
 Partículas de ambiente por lugar (nieve, hojas, polen, brillitos en el mar, luciérnagas de noche), sombras de nubes, una ola de luz al revivir un lugar, un acercamiento de cámara al conectar y sonidos suaves de cada lugar (pajaritos, grillos, olas, viento). Pruebas 3D: 54 escenarios. Decisión 065.
+
+## 3D: Siguiente nivel, Fase 1 — se siente mejor
+Guías de gamedev instaladas en `.claude/skills/` y plan en `PLAN_SIGUIENTE_NIVEL.md`. Salto con tiempo de coyote y salto anticipado, flotadita al mantener, botón táctil que salta al apretar, sacudida de cámara en tres tamaños con pausa mínima en lo grande, estiramiento al despegar y contadores que saltan. Pruebas 3D: 55 escenarios. Decisión 066.
+
+## 3D: Siguiente nivel, Fase 2 — el guardado no se pierde
+Versión en el guardado, copia de respaldo y recuperación automática si se rompe, «Borrar partida» que se puede deshacer y código de partida para pasar el progreso a otro equipo (Opciones → «💾 Mi partida»). Pruebas 3D: 56 escenarios. Decisión 067.
+
+## 3D: Siguiente nivel, Fase 3 — sonido de verdad
+Mezcla con buses (efectos, música, ambiente, interfaz) y compresor en la salida, volumen por categoría en Opciones, música y ambiente que bajan cuando habla un vecino, y variación chica en los efectos repetidos. Pruebas 3D: 57 escenarios. Decisión 068.
+
+
+## 3D: Siguiente nivel, Fase 4 — controles para todos
+Joystick de consola (zona muerta circular, mismos atajos que el teclado), menús que se recorren con el joystick, botones que muestran Ⓐ/Ⓧ mientras se usa y textos de juego de 13 px como mínimo (Decisión 069).
+
+## 3D: Siguiente nivel, Fase 5 — agua y luz
+Agua con shader propio (ondas, reflejo del cielo, destellos y espuma en la orilla), atardecer y amanecer con sol bajo y naranja y cielo teñido, luz de cielo y piso que cambia con la hora. Además, el mar se ve de verdad: el pasto ya no lo tapa (Decisión 070).
+
+## 3D: Siguiente nivel, Fase 6 — el mundo se lee solo
+Pistas escalonadas (columna de luz, caminito de luz y paso a paso), aviso 💡 si pasa un rato sin avanzar y globitos de los vecinos según la hora y lo que hace el Nexus (Decisión 071). Con esto se completa el plan «siguiente nivel».

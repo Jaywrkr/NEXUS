@@ -2,6 +2,8 @@ import './style.css';
 import { Input } from './core/input';
 import { Renderer } from './core/render';
 import { Settings, flashScreen, vibrate } from './core/settings';
+import { Progress3D } from './core/progress';
+import { GamepadInput } from './core/gamepad';
 import { LOOK_PARTS, loadLook, saveLook } from './data/wardrobe';
 import { CARDS, CARD_BY_ID, RARITY_NAMES, TOTAL_CARDS, TYPES, TYPE_ORDER } from './data/chispis';
 import { drawCard, drawChispi } from './ui/cardArt';
@@ -11,10 +13,10 @@ import { MuseumMode } from './scenes/MuseumMode';
 import { TunnelMode } from './scenes/TunnelMode';
 import { WorldMode } from './scenes/WorldMode';
 import { drawMap } from './ui/MapView';
-import { AudioSystem } from '../systems/AudioSystem';
+import { AudioSystem, type AudioChannel } from '../systems/AudioSystem';
 
 type Mode = 'title' | 'world' | 'tunnel' | 'museum';
-type Sheet = 'menuMain' | 'menuOptions' | 'menuHelp';
+type Sheet = 'menuMain' | 'menuOptions' | 'menuHelp' | 'menuSave';
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -248,15 +250,59 @@ class Game {
     toggle('optChase', () => Settings.chase, (v) => this.world.setView(!v));
     toggle('optBig', () => Settings.bigButtons, (v) => (Settings.bigButtons = v));
     toggle('optPerf', () => Settings.perf, (v) => (Settings.perf = v));
+    // Volumen por categoría (guía «audio-design»); al mover el de efectos suena una muestra
+    for (const [id, ch] of [
+      ['volMusic', 'music'],
+      ['volSfx', 'sfx'],
+      ['volAmbience', 'ambience'],
+    ] as [string, AudioChannel][]) {
+      const range = $(id) as HTMLInputElement;
+      range.value = String(Math.round(AudioSystem.volume(ch) * 100));
+      range.addEventListener('input', () => AudioSystem.setVolume(ch, Number(range.value) / 100));
+      if (ch === 'sfx') range.addEventListener('change', () => this.uiAudio.tone(880, 0, 0.12, 'sine', 0.1));
+    }
     toggle('optFx', () => Settings.fx, (v) => {
       Settings.fx = v;
       this.renderer.fancy = v;
     });
     $('optReset').addEventListener('click', () => this.resetGame(true));
+    // Guía «save-systems»: código de partida para pasarla a otro equipo y deshacer «Borrar partida»
+    $('optSave').addEventListener('click', () => this.showSheet('menuSave'));
+    $('saveBack').addEventListener('click', () => this.showSheet('menuOptions'));
+    $('saveCopy').addEventListener('click', () => {
+      const box = $('saveCode') as HTMLTextAreaElement;
+      box.value = this.world.progress.exportCode();
+      box.select();
+      const done = (ok: boolean) => ($('saveMsg').textContent = ok ? '✅ Código copiado' : 'Mantené apretado el código para copiarlo');
+      const fallback = () => done(document.execCommand('copy'));
+      if (navigator.clipboard) navigator.clipboard.writeText(box.value).then(() => done(true), fallback);
+      else fallback();
+    });
+    $('saveLoad').addEventListener('click', () => {
+      const code = ($('saveCode') as HTMLTextAreaElement).value;
+      if (code.trim() === this.world.progress.exportCode()) {
+        $('saveMsg').textContent = 'Pegá acá el código de otra partida';
+        return;
+      }
+      if (!this.world.progress.importCode(code)) {
+        $('saveMsg').textContent = '❌ Ese código no es una partida de Los Nexus';
+        return;
+      }
+      $('saveMsg').textContent = '✅ ¡Partida cargada!';
+      window.setTimeout(() => window.location.reload(), 600);
+    });
+    $('saveRestore').addEventListener('click', () => {
+      if (this.world.progress.restoreErased()) window.location.reload();
+    });
   }
 
   private showSheet(sheet: Sheet): void {
-    for (const id of ['menuMain', 'menuOptions', 'menuHelp'] as Sheet[]) $(id).hidden = id !== sheet;
+    for (const id of ['menuMain', 'menuOptions', 'menuHelp', 'menuSave'] as Sheet[]) $(id).hidden = id !== sheet;
+    if (sheet === 'menuSave') {
+      ($('saveCode') as HTMLTextAreaElement).value = this.world.progress.exportCode();
+      $('saveMsg').textContent = '';
+      $('saveRestore').hidden = !Progress3D.hasErased;
+    }
     if (sheet === 'menuOptions') {
       // la cámara puede haber cambiado con V
       ($('optChase') as HTMLInputElement).checked = !this.world.isIso;
@@ -296,7 +342,9 @@ class Game {
   }
 
   /** Clic suave en todos los botones de la interfaz. */
-  private readonly uiAudio = new AudioSystem();
+  private readonly uiAudio = Object.assign(new AudioSystem(), { channel: 'ui' as const });
+  /** Joystick de consola (guía «input-systems»). */
+  private readonly pad = new GamepadInput();
 
   private setupUiSounds(): void {
     const audio = this.uiAudio;
@@ -670,6 +718,8 @@ class Game {
       }
     }
     info.reset();
+    this.pad.update(Math.min(Math.max(raw, 0), 0.1));
+    this.world.input.padMove = this.pad.move;
     const dt = Math.min(raw, 0.05);
     if (raw < 0.5) this.renderer.adapt(raw);
     this.last = now;

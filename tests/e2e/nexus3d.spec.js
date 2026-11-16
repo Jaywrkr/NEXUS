@@ -2764,7 +2764,7 @@ test('3D: aspecto — brillo y maqueta, luz de borde, sombra de contacto, agua q
   expect(blob.visible).toBe(true);
 
   // El agua se mueve
-  const off = () => w(() => window.__nexus3d.world.world.ripples[0].offset.toArray());
+  const off = () => w(() => window.__nexus3d.world.world.waters[0].uniforms.time.value);
   const a = await off();
   await step(page, 1);
   expect(await off()).not.toEqual(a);
@@ -2833,4 +2833,326 @@ test('3D: pulido — ambiente de cada lugar (nieve, hojas, mar, luciérnagas), n
   await step(page, 2);
   expect(await w(() => window.__nexus3d.world.isoCam.zoom)).toBe(1);
   expect(await rings()).toBe(before);
+});
+
+test('3D: se siente mejor — salto con coyote, salto anticipado, flotadita arriba, sacudida de cámara y contadores que saltan', async ({ page }) => {
+  test.setTimeout(240_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const y = () => w(() => window.__nexus3d.world.nexus.position.y);
+  const maxY = async (seconds) => {
+    let m = 0;
+    for (let i = 0; i < seconds / 0.05; i += 1) {
+      await step(page, 0.05);
+      m = Math.max(m, await y());
+    }
+    return m;
+  };
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Salto completo (mantenido) y salto corto (se suelta enseguida)
+  await tp(page, -14, -12);
+  await page.keyboard.down('Space');
+  await step(page, 0.05);
+  const full = await maxY(0.9);
+  await page.keyboard.up('Space');
+  await step(page, 0.5);
+  await page.keyboard.down('Space');
+  await step(page, 0.05);
+  await page.keyboard.up('Space');
+  const short = await maxY(0.9);
+  // Un toque rápido igual llega a la altura completa (escalones de 1 m); mantener flota un poquito más
+  expect(short).toBeGreaterThan(1.15);
+  expect(full).toBeGreaterThan(1.15);
+
+  // Tiempo de coyote: al salirse del borde de un techo todavía se puede saltar un instante
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(134.6, 1, 11);
+    g.focus.set(134.6, 0, 11);
+  });
+  await step(page, 0.2);
+  await page.keyboard.down('KeyA');
+  await page.keyboard.down('KeyW');
+  for (let i = 0; i < 30 && (await w(() => window.__nexus3d.world.grounded)); i += 1) await step(page, 0.02);
+  await page.keyboard.up('KeyA');
+  await page.keyboard.up('KeyW');
+  const edge = await y();
+  await w(() => window.__nexus3d.world.jump());
+  await step(page, 0.12);
+  expect(await y()).toBeGreaterThan(edge);
+
+  // Salto anticipado: apretar justo antes de tocar el piso salta al aterrizar
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(-14, 3, -12);
+    g.focus.set(-14, 0, -12);
+  });
+  await step(page, 0.5);
+  await w(() => window.__nexus3d.world.jump());
+  await step(page, 0.15);
+  expect(await maxY(0.5)).toBeGreaterThan(0.6);
+
+  // Sacudida: crece con lo que pasa y se apaga sola
+  await w(() => window.__nexus3d.world.feedback('large'));
+  expect(await w(() => window.__nexus3d.world.trauma)).toBeGreaterThan(0.5);
+  await step(page, 1);
+  expect(await w(() => window.__nexus3d.world.trauma)).toBe(0);
+
+  // Los contadores saltan cuando cambian
+  await w(() => window.__nexus3d.world.setCharge(3));
+  await page.waitForTimeout(100);
+  expect(await w(() => document.getElementById('charge').classList.contains('bump'))).toBe(true);
+});
+
+test('3D: el guardado no se pierde — respaldo si se rompe, deshacer «Borrar partida» y código de partida', async ({ page }) => {
+  test.setTimeout(240_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const KEY = 'los-nexus-3d-progress';
+  const reloadWorld = async () => {
+    await page.reload();
+    await page.waitForFunction(() => Boolean(window.__nexus3d));
+    await page.evaluate(() => (document.getElementById('continue').hidden ? document.getElementById('play') : document.getElementById('continue')).click());
+    await expect.poll(() => mode(page)).toContain('mode-world');
+  };
+  const flag = () => w(() => window.__nexus3d.world.progress.hasFlag('prueba-guardado'));
+  await step(page, 0.1);
+  await w(() => window.__nexus3d.world.progress.setFlag('prueba-guardado'));
+  expect(JSON.parse(await w((k) => localStorage.getItem(k), KEY)).v).toBe(2);
+
+  // Al abrir, la partida buena pasa al respaldo; si el guardado se rompe, se recupera (y se avisa)
+  await reloadWorld();
+  await w((k) => localStorage.setItem(k, '{roto'), KEY);
+  await reloadWorld();
+  expect(await w(() => window.__nexus3d.world.progress.loadedFrom)).toBe('backup');
+  expect(await flag()).toBe(true);
+  await step(page, 2);
+  expect(await text(page, 'toast')).toContain('respaldo');
+
+  // Código de partida: sale, se borra la partida, se puede deshacer, y el código la trae de vuelta
+  const code = await w(() => window.__nexus3d.world.progress.exportCode());
+  expect(code.startsWith('NEXUS1:')).toBe(true);
+  await w(() => window.__nexus3d.world.progress.resetProgress());
+  await reloadWorld();
+  expect(await flag()).toBe(false);
+  expect(await w(() => window.__nexus3d.world.progress.restoreErased())).toBe(true);
+  expect(await flag()).toBe(true);
+  await w(() => window.__nexus3d.world.progress.resetProgress());
+  await reloadWorld();
+  expect(await w((c) => window.__nexus3d.world.progress.importCode('basura'), code)).toBe(false);
+  expect(await w((c) => window.__nexus3d.world.progress.importCode(c), code)).toBe(true);
+  expect(await flag()).toBe(true);
+
+  // En Opciones: «Mi partida» muestra el código y avisa si lo pegado no sirve
+  await page.click('#menuBtn');
+  await page.click('#mOptions');
+  await page.click('#optSave');
+  expect(await w(() => document.getElementById('saveCode').value)).toMatch(/^NEXUS1:/);
+  await page.fill('#saveCode', 'hola');
+  await page.click('#saveLoad');
+  expect(await text(page, 'saveMsg')).toContain('no es una partida');
+});
+
+test('3D: sonido de verdad — volumen por categoría en Opciones y la música baja cuando habla un vecino', async ({ page }) => {
+  test.setTimeout(180_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  // Con un diálogo abierto, la música y el ambiente se agachan; al cerrarlo vuelven
+  await step(page, 0.2);
+  expect(await w(() => !document.getElementById('story').hidden)).toBe(true);
+  expect(await w(() => window.__nexus3d.world.storyDucked)).toBe(true);
+  await page.evaluate(() => document.getElementById('story').click());
+  await step(page, 0.2);
+  expect(await w(() => window.__nexus3d.world.storyDucked)).toBe(false);
+
+  // Volumen de música, efectos y ambiente: se guardan y se recuerdan al volver a abrir
+  await page.click('#menuBtn');
+  await page.click('#mOptions');
+  for (const [id, key, v] of [
+    ['volMusic', 'los-nexus-vol-music', '30'],
+    ['volAmbience', 'los-nexus-vol-ambience', '0'],
+  ]) {
+    await page.evaluate(([id, v]) => {
+      const r = document.getElementById(id);
+      r.value = v;
+      r.dispatchEvent(new Event('input', { bubbles: true }));
+    }, [id, v]);
+    expect(await w((k) => localStorage.getItem(k), key)).toBe(String(Number(v) / 100));
+  }
+  await page.reload();
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  expect(await w(() => document.getElementById('volMusic').value)).toBe('30');
+  expect(await w(() => document.getElementById('volAmbience').value)).toBe('0');
+  expect(await w(() => document.getElementById('volSfx').value)).toBe('100');
+});
+
+test('3D: controles para todos — joystick de consola en el título, en el juego y en los menús', async ({ page }) => {
+  test.setTimeout(180_000);
+  // Un joystick de mentira (mapeo estándar) que la prueba maneja
+  await page.addInitScript(() => {
+    const pad = { id: 'Prueba', index: 0, connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })), timestamp: 0 };
+    window.__pad = pad;
+    navigator.getGamepads = () => [pad];
+  });
+  await page.goto('/');
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  // Sin GPU hay ~2 cuadros por segundo: se lee el joystick a mano para no depender del tiempo
+  const read = () => w(() => window.__nexus3d.pad.update(0.05));
+  const press = async (i) => {
+    await w((i) => (window.__pad.buttons[i] = { pressed: true, value: 1 }), i);
+    await read();
+    await w((i) => (window.__pad.buttons[i] = { pressed: false, value: 0 }), i);
+    await read();
+  };
+  const stick = async (x, y) => {
+    await w(([x, y]) => {
+      window.__pad.axes = [x, y, 0, 0];
+      window.__nexus3d.pad.update(0.05);
+      window.__nexus3d.world.input.padMove = window.__nexus3d.pad.move;
+    }, [x, y]);
+  };
+  // Título: con un botón ya enfocado, A empieza
+  await press(0);
+  await expect.poll(() => mode(page), { timeout: 20_000 }).toContain('mode-world');
+  expect(await w(() => document.body.classList.contains('pad'))).toBe(true);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Jugando: la palanca mueve al Nexus (zona muerta: un toquecito no lo mueve)
+  const pos = () => w(() => window.__nexus3d.world.nexus.position.toArray());
+  const a = await pos();
+  await stick(0.1, 0.1);
+  await step(page, 0.5);
+  const b = await pos();
+  expect(Math.hypot(b[0] - a[0], b[2] - a[2])).toBeLessThan(0.05);
+  await stick(1, 0);
+  await step(page, 0.6);
+  const c = await pos();
+  expect(Math.hypot(c[0] - b[0], c[2] - b[2])).toBeGreaterThan(1);
+  await stick(0, 0);
+
+  // Start abre el menú; la cruceta mueve el foco; B lo cierra
+  await press(9);
+  await expect.poll(() => w(() => !document.getElementById('menuMain').hidden)).toBe(true);
+  const first = await w(() => document.activeElement?.id);
+  await press(13);
+  expect(await w(() => document.activeElement?.id)).not.toBe(first);
+  await press(1);
+  await expect.poll(() => w(() => document.getElementById('menuMain').closest('[hidden]') !== null || document.getElementById('menuMain').getBoundingClientRect().width === 0)).toBe(true);
+});
+
+test('3D: agua y luz — agua con ondas y espuma, atardecer con sol bajo y naranja, luz de cielo que cambia', async ({ page }) => {
+  test.setTimeout(180_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+  await w(() => window.__nexus3d.world.reviveWholeTown(false));
+  await tp(page, 12, 26);
+  const light = () =>
+    w(() => {
+      const g = window.__nexus3d.world.world;
+      return { dusk: g.dusk, sunY: g.sunDir.y, sunR: g.sun.color.r, sunB: g.sun.color.b, hemiB: g.hemi.color.b, sky: g.sky.material.uniforms.skyDusk.value };
+    });
+
+  // De día: sol alto, sin atardecer; el agua tiene su capa con shader en el mar y el canal
+  await w(() => window.__nexus3d.world.setClock(0.3));
+  await step(page, 2);
+  const day = await light();
+  expect(day.dusk).toBeLessThan(0.01);
+  expect(await w(() => window.__nexus3d.world.world.waters.length)).toBe(2);
+  const t0 = await w(() => window.__nexus3d.world.world.waters[1].uniforms.time.value);
+  await step(page, 0.5);
+  expect(await w(() => window.__nexus3d.world.world.waters[1].uniforms.time.value)).toBeGreaterThan(t0);
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: test.info().outputPath('agua-dia.png') });
+  await tp(page, -19.5, 106);
+  await step(page, 0.5);
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: test.info().outputPath('mar-dia.png') });
+  await tp(page, 12, 26);
+
+  // Atardecer: el sol baja y se pone naranja, el cielo se tiñe
+  await w(() => window.__nexus3d.world.setClock(0.59));
+  await step(page, 0.2);
+  const dusk = await light();
+  expect(dusk.dusk).toBeGreaterThan(0.9);
+  expect(dusk.sky).toBeGreaterThan(0.9);
+  expect(dusk.sunY).toBeLessThan(day.sunY - 0.1);
+  expect(dusk.sunB / dusk.sunR).toBeLessThan(day.sunB / day.sunR);
+  expect(await w(() => window.__nexus3d.world.world.waters[0].uniforms.dusk.value)).toBeGreaterThan(0.9);
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: test.info().outputPath('atardecer.png') });
+
+  // Noche: sin atardecer, la luz de cielo se vuelve azul
+  await w(() => window.__nexus3d.world.setClock(0.75));
+  await step(page, 0.2);
+  const night = await light();
+  expect(night.dusk).toBeLessThan(0.01);
+  expect(night.hemiB).toBeGreaterThan(0.3);
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: test.info().outputPath('agua-noche.png') });
+  expect(page.__errors).toEqual([]);
+});
+
+test('3D: el mundo se lee solo — pistas escalonadas con caminito y columna de luz, aviso 💡 y globitos de los vecinos', async ({ page }) => {
+  test.setTimeout(180_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+  const hint = async () => {
+    await page.evaluate(() => document.getElementById('msg').click());
+    await step(page, 0.3);
+    return w(() => {
+      const g = window.__nexus3d.world;
+      return { text: document.getElementById('storyText').textContent, pillar: g.hintPillar.visible, trail: g.trail.count, other: g.hintFromRing.visible };
+    });
+  };
+  await tp(page, -4, -4);
+  // Pista 1: qué hacer, con flecha y columna de luz (sin caminito)
+  const h1 = await hint();
+  expect(h1.text).toContain('Tocá');
+  expect(h1.pillar).toBe(true);
+  expect(h1.trail).toBe(0);
+  // Pista 2 (otra vez lo mismo): caminito de luz en el piso
+  const h2 = await hint();
+  expect(h2.text).toContain('caminito');
+  expect(h2.trail).toBeGreaterThan(3);
+  // Pista 3: paso a paso y un aro en la otra punta del cable
+  const h3 = await hint();
+  expect(h3.text).toContain('1)');
+  expect(h3.other).toBe(true);
+  await page.evaluate(() => document.getElementById('story').click());
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: test.info().outputPath('pista-caminito.png') });
+
+  // Aviso suave: si pasa un rato sin avanzar, el objetivo ofrece la pista
+  await w(() => (window.__nexus3d.world.constructor.STUCK_AFTER = 3));
+  await step(page, 4.5);
+  expect(await w(() => document.getElementById('msg').classList.contains('nudge'))).toBe(true);
+  await page.evaluate(() => document.getElementById('msg').click());
+  await step(page, 0.1);
+  expect(await w(() => document.getElementById('msg').classList.contains('nudge'))).toBe(false);
+  await w(() => (window.__nexus3d.world.constructor.STUCK_AFTER = 50));
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Globitos: un vecino conocido dice algo corto al pasar, según lo que pasa (de noche, de noche)
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.progress.markHeard('miga');
+    g.setClock(0.75);
+  });
+  await step(page, 0.2);
+  await page.evaluate(() => document.getElementById('story').click());
+  await w(() => (window.__nexus3d.world.storyTimer = 0));
+  await tp(page, -18.5, -11.5);
+  await step(page, 0.3);
+  const bubble = await w(() => {
+    const el = document.querySelector('.chat-bubble');
+    return el ? { text: el.textContent, op: Number(el.style.opacity) } : null;
+  });
+  expect(bubble).not.toBeNull();
+  expect(bubble.op).toBeGreaterThan(0.5);
+  expect(['¡Qué linda noche! 🌙', 'Mirá cuántas estrellas.', 'Shh… los búhos ya se despertaron.', 'De noche todo brilla distinto.']).toContain(bubble.text);
+  await page.waitForTimeout(1300);
+  await page.screenshot({ path: test.info().outputPath('globito.png') });
+  expect(page.__errors).toEqual([]);
 });

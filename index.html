@@ -177,14 +177,28 @@
       <div class="sheet" id="menuOptions" hidden>
         <h2>Opciones</h2>
         <label class="opt"><span>🔊 Sonido</span><input type="checkbox" id="optSound" /></label>
+        <label class="opt vol"><span>🎵 Música</span><input type="range" id="volMusic" min="0" max="100" step="5" /></label>
+        <label class="opt vol"><span>🔔 Efectos</span><input type="range" id="volSfx" min="0" max="100" step="5" /></label>
+        <label class="opt vol"><span>🌿 Ambiente</span><input type="range" id="volAmbience" min="0" max="100" step="5" /></label>
         <label class="opt"><span>📳 Vibración</span><input type="checkbox" id="optVibe" /></label>
         <label class="opt"><span>🌙 Efectos suaves</span><input type="checkbox" id="optCalm" /></label>
         <label class="opt"><span>🎥 Cámara detrás del Nexus</span><input type="checkbox" id="optChase" /></label>
         <label class="opt"><span>👆 Botones grandes</span><input type="checkbox" id="optBig" /></label>
         <label class="opt"><span>✨ Efectos de luz</span><input type="checkbox" id="optFx" /></label>
         <label class="opt"><span>📈 Mostrar rendimiento</span><input type="checkbox" id="optPerf" /></label>
+        <button class="ui-btn menu-btn" id="optSave" type="button">💾 Mi partida (código y respaldo)</button>
         <button class="ui-btn menu-btn ghost danger" id="optReset" type="button">Borrar partida</button>
         <button class="ui-btn menu-btn primary" id="optBack" type="button">Listo</button>
+      </div>
+      <div class="sheet" id="menuSave" hidden>
+        <h2>Mi partida</h2>
+        <p class="save-help">Este código es toda tu partida. Copialo y pegalo en otro celular o compu para seguir jugando ahí.</p>
+        <textarea id="saveCode" class="save-code" rows="4" spellcheck="false" aria-label="Código de partida"></textarea>
+        <p class="save-msg" id="saveMsg" role="status"></p>
+        <button class="ui-btn menu-btn" id="saveCopy" type="button">📋 Copiar mi código</button>
+        <button class="ui-btn menu-btn" id="saveLoad" type="button">📥 Cargar el código pegado</button>
+        <button class="ui-btn menu-btn" id="saveRestore" type="button" hidden>↩️ Recuperar la partida borrada</button>
+        <button class="ui-btn menu-btn primary" id="saveBack" type="button">Volver</button>
       </div>
       <div class="sheet" id="menuHelp" hidden>
         <h2>Cómo se juega</h2>

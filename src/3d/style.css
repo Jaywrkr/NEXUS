@@ -217,6 +217,50 @@ body.paused #labels {
 .objective.event::before {
   content: '✨';
 }
+/* Fase 6: si pasa un rato sin avanzar, el objetivo ofrece la pista (💡 que late suave) */
+.objective.nudge:not(.event)::before {
+  content: '💡';
+  animation: nudge-bulb 1.6s ease-in-out infinite;
+}
+.objective.nudge:not(.event) {
+  box-shadow: 0 0 0 2px rgba(255, 214, 102, 0.75);
+}
+@keyframes nudge-bulb {
+  0%, 100% { transform: translateY(-50%) scale(1); }
+  50% { transform: translateY(-50%) scale(1.25); }
+}
+body.calm .objective.nudge::before {
+  animation: none;
+}
+
+/* Fase 6: globitos de los vecinos (frases cortas que no frenan el juego) */
+.chat-bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  max-width: 200px;
+  padding: 6px 12px 7px;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.chat-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  margin-left: -7px;
+  border: 7px solid transparent;
+  border-bottom: 0;
+  border-top-color: #fff;
+}
 
 /* Aviso breve (abajo al centro) */
 #toast {
@@ -508,6 +552,41 @@ body.mode-tunnel #stickBase {
   text-align: center;
   font-size: 16px;
 }
+.opt.vol input[type='range'] {
+  width: 46%;
+  accent-color: var(--accent, #2bb3a8);
+}
+/* Jugando con joystick: los botones muestran qué botón del control usar */
+body.pad #jumpBtn::after {
+  content: ' Ⓐ';
+}
+body.pad #interact::after {
+  content: ' Ⓧ';
+}
+body.pad .ui-btn:focus-visible,
+body.pad .ui-btn:focus {
+  outline: 4px solid #ffd23a;
+  outline-offset: 3px;
+}
+.save-help {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.save-code {
+  width: 100%;
+  box-sizing: border-box;
+  font: 12px/1.3 ui-monospace, monospace;
+  border-radius: 10px;
+  padding: 8px;
+  resize: none;
+  word-break: break-all;
+}
+.save-msg {
+  min-height: 1.2em;
+  margin: 6px 0;
+  font-size: 14px;
+  font-weight: 700;
+}
 .opt {
   display: flex;
   align-items: center;
@@ -599,6 +678,18 @@ body:not(.touch) .touch-only {
   border-radius: 14px;
   background: var(--ink);
   box-shadow: 3px 3px 0 var(--ink);
+}
+/* Contador que cambia: saltito con rebote (no se mueve con «Efectos suaves») */
+.bump {
+  animation: hud-bump 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+body.calm .bump {
+  animation: none;
+}
+@keyframes hud-bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.25); }
+  100% { transform: scale(1); }
 }
 .perf-pill {
   display: none;
@@ -977,7 +1068,7 @@ body.voltio #volt {
   box-shadow: 4px 4px 0 #ff4fd8;
 }
 .volt-btn small {
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.08em;
 }
 body.has-hood .volt-btn {
@@ -1170,7 +1261,7 @@ body.calm .mini-card.rare-dorada::after {
   background: #ff4fd8;
   color: #fff;
   font-family: var(--display);
-  font-size: 12px;
+  font-size: 13px;
   transform: rotate(8deg);
 }
 .trade-sheet {
@@ -1245,7 +1336,7 @@ body.calm .mini-card.rare-dorada::after {
   border-radius: 8px;
   background: var(--ink);
   color: var(--cream);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
 }
 body.voltio #labels {
@@ -1348,7 +1439,7 @@ body.voltio #labels {
   font-size: 18px;
 }
 .travel-stop small {
-  font-size: 12px;
+  font-size: 13px;
   opacity: 0.8;
 }
 .travel-stop.here {
@@ -1484,7 +1575,7 @@ body.cave-dark #caveDark {
 }
 .quest-row small {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   opacity: 0.8;
 }
 .quest-row.done {
@@ -1559,7 +1650,7 @@ body.cave-dark #caveDark {
   padding: 4px 8px;
   border-radius: 10px;
   background: #7dffef;
-  font-size: 12px;
+  font-size: 13px;
   white-space: nowrap;
 }
 .quest-pill.has-reward {
