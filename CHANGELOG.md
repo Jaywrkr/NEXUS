@@ -369,3 +369,7 @@ Halo suave en lo que brilla (más de noche), efecto maqueta en la isométrica, l
 
 ## 3D: Pulido, Etapa C — el mundo se siente vivo
 Partículas de ambiente por lugar (nieve, hojas, polen, brillitos en el mar, luciérnagas de noche), sombras de nubes, una ola de luz al revivir un lugar, un acercamiento de cámara al conectar y sonidos suaves de cada lugar (pajaritos, grillos, olas, viento). Pruebas 3D: 54 escenarios. Decisión 065.
+
+## 3D: Siguiente nivel, Fase 1 — se siente mejor
+Guías de gamedev instaladas en `.claude/skills/` y plan en `PLAN_SIGUIENTE_NIVEL.md`. Salto con tiempo de coyote y salto anticipado, flotadita al mantener, botón táctil que salta al apretar, sacudida de cámara en tres tamaños con pausa mínima en lo grande, estiramiento al despegar y contadores que saltan. Pruebas 3D: 55 escenarios. Decisión 066.
+

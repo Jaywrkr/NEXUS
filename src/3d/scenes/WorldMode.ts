@@ -298,6 +298,14 @@ export class WorldMode {
   readonly pickups: SparkPickups;
   /** Velocidad vertical del Nexus (saltos y caídas). */
   private vy = 0;
+  private jumpBuffer = 0;
+  private coyote = 0;
+  private jumpHeld = false;
+  /** Guía «game-feel»: trauma de la cámara (0..1); la sacudida es trauma² y se apaga sola. */
+  private trauma = 0;
+  private shakeT = 0;
+  /** Pausa mínima (hit-stop) en los momentos grandes, en segundos de juego. */
+  private hitStop = 0;
   grounded = true;
   /** Tirolesa en curso: del poste `a` al `b`. */
   zip: { a: THREE.Vector3; b: THREE.Vector3; t: number; dur: number; climb: number; from: THREE.Vector3 } | null = null;
@@ -770,7 +778,26 @@ export class WorldMode {
 
     this.el.interact?.addEventListener('click', () => this.input.queueInteract());
     this.el.msg?.addEventListener('click', () => this.showHint());
-    document.getElementById('jumpBtn')?.addEventListener('click', () => this.input.queueJump());
+    // Los contadores del HUD dan un saltito cuando cambian (guía «game-feel»: la interfaz también responde)
+    for (const id of ['stars', 'awake', 'notesCount', 'piecesCount', 'cardsCount', 'charge']) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      let last = el.textContent;
+      new MutationObserver(() => {
+        if (el.textContent === last) return;
+        last = el.textContent;
+        el.classList.remove('bump');
+        void el.offsetWidth;
+        el.classList.add('bump');
+      }).observe(el, { childList: true, characterData: true, subtree: true });
+    }
+    // Saltar al APRETAR (no al soltar) y saber cuándo se suelta: salto variable en el celular
+    const jumpBtn = document.getElementById('jumpBtn');
+    jumpBtn?.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      this.input.queueJump();
+    });
+    for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) jumpBtn?.addEventListener(ev, () => this.input.queueJumpRelease());
     window.addEventListener('keydown', (e) => {
       if (e.code === 'KeyH' && document.body.classList.contains('mode-world') && !document.body.classList.contains('paused')) this.showHint();
     });
@@ -871,6 +898,7 @@ export class WorldMode {
 
   private addLife(x: number, z: number, radius: number, animate: boolean): void {
     if (animate && radius >= 8) this.lifeWave(x, z, radius);
+    if (animate && radius >= 14) this.feedback('large');
     // Si ya cae dentro de una mancha de color, no hace falta otra
     if (this.lifeSpots.some((s) => Math.hypot(s.x - x, s.z - z) + radius <= s.target + 0.05)) return;
     // Sin lugar (el shader tiene LIFE_SPOTS): se juntan en una las dos manchas que menos agrandan al unirse
@@ -945,6 +973,7 @@ export class WorldMode {
    */
   private applyConnection(target: Connectable, animate: boolean): void {
     // Etapa C: un pequeño acercamiento de cámara al conectar en vivo
+    if (animate) this.feedback('medium');
     if (animate && this.iso && !this.cameraBumping) {
       this.cameraBumping = true;
       tween(0.7, (k) => {
@@ -2008,6 +2037,7 @@ export class WorldMode {
     const done = TRICKS.filter((t) => this.progress.hasFlag(`trick-${t}`)).length;
     this.toast(`${TRICK_NAMES[kind]} — truco ${done} de 3`, 'ok');
     this.nexus.sparkle();
+    this.feedback('small');
     if (done === TRICKS.length && !this.progress.hasFlag('hood')) {
       this.progress.setFlag('hood');
       document.body.classList.add('has-hood');
@@ -2202,7 +2232,16 @@ export class WorldMode {
       }
       this.nexus.grinding = false;
     }
-    if (this.input.consumeJump() && this.grounded && !this.busy && !this.nexus.dancing) {
+    // Guía «platformer»: salto anticipado (apretar justo antes de tocar el piso) y tiempo de coyote
+    // (saltar un instante después de salirse de un borde): el salto sale aunque el dedo llegue un poquito antes o después
+    if (this.input.consumeJump()) this.jumpBuffer = 0.14;
+    else this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
+    this.coyote = this.grounded ? 0.11 : Math.max(0, this.coyote - dt);
+    if (this.jumpBuffer > 0 && (this.grounded || this.coyote > 0) && !this.busy && !this.nexus.dancing) {
+      this.jumpBuffer = 0;
+      this.coyote = 0;
+      this.jumpHeld = true;
+      this.nexus.takeoff();
       this.vy = JUMP_V * (this.voltio.active ? 1.2 : 1) * (this.helps('bosque') ? 1.2 : 1);
       this.companion?.cheer();
       this.grounded = false;
@@ -2210,13 +2249,23 @@ export class WorldMode {
       this.audio.tone(520, 0, 0.12, 'triangle', 0.06);
       this.audio.tone(780, 0.05, 0.1, 'triangle', 0.05);
     }
+    // Mantener apretado da una flotadita arriba (más fácil apuntar a un techo). A propósito NO hay salto
+    // variable que se corte al soltar: un toque rápido tiene que llegar igual a 1 m (escalones, techos, rocas)
+    if (this.input.consumeJumpRelease()) this.jumpHeld = false;
+    let g = GRAVITY;
+    if (this.vy < 0) {
+      g *= 1.12;
+      this.jumpHeld = false;
+    } else if (this.jumpHeld && this.vy < 1.4) g *= 0.6;
     const prevY = p.y;
-    this.vy -= GRAVITY * dt;
+    this.vy = Math.max(this.vy - g * dt, -20);
     p.y += this.vy * dt;
     const ground = this.world.groundAt(p.x, p.z, prevY);
     if (p.y <= ground) {
       if (!this.grounded && this.vy < -3) {
         this.nexus.land();
+        // Caída grande: la cámara acusa el golpe (poquito)
+        if (this.vy < -9) this.addTrauma(Math.min(0.28, (-this.vy - 9) * 0.04 + 0.1));
         this.audio.tone(150, 0, 0.08, 'triangle', 0.06);
       }
       p.y = ground;
@@ -2617,6 +2666,7 @@ export class WorldMode {
     const got = this.progress.addCharge(n);
     if (got > 0) {
       this.nexus.sparkle();
+      this.feedback('small');
       this.audio.tone(1500 + this.progress.charge * 80, 0, 0.1, 'sine', 0.08);
     }
     this.updateHud();
@@ -3975,6 +4025,7 @@ export class WorldMode {
     this.audio.tone(scale[got % scale.length], 0, 0.18, 'triangle', 0.08);
     this.audio.tone(scale[(got + 2) % scale.length], 0.12, 0.22, 'triangle', 0.07);
     this.nexus.sparkle();
+    this.feedback('small');
     this.toast(`🎵 Nota ${got}/${total} de ${DISTRICT_NAMES[nt.district] ?? nt.district}`, 'ok');
     this.updateHud();
   }
@@ -4449,6 +4500,11 @@ export class WorldMode {
   }
 
   update(dt: number): void {
+    // Pausa mínima de los momentos grandes: el mundo casi se congela un instante
+    if (this.hitStop > 0) {
+      this.hitStop -= dt;
+      dt *= 0.15;
+    }
     this.time += dt;
     this.checkOccluded(dt);
     if (this.input.consumeView() && !this.inside) this.setView(!this.iso);
@@ -4703,6 +4759,36 @@ export class WorldMode {
     const back = 6;
     this.chaseCam.position.set(p.x - Math.sin(this.camYaw) * back, 3.3 + p.y, p.z - Math.cos(this.camYaw) * back);
     this.chaseCam.lookAt(p.x + Math.sin(this.camYaw) * 2, 1.0 + p.y, p.z + Math.cos(this.camYaw) * 2);
+    // Sacudida: senos sumados a ritmos distintos bajo un trauma que decae (nunca ruido cuadro a cuadro).
+    // Va al final del seguimiento, así no pelea con él. Con «Efectos suaves» no hay sacudida.
+    if (this.trauma > 0) {
+      this.trauma = Math.max(0, this.trauma - 1.3 * dt);
+      this.shakeT += dt * 30;
+      const k = document.body.classList.contains('calm') ? 0 : this.trauma * this.trauma;
+      const t = this.shakeT;
+      const ox = 0.35 * k * Math.sin(t * 1.7);
+      const oy = 0.25 * k * Math.sin(t * 2.3);
+      this.isoCam.position.x += ox;
+      this.isoCam.position.z -= ox;
+      this.isoCam.position.y += oy;
+      this.chaseCam.position.x += ox * 0.6;
+      this.chaseCam.position.y += oy * 0.6;
+    }
+  }
+
+  /** Suma trauma a la cámara (pequeño 0,1–0,2 · mediano 0,3–0,5 · grande 0,7–1). */
+  addTrauma(amount: number): void {
+    this.trauma = Math.min(1, this.trauma + amount);
+  }
+
+  /** Lo que siente el jugador al conectar, revivir o lograr algo grande, en tres tamaños (guía «game-feel»). */
+  feedback(tier: 'small' | 'medium' | 'large'): void {
+    if (tier === 'small') this.addTrauma(0.12);
+    else if (tier === 'medium') this.addTrauma(0.32);
+    else {
+      this.addTrauma(0.6);
+      if (!document.body.classList.contains('calm')) this.hitStop = Math.max(this.hitStop, 0.07);
+    }
   }
 
   /* ---------- Etapa C: ambiente (partículas, sombras de nubes y sonidos del lugar) ---------- */

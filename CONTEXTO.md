@@ -361,6 +361,12 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - `systems/Ambience.ts`: `Ambience` (se crea en el primer `update`), `AmbienceKind` (`none`, `snow`, `leaves`, `glints`, `pollen`, `fireflies`): un `Points` con `ShaderMaterial` por tipo (420 partículas; posición calculada en el shader con semilla + tiempo, repetida en una caja de 46×14×46 m alrededor del foco; `seaZ` limita los brillitos al mar) y 5 sombras de nubes. `WorldMode.ambienceKind()` elige según `districtId`, noche, interiores y Voltio; `updateAmbience` también toca los sonidos del lugar (cada 4–9 s).
 - `WorldMode.lifeWave` (anillo con `userData.lifeWave`, en `addLife` con `animate` y radio ≥ 8; no con la clase `calm`). Acercamiento de cámara en `applyConnection` (`isoCam.zoom` 1 → 1,06 → 1 en 0,7 s).
 
+### Siguiente nivel (Decisión 066 y `PLAN_SIGUIENTE_NIVEL.md`)
+
+- Guías de gamedev instaladas en `.claude/skills/` (Apache 2.0, ver `GAMEDEV_SKILLS_LICENSE` y `GAMEDEV_SKILLS_NOTICE`).
+- Salto (`updateVertical`): `jumpBuffer` 0,14 s, `coyote` 0,11 s, `jumpHeld` (flotadita: gravedad ×0,6 cerca del vértice mientras se mantiene), caída ×1,12, tope −20 m/s. Sin corte al soltar (los toques rápidos llegan a 1 m). `Input.consumeJumpRelease` (keyup de Espacio, `pointerup` del botón).
+- `WorldMode.feedback(tier)`: chico (trauma 0,12: chispitas, notas, caídas grandes), mediano (0,32: cada conexión en vivo), grande (0,6 + `hitStop` 0,07 s: `addLife` en vivo con radio ≥ 14). La sacudida se suma en `updateCameras` (después del seguimiento) y no corre con la clase `calm`.
+
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.
 - Inicio del Nexus: (-20, -11).

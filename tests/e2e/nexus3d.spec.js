@@ -2834,3 +2834,73 @@ test('3D: pulido — ambiente de cada lugar (nieve, hojas, mar, luciérnagas), n
   expect(await w(() => window.__nexus3d.world.isoCam.zoom)).toBe(1);
   expect(await rings()).toBe(before);
 });
+
+test('3D: se siente mejor — salto con coyote, salto anticipado, flotadita arriba, sacudida de cámara y contadores que saltan', async ({ page }) => {
+  test.setTimeout(240_000);
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  const y = () => w(() => window.__nexus3d.world.nexus.position.y);
+  const maxY = async (seconds) => {
+    let m = 0;
+    for (let i = 0; i < seconds / 0.05; i += 1) {
+      await step(page, 0.05);
+      m = Math.max(m, await y());
+    }
+    return m;
+  };
+  await step(page, 0.1);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Salto completo (mantenido) y salto corto (se suelta enseguida)
+  await tp(page, -14, -12);
+  await page.keyboard.down('Space');
+  await step(page, 0.05);
+  const full = await maxY(0.9);
+  await page.keyboard.up('Space');
+  await step(page, 0.5);
+  await page.keyboard.down('Space');
+  await step(page, 0.05);
+  await page.keyboard.up('Space');
+  const short = await maxY(0.9);
+  // Un toque rápido igual llega a la altura completa (escalones de 1 m); mantener flota un poquito más
+  expect(short).toBeGreaterThan(1.15);
+  expect(full).toBeGreaterThan(1.15);
+
+  // Tiempo de coyote: al salirse del borde de un techo todavía se puede saltar un instante
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(134.6, 1, 11);
+    g.focus.set(134.6, 0, 11);
+  });
+  await step(page, 0.2);
+  await page.keyboard.down('KeyA');
+  await page.keyboard.down('KeyW');
+  for (let i = 0; i < 30 && (await w(() => window.__nexus3d.world.grounded)); i += 1) await step(page, 0.02);
+  await page.keyboard.up('KeyA');
+  await page.keyboard.up('KeyW');
+  const edge = await y();
+  await w(() => window.__nexus3d.world.jump());
+  await step(page, 0.12);
+  expect(await y()).toBeGreaterThan(edge);
+
+  // Salto anticipado: apretar justo antes de tocar el piso salta al aterrizar
+  await w(() => {
+    const g = window.__nexus3d.world;
+    g.nexus.position.set(-14, 3, -12);
+    g.focus.set(-14, 0, -12);
+  });
+  await step(page, 0.5);
+  await w(() => window.__nexus3d.world.jump());
+  await step(page, 0.15);
+  expect(await maxY(0.5)).toBeGreaterThan(0.6);
+
+  // Sacudida: crece con lo que pasa y se apaga sola
+  await w(() => window.__nexus3d.world.feedback('large'));
+  expect(await w(() => window.__nexus3d.world.trauma)).toBeGreaterThan(0.5);
+  await step(page, 1);
+  expect(await w(() => window.__nexus3d.world.trauma)).toBe(0);
+
+  // Los contadores saltan cuando cambian
+  await w(() => window.__nexus3d.world.setCharge(3));
+  await page.waitForTimeout(100);
+  expect(await w(() => document.getElementById('charge').classList.contains('bump'))).toBe(true);
+});

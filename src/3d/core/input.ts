@@ -10,6 +10,8 @@ export class Input {
   private interactQueued = false;
   private viewQueued = false;
   private jumpQueued = false;
+  /** Se soltó el salto (Espacio o el botón): corta el salto si todavía sube (salto variable). */
+  private jumpReleaseQueued = false;
   private danceQueued = false;
   private voltQueued = false;
   readonly touch = isTouch();
@@ -25,7 +27,10 @@ export class Input {
       if (e.code === 'KeyV') this.viewQueued = true;
       if (e.code === 'KeyQ') this.voltQueued = true;
     });
-    window.addEventListener('keyup', (e) => this.keys.delete(e.code));
+    window.addEventListener('keyup', (e) => {
+      this.keys.delete(e.code);
+      if (e.code === 'Space') this.jumpReleaseQueued = true;
+    });
     window.addEventListener('blur', () => this.keys.clear());
     this.setupStick();
   }
@@ -114,6 +119,17 @@ export class Input {
     this.jumpQueued = true;
   }
 
+  /** Se soltó el botón de saltar. */
+  queueJumpRelease(): void {
+    this.jumpReleaseQueued = true;
+  }
+
+  consumeJumpRelease(): boolean {
+    const v = this.jumpReleaseQueued;
+    this.jumpReleaseQueued = false;
+    return v;
+  }
+
   queueDance(): void {
     this.danceQueued = true;
   }
@@ -147,6 +163,7 @@ export class Input {
     this.interactQueued = false;
     this.viewQueued = false;
     this.jumpQueued = false;
+    this.jumpReleaseQueued = false;
     this.danceQueued = false;
   }
 }

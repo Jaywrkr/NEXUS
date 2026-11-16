@@ -481,7 +481,15 @@ export class Nexus3D {
   /** Aterrizaje: se aplasta un poquito y rebota. */
   land(): void {
     this.landT = 0;
+    this.takeoffT = -1;
   }
+
+  /** Despega: se estira un instante (squash & stretch, guía «game-feel»). */
+  takeoff(): void {
+    this.takeoffT = 0;
+  }
+
+  private takeoffT = -1;
 
   /** La mochila recibió chispitas: un destello corto. */
   sparkle(): void {
@@ -601,6 +609,17 @@ export class Nexus3D {
       this.body.position.y = 0;
       this.body.rotation.x = 0;
       this.earL.rotation.x = this.earR.rotation.x = -1.1;
+    }
+    // Despegue: se estira y vuelve (con un rebote chiquito)
+    if (this.takeoffT >= 0 && this.landT < 0) {
+      this.takeoffT += dt / 0.22;
+      const k = Math.min(this.takeoffT, 1);
+      const st = Math.sin(k * Math.PI) * (1 - k * 0.3);
+      this.body.scale.set(1 - st * 0.1, 1 + st * 0.16, 1 - st * 0.1);
+      if (this.takeoffT >= 1) {
+        this.takeoffT = -1;
+        this.body.scale.set(1, 1, 1);
+      }
     }
     // Aterrizaje
     if (this.landT >= 0) {
