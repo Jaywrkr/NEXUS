@@ -368,6 +368,8 @@ Casas con zócalo, esquineros, alero, cumbrera, chimenea, ventanas con marco/cru
 - `WorldMode.feedback(tier)`: chico (trauma 0,12: chispitas, notas, caídas grandes), mediano (0,32: cada conexión en vivo), grande (0,6 + `hitStop` 0,07 s: `addLife` en vivo con radio ≥ 14). La sacudida se suma en `updateCameras` (después del seguimiento) y no corre con la clase `calm`.
 
 - Guardado (Decisión 067): `core/progress.ts` escribe `{...estado, v: SAVE_VERSION}`; `parse()` limpia y devuelve `null` si está roto (no una partida vacía); el constructor recupera de `-bak` si hace falta. Código de partida `NEXUS1:` (base64 de `{app, v, state, extra}`). Si cambia el formato: subir `SAVE_VERSION` y agregar el paso en `migrate()`.
+- Sonido (Decisión 068): `AudioSystem.channel` (`sfx`/`music`/`ambience`/`ui`), `mixerFor(ctx)` arma buses → agache (música y ambiente) → compresor → salida; `AudioSystem.volume/setVolume` (clave `los-nexus-vol-<canal>`), `duck(on)` mientras está abierto `#story`; si falla la mezcla, va directo a `ctx.destination`.
+- Joystick (Decisión 069): `core/gamepad.ts` (`GamepadInput`, lo llama `frame()` en main.ts y pasa `move` a `world.input.padMove`, que se usa solo si teclado y joystick táctil están quietos). Botones → teclas sintéticas (`BUTTON_KEYS`); con un `.sheet` visible o el título, navega el foco. Clase `pad` en el body (Ⓐ/Ⓧ en los botones). En pruebas: `navigator.getGamepads` de mentira y `__nexus3d.pad.update(dt)` a mano.
 
 ### Coordenadas del barrio (metros; +X este, +Z sur; suelo y = 0)
 - Límites ±45. Calle este-oeste en z = 0 y calle norte-sur en x = 0 (termina en el canal). Canal: z de 30 a 36. Puente en x = 18.

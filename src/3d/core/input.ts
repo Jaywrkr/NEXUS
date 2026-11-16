@@ -82,12 +82,18 @@ export class Input {
     return this.keys.has(code);
   }
 
+  /** Palanca del joystick de consola (la escribe GamepadInput cada cuadro). */
+  padMove = { x: 0, y: 0 };
+
   get move(): { x: number; y: number } {
     let x = (this.has('KeyD') || this.has('ArrowRight') ? 1 : 0) - (this.has('KeyA') || this.has('ArrowLeft') ? 1 : 0);
     let y = (this.has('KeyW') || this.has('ArrowUp') ? 1 : 0) - (this.has('KeyS') || this.has('ArrowDown') ? 1 : 0);
     if (this.stick.id !== -1) {
       x = this.stick.dx;
       y = -this.stick.dy;
+    } else if (x === 0 && y === 0 && (this.padMove.x || this.padMove.y)) {
+      x = this.padMove.x;
+      y = this.padMove.y;
     }
     const len = Math.hypot(x, y);
     if (len > 1) {

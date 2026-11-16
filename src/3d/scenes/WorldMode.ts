@@ -176,7 +176,7 @@ export class WorldMode {
   private readonly ambientAudio = Object.assign(new AudioSystem(), { channel: 'ambience' as const });
   private readonly musicAudio = Object.assign(new AudioSystem(), { channel: 'music' as const });
   private storyDucked = false;
-  private readonly input: Input;
+  readonly input: Input;
   private readonly cb: WorldCallbacks;
   private readonly connections: Connections;
   private readonly isoCam = new THREE.OrthographicCamera(-1, 1, 1, -1, -80, 200);

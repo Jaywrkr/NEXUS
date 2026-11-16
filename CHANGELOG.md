@@ -379,3 +379,6 @@ Versión en el guardado, copia de respaldo y recuperación automática si se rom
 ## 3D: Siguiente nivel, Fase 3 — sonido de verdad
 Mezcla con buses (efectos, música, ambiente, interfaz) y compresor en la salida, volumen por categoría en Opciones, música y ambiente que bajan cuando habla un vecino, y variación chica en los efectos repetidos. Pruebas 3D: 57 escenarios. Decisión 068.
 
+
+## 3D: Siguiente nivel, Fase 4 — controles para todos
+Joystick de consola (zona muerta circular, mismos atajos que el teclado), menús que se recorren con el joystick, botones que muestran Ⓐ/Ⓧ mientras se usa y textos de juego de 13 px como mínimo (Decisión 069).

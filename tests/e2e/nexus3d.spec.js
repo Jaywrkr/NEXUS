@@ -2984,3 +2984,58 @@ test('3D: sonido de verdad — volumen por categoría en Opciones y la música b
   expect(await w(() => document.getElementById('volAmbience').value)).toBe('0');
   expect(await w(() => document.getElementById('volSfx').value)).toBe('100');
 });
+
+test('3D: controles para todos — joystick de consola en el título, en el juego y en los menús', async ({ page }) => {
+  test.setTimeout(180_000);
+  // Un joystick de mentira (mapeo estándar) que la prueba maneja
+  await page.addInitScript(() => {
+    const pad = { id: 'Prueba', index: 0, connected: true, mapping: 'standard', axes: [0, 0, 0, 0], buttons: Array.from({ length: 17 }, () => ({ pressed: false, value: 0 })), timestamp: 0 };
+    window.__pad = pad;
+    navigator.getGamepads = () => [pad];
+  });
+  await page.goto('/');
+  await page.waitForFunction(() => Boolean(window.__nexus3d));
+  const w = (fn, arg) => page.evaluate(fn, arg);
+  // Sin GPU hay ~2 cuadros por segundo: se lee el joystick a mano para no depender del tiempo
+  const read = () => w(() => window.__nexus3d.pad.update(0.05));
+  const press = async (i) => {
+    await w((i) => (window.__pad.buttons[i] = { pressed: true, value: 1 }), i);
+    await read();
+    await w((i) => (window.__pad.buttons[i] = { pressed: false, value: 0 }), i);
+    await read();
+  };
+  const stick = async (x, y) => {
+    await w(([x, y]) => {
+      window.__pad.axes = [x, y, 0, 0];
+      window.__nexus3d.pad.update(0.05);
+      window.__nexus3d.world.input.padMove = window.__nexus3d.pad.move;
+    }, [x, y]);
+  };
+  // Título: con un botón ya enfocado, A empieza
+  await press(0);
+  await expect.poll(() => mode(page), { timeout: 20_000 }).toContain('mode-world');
+  expect(await w(() => document.body.classList.contains('pad'))).toBe(true);
+  await page.evaluate(() => document.getElementById('story').click());
+
+  // Jugando: la palanca mueve al Nexus (zona muerta: un toquecito no lo mueve)
+  const pos = () => w(() => window.__nexus3d.world.nexus.position.toArray());
+  const a = await pos();
+  await stick(0.1, 0.1);
+  await step(page, 0.5);
+  const b = await pos();
+  expect(Math.hypot(b[0] - a[0], b[2] - a[2])).toBeLessThan(0.05);
+  await stick(1, 0);
+  await step(page, 0.6);
+  const c = await pos();
+  expect(Math.hypot(c[0] - b[0], c[2] - b[2])).toBeGreaterThan(1);
+  await stick(0, 0);
+
+  // Start abre el menú; la cruceta mueve el foco; B lo cierra
+  await press(9);
+  await expect.poll(() => w(() => !document.getElementById('menuMain').hidden)).toBe(true);
+  const first = await w(() => document.activeElement?.id);
+  await press(13);
+  expect(await w(() => document.activeElement?.id)).not.toBe(first);
+  await press(1);
+  await expect.poll(() => w(() => document.getElementById('menuMain').closest('[hidden]') !== null || document.getElementById('menuMain').getBoundingClientRect().width === 0)).toBe(true);
+});

@@ -512,6 +512,18 @@ body.mode-tunnel #stickBase {
   width: 46%;
   accent-color: var(--accent, #2bb3a8);
 }
+/* Jugando con joystick: los botones muestran qué botón del control usar */
+body.pad #jumpBtn::after {
+  content: ' Ⓐ';
+}
+body.pad #interact::after {
+  content: ' Ⓧ';
+}
+body.pad .ui-btn:focus-visible,
+body.pad .ui-btn:focus {
+  outline: 4px solid #ffd23a;
+  outline-offset: 3px;
+}
 .save-help {
   margin: 0 0 8px;
   font-size: 14px;
@@ -1012,7 +1024,7 @@ body.voltio #volt {
   box-shadow: 4px 4px 0 #ff4fd8;
 }
 .volt-btn small {
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.08em;
 }
 body.has-hood .volt-btn {
@@ -1205,7 +1217,7 @@ body.calm .mini-card.rare-dorada::after {
   background: #ff4fd8;
   color: #fff;
   font-family: var(--display);
-  font-size: 12px;
+  font-size: 13px;
   transform: rotate(8deg);
 }
 .trade-sheet {
@@ -1280,7 +1292,7 @@ body.calm .mini-card.rare-dorada::after {
   border-radius: 8px;
   background: var(--ink);
   color: var(--cream);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 800;
 }
 body.voltio #labels {
@@ -1383,7 +1395,7 @@ body.voltio #labels {
   font-size: 18px;
 }
 .travel-stop small {
-  font-size: 12px;
+  font-size: 13px;
   opacity: 0.8;
 }
 .travel-stop.here {
@@ -1519,7 +1531,7 @@ body.cave-dark #caveDark {
 }
 .quest-row small {
   display: block;
-  font-size: 12px;
+  font-size: 13px;
   opacity: 0.8;
 }
 .quest-row.done {
@@ -1594,7 +1606,7 @@ body.cave-dark #caveDark {
   padding: 4px 8px;
   border-radius: 10px;
   background: #7dffef;
-  font-size: 12px;
+  font-size: 13px;
   white-space: nowrap;
 }
 .quest-pill.has-reward {

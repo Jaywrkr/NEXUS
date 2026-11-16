@@ -3,6 +3,7 @@ import { Input } from './core/input';
 import { Renderer } from './core/render';
 import { Settings, flashScreen, vibrate } from './core/settings';
 import { Progress3D } from './core/progress';
+import { GamepadInput } from './core/gamepad';
 import { LOOK_PARTS, loadLook, saveLook } from './data/wardrobe';
 import { CARDS, CARD_BY_ID, RARITY_NAMES, TOTAL_CARDS, TYPES, TYPE_ORDER } from './data/chispis';
 import { drawCard, drawChispi } from './ui/cardArt';
@@ -342,6 +343,8 @@ class Game {
 
   /** Clic suave en todos los botones de la interfaz. */
   private readonly uiAudio = Object.assign(new AudioSystem(), { channel: 'ui' as const });
+  /** Joystick de consola (guía «input-systems»). */
+  private readonly pad = new GamepadInput();
 
   private setupUiSounds(): void {
     const audio = this.uiAudio;
@@ -715,6 +718,8 @@ class Game {
       }
     }
     info.reset();
+    this.pad.update(Math.min(Math.max(raw, 0), 0.1));
+    this.world.input.padMove = this.pad.move;
     const dt = Math.min(raw, 0.05);
     if (raw < 0.5) this.renderer.adapt(raw);
     this.last = now;
