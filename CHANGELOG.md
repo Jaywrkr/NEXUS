@@ -388,3 +388,6 @@ Agua con shader propio (ondas, reflejo del cielo, destellos y espuma en la orill
 
 ## 3D: Siguiente nivel, Fase 6 — el mundo se lee solo
 Pistas escalonadas (columna de luz, caminito de luz y paso a paso), aviso 💡 si pasa un rato sin avanzar y globitos de los vecinos según la hora y lo que hace el Nexus (Decisión 071). Con esto se completa el plan «siguiente nivel».
+
+## 3D: correr
+El Nexus camina un poco más rápido y corre solo si se mantiene la dirección a fondo (o con Shift / RT); pasos más largos y orejas al viento al correr (Decisión 072).

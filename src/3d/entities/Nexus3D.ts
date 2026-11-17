@@ -5,7 +5,7 @@ import { box, contactShadow, glow, rounded, toon } from '../core/render';
 import { clamp, damp, dampAngle } from '../core/util';
 import { CABLES, EARS, HATS, HOODIES, PACKS, option, type NexusLook } from '../data/wardrobe';
 
-const SPEED = 4.6; // m/s
+const SPEED = 5.3; // m/s (caminando; corriendo va ×1,45)
 const ACCEL = 11; // qué tan rápido llega a la velocidad deseada (equivale al ACCEL_MS de 90 ms del 2D)
 
 const C = {
@@ -86,6 +86,8 @@ export class Nexus3D {
   readonly board = makeBoard();
   /** Multiplica la velocidad al caminar (Mundo Voltio: más rápido). */
   speedScale = 1;
+  /** Velocidad de caminar (m/s); corriendo se multiplica. */
+  static readonly WALK_SPEED = SPEED;
   /** Andando en patineta. */
   riding = false;
   /** Deslizando por una baranda. */
@@ -522,7 +524,9 @@ export class Nexus3D {
     this.time += dt;
     const speed = this.speed;
     const k = clamp(speed / SPEED, 0, 1);
-    this.phase += dt * (4 + speed * 2.1);
+    // Corriendo (más rápido que caminar): pasos más largos, más inclinado y las orejas bien atrás
+    const run = clamp((speed - SPEED * 1.05) / (SPEED * 0.35), 0, 1);
+    this.phase += dt * (4 + speed * (2.1 - 0.5 * run));
     const s = Math.sin(this.phase);
 
     // Quieto un rato → gira despacio hacia la cámara (se le ve la cara)
@@ -534,19 +538,19 @@ export class Nexus3D {
     this.root.rotation.y = this.heading;
 
     // Caminar: piernas y brazos en oposición, rebote del cuerpo, leve inclinación hacia adelante
-    this.legL.rotation.x = s * 0.75 * k;
-    this.legR.rotation.x = -s * 0.75 * k;
-    this.armL.rotation.x = -s * 0.65 * k;
-    this.armR.rotation.x = s * 0.65 * k;
+    this.legL.rotation.x = s * (0.75 + 0.35 * run) * k;
+    this.legR.rotation.x = -s * (0.75 + 0.35 * run) * k;
+    this.armL.rotation.x = -s * (0.65 + 0.45 * run) * k;
+    this.armR.rotation.x = s * (0.65 + 0.45 * run) * k;
     this.armL.rotation.z = 0.12;
     this.armR.rotation.z = -0.12;
-    const bob = Math.abs(Math.cos(this.phase)) * 0.045 * k;
+    const bob = Math.abs(Math.cos(this.phase)) * (0.045 + 0.03 * run) * k;
     const breathe = Math.sin(this.time * 2.2) * 0.008 * (1 - k);
     this.body.position.y = bob + breathe;
-    this.body.rotation.x = 0.1 * k;
+    this.body.rotation.x = (0.1 + 0.16 * run) * k;
 
     // Orejas: se quedan atrás al acelerar y rebotan con el paso
-    this.earSwing = damp(this.earSwing, -0.5 * k, 6, dt);
+    this.earSwing = damp(this.earSwing, -0.5 * k - 0.35 * run, 6, dt);
     const flop = Math.sin(this.phase * 2) * 0.12 * k + Math.sin(this.time * 1.7) * 0.04;
     this.earL.rotation.x = this.earSwing + flop;
     this.earR.rotation.x = this.earSwing - flop * 0.8;
